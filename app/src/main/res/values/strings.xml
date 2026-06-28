@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Järjestelmävahti</string>
+    <string name="widget_description">Älykäs akku- ja järjestelmämittari suoraan kotinäytöllä.</string>
+</resources>
