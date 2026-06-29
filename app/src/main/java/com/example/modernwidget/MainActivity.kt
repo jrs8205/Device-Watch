@@ -1,8 +1,11 @@
 package com.example.modernwidget
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -22,9 +25,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.state.getAppWidgetState
 import androidx.glance.appwidget.state.updateAppWidgetState
@@ -32,6 +37,7 @@ import androidx.glance.state.PreferencesGlanceStateDefinition
 import com.example.modernwidget.ui.theme.ModernWidgetTheme
 import com.example.modernwidget.widget.DashboardWidget
 import com.example.modernwidget.widget.RefreshStatsAction
+import com.example.modernwidget.widget.WidgetStateUpdater
 import com.example.modernwidget.system.SystemStatsHelper
 import com.example.modernwidget.system.SystemStats
 import com.example.modernwidget.system.SystemMonitorService
@@ -80,55 +86,54 @@ fun SystemDashboardScreen() {
         }
     }
 
-    // Luodaan pyyntö ilmoitusoikeudelle (vaaditaan Android 13+)
-    val notificationPermissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
-        if (isGranted) {
-            startSystemMonitorService()
-        }
-    }
-
     fun refreshStats() {
         coroutineScope.launch {
             val currentStats = SystemStatsHelper.getStats(context)
             stats = currentStats
             lastUpdatedTime = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
+            isWidgetInstalled = WidgetStateUpdater.updateAll(context, currentStats)
+        }
+    }
 
-            val manager = GlanceAppWidgetManager(context)
-            val glanceIds = manager.getGlanceIds(DashboardWidget::class.java)
-            isWidgetInstalled = glanceIds.isNotEmpty()
-
-            if (glanceIds.isNotEmpty()) {
-                for (glanceId in glanceIds) {
-                    updateAppWidgetState(context, PreferencesGlanceStateDefinition, glanceId) { prefs ->
-                        prefs.toMutablePreferences().apply {
-                            this[RefreshStatsAction.BATTERY_LEVEL] = currentStats.batteryLevel
-                            this[RefreshStatsAction.BATTERY_STATUS] = currentStats.batteryStatus
-                            this[RefreshStatsAction.BATTERY_HEALTH] = currentStats.batteryHealth
-                            this[RefreshStatsAction.BATTERY_TEMP] = currentStats.batteryTemp
-                            this[RefreshStatsAction.BATTERY_VOLTAGE] = currentStats.batteryVoltage
-                            this[RefreshStatsAction.TIME_REMAINING] = currentStats.timeRemainingText
-                            this[RefreshStatsAction.TOTAL_RAM] = currentStats.totalRamGb
-                            this[RefreshStatsAction.USED_RAM] = currentStats.usedRamGb
-                            this[RefreshStatsAction.RAM_PERCENT] = currentStats.ramPercent
-                            this[RefreshStatsAction.CPU_CORES] = currentStats.cpuCores
-                            this[RefreshStatsAction.CPU_ABI] = currentStats.cpuAbi
-                            this[RefreshStatsAction.UPTIME] = currentStats.uptimeText
-                            this[RefreshStatsAction.LAST_UPDATED] = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
-                        }
-                    }
-                    DashboardWidget().update(context, glanceId)
-                }
+    fun missingRuntimePermissions(): Array<String> {
+        val permissions = buildList {
+            add(Manifest.permission.ACCESS_FINE_LOCATION)
+            add(Manifest.permission.READ_PHONE_STATE)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                add(Manifest.permission.NEARBY_WIFI_DEVICES)
+                add(Manifest.permission.POST_NOTIFICATIONS)
             }
         }
+
+        return permissions
+            .filter { permission ->
+                ContextCompat.checkSelfPermission(context, permission) != PackageManager.PERMISSION_GRANTED
+            }
+            .toTypedArray()
+    }
+
+    fun openSpecialAccessSettings(action: String) {
+        try {
+            context.startActivity(Intent(action).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            })
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    val runtimePermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) {
+        startSystemMonitorService()
+        refreshStats()
     }
 
     LaunchedEffect(Unit) {
         refreshStats()
-        // Pyydetään ilmoitusoikeutta Android 13+ ja käynnistetään reaaliaikainen taustaseuranta
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            notificationPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+        val missingPermissions = missingRuntimePermissions()
+        if (missingPermissions.isNotEmpty()) {
+            runtimePermissionLauncher.launch(missingPermissions)
         } else {
             startSystemMonitorService()
         }
@@ -139,7 +144,7 @@ fun SystemDashboardScreen() {
             TopAppBar(
                 title = {
                     Text(
-                        "System Dashboard",
+                        stringResource(R.string.main_title),
                         fontWeight = FontWeight.Bold
                     )
                 },
@@ -147,7 +152,7 @@ fun SystemDashboardScreen() {
                     IconButton(onClick = { refreshStats() }) {
                         Icon(
                             imageVector = Icons.Default.Refresh,
-                            contentDescription = "Päivitä",
+                            contentDescription = stringResource(R.string.refresh),
                             tint = MaterialTheme.colorScheme.primary
                         )
                     }
@@ -193,9 +198,9 @@ fun SystemDashboardScreen() {
                         Spacer(modifier = Modifier.width(12.dp))
                         Text(
                             text = if (isWidgetInstalled) {
-                                "Kotiruudun widget on aktiivinen ja synkronoitu taustapalvelulla."
+                                stringResource(R.string.widget_active_message)
                             } else {
-                                "Widgetiä ei ole vielä lisätty kotinäytölle. Paina pitkään kotinäyttöä lisätäksesi sen."
+                                stringResource(R.string.widget_not_added_message)
                             },
                             fontSize = 13.sp,
                             color = MaterialTheme.colorScheme.onSurface
@@ -214,7 +219,7 @@ fun SystemDashboardScreen() {
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            "AKUN TILA (REAALIAIKAINEN)",
+                            stringResource(R.string.battery_status_section),
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -257,15 +262,15 @@ fun SystemDashboardScreen() {
                             horizontalArrangement = Arrangement.SpaceAround
                         ) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text("Aika jäljellä", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(stringResource(R.string.time_remaining), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 Text(currentStats.timeRemainingText, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                             }
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text("Lämpötila", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(stringResource(R.string.temperature), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 Text("${currentStats.batteryTemp} °C", fontSize = 14.sp, fontWeight = FontWeight.Bold)
                             }
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text("Jännite", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(stringResource(R.string.voltage), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 val voltStr = "%.2f".format(currentStats.batteryVoltage)
                                 Text("${voltStr} V", fontSize = 14.sp, fontWeight = FontWeight.Bold)
                             }
@@ -281,7 +286,7 @@ fun SystemDashboardScreen() {
                 ) {
                     Column(modifier = Modifier.padding(20.dp)) {
                         Text(
-                            "JÄRJESTELMÄN RESURSSIT",
+                            stringResource(R.string.system_resources_section),
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -294,7 +299,7 @@ fun SystemDashboardScreen() {
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text("Käyttömuisti (RAM)", fontWeight = FontWeight.Medium, fontSize = 14.sp)
+                            Text(stringResource(R.string.ram_title), fontWeight = FontWeight.Medium, fontSize = 14.sp)
                             val usedRamStr = "%.1f".format(currentStats.usedRamGb)
                             val totalRamStr = "%.1f".format(currentStats.totalRamGb)
                             Text(
@@ -327,11 +332,20 @@ fun SystemDashboardScreen() {
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Column {
-                                Text("Suoritinytimet", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                Text("${currentStats.cpuCores} ydintä (${currentStats.cpuAbi})", fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                Text(stringResource(R.string.cpu_cores_label), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(
+                                    context.resources.getQuantityString(
+                                        R.plurals.cpu_cores_value,
+                                        currentStats.cpuCores,
+                                        currentStats.cpuCores,
+                                        currentStats.cpuAbi
+                                    ),
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
                             }
                             Column(horizontalAlignment = Alignment.End) {
-                                Text("Käyntiaika (Uptime)", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(stringResource(R.string.uptime_label), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 Text(currentStats.uptimeText, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                             }
                         }
@@ -346,7 +360,7 @@ fun SystemDashboardScreen() {
                 ) {
                     Column(modifier = Modifier.padding(20.dp)) {
                         Text(
-                            "WIDGETIN ASETUKSET",
+                            stringResource(R.string.widget_settings_section),
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -355,7 +369,7 @@ fun SystemDashboardScreen() {
                         Spacer(modifier = Modifier.height(16.dp))
 
                         Text(
-                            text = "Widgetin taustan peittävyys (Opacity)",
+                            text = stringResource(R.string.widget_opacity_title),
                             fontWeight = FontWeight.Medium,
                             fontSize = 14.sp
                         )
@@ -418,10 +432,40 @@ fun SystemDashboardScreen() {
                         }
                         
                         Text(
-                            text = "Säädä kotinäytön widgetin taustan läpinäkyvyyttä. 100% on täysin kiinteä tausta.",
+                            text = stringResource(R.string.widget_opacity_description),
                             fontSize = 11.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+                    }
+                }
+
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
+                ) {
+                    Column(modifier = Modifier.padding(20.dp)) {
+                        Text(
+                            stringResource(R.string.special_access_section),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            OutlinedButton(
+                                onClick = { openSpecialAccessSettings(Settings.ACTION_USAGE_ACCESS_SETTINGS) },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Text(stringResource(R.string.usage_access_button), fontSize = 12.sp)
+                            }
+                        }
                     }
                 }
 
@@ -436,11 +480,11 @@ fun SystemDashboardScreen() {
                 ) {
                     Icon(Icons.Default.Refresh, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Päivitä tiedot")
+                    Text(stringResource(R.string.refresh_data))
                 }
                 
                 Text(
-                    text = "Viimeksi päivitetty: $lastUpdatedTime",
+                    text = stringResource(R.string.last_updated, lastUpdatedTime),
                     fontSize = 11.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

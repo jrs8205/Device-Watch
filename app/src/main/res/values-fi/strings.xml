@@ -1,0 +1,96 @@
+<resources>
+    <string name="app_name">Laitevahti</string>
+    <string name="dream_service_name">Laitevahti</string>
+    <string name="widget_description">Älykäs akku- ja järjestelmämittari suoraan kotinäytöllä.</string>
+
+    <string name="main_title">Järjestelmän tila</string>
+    <string name="refresh">Päivitä</string>
+    <string name="widget_active_message">Kotiruudun widget on aktiivinen ja synkronoitu taustapalvelulla.</string>
+    <string name="widget_not_added_message">Widgetiä ei ole vielä lisätty kotinäytölle. Paina pitkään kotinäyttöä lisätäksesi sen.</string>
+    <string name="battery_status_section">AKUN TILA (REAALIAIKAINEN)</string>
+    <string name="time_remaining">Aika jäljellä</string>
+    <string name="temperature">Lämpötila</string>
+    <string name="voltage">Jännite</string>
+    <string name="system_resources_section">JÄRJESTELMÄN RESURSSIT</string>
+    <string name="ram_title">Käyttömuisti (RAM)</string>
+    <string name="cpu_cores_label">Suoritinytimet</string>
+    <string name="uptime_label">Käyntiaika (Uptime)</string>
+    <string name="widget_settings_section">WIDGETIN ASETUKSET</string>
+    <string name="widget_opacity_title">Widgetin taustan peittävyys</string>
+    <string name="widget_opacity_description">Säädä kotinäytön widgetin taustan läpinäkyvyyttä. 100%% on täysin kiinteä tausta.</string>
+    <string name="special_access_section">ERIKOISOIKEUDET</string>
+    <string name="usage_access_button">Datankäyttö</string>
+    <string name="refresh_data">Päivitä tiedot</string>
+    <string name="last_updated">Viimeksi päivitetty: %1$s</string>
+
+    <plurals name="cpu_cores_value">
+        <item quantity="one">%1$d ydin (%2$s)</item>
+        <item quantity="other">%1$d ydintä (%2$s)</item>
+    </plurals>
+
+    <string name="battery_status_charging">Ladataan</string>
+    <string name="battery_status_discharging">Käyttö</string>
+    <string name="battery_status_full">Täynnä</string>
+    <string name="battery_status_not_charging">Ei lataa</string>
+    <string name="battery_health_good">Hyvä</string>
+    <string name="battery_health_overheat">Kuuma</string>
+    <string name="battery_health_dead">Kulunut</string>
+    <string name="battery_health_over_voltage">Ylijännite</string>
+    <string name="battery_health_cold">Kylmä</string>
+    <string name="battery_time_until_full_hours">%1$dt %2$dm täyteen</string>
+    <string name="battery_time_until_full_minutes">%1$dm täyteen</string>
+    <string name="battery_time_remaining_hours">~%1$dt %2$dm</string>
+    <string name="battery_time_remaining_minutes">~%1$dm</string>
+    <string name="wifi_connected">Wi-Fi yhdistetty</string>
+    <string name="not_connected">Ei yhdistetty</string>
+    <string name="mobile_data_today_label">DATA TÄNÄÄN</string>
+    <string name="mobile_data_since_boot_label">DATA KÄYNN.</string>
+    <string name="mobile_data_label">MOBIILIDATA</string>
+    <string name="cpu_load_label">kuorma</string>
+    <string name="cpu_frequency_label">taajuus</string>
+    <string name="uptime_short">%1$dt %2$dm</string>
+
+    <string name="monitor_channel_name">Järjestelmän valvonta</string>
+    <string name="monitor_channel_description">Päivittää järjestelmän ja akun tiedot reaaliajassa widgettiin.</string>
+    <string name="monitor_notification_title">Laitevahti päällä</string>
+    <string name="monitor_notification_text">Seurataan laitteen tilaa ja päivitetään widgettiä.</string>
+    <string name="battery_full_channel_name">Akkuhälytykset</string>
+    <string name="battery_full_channel_description">Ilmoitukset latauksesta ja akun tilasta.</string>
+    <string name="battery_full_notification_title">Akku on ladattu täyteen</string>
+    <string name="battery_full_notification_text">Akku saavutti 100%% varauksen näytönsäästäjän ollessa käytössä.</string>
+
+    <string name="widget_tile_battery">AKKU</string>
+    <string name="widget_tile_memory">MUISTI</string>
+    <string name="widget_tile_cpu">SUORITIN</string>
+    <string name="widget_tile_storage">TALLENNUS</string>
+    <string name="widget_tile_network">VERKKO</string>
+    <string name="widget_tile_battery_health">AKUN TERVEYS</string>
+    <string name="widget_free_value">%1$s vapaana</string>
+    <string name="widget_today_value">%1$s tänään</string>
+    <string name="widget_mobile_network">Mobiiliverkko</string>
+    <string name="widget_signal_line">%1$s · %2$s signaali</string>
+    <string name="widget_uptime">Käyntiaika %1$s</string>
+    <string name="widget_updated">Päivitetty %1$s</string>
+    <string name="widget_capacity_label">KAPASITEETTI</string>
+    <string name="signal_unavailable">signaali %1$s</string>
+    <string name="signal_strong">vahva</string>
+    <string name="signal_medium">keskitaso</string>
+    <string name="signal_weak">heikko</string>
+    <string name="health_capacity_unavailable">ei saatavilla</string>
+    <string name="cycles_unavailable">syklit ei saatavilla</string>
+    <plurals name="cpu_cores_short">
+        <item quantity="one">%1$d ydin</item>
+        <item quantity="other">%1$d ydintä</item>
+    </plurals>
+    <plurals name="battery_cycles">
+        <item quantity="one">%1$d lataussykli</item>
+        <item quantity="other">%1$d lataussykliä</item>
+    </plurals>
+
+    <string name="dream_date_pattern">EEEE d. MMMM</string>
+    <string name="dream_battery_full">Täynnä</string>
+    <string name="dream_charging">Latautuu</string>
+    <string name="dream_on_battery">Akkuvirralla</string>
+    <string name="dream_full_time_estimate">Täynnä, arviolta noin klo %1$s</string>
+    <string name="dream_full_time_unknown">Täynnä, arviolta noin --:--</string>
+</resources>

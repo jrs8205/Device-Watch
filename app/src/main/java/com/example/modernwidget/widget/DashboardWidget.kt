@@ -6,9 +6,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.datastore.preferences.core.Preferences
+import androidx.glance.ColorFilter
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
+import androidx.glance.Image
+import androidx.glance.ImageProvider
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.action.actionRunCallback
 import androidx.glance.appwidget.appWidgetBackground
@@ -35,6 +38,11 @@ import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import androidx.glance.action.actionParametersOf
 import androidx.glance.action.clickable
+import com.example.modernwidget.R
+import com.example.modernwidget.system.UNAVAILABLE_DOUBLE
+import com.example.modernwidget.system.UNAVAILABLE_INT
+import com.example.modernwidget.system.UNAVAILABLE_TEXT
+import java.util.Locale
 
 class WidgetColors(
     val cardBackground: ColorProvider,
@@ -45,6 +53,10 @@ class WidgetColors(
     val textPrimary: ColorProvider,
     val textSecondary: ColorProvider,
     val textMuted: ColorProvider,
+    val labelText: ColorProvider,
+    val capacityText: ColorProvider,
+    val bandChipBg: ColorProvider,
+    val bandText: ColorProvider,
     
     // Accents
     val batteryAccent: ColorProvider,
@@ -53,6 +65,9 @@ class WidgetColors(
     val storageAccent: ColorProvider,
     val healthAccent: ColorProvider,
     val networkAccent: ColorProvider,
+    val mobileAccent: ColorProvider,
+    val downloadAccent: ColorProvider,
+    val uploadAccent: ColorProvider,
     val locationAccent: ColorProvider,
     val nfcAccent: ColorProvider,
     val dndAccent: ColorProvider,
@@ -81,24 +96,37 @@ class WidgetColors(
     val buttonText: ColorProvider
 )
 
+enum class MetricTileKind {
+    Standard,
+    Wifi,
+    BatteryHealth
+}
+
 fun getWidgetColors(isDark: Boolean, opacity: Float): WidgetColors {
     return if (isDark) {
         WidgetColors(
             cardBackground = ColorProvider(Color(0xFF12151A).copy(alpha = opacity)),
-            cardBorder = ColorProvider(Color(0x3BFFFFFF)),     // rgba(255,255,255,0.23)
+            cardBorder = ColorProvider(Color(0x12FFFFFF)),
             tileBackground = ColorProvider(Color(0x0AFFFFFF)), // rgba(255,255,255,0.04)
-            tileBorder = ColorProvider(Color(0x2BFFFFFF)),     // rgba(255,255,255,0.17)
-            progressTrack = ColorProvider(Color(0x30FFFFFF)),  // rgba(255,255,255,0.19)
+            tileBorder = ColorProvider(Color(0x0DFFFFFF)),
+            progressTrack = ColorProvider(Color(0x14FFFFFF)),
             textPrimary = ColorProvider(Color(0xFFFFFFFF)),
             textSecondary = ColorProvider(Color(0xFF9AA0A8)),
             textMuted = ColorProvider(Color(0xFF7B828C)),
+            labelText = ColorProvider(Color(0xFF8B929C)),
+            capacityText = ColorProvider(Color(0xFFD7DADE)),
+            bandChipBg = ColorProvider(Color(0x2438BDF8)),
+            bandText = ColorProvider(Color(0xFF7DD3FC)),
             
             batteryAccent = ColorProvider(Color(0xFF34D399)),
-            ramAccent = ColorProvider(Color(0xFFF59E0B)),
-            cpuAccent = ColorProvider(Color(0xFF2DD4BF)),
-            storageAccent = ColorProvider(Color(0xFF8B5CF6)),
-            healthAccent = ColorProvider(Color(0xFF34D399)),
+            ramAccent = ColorProvider(Color(0xFFFB923C)),
+            cpuAccent = ColorProvider(Color(0xFF22D3EE)),
+            storageAccent = ColorProvider(Color(0xFFA78BFA)),
+            healthAccent = ColorProvider(Color(0xFF6EE7A8)),
             networkAccent = ColorProvider(Color(0xFF38BDF8)),
+            mobileAccent = ColorProvider(Color(0xFF38BDF8)),
+            downloadAccent = ColorProvider(Color(0xFF34D399)),
+            uploadAccent = ColorProvider(Color(0xFFFB923C)),
             locationAccent = ColorProvider(Color(0xFF34D399)),
             nfcAccent = ColorProvider(Color(0xFF2DD4BF)),
             dndAccent = ColorProvider(Color(0xFFA78BFA)),
@@ -133,13 +161,20 @@ fun getWidgetColors(isDark: Boolean, opacity: Float): WidgetColors {
             textPrimary = ColorProvider(Color(0xFF1A1D21)),
             textSecondary = ColorProvider(Color(0xFF6B7280)),
             textMuted = ColorProvider(Color(0xFF8A909A)),
+            labelText = ColorProvider(Color(0xFF7A818B)),
+            capacityText = ColorProvider(Color(0xFF2A2E33)),
+            bandChipBg = ColorProvider(Color(0x2438BDF8)),
+            bandText = ColorProvider(Color(0xFF0284C7)),
             
             batteryAccent = ColorProvider(Color(0xFF84CC16)),
-            ramAccent = ColorProvider(Color(0xFFF59E0B)),
-            cpuAccent = ColorProvider(Color(0xFF06B6D4)),
-            storageAccent = ColorProvider(Color(0xFF7C3AED)),
+            ramAccent = ColorProvider(Color(0xFFFB923C)),
+            cpuAccent = ColorProvider(Color(0xFF22D3EE)),
+            storageAccent = ColorProvider(Color(0xFFA78BFA)),
             healthAccent = ColorProvider(Color(0xFF16A34A)),
-            networkAccent = ColorProvider(Color(0xFF38BDF8)),
+            networkAccent = ColorProvider(Color(0xFF0284C7)),
+            mobileAccent = ColorProvider(Color(0xFF0284C7)),
+            downloadAccent = ColorProvider(Color(0xFF34D399)),
+            uploadAccent = ColorProvider(Color(0xFFFB923C)),
             locationAccent = ColorProvider(Color(0xFF16A34A)),
             nfcAccent = ColorProvider(Color(0xFF2DD4BF)),
             dndAccent = ColorProvider(Color(0xFF7C3AED)),
@@ -189,117 +224,68 @@ fun WidgetContent() {
     val opacity = prefs[RefreshStatsAction.BACKGROUND_OPACITY] ?: (if (isDark) 0.86f else 0.94f)
     val colors = getWidgetColors(isDark, opacity)
     
-    val batteryLevel = prefs[RefreshStatsAction.BATTERY_LEVEL] ?: 64
-    val batteryStatus = prefs[RefreshStatsAction.BATTERY_STATUS] ?: "Akkuvirta"
-    val batteryHealth = prefs[RefreshStatsAction.BATTERY_HEALTH] ?: "Hyvä"
-    val batteryTemp = prefs[RefreshStatsAction.BATTERY_TEMP] ?: 29.5
-    val batteryVoltage = prefs[RefreshStatsAction.BATTERY_VOLTAGE] ?: 4.01
-    val timeRemaining = prefs[RefreshStatsAction.TIME_REMAINING] ?: "11t 53m jäljellä"
-    val batteryCycles = prefs[RefreshStatsAction.BATTERY_CYCLE_COUNT] ?: 312
+    val batteryLevel = prefs[RefreshStatsAction.BATTERY_LEVEL] ?: UNAVAILABLE_INT
+    val batteryStatus = prefs[RefreshStatsAction.BATTERY_STATUS] ?: UNAVAILABLE_TEXT
+    val batteryHealth = prefs[RefreshStatsAction.BATTERY_HEALTH] ?: UNAVAILABLE_TEXT
+    val batteryTemp = prefs[RefreshStatsAction.BATTERY_TEMP] ?: UNAVAILABLE_DOUBLE
+    val batteryVoltage = prefs[RefreshStatsAction.BATTERY_VOLTAGE] ?: UNAVAILABLE_DOUBLE
+    val timeRemaining = prefs[RefreshStatsAction.TIME_REMAINING] ?: UNAVAILABLE_TEXT
+    val batteryCycles = prefs[RefreshStatsAction.BATTERY_CYCLE_COUNT] ?: UNAVAILABLE_INT
+    val batteryCapacity = prefs[RefreshStatsAction.BATTERY_CAPACITY] ?: UNAVAILABLE_INT
 
-    val totalRam = prefs[RefreshStatsAction.TOTAL_RAM] ?: 7.4
-    val usedRam = prefs[RefreshStatsAction.USED_RAM] ?: 5.7
-    val ramPercent = prefs[RefreshStatsAction.RAM_PERCENT] ?: 76
+    val totalRam = prefs[RefreshStatsAction.TOTAL_RAM] ?: UNAVAILABLE_DOUBLE
+    val usedRam = prefs[RefreshStatsAction.USED_RAM] ?: UNAVAILABLE_DOUBLE
+    val ramPercent = prefs[RefreshStatsAction.RAM_PERCENT] ?: UNAVAILABLE_INT
 
-    val cpuCores = prefs[RefreshStatsAction.CPU_CORES] ?: 9
-    val cpuAbi = prefs[RefreshStatsAction.CPU_ABI] ?: "arm64-v8a"
-    val cpuFreq = prefs[RefreshStatsAction.CPU_FREQ] ?: 2.1
-    val cpuLoad = prefs[RefreshStatsAction.CPU_LOAD] ?: 23
-    val cpuTemp = prefs[RefreshStatsAction.CPU_TEMP] ?: 42.0
+    val cpuCores = prefs[RefreshStatsAction.CPU_CORES] ?: UNAVAILABLE_INT
+    val cpuAbi = prefs[RefreshStatsAction.CPU_ABI] ?: UNAVAILABLE_TEXT
+    val cpuFreq = prefs[RefreshStatsAction.CPU_FREQ] ?: UNAVAILABLE_DOUBLE
+    val cpuLoad = prefs[RefreshStatsAction.CPU_LOAD] ?: UNAVAILABLE_INT
+    val cpuLoadLabel = prefs[RefreshStatsAction.CPU_LOAD_LABEL] ?: UNAVAILABLE_TEXT
+    val cpuTemp = prefs[RefreshStatsAction.CPU_TEMP] ?: UNAVAILABLE_DOUBLE
 
-    val totalStorage = prefs[RefreshStatsAction.TOTAL_STORAGE] ?: 128.0
-    val usedStorage = prefs[RefreshStatsAction.USED_STORAGE] ?: 89.0
-    val storagePercent = prefs[RefreshStatsAction.STORAGE_PERCENT] ?: 70
+    val totalStorage = prefs[RefreshStatsAction.TOTAL_STORAGE] ?: UNAVAILABLE_DOUBLE
+    val usedStorage = prefs[RefreshStatsAction.USED_STORAGE] ?: UNAVAILABLE_DOUBLE
+    val storagePercent = prefs[RefreshStatsAction.STORAGE_PERCENT] ?: UNAVAILABLE_INT
 
-    val wifiSsid = prefs[RefreshStatsAction.WIFI_SSID] ?: "Koti_5G"
-    val wifiSpeedDown = prefs[RefreshStatsAction.WIFI_SPEED_DOWN] ?: 48
-    val wifiSpeedUp = prefs[RefreshStatsAction.WIFI_SPEED_UP] ?: 12
-    val wifiBytesToday = prefs[RefreshStatsAction.WIFI_BYTES_TODAY] ?: 1.8
+    val wifiSsid = prefs[RefreshStatsAction.WIFI_SSID] ?: UNAVAILABLE_TEXT
+    val wifiBand = prefs[RefreshStatsAction.WIFI_BAND] ?: UNAVAILABLE_TEXT
+    val wifiSpeedDown = prefs[RefreshStatsAction.WIFI_SPEED_DOWN] ?: UNAVAILABLE_INT
+    val wifiSpeedUp = prefs[RefreshStatsAction.WIFI_SPEED_UP] ?: UNAVAILABLE_INT
+    val wifiBytesToday = prefs[RefreshStatsAction.WIFI_BYTES_TODAY] ?: UNAVAILABLE_DOUBLE
 
-    val operatorName = prefs[RefreshStatsAction.OPERATOR_NAME] ?: "DNA"
-    val mobileNetworkType = prefs[RefreshStatsAction.MOBILE_NETWORK_TYPE] ?: "5G"
-    val mobileSignalDbm = prefs[RefreshStatsAction.MOBILE_SIGNAL_DBM] ?: -87
-    val mobileDataUsed = prefs[RefreshStatsAction.MOBILE_DATA_USED] ?: 4.2
-    val mobileDataTotal = prefs[RefreshStatsAction.MOBILE_DATA_TOTAL] ?: 20.0
+    val operatorName = prefs[RefreshStatsAction.OPERATOR_NAME] ?: UNAVAILABLE_TEXT
+    val mobileNetworkType = prefs[RefreshStatsAction.MOBILE_NETWORK_TYPE] ?: UNAVAILABLE_TEXT
+    val mobileSignalDbm = prefs[RefreshStatsAction.MOBILE_SIGNAL_DBM] ?: UNAVAILABLE_INT
+    val mobileDataUsed = prefs[RefreshStatsAction.MOBILE_DATA_USED] ?: UNAVAILABLE_DOUBLE
+    val mobileDataTotal = prefs[RefreshStatsAction.MOBILE_DATA_TOTAL] ?: UNAVAILABLE_DOUBLE
+    val mobileDataLabel = prefs[RefreshStatsAction.MOBILE_DATA_LABEL] ?: context.getString(R.string.mobile_data_label)
 
-    val isDnd = prefs[RefreshStatsAction.IS_DND_ENABLED] ?: true
-    val isBluetooth = prefs[RefreshStatsAction.IS_BLUETOOTH_ENABLED] ?: true
-    val isLocation = prefs[RefreshStatsAction.IS_LOCATION_ENABLED] ?: true
-    val isNfc = prefs[RefreshStatsAction.IS_NFC_ENABLED] ?: true
-    val isPowerSave = prefs[RefreshStatsAction.IS_POWER_SAVE_MODE] ?: false
-    val isAirplane = prefs[RefreshStatsAction.IS_AIRPLANE_MODE] ?: false
-
-    val uptime = prefs[RefreshStatsAction.UPTIME] ?: "39t 34m"
-    val lastUpdated = prefs[RefreshStatsAction.LAST_UPDATED] ?: "--.--"
-    val showWifiInRow = prefs[ToggleConnectionRowAction.SHOW_WIFI_IN_CONNECTION_ROW] ?: false
-
+    val uptime = prefs[RefreshStatsAction.UPTIME] ?: UNAVAILABLE_TEXT
+    val lastUpdated = prefs[RefreshStatsAction.LAST_UPDATED] ?: UNAVAILABLE_TEXT
     Column(
         modifier = GlanceModifier
             .fillMaxSize()
             .appWidgetBackground()
             .background(colors.cardBackground)
             .cornerRadius(30.dp)
-            .padding(24.dp)
+            .padding(22.dp)
     ) {
-        // Header-rivi
-        Row(
-            modifier = GlanceModifier.fillMaxWidth(),
-            verticalAlignment = Alignment.Vertical.CenterVertically
-        ) {
-            Text(
-                text = "⚡ Järjestelmämonitori",
-                style = TextStyle(
-                    color = colors.textPrimary,
-                    fontSize = 21.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            )
-            Spacer(modifier = GlanceModifier.defaultWeight())
-            
-            // "live"-pilleri
-            Row(
-                verticalAlignment = Alignment.Vertical.CenterVertically,
-                modifier = GlanceModifier
-                    .background(colors.livePillBg)
-                    .cornerRadius(99.dp)
-                    .padding(vertical = 8.dp, horizontal = 13.dp)
-            ) {
-                Box(
-                    modifier = GlanceModifier
-                        .size(8.dp)
-                        .cornerRadius(4.dp)
-                        .background(colors.liveGreen)
-                ) {}
-                Spacer(modifier = GlanceModifier.width(7.dp))
-                Text(
-                    text = "live",
-                    style = TextStyle(
-                        color = colors.liveGreen,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                )
-            }
-        }
-
-        Spacer(modifier = GlanceModifier.height(16.dp))
-
         // Ruudukko 2x3 (6 metriikkalaattaa, gap 12dp)
         Column(
-            modifier = GlanceModifier.fillMaxWidth().defaultWeight(),
-            verticalAlignment = Alignment.Vertical.CenterVertically
+            modifier = GlanceModifier.fillMaxWidth().defaultWeight()
         ) {
             Row(modifier = GlanceModifier.fillMaxWidth()) {
-                val tempStr = "%.1f".format(batteryTemp)
-                val voltStr = "%.2f".format(batteryVoltage)
                 MetricTile(
-                    title = "AKKU",
-                    value = "$batteryLevel%",
+                    title = context.getString(R.string.widget_tile_battery),
+                    value = percentText(batteryLevel),
                     subtext = timeRemaining,
-                    bottomText = "${tempStr}°C · ${voltStr}V",
-                    progressPercent = batteryLevel,
+                    bottomText = "${formatDouble(batteryTemp, 1, "°C")} · ${formatDouble(batteryVoltage, 2, "V")}",
+                    progressPercent = progressPercentOrNull(batteryLevel),
                     standardAccent = colors.batteryAccent,
                     isLimitHigh = false,
+                    iconRes = R.drawable.ic_widget_battery,
+                    iconColor = ColorProvider(Color(0xFF34D399)),
                     modifier = GlanceModifier.defaultWeight().clickable(
                         actionRunCallback<LaunchSettingsAction>(
                             actionParametersOf(LaunchSettingsAction.SettingsActionKey to "android.intent.action.POWER_USAGE_SUMMARY")
@@ -308,17 +294,16 @@ fun WidgetContent() {
                     colors = colors
                 )
                 Spacer(modifier = GlanceModifier.width(12.dp))
-                val usedRamStr = "%.1f".format(usedRam)
-                val totalRamStr = "%.1f".format(totalRam)
-                val freeRamStr = "%.1f".format(totalRam - usedRam)
+                val freeRam = if (totalRam >= 0.0 && usedRam >= 0.0) totalRam - usedRam else UNAVAILABLE_DOUBLE
                 MetricTile(
-                    title = "MUISTI",
-                    value = "$ramPercent%",
-                    subtext = "$usedRamStr / $totalRamStr GB",
-                    bottomText = "$freeRamStr GB vapaana",
-                    progressPercent = ramPercent,
+                    title = context.getString(R.string.widget_tile_memory),
+                    value = percentText(ramPercent),
+                    subtext = "${gbText(usedRam)} / ${gbText(totalRam)}",
+                    bottomText = context.getString(R.string.widget_free_value, gbText(freeRam)),
+                    progressPercent = progressPercentOrNull(ramPercent),
                     standardAccent = colors.ramAccent,
                     isLimitHigh = true,
+                    iconRes = R.drawable.ic_widget_memory,
                     modifier = GlanceModifier.defaultWeight().clickable(
                         actionRunCallback<LaunchSettingsAction>(
                             actionParametersOf(LaunchSettingsAction.SettingsActionKey to android.provider.Settings.ACTION_SETTINGS)
@@ -329,16 +314,15 @@ fun WidgetContent() {
             }
             Spacer(modifier = GlanceModifier.height(12.dp))
             Row(modifier = GlanceModifier.fillMaxWidth()) {
-                val freqStr = "%.1f".format(cpuFreq)
-                val cpuTempStr = "%.1f".format(cpuTemp)
                 MetricTile(
-                    title = "SUORITIN",
-                    value = "$cpuLoad%",
-                    subtext = "$cpuCores ydintä · $freqStr GHz",
-                    bottomText = "$cpuTempStr°C",
-                    progressPercent = cpuLoad,
+                    title = context.getString(R.string.widget_tile_cpu),
+                    value = percentText(cpuLoad),
+                    subtext = "${coreText(context, cpuCores)} · ${formatDouble(cpuFreq, 1, " GHz")}",
+                    bottomText = cpuBottomText(cpuTemp, cpuLoadLabel),
+                    progressPercent = progressPercentOrNull(cpuLoad),
                     standardAccent = colors.cpuAccent,
                     isLimitHigh = true,
+                    iconRes = R.drawable.ic_widget_cpu,
                     modifier = GlanceModifier.defaultWeight().clickable(
                         actionRunCallback<LaunchSettingsAction>(
                             actionParametersOf(LaunchSettingsAction.SettingsActionKey to android.provider.Settings.ACTION_SETTINGS)
@@ -347,17 +331,16 @@ fun WidgetContent() {
                     colors = colors
                 )
                 Spacer(modifier = GlanceModifier.width(12.dp))
-                val usedStorageStr = "%.0f".format(usedStorage)
-                val totalStorageStr = "%.0f".format(totalStorage)
-                val freeStorageStr = "%.0f".format(totalStorage - usedStorage)
+                val freeStorage = if (totalStorage >= 0.0 && usedStorage >= 0.0) totalStorage - usedStorage else UNAVAILABLE_DOUBLE
                 MetricTile(
-                    title = "TALLENNUS",
-                    value = "$storagePercent%",
-                    subtext = "$usedStorageStr / $totalStorageStr GB",
-                    bottomText = "$freeStorageStr GB vapaana",
-                    progressPercent = storagePercent,
+                    title = context.getString(R.string.widget_tile_storage),
+                    value = percentText(storagePercent),
+                    subtext = "${gbText(usedStorage, 0)} / ${gbText(totalStorage, 0)}",
+                    bottomText = context.getString(R.string.widget_free_value, gbText(freeStorage, 0)),
+                    progressPercent = progressPercentOrNull(storagePercent),
                     standardAccent = colors.storageAccent,
                     isLimitHigh = true,
+                    iconRes = R.drawable.ic_widget_storage,
                     modifier = GlanceModifier.defaultWeight().clickable(
                         actionRunCallback<LaunchSettingsAction>(
                             actionParametersOf(LaunchSettingsAction.SettingsActionKey to android.provider.Settings.ACTION_INTERNAL_STORAGE_SETTINGS)
@@ -368,47 +351,52 @@ fun WidgetContent() {
             }
             Spacer(modifier = GlanceModifier.height(12.dp))
             Row(modifier = GlanceModifier.fillMaxWidth()) {
-                val bytesStr = "%.1f".format(wifiBytesToday)
                 MetricTile(
-                    title = "VERKKO",
+                    title = context.getString(R.string.widget_tile_network),
                     value = wifiSsid,
                     subtext = "",
-                    bottomText = "$bytesStr GB tänään",
+                    bottomText = context.getString(R.string.widget_today_value, gbText(wifiBytesToday)),
                     progressPercent = null,
                     standardAccent = colors.networkAccent,
                     isLimitHigh = false,
+                    iconRes = R.drawable.ic_widget_wifi,
                     modifier = GlanceModifier.defaultWeight().clickable(
                         actionRunCallback<LaunchSettingsAction>(
                             actionParametersOf(LaunchSettingsAction.SettingsActionKey to android.provider.Settings.ACTION_WIFI_SETTINGS)
                         )
                     ),
                     colors = colors,
+                    kind = MetricTileKind.Wifi,
                     wifiDown = wifiSpeedDown,
-                    wifiUp = wifiSpeedUp
+                    wifiUp = wifiSpeedUp,
+                    wifiBand = wifiBand
                 )
                 Spacer(modifier = GlanceModifier.width(12.dp))
                 MetricTile(
-                    title = "AKUN TERVEYS",
-                    value = if (batteryHealth == "Hyvä") "Hyvä" else "Normaali",
+                    title = context.getString(R.string.widget_tile_battery_health),
+                    value = batteryHealth,
                     subtext = "",
-                    bottomText = "$batteryCycles lataussykliä",
+                    bottomText = cycleText(context, batteryCycles),
                     progressPercent = null,
                     standardAccent = colors.healthAccent,
                     isLimitHigh = false,
+                    iconRes = R.drawable.ic_widget_heart,
+                    iconColor = ColorProvider(Color(0xFF34D399)),
                     modifier = GlanceModifier.defaultWeight().clickable(
                         actionRunCallback<LaunchSettingsAction>(
                             actionParametersOf(LaunchSettingsAction.SettingsActionKey to "android.intent.action.POWER_USAGE_SUMMARY")
                         )
                     ),
                     colors = colors,
-                    healthCapacity = 96
+                    kind = MetricTileKind.BatteryHealth,
+                    healthCapacity = batteryCapacity
                 )
             }
         }
 
-        Spacer(modifier = GlanceModifier.height(12.dp))
+        Spacer(modifier = GlanceModifier.height(8.dp))
 
-        // Yhteydet & tilat -laatta (täysleveä)
+        // Mobiiliverkkorivi (täysleveä)
         Column(
             modifier = GlanceModifier
                 .fillMaxWidth()
@@ -416,289 +404,104 @@ fun WidgetContent() {
                 .cornerRadius(20.dp)
                 .padding(17.dp)
         ) {
-            // Kaksitoiminen yhteysrivi (Wi-Fi tai Mobiiliverkko)
             Row(
                 modifier = GlanceModifier.fillMaxWidth(),
                 verticalAlignment = Alignment.Vertical.CenterVertically
             ) {
-                if (showWifiInRow) {
-                    // Wi-Fi tiedot vasemmalla
-                    Row(verticalAlignment = Alignment.Vertical.CenterVertically) {
-                        Text(
-                            text = "📶 ",
-                            style = TextStyle(
-                                color = colors.networkAccent,
-                                fontSize = 20.sp
-                            )
-                        )
-                        Column {
-                            Text(
-                                text = "Wi-Fi · $wifiSsid",
-                                style = TextStyle(
-                                    color = colors.textPrimary,
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            )
-                            Text(
-                                text = "↓$wifiSpeedDown · ↑$wifiSpeedUp Mb/s",
-                                style = TextStyle(
-                                    color = colors.textMuted,
-                                    fontSize = 13.sp
-                                )
-                            )
-                        }
-                    }
-                } else {
-                    // Mobiiliverkko tiedot vasemmalla
-                    Row(verticalAlignment = Alignment.Vertical.CenterVertically) {
-                        Text(
-                            text = "📶 ",
-                            style = TextStyle(
-                                color = colors.networkAccent,
-                                fontSize = 20.sp
-                            )
-                        )
-                        Column {
-                            Text(
-                                text = "$operatorName · $mobileNetworkType",
-                                style = TextStyle(
-                                    color = colors.textPrimary,
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            )
-                            val signalStrengthText = when {
-                                mobileSignalDbm >= -85 -> "vahva"
-                                mobileSignalDbm >= -95 -> "keskitaso"
-                                else -> "heikko"
-                            }
-                            Text(
-                                text = "$mobileSignalDbm dBm · $signalStrengthText",
-                                style = TextStyle(
-                                    color = colors.textMuted,
-                                    fontSize = 13.sp
-                                )
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = GlanceModifier.defaultWeight())
-
-                // Keskellä oleva vaihtopainike (ikoni)
-                Box(
-                    modifier = GlanceModifier
-                        .size(32.dp)
-                        .cornerRadius(16.dp)
-                        .background(colors.tileBorder)
-                        .clickable(actionRunCallback<ToggleConnectionRowAction>()),
-                    contentAlignment = Alignment.Center
-                ) {
+                Image(
+                    provider = ImageProvider(R.drawable.ic_widget_cellular),
+                    contentDescription = context.getString(R.string.widget_mobile_network),
+                    modifier = GlanceModifier.size(30.dp),
+                    colorFilter = ColorFilter.tint(colors.mobileAccent)
+                )
+                Spacer(modifier = GlanceModifier.width(12.dp))
+                Column(modifier = GlanceModifier.defaultWeight()) {
                     Text(
-                        text = "⇆",
+                        text = "$operatorName · $mobileNetworkType",
                         style = TextStyle(
                             color = colors.textPrimary,
-                            fontSize = 18.sp,
+                            fontSize = 16.sp,
                             fontWeight = FontWeight.Bold
-                        )
+                        ),
+                        maxLines = 1
+                    )
+                    Text(
+                        text = context.getString(
+                            R.string.widget_signal_line,
+                            signalDbmText(context, mobileSignalDbm),
+                            signalQualityText(context, mobileSignalDbm)
+                        ),
+                        style = TextStyle(
+                            color = colors.textMuted,
+                            fontSize = 13.sp
+                        ),
+                        maxLines = 1
                     )
                 }
-
-                Spacer(modifier = GlanceModifier.defaultWeight())
-
-                if (showWifiInRow) {
-                    // Wi-Fi kulutus oikealla
-                    Column(horizontalAlignment = Alignment.Horizontal.End) {
-                        val wifiBytesStr = "%.1f".format(wifiBytesToday)
-                        Text(
-                            text = "$wifiBytesStr GB",
-                            style = TextStyle(
-                                color = colors.textPrimary,
-                                fontSize = 15.sp,
-                                fontWeight = FontWeight.Bold
-                            )
+                Spacer(modifier = GlanceModifier.width(16.dp))
+                Column(horizontalAlignment = Alignment.Horizontal.End) {
+                    Text(
+                        text = mobileDataText(mobileDataUsed, mobileDataTotal),
+                        style = TextStyle(
+                            color = colors.textPrimary,
+                            fontSize = 17.sp,
+                            fontWeight = FontWeight.Bold
+                        ),
+                        maxLines = 1
+                    )
+                    Row(verticalAlignment = Alignment.Vertical.CenterVertically) {
+                        Image(
+                            provider = ImageProvider(R.drawable.ic_widget_swap),
+                            contentDescription = null,
+                            modifier = GlanceModifier.size(15.dp),
+                            colorFilter = ColorFilter.tint(colors.textMuted)
                         )
+                        Spacer(modifier = GlanceModifier.width(4.dp))
                         Text(
-                            text = "WIFI-DATA",
+                            text = mobileDataLabel,
                             style = TextStyle(
                                 color = colors.textMuted,
-                                fontSize = 11.sp,
+                                fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold
-                            )
-                        )
-                    }
-                } else {
-                    // Mobiilidata kulutus oikealla
-                    Column(horizontalAlignment = Alignment.Horizontal.End) {
-                        Text(
-                            text = "$mobileDataUsed / ${mobileDataTotal.toInt()} GB",
-                            style = TextStyle(
-                                color = colors.textPrimary,
-                                fontSize = 15.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        )
-                        Text(
-                            text = "MOBIILIDATA",
-                            style = TextStyle(
-                                color = colors.textMuted,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold
-                            )
+                            ),
+                            maxLines = 1
                         )
                     }
                 }
-            }
-
-            Spacer(modifier = GlanceModifier.height(14.dp))
-            
-            // Ohut jakoviiva
-            Box(
-                modifier = GlanceModifier
-                    .fillMaxWidth()
-                    .height(1.dp)
-                    .background(colors.tileBorder)
-            ) {}
-
-            Spacer(modifier = GlanceModifier.height(14.dp))
-
-            // Tilasirut (kaksi 3-siruista riviä, väli 10dp)
-            Row(modifier = GlanceModifier.fillMaxWidth()) {
-                StatusChip(
-                    name = "DND", 
-                    isActive = isDnd, 
-                    activeBg = colors.dndChipBg, 
-                    activeBorder = colors.dndChipBorder, 
-                    modifier = GlanceModifier.defaultWeight().clickable(actionRunCallback<ToggleDndAction>()), 
-                    colors = colors
-                )
-                Spacer(modifier = GlanceModifier.width(10.dp))
-                StatusChip(
-                    name = "Bluetooth", 
-                    isActive = isBluetooth, 
-                    activeBg = colors.bluetoothChipBg, 
-                    activeBorder = colors.bluetoothChipBorder, 
-                    modifier = GlanceModifier.defaultWeight().clickable(
-                        actionRunCallback<LaunchSettingsAction>(
-                            actionParametersOf(LaunchSettingsAction.SettingsActionKey to android.provider.Settings.ACTION_BLUETOOTH_SETTINGS)
-                        )
-                    ), 
-                    colors = colors
-                )
-                Spacer(modifier = GlanceModifier.width(10.dp))
-                StatusChip(
-                    name = "Sijainti", 
-                    isActive = isLocation, 
-                    activeBg = colors.locationChipBg, 
-                    activeBorder = colors.locationChipBorder, 
-                    modifier = GlanceModifier.defaultWeight().clickable(
-                        actionRunCallback<LaunchSettingsAction>(
-                            actionParametersOf(LaunchSettingsAction.SettingsActionKey to android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS)
-                        )
-                    ), 
-                    colors = colors
-                )
-            }
-            Spacer(modifier = GlanceModifier.height(10.dp))
-            Row(modifier = GlanceModifier.fillMaxWidth()) {
-                StatusChip(
-                    name = "NFC", 
-                    isActive = isNfc, 
-                    activeBg = colors.nfcChipBg, 
-                    activeBorder = colors.nfcChipBorder, 
-                    modifier = GlanceModifier.defaultWeight().clickable(
-                        actionRunCallback<LaunchSettingsAction>(
-                            actionParametersOf(LaunchSettingsAction.SettingsActionKey to android.provider.Settings.ACTION_NFC_SETTINGS)
-                        )
-                    ), 
-                    colors = colors
-                )
-                Spacer(modifier = GlanceModifier.width(10.dp))
-                StatusChip(
-                    name = "Säästö", 
-                    isActive = isPowerSave, 
-                    activeBg = colors.powerSaveChipBg, 
-                    activeBorder = colors.powerSaveChipBorder, 
-                    modifier = GlanceModifier.defaultWeight().clickable(
-                        actionRunCallback<LaunchSettingsAction>(
-                            actionParametersOf(LaunchSettingsAction.SettingsActionKey to android.provider.Settings.ACTION_BATTERY_SAVER_SETTINGS)
-                        )
-                    ), 
-                    colors = colors
-                )
-                Spacer(modifier = GlanceModifier.width(10.dp))
-                StatusChip(
-                    name = "Lentotila", 
-                    isActive = isAirplane, 
-                    activeBg = colors.airplaneChipBg, 
-                    activeBorder = colors.airplaneChipBorder, 
-                    modifier = GlanceModifier.defaultWeight().clickable(
-                        actionRunCallback<LaunchSettingsAction>(
-                            actionParametersOf(LaunchSettingsAction.SettingsActionKey to android.provider.Settings.ACTION_AIRPLANE_MODE_SETTINGS)
-                        )
-                    ), 
-                    colors = colors
-                )
             }
         }
 
-        Spacer(modifier = GlanceModifier.height(18.dp))
+        Spacer(modifier = GlanceModifier.height(12.dp))
 
-        // Footer-rivi: 🕒 Uptime 39t 34m · Päivitetty 14.07
+        // Footer-rivi
         Row(
             modifier = GlanceModifier.fillMaxWidth(),
             verticalAlignment = Alignment.Vertical.CenterVertically
         ) {
+            Image(
+                provider = ImageProvider(R.drawable.ic_widget_schedule),
+                contentDescription = null,
+                modifier = GlanceModifier.size(18.dp),
+                colorFilter = ColorFilter.tint(colors.textMuted)
+            )
+            Spacer(modifier = GlanceModifier.width(6.dp))
             Text(
-                text = "🕒 Uptime $uptime",
+                text = context.getString(R.string.widget_uptime, uptime),
                 style = TextStyle(
                     color = colors.textMuted,
                     fontSize = 14.sp
-                )
+                ),
+                maxLines = 1
             )
             Spacer(modifier = GlanceModifier.defaultWeight())
             Text(
-                text = "Päivitetty $lastUpdated",
+                text = context.getString(R.string.widget_updated, lastUpdated),
                 style = TextStyle(
                     color = colors.textMuted,
                     fontSize = 14.sp
-                )
+                ),
+                maxLines = 1
             )
-        }
-
-        Spacer(modifier = GlanceModifier.height(18.dp))
-
-        // Painike "Päivitä tiedot" (Box-pohjainen dynaaminen painike)
-        Box(
-            modifier = GlanceModifier
-                .fillMaxWidth()
-                .height(48.dp)
-                .cornerRadius(18.dp)
-                .background(colors.buttonBg)
-                .clickable(actionRunCallback<RefreshStatsAction>()),
-            contentAlignment = Alignment.Center
-        ) {
-            Row(
-                verticalAlignment = Alignment.Vertical.CenterVertically
-            ) {
-                Text(
-                    text = "↻  ",
-                    style = TextStyle(
-                        color = colors.buttonText,
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                )
-                Text(
-                    text = "Päivitä tiedot",
-                    style = TextStyle(
-                        color = colors.buttonText,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                )
-            }
         }
     }
 }
@@ -734,11 +537,15 @@ fun MetricTile(
     progressPercent: Int?,
     standardAccent: ColorProvider,
     isLimitHigh: Boolean,
+    iconRes: Int,
+    iconColor: ColorProvider = standardAccent,
     modifier: GlanceModifier = GlanceModifier,
     colors: WidgetColors,
+    kind: MetricTileKind = MetricTileKind.Standard,
     wifiDown: Int? = null,
     wifiUp: Int? = null,
-    healthCapacity: Int? = null
+    wifiBand: String = UNAVAILABLE_TEXT,
+    healthCapacity: Int = UNAVAILABLE_INT
 ) {
     val activeColor = if (progressPercent != null) {
         getMetricColor(progressPercent, standardAccent, isLimitHigh)
@@ -750,9 +557,8 @@ fun MetricTile(
         modifier = modifier
             .background(colors.tileBackground)
             .cornerRadius(20.dp)
-            .padding(start = 14.dp, end = 14.dp, top = 14.dp, bottom = 11.dp)
+            .padding(18.dp)
     ) {
-        // Otsikko
         Row(
             modifier = GlanceModifier.fillMaxWidth(),
             verticalAlignment = Alignment.Vertical.CenterVertically
@@ -760,34 +566,68 @@ fun MetricTile(
             Text(
                 text = title,
                 style = TextStyle(
-                    color = colors.textSecondary,
+                    color = colors.labelText,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold
-                )
+                ),
+                maxLines = 1
+            )
+            Spacer(modifier = GlanceModifier.defaultWeight())
+            Image(
+                provider = ImageProvider(iconRes),
+                contentDescription = title,
+                modifier = GlanceModifier.size(22.dp),
+                colorFilter = ColorFilter.tint(iconColor)
             )
         }
 
-        Spacer(modifier = GlanceModifier.height(4.dp))
+        Spacer(modifier = GlanceModifier.height(8.dp))
 
-        if (title == "VERKKO" && wifiDown != null && wifiUp != null) {
-            // Verkko-laatan erikoislayout
+        if (kind == MetricTileKind.Wifi && wifiDown != null && wifiUp != null) {
             Text(
                 text = value,
                 style = TextStyle(
                     color = colors.textPrimary,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold
-                )
+                ),
+                maxLines = 2
             )
-            Spacer(modifier = GlanceModifier.height(4.dp))
-            Row(verticalAlignment = Alignment.Vertical.CenterVertically) {
-                Text("↓ ", style = TextStyle(color = colors.batteryAccent, fontSize = 15.sp, fontWeight = FontWeight.Bold))
-                Text("$wifiDown Mb/s", style = TextStyle(color = colors.textPrimary, fontSize = 13.sp, fontWeight = FontWeight.Medium))
+            Spacer(modifier = GlanceModifier.height(8.dp))
+            if (wifiBand != UNAVAILABLE_TEXT) {
+                Box(
+                    modifier = GlanceModifier
+                        .background(colors.bandChipBg)
+                        .cornerRadius(8.dp)
+                        .padding(vertical = 4.dp, horizontal = 7.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = wifiBand,
+                        style = TextStyle(
+                            color = colors.bandText,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold
+                        ),
+                        maxLines = 1
+                    )
+                }
             }
-            Spacer(modifier = GlanceModifier.height(2.dp))
+            Spacer(modifier = GlanceModifier.defaultWeight())
             Row(verticalAlignment = Alignment.Vertical.CenterVertically) {
-                Text("↑ ", style = TextStyle(color = colors.ramAccent, fontSize = 15.sp, fontWeight = FontWeight.Bold))
-                Text("$wifiUp Mb/s", style = TextStyle(color = colors.textPrimary, fontSize = 13.sp, fontWeight = FontWeight.Medium))
+                Text("↓ ", style = TextStyle(color = colors.downloadAccent, fontSize = 16.sp, fontWeight = FontWeight.Bold))
+                Text(
+                    speedText(wifiDown),
+                    style = TextStyle(color = colors.textPrimary, fontSize = 14.sp, fontWeight = FontWeight.Bold),
+                    maxLines = 1
+                )
+                Spacer(modifier = GlanceModifier.width(8.dp))
+                Text("↑ ", style = TextStyle(color = colors.uploadAccent, fontSize = 16.sp, fontWeight = FontWeight.Bold))
+                Text(
+                    speedText(wifiUp),
+                    style = TextStyle(color = colors.textPrimary, fontSize = 14.sp, fontWeight = FontWeight.Bold),
+                    maxLines = 1
+                )
             }
             Spacer(modifier = GlanceModifier.height(4.dp))
             Text(
@@ -795,64 +635,69 @@ fun MetricTile(
                 style = TextStyle(
                     color = colors.textMuted,
                     fontSize = 13.sp
-                )
+                ),
+                maxLines = 1
             )
-        } else if (title == "AKUN TERVEYS" && healthCapacity != null) {
-            // Akun terveys -laatan erikoislayout
+        } else if (kind == MetricTileKind.BatteryHealth) {
             Text(
                 text = value,
                 style = TextStyle(
-                    color = colors.batteryAccent,
+                    color = colors.healthAccent,
                     fontSize = 22.sp,
                     fontWeight = FontWeight.Bold
-                )
+                ),
+                maxLines = 1
             )
-            Spacer(modifier = GlanceModifier.height(4.dp))
-            Row(verticalAlignment = Alignment.Vertical.Bottom) {
+            Spacer(modifier = GlanceModifier.height(10.dp))
+            Column {
                 Text(
-                    text = "$healthCapacity",
+                    text = androidx.glance.LocalContext.current.getString(R.string.widget_capacity_label),
                     style = TextStyle(
-                        color = colors.textPrimary,
-                        fontSize = 20.sp,
+                        color = colors.labelText,
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.Bold
-                    )
+                    ),
+                    maxLines = 1
                 )
                 Text(
-                    text = "% kapasiteetti",
+                    text = healthCapacityText(androidx.glance.LocalContext.current, healthCapacity),
                     style = TextStyle(
-                        color = colors.textMuted,
-                        fontSize = 13.sp
-                    )
+                        color = colors.capacityText,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Medium
+                    ),
+                    maxLines = 1
                 )
             }
-            Spacer(modifier = GlanceModifier.height(6.dp))
-            ProgressBar(healthCapacity, activeColor, colors.progressTrack)
-            Spacer(modifier = GlanceModifier.height(4.dp))
+            Spacer(modifier = GlanceModifier.defaultWeight())
             Text(
                 text = bottomText,
                 style = TextStyle(
                     color = colors.textMuted,
                     fontSize = 13.sp
-                )
+                ),
+                maxLines = 1
             )
         } else {
-            // Normaali laatta
             Text(
                 text = value,
                 style = TextStyle(
                     color = colors.textPrimary,
-                    fontSize = 32.sp,
+                    fontSize = 34.sp,
                     fontWeight = FontWeight.Bold
-                )
+                ),
+                maxLines = 2
             )
+            Spacer(modifier = GlanceModifier.height(2.dp))
             Text(
                 text = subtext,
                 style = TextStyle(
                     color = colors.textMuted,
                     fontSize = 13.sp
-                )
+                ),
+                maxLines = 1
             )
-            Spacer(modifier = GlanceModifier.height(6.dp))
+            Spacer(modifier = GlanceModifier.defaultWeight())
             if (progressPercent != null) {
                 ProgressBar(progressPercent, activeColor, colors.progressTrack)
                 Spacer(modifier = GlanceModifier.height(4.dp))
@@ -862,7 +707,8 @@ fun MetricTile(
                 style = TextStyle(
                     color = colors.textMuted,
                     fontSize = 13.sp
-                )
+                ),
+                maxLines = 1
             )
         }
     }
@@ -884,17 +730,102 @@ fun getMetricColor(percent: Int, standardAccent: ColorProvider, isLimitHigh: Boo
     }
 }
 
+fun progressPercentOrNull(value: Int): Int? {
+    return value.takeIf { it >= 0 }?.coerceIn(0, 100)
+}
+
+fun percentText(value: Int): String {
+    return if (value >= 0) "$value%" else UNAVAILABLE_TEXT
+}
+
+fun formatDouble(value: Double, decimals: Int, suffix: String = ""): String {
+    if (value < 0.0) return UNAVAILABLE_TEXT
+    return String.format(Locale.getDefault(), "%.${decimals}f%s", value, suffix)
+}
+
+fun gbText(value: Double, decimals: Int = 1): String {
+    return if (value >= 0.0) {
+        String.format(Locale.getDefault(), "%.${decimals}f GB", value)
+    } else {
+        UNAVAILABLE_TEXT
+    }
+}
+
+fun speedText(value: Int): String {
+    return if (value >= 0) "$value Mb/s" else UNAVAILABLE_TEXT
+}
+
+fun coreText(context: Context, value: Int): String {
+    return if (value >= 0) {
+        context.resources.getQuantityString(R.plurals.cpu_cores_short, value, value)
+    } else {
+        UNAVAILABLE_TEXT
+    }
+}
+
+fun cycleText(context: Context, value: Int): String {
+    return if (value >= 0) {
+        context.resources.getQuantityString(R.plurals.battery_cycles, value, value)
+    } else {
+        context.getString(R.string.cycles_unavailable)
+    }
+}
+
+fun healthCapacityText(context: Context, value: Int): String {
+    return if (value >= 0) "$value%" else context.getString(R.string.health_capacity_unavailable)
+}
+
+fun cpuBottomText(cpuTemp: Double, cpuLoadLabel: String): String {
+    val tempText = formatDouble(cpuTemp, 1, "°C")
+    return when {
+        cpuLoadLabel == UNAVAILABLE_TEXT -> tempText
+        tempText == UNAVAILABLE_TEXT -> cpuLoadLabel
+        else -> "$tempText · $cpuLoadLabel"
+    }
+}
+
+fun signalDbmText(context: Context, value: Int): String {
+    return if (value != UNAVAILABLE_INT) {
+        "$value dBm"
+    } else {
+        context.getString(R.string.signal_unavailable, UNAVAILABLE_TEXT)
+    }
+}
+
+fun signalQualityText(context: Context, value: Int): String {
+    return when {
+        value == UNAVAILABLE_INT -> UNAVAILABLE_TEXT
+        value >= -85 -> context.getString(R.string.signal_strong)
+        value >= -95 -> context.getString(R.string.signal_medium)
+        else -> context.getString(R.string.signal_weak)
+    }
+}
+
+fun mobileDataText(usedGb: Double, totalGb: Double): String {
+    return when {
+        usedGb < 0.0 -> UNAVAILABLE_TEXT
+        totalGb > 0.0 -> "${gbText(usedGb)} / ${gbText(totalGb, 0)}"
+        else -> gbText(usedGb)
+    }
+}
+
 @Composable
 fun StatusChip(
     name: String,
     isActive: Boolean,
+    isKnown: Boolean,
     activeBg: ColorProvider,
     activeBorder: ColorProvider,
     modifier: GlanceModifier = GlanceModifier,
     colors: WidgetColors
 ) {
-    val bg = if (isActive) activeBg else colors.tileBackground
-    val textColor = if (isActive) colors.textPrimary else colors.textMuted
+    val bg = if (isKnown && isActive) activeBg else colors.tileBackground
+    val textColor = if (isKnown && isActive) colors.textPrimary else colors.textMuted
+    val prefix = when {
+        !isKnown -> "— "
+        isActive -> "● "
+        else -> "○ "
+    }
 
     Box(
         modifier = modifier
@@ -904,12 +835,13 @@ fun StatusChip(
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = (if (isActive) "● " else "○ ") + name,
+            text = prefix + name,
             style = TextStyle(
                 color = textColor,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold
-            )
+            ),
+            maxLines = 2
         )
     }
 }

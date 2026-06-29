@@ -21,10 +21,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.modernwidget.R
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
@@ -38,7 +40,9 @@ import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import java.text.SimpleDateFormat
 import java.util.Date
-import java.util.Locale
+
+private const val DREAM_PREFS_NAME = "monitor_dream_preferences"
+private const val PREF_LAYOUT_SWAPPED = "layout_swapped"
 
 class MonitorDreamService : DreamService(), LifecycleOwner, ViewModelStoreOwner, SavedStateRegistryOwner {
 
@@ -97,6 +101,10 @@ fun ScreensaverContent(context: Context) {
     var batteryTemp by remember { mutableDoubleStateOf(25.6) }
     var batteryVoltage by remember { mutableDoubleStateOf(3.88) }
     var chargeTimeRemainingMs by remember { mutableLongStateOf(-1L) }
+    var hasSentFullBatteryNotification by remember { mutableStateOf(false) }
+    val preferences = remember(context) {
+        context.getSharedPreferences(DREAM_PREFS_NAME, Context.MODE_PRIVATE)
+    }
 
     DisposableEffect(context) {
         val receiver = object : BroadcastReceiver() {
@@ -110,6 +118,15 @@ fun ScreensaverContent(context: Context) {
                 val status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1)
                 isCharging = status == BatteryManager.BATTERY_STATUS_CHARGING || 
                              status == BatteryManager.BATTERY_STATUS_FULL
+
+                if (batteryLevel >= 100 && isCharging) {
+                    if (!hasSentFullBatteryNotification) {
+                        BatteryFullNotifier.show(context.applicationContext)
+                        hasSentFullBatteryNotification = true
+                    }
+                } else {
+                    hasSentFullBatteryNotification = false
+                }
                 
                 val temp = intent.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, 0)
                 batteryTemp = temp / 10.0
@@ -129,21 +146,25 @@ fun ScreensaverContent(context: Context) {
         }
     }
     
-    var timeText by remember { mutableStateOf("18:49") }
-    var secondsText by remember { mutableStateOf("27") }
-    var dateText by remember { mutableStateOf("Sunnuntai 28. kesäkuuta") }
-    var isLayoutSwapped by remember { mutableStateOf(false) }
+    var timeText by remember { mutableStateOf("") }
+    var secondsText by remember { mutableStateOf("") }
+    var dateText by remember { mutableStateOf("") }
+    var isLayoutSwapped by remember {
+        mutableStateOf(preferences.getBoolean(PREF_LAYOUT_SWAPPED, false))
+    }
+    val configuration = LocalConfiguration.current
+    val currentLocale = configuration.locales[0]
 
-    LaunchedEffect(Unit) {
-        val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
-        val secondsFormat = SimpleDateFormat("ss", Locale.getDefault())
-        val dateFormat = SimpleDateFormat("EEEE d. MMMM", Locale("fi"))
+    LaunchedEffect(currentLocale) {
+        val timeFormat = SimpleDateFormat("HH:mm", currentLocale)
+        val secondsFormat = SimpleDateFormat("ss", currentLocale)
+        val dateFormat = SimpleDateFormat(context.getString(R.string.dream_date_pattern), currentLocale)
         
         while (true) {
             val now = Date()
             timeText = timeFormat.format(now)
             secondsText = secondsFormat.format(now)
-            dateText = dateFormat.format(now).replaceFirstChar { it.uppercase() }
+            dateText = dateFormat.format(now).replaceFirstChar { it.uppercase(currentLocale) }
             kotlinx.coroutines.delay(1000)
         }
     }
@@ -159,26 +180,25 @@ fun ScreensaverContent(context: Context) {
         }
     }
 
-    val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
 
     val fullTimeStrLandscape = if (isCharging) {
         if (chargeTimeRemainingMs > 0) {
             val fullTimeMs = System.currentTimeMillis() + chargeTimeRemainingMs
-            val format = SimpleDateFormat("HH:mm", Locale.getDefault())
-            "Täynnä, arviolta noin klo ${format.format(Date(fullTimeMs))}"
+            val format = SimpleDateFormat("HH:mm", currentLocale)
+            context.getString(R.string.dream_full_time_estimate, format.format(Date(fullTimeMs)))
         } else {
-            "Täynnä, arviolta noin --:--"
+            context.getString(R.string.dream_full_time_unknown)
         }
     } else {
         ""
     }
 
-    val voltStr = "%.2f".format(batteryVoltage).replace(".", ",")
-    val tempStr = "%.1f".format(batteryTemp).replace(".", ",")
+    val voltStr = String.format(currentLocale, "%.2f", batteryVoltage)
+    val tempStr = String.format(currentLocale, "%.1f", batteryTemp)
     val batteryGradientColors = getBatteryGradientColors(batteryLevel)
 
-    Box(
+    BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFF000000))
@@ -187,6 +207,21 @@ fun ScreensaverContent(context: Context) {
             },
         contentAlignment = Alignment.Center
     ) {
+        val horizontalPadding = when {
+            maxWidth < 380.dp -> 20.dp
+            maxWidth < 520.dp -> 28.dp
+            else -> 40.dp
+        }
+        val verticalPadding = if (maxHeight < 560.dp) 24.dp else 40.dp
+        val clockSize = when {
+            isLandscape && maxWidth < 700.dp -> 82
+            !isLandscape && maxWidth < 380.dp -> 84
+            !isLandscape && maxHeight < 640.dp -> 92
+            else -> 120
+        }
+        val secondsSize = (clockSize * 0.25f).toInt().coerceAtLeast(22)
+        val centerGap = if (maxWidth < 700.dp) 18.dp else 32.dp
+
         // Pääsäiliö (kierto hoitaa 180 asteen peilauksen/käännön dynaamisesti)
         Box(
             modifier = Modifier
@@ -202,7 +237,7 @@ fun ScreensaverContent(context: Context) {
                 Row(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(horizontal = 40.dp, vertical = 40.dp),
+                        .padding(horizontal = horizontalPadding, vertical = verticalPadding),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     ClockBlock(
@@ -210,7 +245,9 @@ fun ScreensaverContent(context: Context) {
                         timeText = timeText,
                         secondsText = secondsText,
                         dateText = dateText,
-                        dateSize = 30
+                        clockSize = clockSize,
+                        secondsSize = secondsSize,
+                        dateSize = if (clockSize < 100) 22 else 30
                     )
 
                     Box(
@@ -220,7 +257,7 @@ fun ScreensaverContent(context: Context) {
                             .background(Color(0x59FFFFFF))
                     )
 
-                    Spacer(modifier = Modifier.width(32.dp))
+                    Spacer(modifier = Modifier.width(centerGap))
 
                     BatteryBlockLandscape(
                         modifier = Modifier.weight(0.42f),
@@ -237,7 +274,7 @@ fun ScreensaverContent(context: Context) {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(horizontal = 40.dp, vertical = 40.dp),
+                        .padding(horizontal = horizontalPadding, vertical = verticalPadding),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
@@ -247,12 +284,15 @@ fun ScreensaverContent(context: Context) {
                         timeText = timeText,
                         secondsText = secondsText,
                         dateText = dateText,
-                        dateSize = 28
+                        clockSize = clockSize,
+                        secondsSize = secondsSize,
+                        dateSize = if (clockSize < 100) 22 else 28
                     )
 
                     Spacer(modifier = Modifier.weight(1f))
 
                     BatteryBlockPortrait(
+                        modifier = Modifier.fillMaxWidth().widthIn(max = 360.dp),
                         isCharging = isCharging,
                         batteryLevel = batteryLevel,
                         batteryGradientColors = batteryGradientColors,
@@ -271,22 +311,30 @@ fun ScreensaverContent(context: Context) {
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .offset(x = offsetX.dp, y = offsetY.dp)
-                .padding(24.dp)
-                .size(64.dp)
-                .clip(RoundedCornerShape(32.dp))
-                .background(Color(0x33FFFFFF))
-                .border(1.5.dp, Color(0x73FFFFFF), RoundedCornerShape(32.dp))
+                .padding(12.dp)
+                .size(112.dp)
                 .clickable {
-                    isLayoutSwapped = !isLayoutSwapped
+                    val newValue = !isLayoutSwapped
+                    isLayoutSwapped = newValue
+                    preferences.edit().putBoolean(PREF_LAYOUT_SWAPPED, newValue).apply()
                 },
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = if (isLandscape) "⇄" else "⇅",
-                fontSize = 28.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.White
-            )
+            Box(
+                modifier = Modifier
+                    .size(64.dp)
+                    .clip(RoundedCornerShape(32.dp))
+                    .background(Color(0x33FFFFFF))
+                    .border(1.5.dp, Color(0x73FFFFFF), RoundedCornerShape(32.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = if (isLandscape) "⇄" else "⇅",
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+            }
         }
     }
 }
@@ -297,6 +345,8 @@ fun ClockBlock(
     timeText: String,
     secondsText: String,
     dateText: String,
+    clockSize: Int,
+    secondsSize: Int,
     dateSize: Int
 ) {
     Column(
@@ -307,16 +357,16 @@ fun ClockBlock(
         Row(verticalAlignment = Alignment.Bottom) {
             Text(
                 text = timeText,
-                fontSize = 120.sp,
+                fontSize = clockSize.sp,
                 fontWeight = FontWeight.ExtraBold,
                 color = Color(0xFFEDEDED),
                 style = TextStyle(fontFeatureSettings = "tnum"),
-                letterSpacing = (-3).sp
+                letterSpacing = 0.sp
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = ":$secondsText",
-                fontSize = 30.sp,
+                fontSize = secondsSize.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF38BDF8),
                 style = TextStyle(fontFeatureSettings = "tnum"),
@@ -356,9 +406,13 @@ fun BatteryBlockLandscape(
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = if (isCharging) {
-                    if (batteryLevel == 100) "Täynnä" else "Latautuu"
+                    if (batteryLevel == 100) {
+                        stringResource(R.string.dream_battery_full)
+                    } else {
+                        stringResource(R.string.dream_charging)
+                    }
                 } else {
-                    "Akkuvirralla"
+                    stringResource(R.string.dream_on_battery)
                 },
                 fontSize = 22.sp,
                 fontWeight = FontWeight.Bold,
@@ -438,7 +492,7 @@ fun BatteryBlockPortrait(
     fullTimeStrLandscape: String
 ) {
     Column(
-        modifier = modifier.width(360.dp),
+        modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -450,9 +504,13 @@ fun BatteryBlockPortrait(
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = if (isCharging) {
-                    if (batteryLevel == 100) "Täynnä" else "Latautuu"
+                    if (batteryLevel == 100) {
+                        stringResource(R.string.dream_battery_full)
+                    } else {
+                        stringResource(R.string.dream_charging)
+                    }
                 } else {
-                    "Akkuvirralla"
+                    stringResource(R.string.dream_on_battery)
                 },
                 fontSize = 26.sp,
                 fontWeight = FontWeight.Bold,

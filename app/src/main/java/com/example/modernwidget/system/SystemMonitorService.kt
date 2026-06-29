@@ -11,24 +11,24 @@ import android.content.IntentFilter
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
-import androidx.glance.appwidget.GlanceAppWidgetManager
-import androidx.glance.appwidget.state.updateAppWidgetState
-import androidx.glance.state.PreferencesGlanceStateDefinition
-import com.example.modernwidget.widget.DashboardWidget
-import com.example.modernwidget.widget.RefreshStatsAction
+import com.example.modernwidget.R
+import com.example.modernwidget.widget.WidgetStateUpdater
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 class SystemMonitorService : Service() {
 
-    private val serviceScope = CoroutineScope(Dispatchers.Default)
+    private val serviceJob = SupervisorJob()
+    private val serviceScope = CoroutineScope(serviceJob + Dispatchers.Default)
     private var batteryReceiver: BroadcastReceiver? = null
     private var screenReceiver: BroadcastReceiver? = null
-    private var updateJob: kotlinx.coroutines.Job? = null
+    private var configurationReceiver: BroadcastReceiver? = null
+    private var updateJob: Job? = null
     private var isScreenOn = true
 
     override fun onCreate() {
@@ -36,6 +36,7 @@ class SystemMonitorService : Service() {
         startNotification()
         registerBatteryTracker()
         registerScreenTracker()
+        registerConfigurationTracker()
         startUpdateLoop()
     }
 
@@ -51,7 +52,11 @@ class SystemMonitorService : Service() {
         screenReceiver?.let {
             unregisterReceiver(it)
         }
+        configurationReceiver?.let {
+            unregisterReceiver(it)
+        }
         stopUpdateLoop()
+        serviceJob.cancel()
     }
 
     private fun registerScreenTracker() {
@@ -76,13 +81,26 @@ class SystemMonitorService : Service() {
         registerReceiver(screenReceiver, filter)
     }
 
+    private fun registerConfigurationTracker() {
+        configurationReceiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context, intent: Intent) {
+                if (intent.action == Intent.ACTION_CONFIGURATION_CHANGED) {
+                    serviceScope.launch {
+                        updateWidgetStats(context)
+                    }
+                }
+            }
+        }
+        registerReceiver(configurationReceiver, IntentFilter(Intent.ACTION_CONFIGURATION_CHANGED))
+    }
+
     private fun startUpdateLoop() {
         if (updateJob?.isActive == true) return
         
         updateJob = serviceScope.launch {
-            while (isScreenOn) {
+            while (isActive && isScreenOn) {
                 updateWidgetStats(this@SystemMonitorService)
-                kotlinx.coroutines.delay(5000) // Päivitys 5 sekunnin välein
+                delay(5000)
             }
         }
     }
@@ -96,7 +114,7 @@ class SystemMonitorService : Service() {
 
     private fun startNotification() {
         val channelId = "system_monitor_channel"
-        val channelName = "Järjestelmän valvonta"
+        val channelName = getString(R.string.monitor_channel_name)
         
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
@@ -104,15 +122,15 @@ class SystemMonitorService : Service() {
                 channelName,
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
-                description = "Päivittää järjestelmän ja akun tiedot reaaliajassa widgettiin."
+                description = getString(R.string.monitor_channel_description)
             }
             val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             manager.createNotificationChannel(channel)
         }
 
         val notification: Notification = NotificationCompat.Builder(this, channelId)
-            .setContentTitle("Järjestelmävahti päällä")
-            .setContentText("Seurataan laitteen tilaa ja päivitetään widgettiä.")
+            .setContentTitle(getString(R.string.monitor_notification_title))
+            .setContentText(getString(R.string.monitor_notification_text))
             .setSmallIcon(android.R.drawable.ic_menu_info_details)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setOngoing(true)
@@ -132,7 +150,9 @@ class SystemMonitorService : Service() {
     private fun registerBatteryTracker() {
         batteryReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent) {
-                updateWidgetStats(context)
+                serviceScope.launch {
+                    updateWidgetStats(context)
+                }
             }
         }
         
@@ -144,61 +164,11 @@ class SystemMonitorService : Service() {
         registerReceiver(batteryReceiver, filter)
     }
 
-    private fun updateWidgetStats(context: Context) {
-        serviceScope.launch {
-            try {
-                val stats = SystemStatsHelper.getStats(context)
-                val manager = GlanceAppWidgetManager(context)
-                val glanceIds = manager.getGlanceIds(DashboardWidget::class.java)
-                val now = SimpleDateFormat("HH.mm", Locale.getDefault()).format(Date())
-
-                if (glanceIds.isNotEmpty()) {
-                    for (glanceId in glanceIds) {
-                        updateAppWidgetState(context, PreferencesGlanceStateDefinition, glanceId) { prefs ->
-                            prefs.toMutablePreferences().apply {
-                                this[RefreshStatsAction.BATTERY_LEVEL] = stats.batteryLevel
-                                this[RefreshStatsAction.BATTERY_STATUS] = stats.batteryStatus
-                                this[RefreshStatsAction.BATTERY_HEALTH] = stats.batteryHealth
-                                this[RefreshStatsAction.BATTERY_TEMP] = stats.batteryTemp
-                                this[RefreshStatsAction.BATTERY_VOLTAGE] = stats.batteryVoltage
-                                this[RefreshStatsAction.TIME_REMAINING] = stats.timeRemainingText
-                                this[RefreshStatsAction.BATTERY_CYCLE_COUNT] = stats.batteryCycleCount
-                                this[RefreshStatsAction.TOTAL_RAM] = stats.totalRamGb
-                                this[RefreshStatsAction.USED_RAM] = stats.usedRamGb
-                                this[RefreshStatsAction.RAM_PERCENT] = stats.ramPercent
-                                this[RefreshStatsAction.CPU_CORES] = stats.cpuCores
-                                this[RefreshStatsAction.CPU_ABI] = stats.cpuAbi
-                                this[RefreshStatsAction.CPU_FREQ] = stats.cpuFreqGhz
-                                this[RefreshStatsAction.CPU_LOAD] = stats.cpuLoadPercent
-                                this[RefreshStatsAction.CPU_TEMP] = stats.cpuTemp
-                                this[RefreshStatsAction.TOTAL_STORAGE] = stats.totalStorageGb
-                                this[RefreshStatsAction.USED_STORAGE] = stats.usedStorageGb
-                                this[RefreshStatsAction.STORAGE_PERCENT] = stats.storagePercent
-                                this[RefreshStatsAction.WIFI_SSID] = stats.wifiSsid
-                                this[RefreshStatsAction.WIFI_SPEED_DOWN] = stats.wifiSpeedDown
-                                this[RefreshStatsAction.WIFI_SPEED_UP] = stats.wifiSpeedUp
-                                this[RefreshStatsAction.WIFI_BYTES_TODAY] = stats.wifiBytesTodayGb
-                                this[RefreshStatsAction.OPERATOR_NAME] = stats.operatorName
-                                this[RefreshStatsAction.MOBILE_NETWORK_TYPE] = stats.mobileNetworkType
-                                this[RefreshStatsAction.MOBILE_SIGNAL_DBM] = stats.mobileSignalDbm
-                                this[RefreshStatsAction.MOBILE_DATA_USED] = stats.mobileDataUsedGb
-                                this[RefreshStatsAction.MOBILE_DATA_TOTAL] = stats.mobileDataTotalGb
-                                this[RefreshStatsAction.IS_DND_ENABLED] = stats.isDndEnabled
-                                this[RefreshStatsAction.IS_BLUETOOTH_ENABLED] = stats.isBluetoothEnabled
-                                this[RefreshStatsAction.IS_LOCATION_ENABLED] = stats.isLocationEnabled
-                                this[RefreshStatsAction.IS_NFC_ENABLED] = stats.isNfcEnabled
-                                this[RefreshStatsAction.IS_POWER_SAVE_MODE] = stats.isPowerSaveMode
-                                this[RefreshStatsAction.IS_AIRPLANE_MODE] = stats.isAirplaneMode
-                                this[RefreshStatsAction.UPTIME] = stats.uptimeText
-                                this[RefreshStatsAction.LAST_UPDATED] = now
-                            }
-                        }
-                        DashboardWidget().update(context, glanceId)
-                    }
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+    private suspend fun updateWidgetStats(context: Context) {
+        try {
+            WidgetStateUpdater.updateAll(context.applicationContext)
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 

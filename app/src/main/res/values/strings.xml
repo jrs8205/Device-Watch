@@ -1,4 +1,97 @@
 <resources>
-    <string name="app_name">Järjestelmävahti</string>
-    <string name="widget_description">Älykäs akku- ja järjestelmämittari suoraan kotinäytöllä.</string>
+    <string name="app_name">Device Watch</string>
+    <string name="dream_service_name">Device Watch</string>
+    <string name="widget_description">Smart battery and system monitor on your home screen.</string>
+    <string name="fgs_special_use_subtype" translatable="false">System resources and battery status monitoring widget update</string>
+
+    <string name="main_title">System Dashboard</string>
+    <string name="refresh">Refresh</string>
+    <string name="widget_active_message">The home screen widget is active and synchronized by the background service.</string>
+    <string name="widget_not_added_message">The widget has not been added to the home screen yet. Long-press the home screen to add it.</string>
+    <string name="battery_status_section">BATTERY STATUS (LIVE)</string>
+    <string name="time_remaining">Time remaining</string>
+    <string name="temperature">Temperature</string>
+    <string name="voltage">Voltage</string>
+    <string name="system_resources_section">SYSTEM RESOURCES</string>
+    <string name="ram_title">Memory (RAM)</string>
+    <string name="cpu_cores_label">Processor cores</string>
+    <string name="uptime_label">Uptime</string>
+    <string name="widget_settings_section">WIDGET SETTINGS</string>
+    <string name="widget_opacity_title">Widget background opacity</string>
+    <string name="widget_opacity_description">Adjust the home screen widget background opacity. 100%% is fully opaque.</string>
+    <string name="special_access_section">SPECIAL ACCESS</string>
+    <string name="usage_access_button">Data usage</string>
+    <string name="refresh_data">Refresh data</string>
+    <string name="last_updated">Last updated: %1$s</string>
+
+    <plurals name="cpu_cores_value">
+        <item quantity="one">%1$d core (%2$s)</item>
+        <item quantity="other">%1$d cores (%2$s)</item>
+    </plurals>
+
+    <string name="battery_status_charging">Charging</string>
+    <string name="battery_status_discharging">In use</string>
+    <string name="battery_status_full">Full</string>
+    <string name="battery_status_not_charging">Not charging</string>
+    <string name="battery_health_good">Good</string>
+    <string name="battery_health_overheat">Hot</string>
+    <string name="battery_health_dead">Worn</string>
+    <string name="battery_health_over_voltage">Overvoltage</string>
+    <string name="battery_health_cold">Cold</string>
+    <string name="battery_time_until_full_hours">%1$dh %2$dm until full</string>
+    <string name="battery_time_until_full_minutes">%1$dm until full</string>
+    <string name="battery_time_remaining_hours">~%1$dh %2$dm</string>
+    <string name="battery_time_remaining_minutes">~%1$dm</string>
+    <string name="wifi_connected">Wi-Fi connected</string>
+    <string name="not_connected">Not connected</string>
+    <string name="mobile_data_today_label">DATA TODAY</string>
+    <string name="mobile_data_since_boot_label">DATA SINCE BOOT</string>
+    <string name="mobile_data_label">MOBILE DATA</string>
+    <string name="cpu_load_label">load</string>
+    <string name="cpu_frequency_label">frequency</string>
+    <string name="uptime_short">%1$dh %2$dm</string>
+
+    <string name="monitor_channel_name">System monitoring</string>
+    <string name="monitor_channel_description">Updates live system and battery information to the widget.</string>
+    <string name="monitor_notification_title">Device Watch is running</string>
+    <string name="monitor_notification_text">Monitoring device status and updating the widget.</string>
+    <string name="battery_full_channel_name">Battery alerts</string>
+    <string name="battery_full_channel_description">Notifications for charging and battery status.</string>
+    <string name="battery_full_notification_title">Battery fully charged</string>
+    <string name="battery_full_notification_text">Battery has reached 100%% while the screensaver is active.</string>
+
+    <string name="widget_tile_battery">BATTERY</string>
+    <string name="widget_tile_memory">MEMORY</string>
+    <string name="widget_tile_cpu">CPU</string>
+    <string name="widget_tile_storage">STORAGE</string>
+    <string name="widget_tile_network">NETWORK</string>
+    <string name="widget_tile_battery_health">BATTERY HEALTH</string>
+    <string name="widget_free_value">%1$s free</string>
+    <string name="widget_today_value">%1$s today</string>
+    <string name="widget_mobile_network">Mobile network</string>
+    <string name="widget_signal_line">%1$s · %2$s signal</string>
+    <string name="widget_uptime">Uptime %1$s</string>
+    <string name="widget_updated">Updated %1$s</string>
+    <string name="widget_capacity_label">CAPACITY</string>
+    <string name="signal_unavailable">signal %1$s</string>
+    <string name="signal_strong">strong</string>
+    <string name="signal_medium">medium</string>
+    <string name="signal_weak">weak</string>
+    <string name="health_capacity_unavailable">not available</string>
+    <string name="cycles_unavailable">cycles unavailable</string>
+    <plurals name="cpu_cores_short">
+        <item quantity="one">%1$d core</item>
+        <item quantity="other">%1$d cores</item>
+    </plurals>
+    <plurals name="battery_cycles">
+        <item quantity="one">%1$d charge cycle</item>
+        <item quantity="other">%1$d charge cycles</item>
+    </plurals>
+
+    <string name="dream_date_pattern">EEEE, MMMM d</string>
+    <string name="dream_battery_full">Full</string>
+    <string name="dream_charging">Charging</string>
+    <string name="dream_on_battery">On battery</string>
+    <string name="dream_full_time_estimate">Full, estimated around %1$s</string>
+    <string name="dream_full_time_unknown">Full, estimated around --:--</string>
 </resources>
