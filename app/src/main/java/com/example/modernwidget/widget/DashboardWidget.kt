@@ -396,7 +396,7 @@ fun WidgetContent() {
 
         Spacer(modifier = GlanceModifier.height(8.dp))
 
-        // Mobiiliverkkorivi (täysleveä)
+        // Full-width mobile network row
         Column(
             modifier = GlanceModifier
                 .fillMaxWidth()

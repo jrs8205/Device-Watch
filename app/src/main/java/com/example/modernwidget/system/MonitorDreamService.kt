@@ -222,7 +222,7 @@ fun ScreensaverContent(context: Context) {
         val secondsSize = (clockSize * 0.25f).toInt().coerceAtLeast(22)
         val centerGap = if (maxWidth < 700.dp) 18.dp else 32.dp
 
-        // Pääsäiliö (kierto hoitaa 180 asteen peilauksen/käännön dynaamisesti)
+        // Main container; rotation handles the 180-degree layout flip dynamically.
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -306,7 +306,7 @@ fun ScreensaverContent(context: Context) {
             }
         }
 
-        // Suunnanvaihto-nappula (Oikeassa alakulmassa, ei pyöri mukana)
+        // Rotation button in the bottom-right corner; it does not rotate with the content.
         Box(
             modifier = Modifier
                 .align(Alignment.BottomEnd)

@@ -72,7 +72,7 @@ fun SystemDashboardScreen() {
     var isWidgetInstalled by remember { mutableStateOf(false) }
     var lastUpdatedTime by remember { mutableStateOf("--:--") }
 
-    // Käynnistetään taustapalvelu
+    // Start the background monitoring service.
     fun startSystemMonitorService() {
         val serviceIntent = Intent(context, SystemMonitorService::class.java)
         try {
@@ -208,7 +208,7 @@ fun SystemDashboardScreen() {
                     }
                 }
 
-                // Akku-osio
+                // Battery section
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(20.dp),
@@ -378,7 +378,7 @@ fun SystemDashboardScreen() {
 
                         var opacityValue by remember { mutableFloatStateOf(0.86f) }
                         
-                        // Luetaan tallennettu tila käynnistyksessä
+                        // Load the saved widget opacity on startup.
                         LaunchedEffect(Unit) {
                             val manager = GlanceAppWidgetManager(context)
                             val glanceIds = manager.getGlanceIds(DashboardWidget::class.java)
