@@ -39,25 +39,22 @@ import androidx.glance.unit.ColorProvider
 import androidx.glance.action.actionParametersOf
 import androidx.glance.action.clickable
 import com.example.modernwidget.R
-import com.example.modernwidget.system.UNAVAILABLE_DOUBLE
-import com.example.modernwidget.system.UNAVAILABLE_INT
-import com.example.modernwidget.system.UNAVAILABLE_TEXT
+import com.example.modernwidget.data.UNAVAILABLE_DOUBLE
+import com.example.modernwidget.data.UNAVAILABLE_INT
+import com.example.modernwidget.data.UNAVAILABLE_TEXT
 import java.util.Locale
 
 class WidgetColors(
     val cardBackground: ColorProvider,
-    val cardBorder: ColorProvider,
     val tileBackground: ColorProvider,
-    val tileBorder: ColorProvider,
     val progressTrack: ColorProvider,
     val textPrimary: ColorProvider,
-    val textSecondary: ColorProvider,
     val textMuted: ColorProvider,
     val labelText: ColorProvider,
     val capacityText: ColorProvider,
     val bandChipBg: ColorProvider,
     val bandText: ColorProvider,
-    
+
     // Accents
     val batteryAccent: ColorProvider,
     val ramAccent: ColorProvider,
@@ -68,32 +65,6 @@ class WidgetColors(
     val mobileAccent: ColorProvider,
     val downloadAccent: ColorProvider,
     val uploadAccent: ColorProvider,
-    val locationAccent: ColorProvider,
-    val nfcAccent: ColorProvider,
-    val dndAccent: ColorProvider,
-    
-    // Live Pill
-    val livePillBg: ColorProvider,
-    val liveGreen: ColorProvider,
-    val liveBolt: ColorProvider,
-
-    // Status Chips
-    val dndChipBg: ColorProvider,
-    val dndChipBorder: ColorProvider,
-    val bluetoothChipBg: ColorProvider,
-    val bluetoothChipBorder: ColorProvider,
-    val locationChipBg: ColorProvider,
-    val locationChipBorder: ColorProvider,
-    val nfcChipBg: ColorProvider,
-    val nfcChipBorder: ColorProvider,
-    val powerSaveChipBg: ColorProvider,
-    val powerSaveChipBorder: ColorProvider,
-    val airplaneChipBg: ColorProvider,
-    val airplaneChipBorder: ColorProvider,
-
-    // Button
-    val buttonBg: ColorProvider,
-    val buttonText: ColorProvider
 )
 
 enum class MetricTileKind {
@@ -106,18 +77,15 @@ fun getWidgetColors(isDark: Boolean, opacity: Float): WidgetColors {
     return if (isDark) {
         WidgetColors(
             cardBackground = ColorProvider(Color(0xFF12151A).copy(alpha = opacity)),
-            cardBorder = ColorProvider(Color(0x12FFFFFF)),
             tileBackground = ColorProvider(Color(0x0AFFFFFF)), // rgba(255,255,255,0.04)
-            tileBorder = ColorProvider(Color(0x0DFFFFFF)),
             progressTrack = ColorProvider(Color(0x14FFFFFF)),
             textPrimary = ColorProvider(Color(0xFFFFFFFF)),
-            textSecondary = ColorProvider(Color(0xFF9AA0A8)),
             textMuted = ColorProvider(Color(0xFF7B828C)),
             labelText = ColorProvider(Color(0xFF8B929C)),
             capacityText = ColorProvider(Color(0xFFD7DADE)),
             bandChipBg = ColorProvider(Color(0x2438BDF8)),
             bandText = ColorProvider(Color(0xFF7DD3FC)),
-            
+
             batteryAccent = ColorProvider(Color(0xFF34D399)),
             ramAccent = ColorProvider(Color(0xFFFB923C)),
             cpuAccent = ColorProvider(Color(0xFF22D3EE)),
@@ -127,45 +95,19 @@ fun getWidgetColors(isDark: Boolean, opacity: Float): WidgetColors {
             mobileAccent = ColorProvider(Color(0xFF38BDF8)),
             downloadAccent = ColorProvider(Color(0xFF34D399)),
             uploadAccent = ColorProvider(Color(0xFFFB923C)),
-            locationAccent = ColorProvider(Color(0xFF34D399)),
-            nfcAccent = ColorProvider(Color(0xFF2DD4BF)),
-            dndAccent = ColorProvider(Color(0xFFA78BFA)),
-            
-            livePillBg = ColorProvider(Color(0x1F34D399)),
-            liveGreen = ColorProvider(Color(0xFF34D399)),
-            liveBolt = ColorProvider(Color(0xFFFBBF24)),
-
-            dndChipBg = ColorProvider(Color(0x24A78BFA)),
-            dndChipBorder = ColorProvider(Color(0x47A78BFA)),
-            bluetoothChipBg = ColorProvider(Color(0x2438BDF8)),
-            bluetoothChipBorder = ColorProvider(Color(0x4738BDF8)),
-            locationChipBg = ColorProvider(Color(0x2434D399)),
-            locationChipBorder = ColorProvider(Color(0x4734D399)),
-            nfcChipBg = ColorProvider(Color(0x242DD4BF)),
-            nfcChipBorder = ColorProvider(Color(0x472DD4BF)),
-            powerSaveChipBg = ColorProvider(Color(0x2434D399)),
-            powerSaveChipBorder = ColorProvider(Color(0x4734D399)),
-            airplaneChipBg = ColorProvider(Color(0x24A78BFA)),
-            airplaneChipBorder = ColorProvider(Color(0x47A78BFA)),
-
-            buttonBg = ColorProvider(Color(0xFF38BDF8)),
-            buttonText = ColorProvider(Color(0xFF0A1722))
         )
     } else {
         WidgetColors(
             cardBackground = ColorProvider(Color(0xFFFFFFFF).copy(alpha = opacity)),
-            cardBorder = ColorProvider(Color(0x12000000)),     // rgba(0,0,0,0.07)
             tileBackground = ColorProvider(Color(0x09000000)), // rgba(0,0,0,0.035)
-            tileBorder = ColorProvider(Color(0x0F000000)),     // rgba(0,0,0,0.06)
             progressTrack = ColorProvider(Color(0x17000000)),  // rgba(0,0,0,0.09)
             textPrimary = ColorProvider(Color(0xFF1A1D21)),
-            textSecondary = ColorProvider(Color(0xFF6B7280)),
             textMuted = ColorProvider(Color(0xFF8A909A)),
             labelText = ColorProvider(Color(0xFF7A818B)),
             capacityText = ColorProvider(Color(0xFF2A2E33)),
             bandChipBg = ColorProvider(Color(0x2438BDF8)),
             bandText = ColorProvider(Color(0xFF0284C7)),
-            
+
             batteryAccent = ColorProvider(Color(0xFF84CC16)),
             ramAccent = ColorProvider(Color(0xFFFB923C)),
             cpuAccent = ColorProvider(Color(0xFF22D3EE)),
@@ -175,29 +117,6 @@ fun getWidgetColors(isDark: Boolean, opacity: Float): WidgetColors {
             mobileAccent = ColorProvider(Color(0xFF0284C7)),
             downloadAccent = ColorProvider(Color(0xFF34D399)),
             uploadAccent = ColorProvider(Color(0xFFFB923C)),
-            locationAccent = ColorProvider(Color(0xFF16A34A)),
-            nfcAccent = ColorProvider(Color(0xFF2DD4BF)),
-            dndAccent = ColorProvider(Color(0xFF7C3AED)),
-            
-            livePillBg = ColorProvider(Color(0x1F15803D)),
-            liveGreen = ColorProvider(Color(0xFF15803D)),
-            liveBolt = ColorProvider(Color(0xFFD97706)),
-
-            dndChipBg = ColorProvider(Color(0x247C3AED)),
-            dndChipBorder = ColorProvider(Color(0x477C3AED)),
-            bluetoothChipBg = ColorProvider(Color(0x2438BDF8)),
-            bluetoothChipBorder = ColorProvider(Color(0x4738BDF8)),
-            locationChipBg = ColorProvider(Color(0x2416A34A)),
-            locationChipBorder = ColorProvider(Color(0x4716A34A)),
-            nfcChipBg = ColorProvider(Color(0x242DD4BF)),
-            nfcChipBorder = ColorProvider(Color(0x472DD4BF)),
-            powerSaveChipBg = ColorProvider(Color(0x2484CC16)),
-            powerSaveChipBorder = ColorProvider(Color(0x4784CC16)),
-            airplaneChipBg = ColorProvider(Color(0x247C3AED)),
-            airplaneChipBorder = ColorProvider(Color(0x477C3AED)),
-
-            buttonBg = ColorProvider(Color(0xFF0284C7)),
-            buttonText = ColorProvider(Color(0xFFFFFFFF))
         )
     }
 }
@@ -223,7 +142,7 @@ fun WidgetContent() {
     val prefs = currentState<Preferences>()
     val opacity = prefs[RefreshStatsAction.BACKGROUND_OPACITY] ?: (if (isDark) 0.86f else 0.94f)
     val colors = getWidgetColors(isDark, opacity)
-    
+
     val batteryLevel = prefs[RefreshStatsAction.BATTERY_LEVEL] ?: UNAVAILABLE_INT
     val batteryStatus = prefs[RefreshStatsAction.BATTERY_STATUS] ?: UNAVAILABLE_TEXT
     val batteryHealth = prefs[RefreshStatsAction.BATTERY_HEALTH] ?: UNAVAILABLE_TEXT
@@ -271,7 +190,7 @@ fun WidgetContent() {
             .cornerRadius(30.dp)
             .padding(22.dp)
     ) {
-        // Ruudukko 2x3 (6 metriikkalaattaa, gap 12dp)
+        // 2x3 grid (6 metric tiles, 12dp gap)
         Column(
             modifier = GlanceModifier.fillMaxWidth().defaultWeight()
         ) {
@@ -473,7 +392,7 @@ fun WidgetContent() {
 
         Spacer(modifier = GlanceModifier.height(12.dp))
 
-        // Footer-rivi
+        // Footer row
         Row(
             modifier = GlanceModifier.fillMaxWidth(),
             verticalAlignment = Alignment.Vertical.CenterVertically
@@ -510,7 +429,7 @@ fun WidgetContent() {
 fun ProgressBar(percent: Int, activeColor: ColorProvider, trackColor: ColorProvider) {
     val totalWidth = 100
     val activeWidth = (totalWidth * percent.coerceIn(0, 100)) / 100
-    
+
     Box(
         modifier = GlanceModifier
             .width(totalWidth.dp)
@@ -806,42 +725,5 @@ fun mobileDataText(usedGb: Double, totalGb: Double): String {
         usedGb < 0.0 -> UNAVAILABLE_TEXT
         totalGb > 0.0 -> "${gbText(usedGb)} / ${gbText(totalGb, 0)}"
         else -> gbText(usedGb)
-    }
-}
-
-@Composable
-fun StatusChip(
-    name: String,
-    isActive: Boolean,
-    isKnown: Boolean,
-    activeBg: ColorProvider,
-    activeBorder: ColorProvider,
-    modifier: GlanceModifier = GlanceModifier,
-    colors: WidgetColors
-) {
-    val bg = if (isKnown && isActive) activeBg else colors.tileBackground
-    val textColor = if (isKnown && isActive) colors.textPrimary else colors.textMuted
-    val prefix = when {
-        !isKnown -> "— "
-        isActive -> "● "
-        else -> "○ "
-    }
-
-    Box(
-        modifier = modifier
-            .background(bg)
-            .cornerRadius(14.dp)
-            .padding(vertical = 14.dp, horizontal = 10.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = prefix + name,
-            style = TextStyle(
-                color = textColor,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold
-            ),
-            maxLines = 2
-        )
     }
 }

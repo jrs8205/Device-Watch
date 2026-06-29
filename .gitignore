@@ -5,5 +5,14 @@ app/build/
 local.properties
 keystore.properties
 *.jks
+keystores/
 .idea/
 *.apk
+
+# Local working files (kept out of the published repository)
+HANDOFF_*.md
+BUGIRAPORTTI_*.md
+sovelluksen tiedot.txt
+widget-screen.png
+*.zip
+Widget-näytön parantaminen/

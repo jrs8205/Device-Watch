@@ -30,22 +30,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
-import androidx.glance.appwidget.GlanceAppWidgetManager
-import androidx.glance.appwidget.state.getAppWidgetState
-import androidx.glance.appwidget.state.updateAppWidgetState
-import androidx.glance.state.PreferencesGlanceStateDefinition
-import com.example.modernwidget.ui.theme.ModernWidgetTheme
-import com.example.modernwidget.widget.DashboardWidget
-import com.example.modernwidget.widget.RefreshStatsAction
-import com.example.modernwidget.widget.WidgetStateUpdater
-import com.example.modernwidget.system.SystemStatsHelper
-import com.example.modernwidget.system.SystemStats
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.modernwidget.presentation.DashboardViewModel
 import com.example.modernwidget.system.SystemMonitorService
-import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import com.example.modernwidget.ui.theme.ModernWidgetTheme
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -64,15 +56,11 @@ class MainActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SystemDashboardScreen() {
+fun SystemDashboardScreen(viewModel: DashboardViewModel = hiltViewModel()) {
     val context = LocalContext.current
-    val coroutineScope = rememberCoroutineScope()
-    
-    var stats by remember { mutableStateOf<SystemStats?>(null) }
-    var isWidgetInstalled by remember { mutableStateOf(false) }
-    var lastUpdatedTime by remember { mutableStateOf("--:--") }
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    // Start the background monitoring service.
+    // Start the background monitoring service (independent of the notification permission result).
     fun startSystemMonitorService() {
         val serviceIntent = Intent(context, SystemMonitorService::class.java)
         try {
@@ -83,15 +71,6 @@ fun SystemDashboardScreen() {
             }
         } catch (e: Exception) {
             e.printStackTrace()
-        }
-    }
-
-    fun refreshStats() {
-        coroutineScope.launch {
-            val currentStats = SystemStatsHelper.getStats(context)
-            stats = currentStats
-            lastUpdatedTime = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
-            isWidgetInstalled = WidgetStateUpdater.updateAll(context, currentStats)
         }
     }
 
@@ -126,11 +105,12 @@ fun SystemDashboardScreen() {
         contract = ActivityResultContracts.RequestMultiplePermissions()
     ) {
         startSystemMonitorService()
-        refreshStats()
+        viewModel.refresh()
     }
 
     LaunchedEffect(Unit) {
-        refreshStats()
+        viewModel.refresh()
+        viewModel.loadWidgetOpacity()
         val missingPermissions = missingRuntimePermissions()
         if (missingPermissions.isNotEmpty()) {
             runtimePermissionLauncher.launch(missingPermissions)
@@ -149,7 +129,7 @@ fun SystemDashboardScreen() {
                     )
                 },
                 actions = {
-                    IconButton(onClick = { refreshStats() }) {
+                    IconButton(onClick = { viewModel.refresh() }) {
                         Icon(
                             imageVector = Icons.Default.Refresh,
                             contentDescription = stringResource(R.string.refresh),
@@ -163,7 +143,8 @@ fun SystemDashboardScreen() {
             )
         }
     ) { paddingValues ->
-        stats?.let { currentStats ->
+        val currentStats = uiState.stats
+        if (currentStats != null) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -173,11 +154,11 @@ fun SystemDashboardScreen() {
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Widget-yhteyden tila
+                // Widget connection status
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(
-                        containerColor = if (isWidgetInstalled) {
+                        containerColor = if (uiState.isWidgetInstalled) {
                             MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)
                         } else {
                             MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.15f)
@@ -193,11 +174,11 @@ fun SystemDashboardScreen() {
                             modifier = Modifier
                                 .size(10.dp)
                                 .clip(CircleShape)
-                                .background(if (isWidgetInstalled) Color(0xFF4CAF50) else Color(0xFFFF9800))
+                                .background(if (uiState.isWidgetInstalled) Color(0xFF4CAF50) else Color(0xFFFF9800))
                         )
                         Spacer(modifier = Modifier.width(12.dp))
                         Text(
-                            text = if (isWidgetInstalled) {
+                            text = if (uiState.isWidgetInstalled) {
                                 stringResource(R.string.widget_active_message)
                             } else {
                                 stringResource(R.string.widget_not_added_message)
@@ -225,7 +206,7 @@ fun SystemDashboardScreen() {
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.fillMaxWidth()
                         )
-                        
+
                         Spacer(modifier = Modifier.height(16.dp))
 
                         Box(
@@ -278,7 +259,7 @@ fun SystemDashboardScreen() {
                     }
                 }
 
-                // Resurssit (RAM & CPU)
+                // Resources (RAM & CPU)
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(20.dp),
@@ -309,9 +290,9 @@ fun SystemDashboardScreen() {
                                 color = MaterialTheme.colorScheme.primary
                             )
                         }
-                        
+
                         Spacer(modifier = Modifier.height(8.dp))
-                        
+
                         LinearProgressIndicator(
                             progress = { currentStats.ramPercent.toFloat() / 100f },
                             modifier = Modifier
@@ -326,7 +307,7 @@ fun SystemDashboardScreen() {
                         HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        // CPU tiedot & Uptime
+                        // CPU info & Uptime
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
@@ -352,7 +333,7 @@ fun SystemDashboardScreen() {
                     }
                 }
 
-                // Widgetin Asetukset
+                // Widget settings
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(20.dp),
@@ -373,64 +354,31 @@ fun SystemDashboardScreen() {
                             fontWeight = FontWeight.Medium,
                             fontSize = 14.sp
                         )
-                        
-                        Spacer(modifier = Modifier.height(4.dp))
 
-                        var opacityValue by remember { mutableFloatStateOf(0.86f) }
-                        
-                        // Load the saved widget opacity on startup.
-                        LaunchedEffect(Unit) {
-                            val manager = GlanceAppWidgetManager(context)
-                            val glanceIds = manager.getGlanceIds(DashboardWidget::class.java)
-                            if (glanceIds.isNotEmpty()) {
-                                try {
-                                    val state = getAppWidgetState(context, PreferencesGlanceStateDefinition, glanceIds.first())
-                                    opacityValue = state[RefreshStatsAction.BACKGROUND_OPACITY] ?: 0.86f
-                                } catch (e: Exception) {
-                                    e.printStackTrace()
-                                }
-                            }
-                        }
+                        Spacer(modifier = Modifier.height(4.dp))
 
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Slider(
-                                value = opacityValue,
-                                onValueChange = { newValue ->
-                                    opacityValue = newValue
-                                },
-                                onValueChangeFinished = {
-                                    coroutineScope.launch {
-                                        val manager = GlanceAppWidgetManager(context)
-                                        val glanceIds = manager.getGlanceIds(DashboardWidget::class.java)
-                                        if (glanceIds.isNotEmpty()) {
-                                            for (glanceId in glanceIds) {
-                                                updateAppWidgetState(context, PreferencesGlanceStateDefinition, glanceId) { prefs ->
-                                                    prefs.toMutablePreferences().apply {
-                                                        this[RefreshStatsAction.BACKGROUND_OPACITY] = opacityValue
-                                                    }
-                                                }
-                                                DashboardWidget().update(context, glanceId)
-                                            }
-                                        }
-                                    }
-                                },
+                                value = uiState.widgetOpacity,
+                                onValueChange = { viewModel.onWidgetOpacityChange(it) },
+                                onValueChangeFinished = { viewModel.commitWidgetOpacity() },
                                 valueRange = 0.30f..1.0f,
                                 modifier = Modifier.weight(1f)
                             )
-                            
+
                             Spacer(modifier = Modifier.width(12.dp))
-                            
+
                             Text(
-                                text = "${(opacityValue * 100).toInt()}%",
+                                text = "${(uiState.widgetOpacity * 100).toInt()}%",
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold,
                                 modifier = Modifier.width(42.dp)
                             )
                         }
-                        
+
                         Text(
                             text = stringResource(R.string.widget_opacity_description),
                             fontSize = 11.sp,
@@ -472,7 +420,7 @@ fun SystemDashboardScreen() {
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Button(
-                    onClick = { refreshStats() },
+                    onClick = { viewModel.refresh() },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(50.dp),
@@ -482,15 +430,17 @@ fun SystemDashboardScreen() {
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(stringResource(R.string.refresh_data))
                 }
-                
+
                 Text(
-                    text = stringResource(R.string.last_updated, lastUpdatedTime),
+                    text = stringResource(R.string.last_updated, uiState.lastUpdated),
                     fontSize = 11.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-        } ?: Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator()
+        } else {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
         }
     }
 }

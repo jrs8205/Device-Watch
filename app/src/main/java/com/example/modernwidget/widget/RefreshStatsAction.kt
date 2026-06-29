@@ -8,6 +8,8 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.glance.GlanceId
 import androidx.glance.action.ActionParameters
 import androidx.glance.appwidget.action.ActionCallback
+import com.example.modernwidget.di.RepositoryEntryPoint
+import dagger.hilt.android.EntryPointAccessors
 
 class RefreshStatsAction : ActionCallback {
     override suspend fun onAction(
@@ -15,7 +17,10 @@ class RefreshStatsAction : ActionCallback {
         glanceId: GlanceId,
         parameters: ActionParameters
     ) {
-        WidgetStateUpdater.updateOne(context, glanceId)
+        val repository = EntryPointAccessors
+            .fromApplication(context.applicationContext, RepositoryEntryPoint::class.java)
+            .systemStatsRepository()
+        WidgetStateUpdater.updateOne(context, glanceId, repository.getStats())
     }
 
     companion object {

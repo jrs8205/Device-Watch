@@ -6,14 +6,20 @@ import androidx.glance.GlanceId
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.state.updateAppWidgetState
 import androidx.glance.state.PreferencesGlanceStateDefinition
-import com.example.modernwidget.system.SystemStats
-import com.example.modernwidget.system.SystemStatsHelper
+import com.example.modernwidget.data.SystemStats
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+/**
+ * Single write path for the Glance widget state. Callers obtain fresh [SystemStats]
+ * from [com.example.modernwidget.data.SystemStatsRepository] and hand them here; this
+ * object only serializes them into DataStore and asks Glance to re-render.
+ */
 object WidgetStateUpdater {
-    suspend fun updateAll(context: Context, stats: SystemStats = SystemStatsHelper.getStats(context)): Boolean {
+
+    /** Writes [stats] to every installed widget; returns whether any widget exists. */
+    suspend fun updateAll(context: Context, stats: SystemStats): Boolean {
         val manager = GlanceAppWidgetManager(context)
         val glanceIds = manager.getGlanceIds(DashboardWidget::class.java)
         val now = currentTime()
@@ -25,7 +31,8 @@ object WidgetStateUpdater {
         return glanceIds.isNotEmpty()
     }
 
-    suspend fun updateOne(context: Context, glanceId: GlanceId, stats: SystemStats = SystemStatsHelper.getStats(context)) {
+    /** Writes [stats] to a single widget instance. */
+    suspend fun updateOne(context: Context, glanceId: GlanceId, stats: SystemStats) {
         writeAndUpdate(context, glanceId, stats, currentTime())
     }
 

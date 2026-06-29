@@ -1,7 +1,7 @@
-package com.example.modernwidget.system
+package com.example.modernwidget.data
 
-import android.annotation.TargetApi
 import android.Manifest
+import android.annotation.TargetApi
 import android.app.ActivityManager
 import android.app.AppOpsManager
 import android.app.usage.NetworkStatsManager
@@ -20,6 +20,7 @@ import android.os.Environment
 import android.os.Process
 import android.os.StatFs
 import android.os.SystemClock
+import android.telephony.AccessNetworkConstants
 import android.telephony.CellInfo
 import android.telephony.CellInfoCdma
 import android.telephony.CellInfoGsm
@@ -27,69 +28,43 @@ import android.telephony.CellInfoLte
 import android.telephony.CellInfoNr
 import android.telephony.CellInfoTdscdma
 import android.telephony.CellInfoWcdma
-import android.telephony.AccessNetworkConstants
-import android.telephony.NetworkRegistrationInfo
 import android.telephony.ServiceState
 import android.telephony.TelephonyManager
 import androidx.core.content.ContextCompat
 import com.example.modernwidget.R
+import com.example.modernwidget.di.DefaultDispatcher
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.Calendar
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlin.math.abs
-import kotlin.math.roundToInt
 
-const val UNAVAILABLE_TEXT = "—"
-const val UNAVAILABLE_INT = -1
-const val UNAVAILABLE_DOUBLE = -1.0
+@Singleton
+class SystemStatsRepositoryImpl @Inject constructor(
+    @ApplicationContext private val context: Context,
+    @DefaultDispatcher private val dispatcher: CoroutineDispatcher,
+) : SystemStatsRepository {
 
-data class SystemStats(
-    val batteryLevel: Int,
-    val batteryStatus: String,
-    val batteryHealth: String,
-    val batteryTemp: Double,
-    val batteryVoltage: Double,
-    val timeRemainingText: String,
-    val batteryCycleCount: Int,
-    val batteryCapacityPercent: Int,
-    val totalRamGb: Double,
-    val usedRamGb: Double,
-    val ramPercent: Int,
-    val cpuCores: Int,
-    val cpuAbi: String,
-    val cpuFreqGhz: Double,
-    val cpuLoadPercent: Int,
-    val cpuLoadLabel: String,
-    val cpuTemp: Double,
-    val totalStorageGb: Double,
-    val usedStorageGb: Double,
-    val storagePercent: Int,
-    val wifiSsid: String,
-    val wifiBand: String,
-    val wifiSpeedDown: Int,
-    val wifiSpeedUp: Int,
-    val wifiBytesTodayGb: Double,
-    val operatorName: String,
-    val mobileNetworkType: String,
-    val mobileSignalDbm: Int,
-    val mobileDataUsedGb: Double,
-    val mobileDataTotalGb: Double,
-    val mobileDataLabel: String,
-    val uptimeText: String
-)
-
-object SystemStatsHelper {
-
-    private data class CpuSnapshot(val idle: Long, val total: Long)
-    private data class CpuLoadResult(val percent: Int, val label: String)
-    private data class CpuFreqResidencySnapshot(val statesByCore: Map<Int, Map<Long, Long>>)
-
-    private var previousCpuSnapshot: CpuSnapshot? = null
-    private var previousCpuFreqResidencySnapshot: CpuFreqResidencySnapshot? = null
+    // CPU load needs to compare two samples over time. These snapshots persist across
+    // calls; the mutex below guarantees only one computation touches them at a time.
+    private var previousCpuSnapshot: SystemStatsParser.CpuSnapshot? = null
+    private var previousResidencyByCore: Map<Int, Map<Long, Long>>? = null
     private val unavailableFilePaths = mutableSetOf<String>()
-    @Volatile private var skipThermalRead = false
+    private var skipThermalRead = false
+
+    private val statsMutex = Mutex()
+
+    override suspend fun getStats(): SystemStats = withContext(dispatcher) {
+        statsMutex.withLock { computeStats() }
+    }
 
     @Suppress("DEPRECATION")
-    fun getStats(context: Context): SystemStats {
+    private fun computeStats(): SystemStats {
         val batteryStatusIntent = context.registerReceiver(
             null,
             IntentFilter(Intent.ACTION_BATTERY_CHANGED)
@@ -139,7 +114,7 @@ object SystemStatsHelper {
             ?: UNAVAILABLE_INT
         val batteryCapacityPercent = readBatteryCapacityPercent()
 
-        val timeRemainingText = buildBatteryTimeText(context, status, batteryManager)
+        val timeRemainingText = buildBatteryTimeText(status, batteryManager)
 
         val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
         val memoryInfo = ActivityManager.MemoryInfo()
@@ -153,7 +128,7 @@ object SystemStatsHelper {
         val cpuAbi = Build.SUPPORTED_ABIS.firstOrNull() ?: UNAVAILABLE_TEXT
         val cpuFreqGhz = readCpuFreqGhz(cpuCores)
         val cpuTemp = readCpuTemperature()
-        val cpuLoad = readCpuLoad(context, cpuCores)
+        val cpuLoad = readCpuLoad(cpuCores)
 
         val stat = StatFs(Environment.getDataDirectory().path)
         val blockSize = stat.blockSizeLong
@@ -180,22 +155,22 @@ object SystemStatsHelper {
         var wifiBand = UNAVAILABLE_TEXT
         var wifiSpeedDown = UNAVAILABLE_INT
         var wifiSpeedUp = UNAVAILABLE_INT
-        if (isWifiConnected) {
+        if (isWifiConnected && capabilities != null) {
             wifiSpeedDown = capabilities.linkDownstreamBandwidthKbps.takeIf { it > 0 }?.div(1000) ?: UNAVAILABLE_INT
             wifiSpeedUp = capabilities.linkUpstreamBandwidthKbps.takeIf { it > 0 }?.div(1000) ?: UNAVAILABLE_INT
 
-            if (canReadWifiIdentity(context)) {
+            if (canReadWifiIdentity()) {
                 try {
                     val wifiInfo = wifiInfoFromCapabilities(capabilities) ?: wifiManager?.connectionInfo
-                    wifiSsid = normalizedWifiSsid(wifiInfo?.ssid) ?: wifiSsid
-                    wifiBand = wifiBandLabel(wifiInfo?.frequency ?: UNAVAILABLE_INT)
+                    wifiSsid = SystemStatsParser.normalizedWifiSsid(wifiInfo?.ssid) ?: wifiSsid
+                    wifiBand = SystemStatsParser.wifiBandLabel(wifiInfo?.frequency ?: UNAVAILABLE_INT)
                 } catch (_: SecurityException) {
                     wifiSsid = context.getString(R.string.wifi_connected)
                     wifiBand = UNAVAILABLE_TEXT
                 }
             }
         }
-        val wifiBytesTodayGb = readNetworkUsageGb(context, ConnectivityManager.TYPE_WIFI)
+        val wifiBytesTodayGb = readNetworkUsageGb(ConnectivityManager.TYPE_WIFI)
 
         val telephonyManager = context.getSystemService(Context.TELEPHONY_SERVICE) as? TelephonyManager
         var operatorName = UNAVAILABLE_TEXT
@@ -207,15 +182,15 @@ object SystemStatsHelper {
                     telephonyManager.networkOperatorName,
                     telephonyManager.simOperatorName
                 ) ?: UNAVAILABLE_TEXT
-                mobileNetworkType = readMobileNetworkTypeLabel(context, telephonyManager)
-                mobileSignalDbm = readMobileSignalDbm(context, telephonyManager)
+                mobileNetworkType = readMobileNetworkTypeLabel(telephonyManager)
+                mobileSignalDbm = readMobileSignalDbm(telephonyManager)
             }
         } catch (_: SecurityException) {
             operatorName = UNAVAILABLE_TEXT
             mobileNetworkType = UNAVAILABLE_TEXT
             mobileSignalDbm = UNAVAILABLE_INT
         }
-        val mobileDataTodayGb = readNetworkUsageGb(context, ConnectivityManager.TYPE_MOBILE)
+        val mobileDataTodayGb = readNetworkUsageGb(ConnectivityManager.TYPE_MOBILE)
         val mobileTrafficSinceBootGb = readMobileTrafficStatsGb()
         val mobileDataUsedGb = if (mobileDataTodayGb >= 0.0) mobileDataTodayGb else mobileTrafficSinceBootGb
         val mobileDataTotalGb = UNAVAILABLE_DOUBLE
@@ -266,7 +241,9 @@ object SystemStatsHelper {
         )
     }
 
-    private fun buildBatteryTimeText(context: Context, status: Int, batteryManager: BatteryManager?): String {
+    private data class CpuLoadResult(val percent: Int, val label: String)
+
+    private fun buildBatteryTimeText(status: Int, batteryManager: BatteryManager?): String {
         if (batteryManager == null) return UNAVAILABLE_TEXT
 
         return if (status == BatteryManager.BATTERY_STATUS_CHARGING) {
@@ -317,11 +294,7 @@ object SystemStatsHelper {
             "/sys/class/power_supply/battery/charge_full_design_uah",
             "/sys/class/power_supply/bms/charge_full_design"
         )
-        return if (chargeFull != null && chargeFullDesign != null && chargeFullDesign > 0L) {
-            ((chargeFull.toDouble() / chargeFullDesign.toDouble()) * 100).toInt().coerceIn(0, 150)
-        } else {
-            UNAVAILABLE_INT
-        }
+        return SystemStatsParser.batteryCapacityPercent(chargeFull, chargeFullDesign)
     }
 
     private fun readCpuFreqGhz(cpuCores: Int): Double {
@@ -369,8 +342,7 @@ object SystemStatsHelper {
         }
     }
 
-    @Synchronized
-    private fun readCpuLoad(context: Context, cpuCores: Int): CpuLoadResult {
+    private fun readCpuLoad(cpuCores: Int): CpuLoadResult {
         val procStatLoad = readProcStatCpuLoadPercent()
         if (procStatLoad != UNAVAILABLE_INT) {
             return CpuLoadResult(procStatLoad, context.getString(R.string.cpu_load_label))
@@ -390,141 +362,62 @@ object SystemStatsHelper {
     }
 
     private fun readProcStatCpuLoadPercent(): Int {
-        val current = readCpuSnapshot() ?: return UNAVAILABLE_INT
+        val current = SystemStatsParser.parseCpuSnapshot(
+            readFileTextOnce("/proc/stat")?.lineSequence()?.firstOrNull()
+        ) ?: return UNAVAILABLE_INT
         val previous = previousCpuSnapshot
         previousCpuSnapshot = current
         if (previous == null) return UNAVAILABLE_INT
-
-        val totalDelta = current.total - previous.total
-        val idleDelta = current.idle - previous.idle
-        return if (totalDelta > 0L) {
-            (((totalDelta - idleDelta).toDouble() / totalDelta.toDouble()) * 100).toInt().coerceIn(0, 100)
-        } else {
-            UNAVAILABLE_INT
-        }
+        return SystemStatsParser.cpuLoadPercent(previous, current)
     }
 
     private fun readCpuFreqResidencyLoadPercent(cpuCores: Int): Int {
-        val current = readCpuFreqResidencySnapshot(cpuCores) ?: return UNAVAILABLE_INT
-        val previous = previousCpuFreqResidencySnapshot
-        previousCpuFreqResidencySnapshot = current
+        val current = readCpuFreqResidencyByCore(cpuCores) ?: return UNAVAILABLE_INT
+        val previous = previousResidencyByCore
+        previousResidencyByCore = current
         if (previous == null) return UNAVAILABLE_INT
-
-        var totalPercent = 0.0
-        var countedCores = 0
-
-        for ((coreIndex, currentStates) in current.statesByCore) {
-            val previousStates = previous.statesByCore[coreIndex] ?: continue
-            val minFreq = currentStates.keys.minOrNull() ?: continue
-            val maxFreq = currentStates.keys.maxOrNull() ?: continue
-            if (maxFreq <= minFreq) continue
-
-            var totalTicks = 0L
-            var weightedFreq = 0.0
-            for ((freq, ticks) in currentStates) {
-                val delta = ticks - (previousStates[freq] ?: 0L)
-                if (delta > 0L) {
-                    totalTicks += delta
-                    weightedFreq += freq.toDouble() * delta.toDouble()
-                }
-            }
-
-            if (totalTicks > 0L) {
-                val averageFreq = weightedFreq / totalTicks.toDouble()
-                val percent = ((averageFreq - minFreq.toDouble()) / (maxFreq - minFreq).toDouble()) * 100.0
-                totalPercent += percent.coerceIn(0.0, 100.0)
-                countedCores++
-            }
-        }
-
-        return if (countedCores > 0) {
-            (totalPercent / countedCores.toDouble()).roundToInt().coerceIn(0, 100)
-        } else {
-            UNAVAILABLE_INT
-        }
+        return SystemStatsParser.residencyLoadPercent(previous, current)
     }
 
-    private fun readCpuFreqResidencySnapshot(cpuCores: Int): CpuFreqResidencySnapshot? {
+    private fun readCpuFreqResidencyByCore(cpuCores: Int): Map<Int, Map<Long, Long>>? {
         val statesByCore = mutableMapOf<Int, Map<Long, Long>>()
 
         for (cpuIndex in 0 until cpuCores) {
-            val text = readFileTextOnce("/sys/devices/system/cpu/cpu$cpuIndex/cpufreq/stats/time_in_state")
-                ?: continue
-            val states = text.lineSequence()
-                .mapNotNull { line ->
-                    val parts = line.trim().split(Regex("\\s+"))
-                    if (parts.size >= 2) {
-                        val frequency = parts[0].toLongOrNull()
-                        val ticks = parts[1].toLongOrNull()
-                        if (frequency != null && ticks != null) frequency to ticks else null
-                    } else {
-                        null
-                    }
-                }
-                .toMap()
-
+            val states = SystemStatsParser.parseTimeInState(
+                readFileTextOnce("/sys/devices/system/cpu/cpu$cpuIndex/cpufreq/stats/time_in_state")
+            )
             if (states.size >= 2) {
                 statesByCore[cpuIndex] = states
             }
         }
 
-        return statesByCore.takeIf { it.isNotEmpty() }?.let { CpuFreqResidencySnapshot(it) }
+        return statesByCore.takeIf { it.isNotEmpty() }
     }
 
     private fun readCurrentCpuFrequencyPressurePercent(cpuCores: Int): Int {
-        var totalPercent = 0.0
-        var countedCores = 0
-
-        for (cpuIndex in 0 until cpuCores) {
+        val cores = (0 until cpuCores).mapNotNull { cpuIndex ->
             val current = readLongFromFiles(
                 "/sys/devices/system/cpu/cpu$cpuIndex/cpufreq/scaling_cur_freq",
                 "/sys/devices/system/cpu/cpu$cpuIndex/cpufreq/cpuinfo_cur_freq"
-            ) ?: continue
+            ) ?: return@mapNotNull null
             val max = readLongFromFiles(
                 "/sys/devices/system/cpu/cpu$cpuIndex/cpufreq/scaling_max_freq",
                 "/sys/devices/system/cpu/cpu$cpuIndex/cpufreq/cpuinfo_max_freq"
-            ) ?: continue
+            ) ?: return@mapNotNull null
             val min = readLongFromFiles(
                 "/sys/devices/system/cpu/cpu$cpuIndex/cpufreq/scaling_min_freq",
                 "/sys/devices/system/cpu/cpu$cpuIndex/cpufreq/cpuinfo_min_freq"
             ) ?: 0L
-
-            if (max > 0L && current > 0L) {
-                val percent = if (max > min) {
-                    ((current - min).toDouble() / (max - min).toDouble()) * 100.0
-                } else {
-                    (current.toDouble() / max.toDouble()) * 100.0
-                }
-                totalPercent += percent.coerceIn(0.0, 100.0)
-                countedCores++
-            }
+            SystemStatsParser.CoreFreq(current = current, max = max, min = min)
         }
-
-        return if (countedCores > 0) {
-            (totalPercent / countedCores.toDouble()).roundToInt().coerceIn(0, 100)
-        } else {
-            UNAVAILABLE_INT
-        }
+        return SystemStatsParser.frequencyPressurePercent(cores)
     }
 
-    private fun readCpuSnapshot(): CpuSnapshot? {
-        val firstLine = readFileTextOnce("/proc/stat")?.lineSequence()?.firstOrNull() ?: return null
-        val parts = firstLine
-            .trim()
-            .split(Regex("\\s+"))
-            .drop(1)
-            .mapNotNull { it.toLongOrNull() }
-        if (parts.size < 7) return null
-        val idle = parts[3] + parts.getOrElse(4) { 0L }
-        val total = parts.sum()
-        return CpuSnapshot(idle = idle, total = total)
-    }
-
-    private fun canReadWifiIdentity(context: Context): Boolean {
-        val hasLocation = hasPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) ||
-            hasPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION)
+    private fun canReadWifiIdentity(): Boolean {
+        val hasLocation = hasPermission(Manifest.permission.ACCESS_FINE_LOCATION) ||
+            hasPermission(Manifest.permission.ACCESS_COARSE_LOCATION)
         val hasNearbyWifi = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
-            hasPermission(context, Manifest.permission.NEARBY_WIFI_DEVICES)
+            hasPermission(Manifest.permission.NEARBY_WIFI_DEVICES)
         return hasLocation || hasNearbyWifi
     }
 
@@ -536,16 +429,9 @@ object SystemStatsHelper {
         }
     }
 
-    private fun normalizedWifiSsid(rawSsid: String?): String? {
-        return rawSsid
-            ?.trim()
-            ?.removeSurrounding("\"")
-            ?.takeIf { it.isNotBlank() && it != "<unknown ssid>" && it != "0x" }
-    }
-
     @Suppress("DEPRECATION")
-    private fun readNetworkUsageGb(context: Context, networkType: Int): Double {
-        if (!hasUsageStatsAccess(context)) return UNAVAILABLE_DOUBLE
+    private fun readNetworkUsageGb(networkType: Int): Double {
+        if (!hasUsageStatsAccess()) return UNAVAILABLE_DOUBLE
 
         return try {
             val statsManager = context.getSystemService(NetworkStatsManager::class.java)
@@ -568,31 +454,7 @@ object SystemStatsHelper {
         }
     }
 
-    private fun mobileNetworkTypeLabel(networkType: Int): String {
-        return when (networkType) {
-            TelephonyManager.NETWORK_TYPE_LTE -> "4G"
-            TelephonyManager.NETWORK_TYPE_NR -> "5G"
-            TelephonyManager.NETWORK_TYPE_HSDPA,
-            TelephonyManager.NETWORK_TYPE_HSPA,
-            TelephonyManager.NETWORK_TYPE_HSPAP,
-            TelephonyManager.NETWORK_TYPE_HSUPA,
-            TelephonyManager.NETWORK_TYPE_EVDO_0,
-            TelephonyManager.NETWORK_TYPE_EVDO_A,
-            TelephonyManager.NETWORK_TYPE_EVDO_B,
-            TelephonyManager.NETWORK_TYPE_EHRPD,
-            TelephonyManager.NETWORK_TYPE_TD_SCDMA,
-            TelephonyManager.NETWORK_TYPE_UMTS -> "3G"
-            TelephonyManager.NETWORK_TYPE_1xRTT,
-            TelephonyManager.NETWORK_TYPE_CDMA,
-            TelephonyManager.NETWORK_TYPE_GSM,
-            TelephonyManager.NETWORK_TYPE_GPRS,
-            TelephonyManager.NETWORK_TYPE_EDGE -> "2G"
-            TelephonyManager.NETWORK_TYPE_IWLAN -> UNAVAILABLE_TEXT
-            else -> UNAVAILABLE_TEXT
-        }
-    }
-
-    private fun readMobileNetworkTypeLabel(context: Context, telephonyManager: TelephonyManager): String {
+    private fun readMobileNetworkTypeLabel(telephonyManager: TelephonyManager): String {
         val dataNetworkType = try {
             telephonyManager.dataNetworkType
         } catch (_: SecurityException) {
@@ -606,11 +468,11 @@ object SystemStatsHelper {
         }
 
         val reportedLabel = sequenceOf(dataNetworkType, fallbackNetworkType)
-            .map { mobileNetworkTypeLabel(it) }
+            .map { SystemStatsParser.mobileGenerationLabel(it) }
             .firstOrNull { it != UNAVAILABLE_TEXT }
             ?: UNAVAILABLE_TEXT
-        val serviceStateLabel = readServiceStateNetworkTypeLabel(context, telephonyManager)
-        val cellInfoLabel = readCellInfoNetworkTypeLabel(context, telephonyManager)
+        val serviceStateLabel = readServiceStateNetworkTypeLabel(telephonyManager)
+        val cellInfoLabel = readCellInfoNetworkTypeLabel(telephonyManager)
 
         return when {
             // 5G NSA can be reported as LTE by TelephonyManager, so registered NR wins.
@@ -622,8 +484,8 @@ object SystemStatsHelper {
         }
     }
 
-    private fun readServiceStateNetworkTypeLabel(context: Context, telephonyManager: TelephonyManager): String {
-        if (!hasPermission(context, Manifest.permission.READ_PHONE_STATE)) {
+    private fun readServiceStateNetworkTypeLabel(telephonyManager: TelephonyManager): String {
+        if (!hasPermission(Manifest.permission.READ_PHONE_STATE)) {
             return UNAVAILABLE_TEXT
         }
 
@@ -645,13 +507,13 @@ object SystemStatsHelper {
     }
 
     @TargetApi(Build.VERSION_CODES.R)
+    @Suppress("DEPRECATION")
     private fun serviceStateNetworkTypeLabelApi30(serviceState: ServiceState): String {
-        return serviceState.networkRegistrationInfoList
+        val labels = serviceState.networkRegistrationInfoList
             .filter { it.isRegistered && it.transportType == AccessNetworkConstants.TRANSPORT_TYPE_WWAN }
-            .map { mobileNetworkTypeLabel(it.accessNetworkTechnology) }
+            .map { SystemStatsParser.mobileGenerationLabel(it.accessNetworkTechnology) }
             .filter { it != UNAVAILABLE_TEXT }
-            .highestMobileGeneration()
-            ?: UNAVAILABLE_TEXT
+        return SystemStatsParser.highestMobileGeneration(labels) ?: UNAVAILABLE_TEXT
     }
 
     @TargetApi(Build.VERSION_CODES.R)
@@ -661,27 +523,28 @@ object SystemStatsHelper {
             compactState.contains("isEnDcAvailable=true")
     }
 
-    private fun readCellInfoNetworkTypeLabel(context: Context, telephonyManager: TelephonyManager): String {
-        if (!hasPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)) {
+    private fun readCellInfoNetworkTypeLabel(telephonyManager: TelephonyManager): String {
+        if (!hasPermission(Manifest.permission.ACCESS_FINE_LOCATION)) {
             return UNAVAILABLE_TEXT
         }
 
         return try {
             @Suppress("DEPRECATION")
             val cellInfo = telephonyManager.allCellInfo.orEmpty()
-            val registeredLabel = cellInfo
-                .filter { it.isRegistered }
-                .mapNotNull { cellInfoNetworkTypeLabel(it) }
-                .highestMobileGeneration()
-            registeredLabel ?: cellInfo
-                .mapNotNull { cellInfoNetworkTypeLabel(it) }
-                .highestMobileGeneration()
+            val registeredLabel = SystemStatsParser.highestMobileGeneration(
+                cellInfo.filter { it.isRegistered }.mapNotNull { cellInfoNetworkTypeLabel(it) }
+            )
+            registeredLabel
+                ?: SystemStatsParser.highestMobileGeneration(
+                    cellInfo.mapNotNull { cellInfoNetworkTypeLabel(it) }
+                )
                 ?: UNAVAILABLE_TEXT
         } catch (_: SecurityException) {
             UNAVAILABLE_TEXT
         }
     }
 
+    @Suppress("DEPRECATION") // CellInfoCdma is deprecated but still emitted on legacy networks
     private fun cellInfoNetworkTypeLabel(cellInfo: CellInfo): String? {
         return when (cellInfo) {
             is CellInfoLte -> "4G"
@@ -701,25 +564,15 @@ object SystemStatsHelper {
         }
     }
 
-    private fun List<String>.highestMobileGeneration(): String? {
-        return when {
-            any { it == "5G" } -> "5G"
-            any { it == "4G" } -> "4G"
-            any { it == "3G" } -> "3G"
-            any { it == "2G" } -> "2G"
-            else -> firstOrNull()
-        }
-    }
-
-    private fun readMobileSignalDbm(context: Context, telephonyManager: TelephonyManager): Int {
+    private fun readMobileSignalDbm(telephonyManager: TelephonyManager): Int {
         val signalStrengthDbm = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
-            hasPermission(context, Manifest.permission.READ_PHONE_STATE)
+            hasPermission(Manifest.permission.READ_PHONE_STATE)
         ) {
             try {
                 telephonyManager.signalStrength
                     ?.cellSignalStrengths
                     ?.map { it.dbm }
-                    ?.filterValidDbm()
+                    ?.let { SystemStatsParser.filterValidDbm(it) }
                     ?.maxOrNull()
                     ?: UNAVAILABLE_INT
             } catch (_: SecurityException) {
@@ -733,22 +586,20 @@ object SystemStatsHelper {
             return signalStrengthDbm
         }
 
-        if (!hasPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)) {
+        if (!hasPermission(Manifest.permission.ACCESS_FINE_LOCATION)) {
             return UNAVAILABLE_INT
         }
 
         return try {
             @Suppress("DEPRECATION")
-            telephonyManager.allCellInfo
-                ?.mapNotNull { cellInfoDbm(it) }
-                ?.filterValidDbm()
-                ?.maxOrNull()
-                ?: UNAVAILABLE_INT
+            val readings = telephonyManager.allCellInfo?.mapNotNull { cellInfoDbm(it) } ?: emptyList()
+            SystemStatsParser.filterValidDbm(readings).maxOrNull() ?: UNAVAILABLE_INT
         } catch (_: SecurityException) {
             UNAVAILABLE_INT
         }
     }
 
+    @Suppress("DEPRECATION") // CellInfoCdma is deprecated but still emitted on legacy networks
     private fun cellInfoDbm(cellInfo: CellInfo): Int? {
         return when (cellInfo) {
             is CellInfoLte -> cellInfo.cellSignalStrength.dbm
@@ -768,10 +619,6 @@ object SystemStatsHelper {
         }
     }
 
-    private fun Iterable<Int>.filterValidDbm(): List<Int> {
-        return filter { it in -140..-40 }
-    }
-
     private fun readMobileTrafficStatsGb(): Double {
         val rx = TrafficStats.getMobileRxBytes()
         val tx = TrafficStats.getMobileTxBytes()
@@ -786,20 +633,12 @@ object SystemStatsHelper {
         return values.firstOrNull { !it.isNullOrBlank() }
     }
 
-    private fun wifiBandLabel(frequencyMhz: Int): String {
-        return when (frequencyMhz) {
-            in 2400..2500 -> "2,4 GHz"
-            in 4900..5900 -> "5 GHz"
-            in 5925..7125 -> "6 GHz"
-            else -> UNAVAILABLE_TEXT
-        }
-    }
-
-    private fun hasPermission(context: Context, permission: String): Boolean {
+    private fun hasPermission(permission: String): Boolean {
         return ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
     }
 
-    private fun hasUsageStatsAccess(context: Context): Boolean {
+    @Suppress("DEPRECATION") // unsafeCheckOpNoThrow / checkOpNoThrow remain the supported op-check path
+    private fun hasUsageStatsAccess(): Boolean {
         val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as? AppOpsManager ?: return false
         val mode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             appOps.unsafeCheckOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS, Process.myUid(), context.packageName)
@@ -822,20 +661,23 @@ object SystemStatsHelper {
         return null
     }
 
+    /**
+     * Reads a pseudo-file once and caches paths that fail (SELinux-blocked sysfs nodes)
+     * so repeated polls don't keep hitting the same denied path. Always called inside the
+     * stats mutex, so the cache needs no extra synchronization.
+     */
     private fun readFileTextOnce(path: String): String? {
-        synchronized(unavailableFilePaths) {
-            if (path in unavailableFilePaths) return null
-        }
+        if (path in unavailableFilePaths) return null
 
         return try {
             File(path).readText()
         } catch (_: Exception) {
-            synchronized(unavailableFilePaths) {
-                unavailableFilePaths.add(path)
-            }
+            unavailableFilePaths.add(path)
             null
         }
     }
 
-    private const val GB_BYTES = 1024.0 * 1024.0 * 1024.0
+    private companion object {
+        private const val GB_BYTES = 1024.0 * 1024.0 * 1024.0
+    }
 }

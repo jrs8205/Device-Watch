@@ -12,7 +12,10 @@ import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import com.example.modernwidget.R
+import com.example.modernwidget.data.SystemStatsRepository
 import com.example.modernwidget.widget.WidgetStateUpdater
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -20,8 +23,12 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class SystemMonitorService : Service() {
+
+    @Inject lateinit var repository: SystemStatsRepository
 
     private val serviceJob = SupervisorJob()
     private val serviceScope = CoroutineScope(serviceJob + Dispatchers.Default)
@@ -29,7 +36,7 @@ class SystemMonitorService : Service() {
     private var screenReceiver: BroadcastReceiver? = null
     private var configurationReceiver: BroadcastReceiver? = null
     private var updateJob: Job? = null
-    private var isScreenOn = true
+    @Volatile private var isScreenOn = true
 
     override fun onCreate() {
         super.onCreate()
@@ -166,7 +173,9 @@ class SystemMonitorService : Service() {
 
     private suspend fun updateWidgetStats(context: Context) {
         try {
-            WidgetStateUpdater.updateAll(context.applicationContext)
+            WidgetStateUpdater.updateAll(context.applicationContext, repository.getStats())
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             e.printStackTrace()
         }
