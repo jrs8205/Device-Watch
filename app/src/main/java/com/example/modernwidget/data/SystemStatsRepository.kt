@@ -9,4 +9,7 @@ package com.example.modernwidget.data
  */
 interface SystemStatsRepository {
     suspend fun getStats(): SystemStats
+
+    /** Static, root-free device facts (build, SoC, display, memory). Safe to read once. */
+    suspend fun getDeviceInfo(): DeviceInfo
 }

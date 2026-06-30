@@ -2,6 +2,7 @@ package com.example.modernwidget.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.modernwidget.data.DeviceInfo
 import com.example.modernwidget.data.SystemStats
 import com.example.modernwidget.data.SystemStatsRepository
 import com.example.modernwidget.widget.WidgetController
@@ -20,6 +21,7 @@ const val DEFAULT_WIDGET_OPACITY = 0.86f
 
 data class DashboardUiState(
     val stats: SystemStats? = null,
+    val deviceInfo: DeviceInfo? = null,
     val isWidgetInstalled: Boolean = false,
     val lastUpdated: String = "--:--",
     val widgetOpacity: Float = DEFAULT_WIDGET_OPACITY,
@@ -46,6 +48,14 @@ class DashboardViewModel @Inject constructor(
                     lastUpdated = currentTime(),
                 )
             }
+        }
+    }
+
+    /** Loads the static, root-free device facts once (build, SoC, display, memory). */
+    fun loadDeviceInfo() {
+        viewModelScope.launch {
+            val info = repository.getDeviceInfo()
+            _uiState.update { it.copy(deviceInfo = info) }
         }
     }
 

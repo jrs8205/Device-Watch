@@ -1,5 +1,6 @@
 package com.example.modernwidget.presentation
 
+import com.example.modernwidget.data.DeviceInfo
 import com.example.modernwidget.data.SystemStats
 import com.example.modernwidget.data.SystemStatsRepository
 import com.example.modernwidget.widget.WidgetController
@@ -106,7 +107,47 @@ private class FakeSystemStatsRepository(private val stats: SystemStats) : System
         callCount++
         return stats
     }
+
+    override suspend fun getDeviceInfo(): DeviceInfo = sampleDeviceInfo()
 }
+
+private fun sampleDeviceInfo(): DeviceInfo = DeviceInfo(
+    manufacturer = "Google",
+    model = "Pixel 8a",
+    codename = "akita",
+    androidVersion = "15 (API 35)",
+    securityPatch = "2026-06-01",
+    buildNumber = "TEST.123",
+    bootloader = "bl-1.0",
+    radioVersion = "g5300",
+    soc = "Google Tensor G3",
+    supportedAbis = "arm64-v8a",
+    kernelVersion = "6.1.0",
+    gpuRenderer = "Mali-G715",
+    glVersion = "OpenGL ES 3.2",
+    screenResolution = "1080 × 2400 px",
+    screenDensity = "420 dpi · xxhdpi",
+    physicalSize = "6.1\"",
+    refreshRate = "60 Hz",
+    hdr = "Yes",
+    totalRam = "8.0 GB",
+    totalStorage = "128 GB",
+    batteryTechnology = "Li-ion",
+    batteryCapacityMah = "4492 mAh",
+    cameraCount = "2",
+    rearCamera = "64 MP",
+    frontCamera = "13 MP",
+    cameraFlash = "Yes",
+    sensorCount = "30",
+    sensors = "Accelerometer, Gyroscope",
+    locale = "fi-FI",
+    timezone = "Europe/Helsinki",
+    webViewVersion = "120.0",
+    playServicesVersion = "24.0",
+    deviceFeatures = "NFC, Fingerprint",
+    vpnActive = "No",
+    dnsServers = "8.8.8.8",
+)
 
 private class FakeWidgetController(
     private val installed: Boolean,
@@ -160,5 +201,13 @@ private fun sampleStats(batteryLevel: Int = 50): SystemStats = SystemStats(
     mobileDataUsedGb = 0.5,
     mobileDataTotalGb = -1.0,
     mobileDataLabel = "DATA",
+    simOperator = "Carrier",
+    simState = "Ready",
+    simSlots = 2,
+    networkCountry = "FI",
+    wifiRssiDbm = -55,
+    wifiLinkSpeedMbps = 433,
+    wifiStandard = "Wi-Fi 6",
+    ipAddress = "192.168.1.50",
     uptimeText = "1h 0m",
 )

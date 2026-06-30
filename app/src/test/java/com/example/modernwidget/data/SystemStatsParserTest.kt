@@ -147,4 +147,17 @@ class SystemStatsParserTest {
         val filtered = SystemStatsParser.filterValidDbm(listOf(-200, -90, 0, -40, -41, -140))
         assertThat(filtered).containsExactly(-90, -40, -41, -140).inOrder()
     }
+
+    // --- display density bucket ---
+
+    @Test
+    fun `densityBucketLabel maps dpi to Android buckets`() {
+        assertThat(SystemStatsParser.densityBucketLabel(160)).isEqualTo("mdpi")
+        assertThat(SystemStatsParser.densityBucketLabel(213)).isEqualTo("tvdpi")
+        assertThat(SystemStatsParser.densityBucketLabel(240)).isEqualTo("hdpi")
+        assertThat(SystemStatsParser.densityBucketLabel(320)).isEqualTo("xhdpi")
+        assertThat(SystemStatsParser.densityBucketLabel(420)).isEqualTo("xxhdpi")
+        assertThat(SystemStatsParser.densityBucketLabel(640)).isEqualTo("xxxhdpi")
+        assertThat(SystemStatsParser.densityBucketLabel(0)).isEqualTo(UNAVAILABLE_TEXT)
+    }
 }

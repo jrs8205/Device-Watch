@@ -1,6 +1,7 @@
 package com.example.modernwidget
 
 import android.Manifest
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
@@ -10,6 +11,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -27,13 +29,18 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.modernwidget.data.UNAVAILABLE_INT
+import com.example.modernwidget.data.UNAVAILABLE_TEXT
 import com.example.modernwidget.presentation.DashboardViewModel
+import com.example.modernwidget.system.DreamPreferences
 import com.example.modernwidget.system.SystemMonitorService
+import java.util.Locale
 import com.example.modernwidget.ui.theme.ModernWidgetTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -59,6 +66,13 @@ class MainActivity : ComponentActivity() {
 fun SystemDashboardScreen(viewModel: DashboardViewModel = hiltViewModel()) {
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    val dreamPrefs = remember(context) {
+        context.getSharedPreferences(DreamPreferences.PREFS_NAME, Context.MODE_PRIVATE)
+    }
+    var forcePortraitScreensaver by remember {
+        mutableStateOf(dreamPrefs.getBoolean(DreamPreferences.KEY_FORCE_PORTRAIT, false))
+    }
 
     // Start the background monitoring service (independent of the notification permission result).
     fun startSystemMonitorService() {
@@ -111,6 +125,7 @@ fun SystemDashboardScreen(viewModel: DashboardViewModel = hiltViewModel()) {
     LaunchedEffect(Unit) {
         viewModel.refresh()
         viewModel.loadWidgetOpacity()
+        viewModel.loadDeviceInfo()
         val missingPermissions = missingRuntimePermissions()
         if (missingPermissions.isNotEmpty()) {
             runtimePermissionLauncher.launch(missingPermissions)
@@ -333,6 +348,161 @@ fun SystemDashboardScreen(viewModel: DashboardViewModel = hiltViewModel()) {
                     }
                 }
 
+                // Device info
+                uiState.deviceInfo?.let { info ->
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
+                    ) {
+                        Column(modifier = Modifier.padding(20.dp)) {
+                            Text(
+                                stringResource(R.string.device_info_section),
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            DeviceInfoRow(R.string.device_info_manufacturer, info.manufacturer)
+                            DeviceInfoRow(R.string.device_info_model, info.model)
+                            DeviceInfoRow(R.string.device_info_codename, info.codename)
+                            DeviceInfoRow(R.string.device_info_android, info.androidVersion)
+                            DeviceInfoRow(R.string.device_info_security_patch, info.securityPatch)
+                            DeviceInfoRow(R.string.device_info_build, info.buildNumber)
+                            DeviceInfoRow(R.string.device_info_bootloader, info.bootloader)
+                            DeviceInfoRow(R.string.device_info_radio, info.radioVersion)
+                            DeviceInfoRow(R.string.device_info_soc, info.soc)
+                            DeviceInfoRow(R.string.device_info_abis, info.supportedAbis)
+                            DeviceInfoRow(R.string.device_info_kernel, info.kernelVersion)
+                            DeviceInfoRow(R.string.device_info_gpu, info.gpuRenderer)
+                            DeviceInfoRow(R.string.device_info_gl, info.glVersion)
+                            DeviceInfoRow(R.string.device_info_resolution, info.screenResolution)
+                            DeviceInfoRow(R.string.device_info_density, info.screenDensity)
+                            DeviceInfoRow(R.string.device_info_physical_size, info.physicalSize)
+                            DeviceInfoRow(R.string.device_info_refresh, info.refreshRate)
+                            DeviceInfoRow(R.string.device_info_hdr, info.hdr)
+                            DeviceInfoRow(R.string.device_info_ram, info.totalRam)
+                            DeviceInfoRow(R.string.device_info_storage, info.totalStorage)
+                            DeviceInfoRow(R.string.device_info_battery_tech, info.batteryTechnology)
+                            DeviceInfoRow(R.string.device_info_battery_capacity, info.batteryCapacityMah)
+                        }
+                    }
+
+                    // Cameras
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
+                    ) {
+                        Column(modifier = Modifier.padding(20.dp)) {
+                            Text(
+                                stringResource(R.string.camera_info_section),
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            DeviceInfoRow(R.string.camera_count, info.cameraCount)
+                            DeviceInfoRow(R.string.camera_rear, info.rearCamera)
+                            DeviceInfoRow(R.string.camera_front, info.frontCamera)
+                            DeviceInfoRow(R.string.camera_flash, info.cameraFlash)
+                        }
+                    }
+
+                    // Sensors
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
+                    ) {
+                        Column(modifier = Modifier.padding(20.dp)) {
+                            Text(
+                                stringResource(R.string.sensors_section),
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            DeviceInfoRow(R.string.sensors_count, info.sensorCount)
+                            DeviceInfoRow(R.string.sensors_present, info.sensors)
+                        }
+                    }
+
+                    // System
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
+                    ) {
+                        Column(modifier = Modifier.padding(20.dp)) {
+                            Text(
+                                stringResource(R.string.system_info_section),
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            DeviceInfoRow(R.string.system_locale, info.locale)
+                            DeviceInfoRow(R.string.system_timezone, info.timezone)
+                            DeviceInfoRow(R.string.system_webview, info.webViewVersion)
+                            DeviceInfoRow(R.string.system_play_services, info.playServicesVersion)
+                            DeviceInfoRow(R.string.system_features, info.deviceFeatures)
+                        }
+                    }
+                }
+
+                // SIM & mobile network
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
+                ) {
+                    Column(modifier = Modifier.padding(20.dp)) {
+                        Text(
+                            stringResource(R.string.sim_info_section),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        DeviceInfoRow(R.string.sim_operator, currentStats.operatorName)
+                        DeviceInfoRow(R.string.sim_country, currentStats.networkCountry)
+                        DeviceInfoRow(R.string.sim_network, currentStats.mobileNetworkType)
+                        DeviceInfoRow(R.string.sim_signal, dbmText(currentStats.mobileSignalDbm))
+                        DeviceInfoRow(R.string.sim_status, currentStats.simState)
+                        DeviceInfoRow(R.string.sim_slots, countText(currentStats.simSlots))
+                        DeviceInfoRow(R.string.sim_data, gbTodayText(currentStats.mobileDataUsedGb))
+                    }
+                }
+
+                // Wi-Fi
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
+                ) {
+                    Column(modifier = Modifier.padding(20.dp)) {
+                        Text(
+                            stringResource(R.string.wifi_info_section),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        DeviceInfoRow(R.string.wifi_name, currentStats.wifiSsid)
+                        DeviceInfoRow(R.string.wifi_band_label, currentStats.wifiBand)
+                        DeviceInfoRow(R.string.wifi_standard, currentStats.wifiStandard)
+                        DeviceInfoRow(R.string.wifi_signal, dbmText(currentStats.wifiRssiDbm))
+                        DeviceInfoRow(R.string.wifi_link_speed, mbpsText(currentStats.wifiLinkSpeedMbps))
+                        DeviceInfoRow(R.string.wifi_ip, currentStats.ipAddress)
+                        DeviceInfoRow(R.string.wifi_data, gbTodayText(currentStats.wifiBytesTodayGb))
+                        uiState.deviceInfo?.let { info ->
+                            DeviceInfoRow(R.string.wifi_vpn, info.vpnActive)
+                            DeviceInfoRow(R.string.wifi_dns, info.dnsServers)
+                        }
+                    }
+                }
+
                 // Widget settings
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -384,6 +554,53 @@ fun SystemDashboardScreen(viewModel: DashboardViewModel = hiltViewModel()) {
                             fontSize = 11.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+                    }
+                }
+
+                // Screensaver settings
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
+                ) {
+                    Column(modifier = Modifier.padding(20.dp)) {
+                        Text(
+                            stringResource(R.string.screensaver_settings_section),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = stringResource(R.string.force_portrait_title),
+                                    fontWeight = FontWeight.Medium,
+                                    fontSize = 14.sp
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = stringResource(R.string.force_portrait_description),
+                                    fontSize = 11.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Switch(
+                                checked = forcePortraitScreensaver,
+                                onCheckedChange = { checked ->
+                                    forcePortraitScreensaver = checked
+                                    dreamPrefs.edit()
+                                        .putBoolean(DreamPreferences.KEY_FORCE_PORTRAIT, checked)
+                                        .apply()
+                                }
+                            )
+                        }
                     }
                 }
 
@@ -442,5 +659,42 @@ fun SystemDashboardScreen(viewModel: DashboardViewModel = hiltViewModel()) {
                 CircularProgressIndicator()
             }
         }
+    }
+}
+
+private fun dbmText(value: Int): String =
+    if (value == UNAVAILABLE_INT) UNAVAILABLE_TEXT else "$value dBm"
+
+private fun mbpsText(value: Int): String =
+    if (value == UNAVAILABLE_INT) UNAVAILABLE_TEXT else "$value Mbps"
+
+private fun countText(value: Int): String =
+    if (value <= 0) UNAVAILABLE_TEXT else value.toString()
+
+private fun gbTodayText(value: Double): String =
+    if (value < 0.0) UNAVAILABLE_TEXT else String.format(Locale.US, "%.2f GB", value)
+
+@Composable
+private fun DeviceInfoRow(@StringRes labelRes: Int, value: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 5.dp),
+        verticalAlignment = Alignment.Top
+    ) {
+        Text(
+            text = stringResource(labelRes),
+            fontSize = 12.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.weight(1f)
+        )
+        Spacer(modifier = Modifier.width(12.dp))
+        Text(
+            text = value,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Medium,
+            textAlign = TextAlign.End,
+            modifier = Modifier.weight(1f)
+        )
     }
 }

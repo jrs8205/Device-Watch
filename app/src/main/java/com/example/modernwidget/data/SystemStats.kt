@@ -48,5 +48,13 @@ data class SystemStats(
     val mobileDataUsedGb: Double,
     val mobileDataTotalGb: Double,
     val mobileDataLabel: String,
+    val simOperator: String,
+    val simState: String,
+    val simSlots: Int,
+    val networkCountry: String,
+    val wifiRssiDbm: Int,
+    val wifiLinkSpeedMbps: Int,
+    val wifiStandard: String,
+    val ipAddress: String,
     val uptimeText: String
 )

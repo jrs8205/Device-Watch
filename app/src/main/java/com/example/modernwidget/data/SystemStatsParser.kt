@@ -1,5 +1,6 @@
 package com.example.modernwidget.data
 
+import android.net.wifi.ScanResult
 import android.telephony.TelephonyManager
 import kotlin.math.roundToInt
 
@@ -16,6 +17,28 @@ internal object SystemStatsParser {
 
     /** A single CPU core's current / max / min scaling frequency in kHz. */
     data class CoreFreq(val current: Long, val max: Long, val min: Long)
+
+    /** Maps a display's densityDpi to its Android density bucket name (mdpi, xxhdpi, …). */
+    fun densityBucketLabel(densityDpi: Int): String = when {
+        densityDpi <= 0 -> UNAVAILABLE_TEXT
+        densityDpi <= 120 -> "ldpi"
+        densityDpi <= 160 -> "mdpi"
+        densityDpi <= 213 -> "tvdpi"
+        densityDpi <= 240 -> "hdpi"
+        densityDpi <= 320 -> "xhdpi"
+        densityDpi <= 480 -> "xxhdpi"
+        densityDpi <= 640 -> "xxxhdpi"
+        else -> "xxxhdpi+"
+    }
+
+    /** Maps a `WifiInfo.getWifiStandard()` value to a marketing Wi-Fi generation name. */
+    fun wifiStandardLabel(standard: Int): String = when (standard) {
+        ScanResult.WIFI_STANDARD_11N -> "Wi-Fi 4"
+        ScanResult.WIFI_STANDARD_11AC -> "Wi-Fi 5"
+        ScanResult.WIFI_STANDARD_11AX -> "Wi-Fi 6"
+        ScanResult.WIFI_STANDARD_11BE -> "Wi-Fi 7"
+        else -> UNAVAILABLE_TEXT
+    }
 
     /** Parses the aggregate `cpu` line of `/proc/stat` into idle/total jiffies. */
     fun parseCpuSnapshot(procStatFirstLine: String?): CpuSnapshot? {

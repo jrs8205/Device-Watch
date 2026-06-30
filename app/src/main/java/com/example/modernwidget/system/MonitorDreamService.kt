@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.ActivityInfo
 import android.os.BatteryManager
 import android.service.dreams.DreamService
 import androidx.compose.foundation.background
@@ -21,9 +22,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFontFamilyResolver
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.modernwidget.R
@@ -40,9 +45,6 @@ import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import java.text.SimpleDateFormat
 import java.util.Date
-
-private const val DREAM_PREFS_NAME = "monitor_dream_preferences"
-private const val PREF_LAYOUT_SWAPPED = "layout_swapped"
 
 class MonitorDreamService : DreamService(), LifecycleOwner, ViewModelStoreOwner, SavedStateRegistryOwner {
 
@@ -62,10 +64,23 @@ class MonitorDreamService : DreamService(), LifecycleOwner, ViewModelStoreOwner,
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
-        
+
         isInteractive = true
         isFullscreen = true
-        
+
+        // Optionally lock the screensaver to portrait (user setting). On Android 14+ the dream
+        // is hosted by a framework DreamActivity, and DreamService exposes no orientation API —
+        // but the dream window's context IS that host activity, so we set the orientation through
+        // the real Activity.setRequestedOrientation API. The Compose content then picks the
+        // portrait layout from the reported configuration.
+        val dreamPrefs = getSharedPreferences(DreamPreferences.PREFS_NAME, Context.MODE_PRIVATE)
+        val forcePortrait = dreamPrefs.getBoolean(DreamPreferences.KEY_FORCE_PORTRAIT, false)
+        (window?.context as? android.app.Activity)?.requestedOrientation = if (forcePortrait) {
+            ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+        } else {
+            ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+        }
+
         val composeView = ComposeView(this).apply {
             setViewTreeLifecycleOwner(this@MonitorDreamService)
             setViewTreeViewModelStoreOwner(this@MonitorDreamService)
@@ -100,10 +115,10 @@ fun ScreensaverContent(context: Context) {
     var isCharging by remember { mutableStateOf(false) }
     var batteryTemp by remember { mutableDoubleStateOf(25.6) }
     var batteryVoltage by remember { mutableDoubleStateOf(3.88) }
-    var chargeTimeRemainingMs by remember { mutableLongStateOf(-1L) }
+    var chargeFullAtMs by remember { mutableLongStateOf(-1L) }
     var hasSentFullBatteryNotification by remember { mutableStateOf(false) }
     val preferences = remember(context) {
-        context.getSharedPreferences(DREAM_PREFS_NAME, Context.MODE_PRIVATE)
+        context.getSharedPreferences(DreamPreferences.PREFS_NAME, Context.MODE_PRIVATE)
     }
 
     DisposableEffect(context) {
@@ -116,10 +131,11 @@ fun ScreensaverContent(context: Context) {
                 }
                 
                 val status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1)
-                isCharging = status == BatteryManager.BATTERY_STATUS_CHARGING || 
-                             status == BatteryManager.BATTERY_STATUS_FULL
+                val charging = status == BatteryManager.BATTERY_STATUS_CHARGING ||
+                               status == BatteryManager.BATTERY_STATUS_FULL
+                isCharging = charging
 
-                if (batteryLevel >= 100 && isCharging) {
+                if (batteryLevel >= 100 && charging) {
                     if (!hasSentFullBatteryNotification) {
                         BatteryFullNotifier.show(context.applicationContext)
                         hasSentFullBatteryNotification = true
@@ -127,16 +143,25 @@ fun ScreensaverContent(context: Context) {
                 } else {
                     hasSentFullBatteryNotification = false
                 }
-                
+
                 val temp = intent.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, 0)
                 batteryTemp = temp / 10.0
-                
+
                 val volt = intent.getIntExtra(BatteryManager.EXTRA_VOLTAGE, 0)
                 batteryVoltage = volt / 1000.0
-                
-                val batteryManager = context.getSystemService(Context.BATTERY_SERVICE) as BatteryManager
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
-                    chargeTimeRemainingMs = batteryManager.computeChargeTimeRemaining()
+
+                // Capture the absolute "battery full" wall-clock time ONCE, at the moment we
+                // read the remaining duration. Previously the raw remaining-duration was stored
+                // and added to System.currentTimeMillis() on every recomposition (once a second),
+                // which made the estimate drift ~1 s later per second between battery broadcasts.
+                chargeFullAtMs = if (charging &&
+                    android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+                    val batteryManager =
+                        context.getSystemService(Context.BATTERY_SERVICE) as BatteryManager
+                    val remaining = batteryManager.computeChargeTimeRemaining()
+                    if (remaining > 0L) System.currentTimeMillis() + remaining else -1L
+                } else {
+                    -1L
                 }
             }
         }
@@ -150,7 +175,7 @@ fun ScreensaverContent(context: Context) {
     var secondsText by remember { mutableStateOf("") }
     var dateText by remember { mutableStateOf("") }
     var isLayoutSwapped by remember {
-        mutableStateOf(preferences.getBoolean(PREF_LAYOUT_SWAPPED, false))
+        mutableStateOf(preferences.getBoolean(DreamPreferences.KEY_LAYOUT_SWAPPED, false))
     }
     val configuration = LocalConfiguration.current
     val currentLocale = configuration.locales[0]
@@ -182,11 +207,10 @@ fun ScreensaverContent(context: Context) {
 
     val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
 
-    val fullTimeStrLandscape = if (isCharging) {
-        if (chargeTimeRemainingMs > 0) {
-            val fullTimeMs = System.currentTimeMillis() + chargeTimeRemainingMs
+    val fullTimeStr = if (isCharging && batteryLevel < 100) {
+        if (chargeFullAtMs > 0L) {
             val format = SimpleDateFormat("HH:mm", currentLocale)
-            context.getString(R.string.dream_full_time_estimate, format.format(Date(fullTimeMs)))
+            context.getString(R.string.dream_full_time_estimate, format.format(Date(chargeFullAtMs)))
         } else {
             context.getString(R.string.dream_full_time_unknown)
         }
@@ -213,14 +237,23 @@ fun ScreensaverContent(context: Context) {
             else -> 40.dp
         }
         val verticalPadding = if (maxHeight < 560.dp) 24.dp else 40.dp
-        val clockSize = when {
-            isLandscape && maxWidth < 700.dp -> 82
-            !isLandscape && maxWidth < 380.dp -> 84
-            !isLandscape && maxHeight < 640.dp -> 92
-            else -> 120
-        }
-        val secondsSize = (clockSize * 0.25f).toInt().coerceAtLeast(22)
         val centerGap = if (maxWidth < 700.dp) 18.dp else 32.dp
+
+        // The clock auto-sizes to the largest font that still fits the available width, so the
+        // seconds never wrap or overlap on narrow phones (e.g. Pixel 9a portrait). The width
+        // budget differs per orientation: portrait gets the full inner width; landscape gets
+        // the clock column's weighted (0.58) share of the row after padding/divider/gap.
+        val clockAvailableWidth = if (isLandscape) {
+            (maxWidth - horizontalPadding * 2 - 1.5.dp - centerGap) * 0.58f
+        } else {
+            maxWidth - horizontalPadding * 2
+        }
+        val clockSize = rememberFittedClockSize(
+            availableWidth = clockAvailableWidth,
+            maxClockSp = if (isLandscape) 82 else 120,
+            minClockSp = if (isLandscape) 48 else 56,
+        )
+        val secondsSize = (clockSize * 0.25f).toInt().coerceAtLeast(22)
 
         // Main container; rotation handles the 180-degree layout flip dynamically.
         Box(
@@ -266,7 +299,7 @@ fun ScreensaverContent(context: Context) {
                         batteryGradientColors = batteryGradientColors,
                         voltStr = voltStr,
                         tempStr = tempStr,
-                        fullTimeStrLandscape = fullTimeStrLandscape
+                        fullTimeStr = fullTimeStr
                     )
                 }
             } else {
@@ -298,7 +331,7 @@ fun ScreensaverContent(context: Context) {
                         batteryGradientColors = batteryGradientColors,
                         voltStr = voltStr,
                         tempStr = tempStr,
-                        fullTimeStrLandscape = fullTimeStrLandscape
+                        fullTimeStr = fullTimeStr
                     )
 
                     Spacer(modifier = Modifier.weight(1f))
@@ -316,7 +349,7 @@ fun ScreensaverContent(context: Context) {
                 .clickable {
                     val newValue = !isLayoutSwapped
                     isLayoutSwapped = newValue
-                    preferences.edit().putBoolean(PREF_LAYOUT_SWAPPED, newValue).apply()
+                    preferences.edit().putBoolean(DreamPreferences.KEY_LAYOUT_SWAPPED, newValue).apply()
                 },
             contentAlignment = Alignment.Center
         ) {
@@ -391,7 +424,7 @@ fun BatteryBlockLandscape(
     batteryGradientColors: List<Color>,
     voltStr: String,
     tempStr: String,
-    fullTimeStrLandscape: String
+    fullTimeStr: String
 ) {
     Column(
         modifier = modifier,
@@ -468,10 +501,10 @@ fun BatteryBlockLandscape(
             style = TextStyle(fontFeatureSettings = "tnum")
         )
         
-        if (fullTimeStrLandscape.isNotEmpty()) {
+        if (fullTimeStr.isNotEmpty()) {
             Spacer(modifier = Modifier.height(6.dp))
             Text(
-                text = fullTimeStrLandscape,
+                text = fullTimeStr,
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF34D399),
@@ -489,7 +522,7 @@ fun BatteryBlockPortrait(
     batteryGradientColors: List<Color>,
     voltStr: String,
     tempStr: String,
-    fullTimeStrLandscape: String
+    fullTimeStr: String
 ) {
     Column(
         modifier = modifier,
@@ -566,10 +599,10 @@ fun BatteryBlockPortrait(
             style = TextStyle(fontFeatureSettings = "tnum")
         )
         
-        if (fullTimeStrLandscape.isNotEmpty()) {
+        if (fullTimeStr.isNotEmpty()) {
             Spacer(modifier = Modifier.height(6.dp))
             Text(
-                text = fullTimeStrLandscape,
+                text = fullTimeStr,
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF34D399),
@@ -577,6 +610,92 @@ fun BatteryBlockPortrait(
             )
         }
     }
+}
+
+/**
+ * Largest clock font size (in sp) whose "HH:mm" + gap + ":ss" line fits [availableWidth].
+ * Text width scales linearly with font size, so we measure both parts once at a reference size
+ * and let [fittedClockSp] solve for the biggest size that fits, clamped to
+ * [minClockSp]..[maxClockSp]. This keeps the seconds from wrapping/overlapping on narrow
+ * screens regardless of device width. The measurement is cached and only re-runs when the
+ * available width, density, or font resolver changes (not on every clock tick).
+ */
+@Composable
+private fun rememberFittedClockSize(
+    availableWidth: Dp,
+    maxClockSp: Int,
+    minClockSp: Int,
+    secondsRatio: Float = 0.25f,
+    secondsMinSp: Int = 22,
+    gap: Dp = 8.dp,
+): Int {
+    val measurer = rememberTextMeasurer()
+    val density = LocalDensity.current
+    val resolver = LocalFontFamilyResolver.current
+    return remember(availableWidth, maxClockSp, minClockSp, density, resolver) {
+        if (availableWidth <= 0.dp) return@remember minClockSp
+        val referenceSp = 100f
+        val timeWidthPx = measurer.measure(
+            text = "00:00",
+            style = TextStyle(
+                fontSize = referenceSp.sp,
+                fontWeight = FontWeight.ExtraBold,
+                fontFeatureSettings = "tnum",
+                letterSpacing = 0.sp,
+            ),
+            softWrap = false,
+            maxLines = 1,
+            density = density,
+            fontFamilyResolver = resolver,
+        ).size.width.toFloat()
+        val secWidthPx = measurer.measure(
+            text = ":00",
+            style = TextStyle(
+                fontSize = referenceSp.sp,
+                fontWeight = FontWeight.Bold,
+                fontFeatureSettings = "tnum",
+            ),
+            softWrap = false,
+            maxLines = 1,
+            density = density,
+            fontFamilyResolver = resolver,
+        ).size.width.toFloat()
+        fittedClockSp(
+            availablePx = with(density) { availableWidth.toPx() },
+            gapPx = with(density) { gap.toPx() },
+            timePerSp = timeWidthPx / referenceSp,
+            secPerSp = secWidthPx / referenceSp,
+            secondsRatio = secondsRatio,
+            secondsMinSp = secondsMinSp,
+            minClockSp = minClockSp,
+            maxClockSp = maxClockSp,
+        )
+    }
+}
+
+/**
+ * Pure width-fit math, extracted for unit testing. Given the time/seconds widths-per-sp,
+ * returns the largest integer sp size in [minClockSp]..[maxClockSp] whose
+ * time + [gapPx] + seconds line fits [availablePx]. The seconds normally scale as
+ * [secondsRatio] of the clock size, but are pinned at [secondsMinSp] once that would drop
+ * below the floor — so the floor case is re-solved with a fixed seconds width.
+ */
+internal fun fittedClockSp(
+    availablePx: Float,
+    gapPx: Float,
+    timePerSp: Float,
+    secPerSp: Float,
+    secondsRatio: Float,
+    secondsMinSp: Int,
+    minClockSp: Int,
+    maxClockSp: Int,
+): Int {
+    var fitted = (availablePx - gapPx) / (timePerSp + secPerSp * secondsRatio)
+    if (secondsRatio * fitted < secondsMinSp) {
+        val secFlooredPx = secPerSp * secondsMinSp
+        fitted = (availablePx - gapPx - secFlooredPx) / timePerSp
+    }
+    return fitted.toInt().coerceIn(minClockSp, maxClockSp)
 }
 
 fun getBatteryGradientColors(level: Int): List<Color> {

@@ -23,6 +23,93 @@
     <string name="refresh_data">Päivitä tiedot</string>
     <string name="last_updated">Viimeksi päivitetty: %1$s</string>
 
+    <string name="screensaver_settings_section">NÄYTÖNSÄÄSTÄJÄ</string>
+    <string name="force_portrait_title">Pakota pystyasento</string>
+    <string name="force_portrait_description">Pidä näytönsäästäjä pystyssä, vaikka laite olisi vaaka-asennossa.</string>
+
+    <string name="device_info_section">LAITETIEDOT</string>
+    <string name="device_info_manufacturer">Valmistaja</string>
+    <string name="device_info_model">Malli</string>
+    <string name="device_info_codename">Koodinimi</string>
+    <string name="device_info_android">Android-versio</string>
+    <string name="device_info_security_patch">Tietoturvapäivitys</string>
+    <string name="device_info_build">Koontiversio</string>
+    <string name="device_info_soc">Piirisarja (SoC)</string>
+    <string name="device_info_abis">Tuetut ABI:t</string>
+    <string name="device_info_kernel">Ydin (kernel)</string>
+    <string name="device_info_resolution">Näytön tarkkuus</string>
+    <string name="device_info_density">Näytön tiheys</string>
+    <string name="device_info_refresh">Virkistystaajuus</string>
+    <string name="device_info_ram">Muisti (RAM) yhteensä</string>
+    <string name="device_info_storage">Tallennustila yhteensä</string>
+
+    <string name="sim_state_ready">Valmis</string>
+    <string name="sim_state_absent">Ei SIM-korttia</string>
+    <string name="sim_state_locked">Lukittu</string>
+
+    <string name="sim_info_section">SIM JA MOBIILIVERKKO</string>
+    <string name="sim_operator">Operaattori</string>
+    <string name="sim_country">Maa</string>
+    <string name="sim_network">Verkon tyyppi</string>
+    <string name="sim_signal">Signaali</string>
+    <string name="sim_status">SIM-tila</string>
+    <string name="sim_slots">SIM-paikat</string>
+    <string name="sim_data">Mobiilidata tänään</string>
+
+    <string name="wifi_info_section">WI-FI</string>
+    <string name="wifi_name">Verkko (SSID)</string>
+    <string name="wifi_band_label">Taajuusalue</string>
+    <string name="wifi_standard">Wi-Fi-standardi</string>
+    <string name="wifi_signal">Signaali</string>
+    <string name="wifi_link_speed">Linkkinopeus</string>
+    <string name="wifi_ip">IP-osoite</string>
+    <string name="wifi_data">Wi-Fi-data tänään</string>
+    <string name="wifi_vpn">VPN käytössä</string>
+    <string name="wifi_dns">DNS-palvelimet</string>
+
+    <string name="common_yes">Kyllä</string>
+    <string name="common_no">Ei</string>
+
+    <string name="device_info_bootloader">Bootloader</string>
+    <string name="device_info_radio">Modeemi (baseband)</string>
+    <string name="device_info_gpu">GPU</string>
+    <string name="device_info_gl">OpenGL</string>
+    <string name="device_info_physical_size">Näytön koko</string>
+    <string name="device_info_hdr">HDR</string>
+    <string name="device_info_battery_tech">Akkutyyppi</string>
+    <string name="device_info_battery_capacity">Akun kapasiteetti</string>
+
+    <string name="camera_info_section">KAMERAT</string>
+    <string name="camera_count">Kameroita</string>
+    <string name="camera_rear">Takakamera</string>
+    <string name="camera_front">Etukamera</string>
+    <string name="camera_flash">Salama</string>
+
+    <string name="sensors_section">ANTURIT</string>
+    <string name="sensors_count">Antureiden määrä</string>
+    <string name="sensors_present">Anturit</string>
+    <string name="sensor_accelerometer">Kiihtyvyysanturi</string>
+    <string name="sensor_gyroscope">Gyroskooppi</string>
+    <string name="sensor_magnetometer">Magnetometri</string>
+    <string name="sensor_barometer">Ilmanpaineanturi</string>
+    <string name="sensor_proximity">Lähestymisanturi</string>
+    <string name="sensor_light">Valoanturi</string>
+    <string name="sensor_step_counter">Askelmittari</string>
+    <string name="sensor_heart_rate">Syke</string>
+
+    <string name="system_info_section">JÄRJESTELMÄ</string>
+    <string name="system_locale">Kieli</string>
+    <string name="system_timezone">Aikavyöhyke</string>
+    <string name="system_webview">WebView</string>
+    <string name="system_play_services">Play-palvelut</string>
+    <string name="system_features">Ominaisuudet</string>
+    <string name="feature_nfc">NFC</string>
+    <string name="feature_fingerprint">Sormenjälki</string>
+    <string name="feature_face">Kasvotunnistus</string>
+    <string name="feature_bluetooth_le">Bluetooth LE</string>
+    <string name="feature_telephony">Mobiiliverkko</string>
+    <string name="feature_ir">IR-lähetin</string>
+
     <plurals name="cpu_cores_value">
         <item quantity="one">%1$d ydin (%2$s)</item>
         <item quantity="other">%1$d ydintä (%2$s)</item>

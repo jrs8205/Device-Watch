@@ -9,17 +9,29 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
+import android.hardware.Sensor
+import android.hardware.SensorManager
+import android.hardware.camera2.CameraCharacteristics
+import android.hardware.camera2.CameraManager
+import android.hardware.display.DisplayManager
 import android.net.ConnectivityManager
+import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.TrafficStats
 import android.net.wifi.WifiInfo
 import android.net.wifi.WifiManager
+import android.opengl.EGL14
+import android.opengl.EGLConfig
+import android.opengl.GLES20
 import android.os.BatteryManager
 import android.os.Build
 import android.os.Environment
 import android.os.Process
 import android.os.StatFs
 import android.os.SystemClock
+import android.util.DisplayMetrics
+import android.view.Display
+import android.webkit.WebView
 import android.telephony.AccessNetworkConstants
 import android.telephony.CellInfo
 import android.telephony.CellInfoCdma
@@ -39,10 +51,15 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.net.Inet4Address
 import java.util.Calendar
+import java.util.Locale
+import java.util.TimeZone
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.abs
+import kotlin.math.roundToInt
+import kotlin.math.sqrt
 
 @Singleton
 class SystemStatsRepositoryImpl @Inject constructor(
@@ -61,6 +78,322 @@ class SystemStatsRepositoryImpl @Inject constructor(
 
     override suspend fun getStats(): SystemStats = withContext(dispatcher) {
         statsMutex.withLock { computeStats() }
+    }
+
+    override suspend fun getDeviceInfo(): DeviceInfo = withContext(dispatcher) {
+        computeDeviceInfo()
+    }
+
+    @Suppress("DEPRECATION") // Display.getRealMetrics/isHdr are the broadest cross-version reads
+    private fun computeDeviceInfo(): DeviceInfo {
+        val manufacturer = Build.MANUFACTURER
+            ?.replaceFirstChar { it.uppercase() }
+            ?.takeIf { it.isNotBlank() } ?: UNAVAILABLE_TEXT
+        val model = Build.MODEL?.takeIf { it.isNotBlank() } ?: UNAVAILABLE_TEXT
+        val codename = Build.DEVICE?.takeIf { it.isNotBlank() } ?: UNAVAILABLE_TEXT
+        val androidVersion = "${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})"
+        val securityPatch = Build.VERSION.SECURITY_PATCH?.takeIf { it.isNotBlank() } ?: UNAVAILABLE_TEXT
+        val buildNumber = Build.DISPLAY?.takeIf { it.isNotBlank() } ?: UNAVAILABLE_TEXT
+        val bootloader = Build.BOOTLOADER?.takeIf { it.isNotBlank() && it != Build.UNKNOWN } ?: UNAVAILABLE_TEXT
+        val radioVersion = Build.getRadioVersion()?.takeIf { it.isNotBlank() } ?: UNAVAILABLE_TEXT
+        val soc = readSoc()
+        val supportedAbis = Build.SUPPORTED_ABIS
+            ?.joinToString(", ")
+            ?.takeIf { it.isNotBlank() } ?: UNAVAILABLE_TEXT
+        val kernelVersion = System.getProperty("os.version")?.takeIf { it.isNotBlank() } ?: UNAVAILABLE_TEXT
+        val (gpuRenderer, glVersion) = readGpuInfo()
+
+        val display = (context.getSystemService(Context.DISPLAY_SERVICE) as? DisplayManager)
+            ?.getDisplay(Display.DEFAULT_DISPLAY)
+        var screenResolution = UNAVAILABLE_TEXT
+        var screenDensity = UNAVAILABLE_TEXT
+        var physicalSize = UNAVAILABLE_TEXT
+        if (display != null) {
+            val metrics = DisplayMetrics()
+            display.getRealMetrics(metrics)
+            if (metrics.widthPixels > 0 && metrics.heightPixels > 0) {
+                screenResolution = "${metrics.widthPixels} × ${metrics.heightPixels} px"
+                screenDensity = "${metrics.densityDpi} dpi · ${SystemStatsParser.densityBucketLabel(metrics.densityDpi)}"
+                if (metrics.xdpi > 0f && metrics.ydpi > 0f) {
+                    val widthInches = metrics.widthPixels / metrics.xdpi
+                    val heightInches = metrics.heightPixels / metrics.ydpi
+                    physicalSize = String.format(
+                        Locale.US, "%.1f\"", sqrt(widthInches * widthInches + heightInches * heightInches)
+                    )
+                }
+            }
+        }
+        val refreshRate = formatRefreshRate(display)
+        val hdr = if (display != null) boolText(display.isHdr) else UNAVAILABLE_TEXT
+
+        val totalRam = readTotalRamGb()
+            ?.let { String.format(Locale.US, "%.1f GB", it) } ?: UNAVAILABLE_TEXT
+        val totalStorage = readTotalStorageGb()
+            ?.let { String.format(Locale.US, "%.0f GB", it) } ?: UNAVAILABLE_TEXT
+
+        val batteryIntent = context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+        val batteryTechnology = batteryIntent?.getStringExtra(BatteryManager.EXTRA_TECHNOLOGY)
+            ?.takeIf { it.isNotBlank() } ?: UNAVAILABLE_TEXT
+        val batteryCapacityMah = readBatteryCapacityMah()
+
+        val camera = readCameraSummary()
+        val (sensorCount, sensors) = readSensorSummary()
+
+        val locale = Locale.getDefault().toLanguageTag()
+        val timezone = TimeZone.getDefault().id
+        val webViewVersion = readWebViewVersion()
+        val playServicesVersion = readPackageVersion("com.google.android.gms")
+        val deviceFeatures = readDeviceFeatures()
+
+        val connManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+        val activeNetwork = connManager?.activeNetwork
+        val vpnActive = readVpnActive(connManager, activeNetwork)
+        val dnsServers = readDnsServers(connManager, activeNetwork)
+
+        return DeviceInfo(
+            manufacturer = manufacturer,
+            model = model,
+            codename = codename,
+            androidVersion = androidVersion,
+            securityPatch = securityPatch,
+            buildNumber = buildNumber,
+            bootloader = bootloader,
+            radioVersion = radioVersion,
+            soc = soc,
+            supportedAbis = supportedAbis,
+            kernelVersion = kernelVersion,
+            gpuRenderer = gpuRenderer,
+            glVersion = glVersion,
+            screenResolution = screenResolution,
+            screenDensity = screenDensity,
+            physicalSize = physicalSize,
+            refreshRate = refreshRate,
+            hdr = hdr,
+            totalRam = totalRam,
+            totalStorage = totalStorage,
+            batteryTechnology = batteryTechnology,
+            batteryCapacityMah = batteryCapacityMah,
+            cameraCount = camera.count,
+            rearCamera = camera.rear,
+            frontCamera = camera.front,
+            cameraFlash = camera.flash,
+            sensorCount = sensorCount,
+            sensors = sensors,
+            locale = locale,
+            timezone = timezone,
+            webViewVersion = webViewVersion,
+            playServicesVersion = playServicesVersion,
+            deviceFeatures = deviceFeatures,
+            vpnActive = vpnActive,
+            dnsServers = dnsServers,
+        )
+    }
+
+    private fun boolText(value: Boolean): String =
+        context.getString(if (value) R.string.common_yes else R.string.common_no)
+
+    private fun readBatteryCapacityMah(): String {
+        return try {
+            val powerProfileClass = Class.forName("com.android.internal.os.PowerProfile")
+            val instance = powerProfileClass.getConstructor(Context::class.java).newInstance(context)
+            val mah = powerProfileClass.getMethod("getBatteryCapacity").invoke(instance) as Double
+            if (mah > 0.0) "${mah.roundToInt()} mAh" else UNAVAILABLE_TEXT
+        } catch (_: Throwable) {
+            UNAVAILABLE_TEXT
+        }
+    }
+
+    private data class CameraSummary(
+        val count: String,
+        val rear: String,
+        val front: String,
+        val flash: String,
+    )
+
+    private fun readCameraSummary(): CameraSummary {
+        val unavailable = CameraSummary(UNAVAILABLE_TEXT, UNAVAILABLE_TEXT, UNAVAILABLE_TEXT, UNAVAILABLE_TEXT)
+        val cameraManager = context.getSystemService(Context.CAMERA_SERVICE) as? CameraManager ?: return unavailable
+        return try {
+            val ids = cameraManager.cameraIdList
+            var rearMp = 0
+            var frontMp = 0
+            var anyFlash = false
+            for (id in ids) {
+                val characteristics = cameraManager.getCameraCharacteristics(id)
+                val facing = characteristics.get(CameraCharacteristics.LENS_FACING)
+                val size = characteristics.get(CameraCharacteristics.SENSOR_INFO_PIXEL_ARRAY_SIZE)
+                val megapixels = if (size != null) {
+                    ((size.width.toLong() * size.height) / 1_000_000.0).roundToInt()
+                } else {
+                    0
+                }
+                if (characteristics.get(CameraCharacteristics.FLASH_INFO_AVAILABLE) == true) anyFlash = true
+                when (facing) {
+                    CameraCharacteristics.LENS_FACING_BACK -> if (megapixels > rearMp) rearMp = megapixels
+                    CameraCharacteristics.LENS_FACING_FRONT -> if (megapixels > frontMp) frontMp = megapixels
+                }
+            }
+            CameraSummary(
+                count = if (ids.isNotEmpty()) ids.size.toString() else UNAVAILABLE_TEXT,
+                rear = if (rearMp > 0) "$rearMp MP" else UNAVAILABLE_TEXT,
+                front = if (frontMp > 0) "$frontMp MP" else UNAVAILABLE_TEXT,
+                flash = boolText(anyFlash),
+            )
+        } catch (_: Exception) {
+            unavailable
+        }
+    }
+
+    private fun readSensorSummary(): Pair<String, String> {
+        val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as? SensorManager
+            ?: return UNAVAILABLE_TEXT to UNAVAILABLE_TEXT
+        val count = sensorManager.getSensorList(Sensor.TYPE_ALL).size
+        val present = buildList {
+            if (sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER) != null) add(context.getString(R.string.sensor_accelerometer))
+            if (sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE) != null) add(context.getString(R.string.sensor_gyroscope))
+            if (sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD) != null) add(context.getString(R.string.sensor_magnetometer))
+            if (sensorManager.getDefaultSensor(Sensor.TYPE_PRESSURE) != null) add(context.getString(R.string.sensor_barometer))
+            if (sensorManager.getDefaultSensor(Sensor.TYPE_PROXIMITY) != null) add(context.getString(R.string.sensor_proximity))
+            if (sensorManager.getDefaultSensor(Sensor.TYPE_LIGHT) != null) add(context.getString(R.string.sensor_light))
+            if (sensorManager.getDefaultSensor(Sensor.TYPE_STEP_COUNTER) != null) add(context.getString(R.string.sensor_step_counter))
+            if (sensorManager.getDefaultSensor(Sensor.TYPE_HEART_RATE) != null) add(context.getString(R.string.sensor_heart_rate))
+        }
+        val countText = if (count > 0) count.toString() else UNAVAILABLE_TEXT
+        val listText = if (present.isEmpty()) UNAVAILABLE_TEXT else present.joinToString(", ")
+        return countText to listText
+    }
+
+    private fun readDeviceFeatures(): String {
+        val pm = context.packageManager
+        val present = buildList {
+            if (pm.hasSystemFeature(PackageManager.FEATURE_NFC)) add(context.getString(R.string.feature_nfc))
+            if (pm.hasSystemFeature(PackageManager.FEATURE_FINGERPRINT)) add(context.getString(R.string.feature_fingerprint))
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && pm.hasSystemFeature(PackageManager.FEATURE_FACE)) {
+                add(context.getString(R.string.feature_face))
+            }
+            if (pm.hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) add(context.getString(R.string.feature_bluetooth_le))
+            if (pm.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) add(context.getString(R.string.feature_telephony))
+            if (pm.hasSystemFeature(PackageManager.FEATURE_CONSUMER_IR)) add(context.getString(R.string.feature_ir))
+        }
+        return if (present.isEmpty()) UNAVAILABLE_TEXT else present.joinToString(", ")
+    }
+
+    private fun readWebViewVersion(): String {
+        return try {
+            WebView.getCurrentWebViewPackage()?.versionName?.takeIf { it.isNotBlank() } ?: UNAVAILABLE_TEXT
+        } catch (_: Exception) {
+            UNAVAILABLE_TEXT
+        }
+    }
+
+    @Suppress("DEPRECATION") // versionName (not the long code) is what users recognise here
+    private fun readPackageVersion(packageName: String): String {
+        return try {
+            context.packageManager.getPackageInfo(packageName, 0).versionName
+                ?.takeIf { it.isNotBlank() } ?: UNAVAILABLE_TEXT
+        } catch (_: Exception) {
+            UNAVAILABLE_TEXT
+        }
+    }
+
+    private fun readVpnActive(connManager: ConnectivityManager?, network: Network?): String {
+        val caps = connManager?.getNetworkCapabilities(network) ?: return UNAVAILABLE_TEXT
+        return boolText(caps.hasTransport(NetworkCapabilities.TRANSPORT_VPN))
+    }
+
+    private fun readDnsServers(connManager: ConnectivityManager?, network: Network?): String {
+        val dns = connManager?.getLinkProperties(network)?.dnsServers?.mapNotNull { it.hostAddress }
+        return if (dns.isNullOrEmpty()) UNAVAILABLE_TEXT else dns.joinToString(", ")
+    }
+
+    /** Reads GPU renderer + GL version via a throwaway offscreen EGL/GLES context. */
+    private fun readGpuInfo(): Pair<String, String> {
+        return try {
+            val eglDisplay = EGL14.eglGetDisplay(EGL14.EGL_DEFAULT_DISPLAY)
+            if (eglDisplay == EGL14.EGL_NO_DISPLAY) return UNAVAILABLE_TEXT to UNAVAILABLE_TEXT
+            val version = IntArray(2)
+            if (!EGL14.eglInitialize(eglDisplay, version, 0, version, 1)) {
+                return UNAVAILABLE_TEXT to UNAVAILABLE_TEXT
+            }
+            try {
+                val configAttribs = intArrayOf(
+                    EGL14.EGL_RENDERABLE_TYPE, EGL14.EGL_OPENGL_ES2_BIT,
+                    EGL14.EGL_SURFACE_TYPE, EGL14.EGL_PBUFFER_BIT,
+                    EGL14.EGL_NONE
+                )
+                val configs = arrayOfNulls<EGLConfig>(1)
+                val numConfig = IntArray(1)
+                if (!EGL14.eglChooseConfig(eglDisplay, configAttribs, 0, configs, 0, 1, numConfig, 0) ||
+                    numConfig[0] == 0 || configs[0] == null
+                ) {
+                    return UNAVAILABLE_TEXT to UNAVAILABLE_TEXT
+                }
+                val contextAttribs = intArrayOf(EGL14.EGL_CONTEXT_CLIENT_VERSION, 2, EGL14.EGL_NONE)
+                val eglContext = EGL14.eglCreateContext(
+                    eglDisplay, configs[0], EGL14.EGL_NO_CONTEXT, contextAttribs, 0
+                )
+                if (eglContext == EGL14.EGL_NO_CONTEXT) return UNAVAILABLE_TEXT to UNAVAILABLE_TEXT
+                val surfaceAttribs = intArrayOf(EGL14.EGL_WIDTH, 1, EGL14.EGL_HEIGHT, 1, EGL14.EGL_NONE)
+                val eglSurface = EGL14.eglCreatePbufferSurface(eglDisplay, configs[0], surfaceAttribs, 0)
+                try {
+                    if (!EGL14.eglMakeCurrent(eglDisplay, eglSurface, eglSurface, eglContext)) {
+                        return UNAVAILABLE_TEXT to UNAVAILABLE_TEXT
+                    }
+                    val renderer = GLES20.glGetString(GLES20.GL_RENDERER)?.takeIf { it.isNotBlank() } ?: UNAVAILABLE_TEXT
+                    val gl = GLES20.glGetString(GLES20.GL_VERSION)?.takeIf { it.isNotBlank() } ?: UNAVAILABLE_TEXT
+                    renderer to gl
+                } finally {
+                    EGL14.eglMakeCurrent(
+                        eglDisplay, EGL14.EGL_NO_SURFACE, EGL14.EGL_NO_SURFACE, EGL14.EGL_NO_CONTEXT
+                    )
+                    if (eglSurface != EGL14.EGL_NO_SURFACE) EGL14.eglDestroySurface(eglDisplay, eglSurface)
+                    EGL14.eglDestroyContext(eglDisplay, eglContext)
+                }
+            } finally {
+                EGL14.eglTerminate(eglDisplay)
+            }
+        } catch (_: Throwable) {
+            UNAVAILABLE_TEXT to UNAVAILABLE_TEXT
+        }
+    }
+
+    private fun readSoc(): String {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val mfr = Build.SOC_MANUFACTURER.takeIf { it.isNotBlank() && it != Build.UNKNOWN }
+            val mdl = Build.SOC_MODEL.takeIf { it.isNotBlank() && it != Build.UNKNOWN }
+            val combined = listOfNotNull(mfr, mdl).joinToString(" ")
+            if (combined.isNotBlank()) return combined
+        }
+        return Build.HARDWARE?.takeIf { it.isNotBlank() } ?: UNAVAILABLE_TEXT
+    }
+
+    private fun formatRefreshRate(display: Display?): String {
+        if (display == null) return UNAVAILABLE_TEXT
+        val rates = display.supportedModes.map { it.refreshRate }.filter { it > 0f }
+        if (rates.isEmpty()) {
+            return display.refreshRate.takeIf { it > 0f }?.let { "${it.roundToInt()} Hz" } ?: UNAVAILABLE_TEXT
+        }
+        val min = rates.min().roundToInt()
+        val max = rates.max().roundToInt()
+        return if (max - min > 1) "$min–$max Hz" else "$max Hz"
+    }
+
+    private fun readTotalRamGb(): Double? {
+        val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
+            ?: return null
+        val memoryInfo = ActivityManager.MemoryInfo()
+        activityManager.getMemoryInfo(memoryInfo)
+        return (memoryInfo.totalMem.toDouble() / GB_BYTES).takeIf { memoryInfo.totalMem > 0 }
+    }
+
+    private fun readTotalStorageGb(): Double? {
+        return try {
+            val stat = StatFs(Environment.getDataDirectory().path)
+            val totalBytes = stat.blockCountLong * stat.blockSizeLong
+            (totalBytes.toDouble() / GB_BYTES).takeIf { totalBytes > 0 }
+        } catch (_: Exception) {
+            null
+        }
     }
 
     @Suppress("DEPRECATION")
@@ -172,6 +505,23 @@ class SystemStatsRepositoryImpl @Inject constructor(
         }
         val wifiBytesTodayGb = readNetworkUsageGb(ConnectivityManager.TYPE_WIFI)
 
+        // RSSI / link speed / standard are not redacted by the location permission (only the
+        // SSID/BSSID are), so these populate even when the identity read above is blocked.
+        var wifiRssiDbm = UNAVAILABLE_INT
+        var wifiLinkSpeedMbps = UNAVAILABLE_INT
+        var wifiStandard = UNAVAILABLE_TEXT
+        if (isWifiConnected && capabilities != null) {
+            val wifiInfo = wifiInfoFromCapabilities(capabilities) ?: wifiManager?.connectionInfo
+            if (wifiInfo != null) {
+                wifiRssiDbm = wifiInfo.rssi.takeIf { it != -127 && it < 0 } ?: UNAVAILABLE_INT
+                wifiLinkSpeedMbps = wifiInfo.linkSpeed.takeIf { it > 0 } ?: UNAVAILABLE_INT
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    wifiStandard = SystemStatsParser.wifiStandardLabel(wifiInfo.wifiStandard)
+                }
+            }
+        }
+        val ipAddress = readIpAddress(connManager, activeNetwork)
+
         val telephonyManager = context.getSystemService(Context.TELEPHONY_SERVICE) as? TelephonyManager
         var operatorName = UNAVAILABLE_TEXT
         var mobileNetworkType = UNAVAILABLE_TEXT
@@ -199,6 +549,16 @@ class SystemStatsRepositoryImpl @Inject constructor(
             mobileTrafficSinceBootGb >= 0.0 -> context.getString(R.string.mobile_data_since_boot_label)
             else -> context.getString(R.string.mobile_data_label)
         }
+
+        // SIM facts that need no runtime permission.
+        val simOperator = telephonyManager?.let {
+            firstNonBlank(it.simOperatorName, it.networkOperatorName)
+        } ?: UNAVAILABLE_TEXT
+        val networkCountry = telephonyManager?.let {
+            firstNonBlank(it.networkCountryIso, it.simCountryIso)?.uppercase()
+        } ?: UNAVAILABLE_TEXT
+        val simState = readSimStateLabel(telephonyManager)
+        val simSlots = readSimSlotCount(telephonyManager)
 
         val uptimeMs = SystemClock.elapsedRealtime()
         val uptimeHours = uptimeMs / (1000 * 60 * 60)
@@ -237,6 +597,14 @@ class SystemStatsRepositoryImpl @Inject constructor(
             mobileDataUsedGb = mobileDataUsedGb,
             mobileDataTotalGb = mobileDataTotalGb,
             mobileDataLabel = mobileDataLabel,
+            simOperator = simOperator,
+            simState = simState,
+            simSlots = simSlots,
+            networkCountry = networkCountry,
+            wifiRssiDbm = wifiRssiDbm,
+            wifiLinkSpeedMbps = wifiLinkSpeedMbps,
+            wifiStandard = wifiStandard,
+            ipAddress = ipAddress,
             uptimeText = uptimeText
         )
     }
@@ -626,6 +994,42 @@ class SystemStatsRepositoryImpl @Inject constructor(
             (rx + tx).toDouble() / GB_BYTES
         } else {
             UNAVAILABLE_DOUBLE
+        }
+    }
+
+    private fun readSimStateLabel(telephonyManager: TelephonyManager?): String {
+        val state = telephonyManager?.simState ?: return UNAVAILABLE_TEXT
+        return when (state) {
+            TelephonyManager.SIM_STATE_READY -> context.getString(R.string.sim_state_ready)
+            TelephonyManager.SIM_STATE_ABSENT -> context.getString(R.string.sim_state_absent)
+            TelephonyManager.SIM_STATE_PIN_REQUIRED,
+            TelephonyManager.SIM_STATE_PUK_REQUIRED,
+            TelephonyManager.SIM_STATE_NETWORK_LOCKED -> context.getString(R.string.sim_state_locked)
+            else -> UNAVAILABLE_TEXT
+        }
+    }
+
+    private fun readSimSlotCount(telephonyManager: TelephonyManager?): Int {
+        if (telephonyManager == null) return UNAVAILABLE_INT
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            telephonyManager.activeModemCount.takeIf { it > 0 } ?: UNAVAILABLE_INT
+        } else {
+            @Suppress("DEPRECATION")
+            telephonyManager.phoneCount.takeIf { it > 0 } ?: UNAVAILABLE_INT
+        }
+    }
+
+    /** The device's own IPv4 address on the active network. Reading your own link needs no permission. */
+    private fun readIpAddress(connManager: ConnectivityManager?, network: Network?): String {
+        if (connManager == null || network == null) return UNAVAILABLE_TEXT
+        return try {
+            val linkProperties = connManager.getLinkProperties(network) ?: return UNAVAILABLE_TEXT
+            linkProperties.linkAddresses
+                .map { it.address }
+                .firstOrNull { it is Inet4Address && !it.isLoopbackAddress && !it.isLinkLocalAddress }
+                ?.hostAddress ?: UNAVAILABLE_TEXT
+        } catch (_: Exception) {
+            UNAVAILABLE_TEXT
         }
     }
 
