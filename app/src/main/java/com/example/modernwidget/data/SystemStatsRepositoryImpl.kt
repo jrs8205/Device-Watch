@@ -503,6 +503,22 @@ class SystemStatsRepositoryImpl @Inject constructor(
                 }
             }
         }
+        // The settings screen shows the real SSID; the deprecated connectionInfo returns it
+        // un-redacted (the transportInfo from a synchronous getNetworkCapabilities() is always
+        // location-redacted to <unknown ssid>). The widget keeps the compact wifiSsid label
+        // instead, because a full network name doesn't fit the widget tile.
+        val wifiSsidName = if (isWifiConnected && canReadWifiIdentity()) {
+            val realSsid = try {
+                SystemStatsParser.normalizedWifiSsid(wifiManager?.connectionInfo?.ssid)
+                    ?: capabilities?.let { SystemStatsParser.normalizedWifiSsid(wifiInfoFromCapabilities(it)?.ssid) }
+            } catch (_: SecurityException) {
+                null
+            }
+            realSsid ?: wifiSsid
+        } else {
+            wifiSsid
+        }
+
         val wifiBytesTodayGb = readNetworkUsageGb(ConnectivityManager.TYPE_WIFI)
 
         // RSSI / link speed / standard are not redacted by the location permission (only the
@@ -587,6 +603,7 @@ class SystemStatsRepositoryImpl @Inject constructor(
             usedStorageGb = usedStorageGb,
             storagePercent = storagePercent,
             wifiSsid = wifiSsid,
+            wifiSsidName = wifiSsidName,
             wifiBand = wifiBand,
             wifiSpeedDown = wifiSpeedDown,
             wifiSpeedUp = wifiSpeedUp,

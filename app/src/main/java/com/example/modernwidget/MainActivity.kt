@@ -489,7 +489,7 @@ fun SystemDashboardScreen(viewModel: DashboardViewModel = hiltViewModel()) {
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Spacer(modifier = Modifier.height(12.dp))
-                        DeviceInfoRow(R.string.wifi_name, currentStats.wifiSsid)
+                        DeviceInfoRow(R.string.wifi_name, currentStats.wifiSsidName)
                         DeviceInfoRow(R.string.wifi_band_label, currentStats.wifiBand)
                         DeviceInfoRow(R.string.wifi_standard, currentStats.wifiStandard)
                         DeviceInfoRow(R.string.wifi_signal, dbmText(currentStats.wifiRssiDbm))

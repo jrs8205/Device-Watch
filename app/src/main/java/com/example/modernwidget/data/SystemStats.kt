@@ -38,6 +38,7 @@ data class SystemStats(
     val usedStorageGb: Double,
     val storagePercent: Int,
     val wifiSsid: String,
+    val wifiSsidName: String,
     val wifiBand: String,
     val wifiSpeedDown: Int,
     val wifiSpeedUp: Int,

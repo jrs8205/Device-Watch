@@ -191,6 +191,7 @@ private fun sampleStats(batteryLevel: Int = 50): SystemStats = SystemStats(
     usedStorageGb = 64.0,
     storagePercent = 50,
     wifiSsid = "Wi-Fi",
+    wifiSsidName = "HomeNet",
     wifiBand = "5 GHz",
     wifiSpeedDown = 100,
     wifiSpeedUp = 50,
