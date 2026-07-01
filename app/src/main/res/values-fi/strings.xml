@@ -17,7 +17,7 @@
     <string name="uptime_label">Käyntiaika (Uptime)</string>
     <string name="widget_settings_section">WIDGETIN ASETUKSET</string>
     <string name="widget_opacity_title">Widgetin taustan peittävyys</string>
-    <string name="widget_opacity_description">Säädä kotinäytön widgetin taustan läpinäkyvyyttä. 100%% on täysin kiinteä tausta.</string>
+    <string name="widget_opacity_description" formatted="false">Säädä kotinäytön widgetin taustan läpinäkyvyyttä. 100% on täysin kiinteä tausta.</string>
     <string name="special_access_section">ERIKOISOIKEUDET</string>
     <string name="usage_access_button">Datankäyttö</string>
     <string name="refresh_data">Päivitä tiedot</string>
@@ -26,6 +26,10 @@
     <string name="screensaver_settings_section">NÄYTÖNSÄÄSTÄJÄ</string>
     <string name="force_portrait_title">Pakota pystyasento</string>
     <string name="force_portrait_description">Pidä näytönsäästäjä pystyssä, vaikka laite olisi vaaka-asennossa.</string>
+    <string name="dim_screensaver_title">Himmennä näytönsäästäjä</string>
+    <string name="dim_screensaver_description">Laske näytön kirkkautta näytönsäästäjän aikana (miellyttävämpi silmille yöllä).</string>
+    <string name="open_screensaver_settings">Avaa näytönsäästäjän asetukset</string>
+    <string name="screensaver_charging_hint">Näytönsäästäjä otetaan käyttöön Androidin järjestelmäasetuksista, ja se näkyy kun näyttö sammuu laitteen ollessa latauksessa. Joissakin puhelimissa (esim. Samsung) se käynnistyy vain latauksen aikana, ja Always On Display voi täytyä poistaa käytöstä, jos se näkyy sen sijaan.</string>
 
     <string name="device_info_section">LAITETIEDOT</string>
     <string name="device_info_manufacturer">Valmistaja</string>
@@ -144,7 +148,7 @@
     <string name="battery_full_channel_name">Akkuhälytykset</string>
     <string name="battery_full_channel_description">Ilmoitukset latauksesta ja akun tilasta.</string>
     <string name="battery_full_notification_title">Akku on ladattu täyteen</string>
-    <string name="battery_full_notification_text">Akku saavutti 100%% varauksen näytönsäästäjän ollessa käytössä.</string>
+    <string name="battery_full_notification_text" formatted="false">Akku saavutti 100% varauksen näytönsäästäjän ollessa käytössä.</string>
 
     <string name="widget_tile_battery">AKKU</string>
     <string name="widget_tile_memory">MUISTI</string>

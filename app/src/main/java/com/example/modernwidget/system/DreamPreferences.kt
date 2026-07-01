@@ -9,4 +9,5 @@ object DreamPreferences {
     const val PREFS_NAME = "monitor_dream_preferences"
     const val KEY_LAYOUT_SWAPPED = "layout_swapped"
     const val KEY_FORCE_PORTRAIT = "force_portrait"
+    const val KEY_DIM_SCREENSAVER = "dim_screensaver"
 }

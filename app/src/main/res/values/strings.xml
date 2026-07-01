@@ -18,7 +18,7 @@
     <string name="uptime_label">Uptime</string>
     <string name="widget_settings_section">WIDGET SETTINGS</string>
     <string name="widget_opacity_title">Widget background opacity</string>
-    <string name="widget_opacity_description">Adjust the home screen widget background opacity. 100%% is fully opaque.</string>
+    <string name="widget_opacity_description" formatted="false">Adjust the home screen widget background opacity. 100% is fully opaque.</string>
     <string name="special_access_section">SPECIAL ACCESS</string>
     <string name="usage_access_button">Data usage</string>
     <string name="refresh_data">Refresh data</string>
@@ -27,6 +27,10 @@
     <string name="screensaver_settings_section">SCREENSAVER</string>
     <string name="force_portrait_title">Force portrait orientation</string>
     <string name="force_portrait_description">Keep the screensaver upright even when the device is in landscape.</string>
+    <string name="dim_screensaver_title">Dim the screensaver</string>
+    <string name="dim_screensaver_description">Lower the screen brightness while the screensaver is showing (easier on the eyes overnight).</string>
+    <string name="open_screensaver_settings">Open screensaver settings</string>
+    <string name="screensaver_charging_hint">The screensaver is turned on from Android\'s system settings, and it appears when the screen turns off while the device is charging. On some phones (e.g. Samsung) it only starts while charging, and you may need to turn off Always On Display if it shows instead.</string>
 
     <string name="device_info_section">DEVICE INFO</string>
     <string name="device_info_manufacturer">Manufacturer</string>
@@ -145,7 +149,7 @@
     <string name="battery_full_channel_name">Battery alerts</string>
     <string name="battery_full_channel_description">Notifications for charging and battery status.</string>
     <string name="battery_full_notification_title">Battery fully charged</string>
-    <string name="battery_full_notification_text">Battery has reached 100%% while the screensaver is active.</string>
+    <string name="battery_full_notification_text" formatted="false">Battery has reached 100% while the screensaver is active.</string>
 
     <string name="widget_tile_battery">BATTERY</string>
     <string name="widget_tile_memory">MEMORY</string>

@@ -73,6 +73,9 @@ fun SystemDashboardScreen(viewModel: DashboardViewModel = hiltViewModel()) {
     var forcePortraitScreensaver by remember {
         mutableStateOf(dreamPrefs.getBoolean(DreamPreferences.KEY_FORCE_PORTRAIT, false))
     }
+    var dimScreensaver by remember {
+        mutableStateOf(dreamPrefs.getBoolean(DreamPreferences.KEY_DIM_SCREENSAVER, false))
+    }
 
     // Start the background monitoring service (independent of the notification permission result).
     fun startSystemMonitorService() {
@@ -601,6 +604,55 @@ fun SystemDashboardScreen(viewModel: DashboardViewModel = hiltViewModel()) {
                                 }
                             )
                         }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = stringResource(R.string.dim_screensaver_title),
+                                    fontWeight = FontWeight.Medium,
+                                    fontSize = 14.sp
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = stringResource(R.string.dim_screensaver_description),
+                                    fontSize = 11.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Switch(
+                                checked = dimScreensaver,
+                                onCheckedChange = { checked ->
+                                    dimScreensaver = checked
+                                    dreamPrefs.edit()
+                                        .putBoolean(DreamPreferences.KEY_DIM_SCREENSAVER, checked)
+                                        .apply()
+                                }
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        OutlinedButton(
+                            onClick = { openSpecialAccessSettings(Settings.ACTION_DREAM_SETTINGS) },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text(stringResource(R.string.open_screensaver_settings), fontSize = 12.sp)
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        Text(
+                            text = stringResource(R.string.screensaver_charging_hint),
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 }
 

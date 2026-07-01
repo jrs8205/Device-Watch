@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Static preview of the screensaver shown in the system screensaver picker:
+     dark background, large clock + cyan seconds, date line, and a battery bar. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="320dp"
+    android:height="200dp"
+    android:viewportWidth="320"
+    android:viewportHeight="200">
+
+    <!-- Background -->
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M0,0 L320,0 L320,200 L0,200 Z" />
+
+    <!-- Clock (HH:mm) -->
+    <path
+        android:fillColor="#FFEDEDED"
+        android:pathData="M60,68 L196,68 L196,102 L60,102 Z" />
+
+    <!-- Seconds (:ss) accent -->
+    <path
+        android:fillColor="#FF38BDF8"
+        android:pathData="M204,80 L234,80 L234,102 L204,102 Z" />
+
+    <!-- Date line -->
+    <path
+        android:fillColor="#FF8B929C"
+        android:pathData="M96,114 L224,114 L224,124 L96,124 Z" />
+
+    <!-- Battery bar track -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:fillAlpha="0.2"
+        android:pathData="M70,152 L250,152 L250,168 L70,168 Z" />
+
+    <!-- Battery bar fill (~80%) -->
+    <path
+        android:fillColor="#FF34D399"
+        android:pathData="M70,152 L214,152 L214,168 L70,168 Z" />
+</vector>

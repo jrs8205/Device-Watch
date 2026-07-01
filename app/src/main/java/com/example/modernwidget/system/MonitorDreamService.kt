@@ -81,6 +81,12 @@ class MonitorDreamService : DreamService(), LifecycleOwner, ViewModelStoreOwner,
             ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
         }
 
+        // Optional dim mode (user setting). By default a dream is drawn at full brightness; when
+        // enabled we drop to a low brightness for bedside/overnight charging. Must be set no later
+        // than onDreamingStarted(), so onAttachedToWindow() is a valid place.
+        val dimScreensaver = dreamPrefs.getBoolean(DreamPreferences.KEY_DIM_SCREENSAVER, false)
+        setScreenBright(!dimScreensaver)
+
         val composeView = ComposeView(this).apply {
             setViewTreeLifecycleOwner(this@MonitorDreamService)
             setViewTreeViewModelStoreOwner(this@MonitorDreamService)
