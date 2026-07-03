@@ -42,6 +42,7 @@ import com.example.modernwidget.system.DreamPreferences
 import com.example.modernwidget.system.SystemMonitorService
 import java.util.Locale
 import com.example.modernwidget.ui.theme.ModernWidgetTheme
+import com.example.modernwidget.widget.dataAmountText
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -723,8 +724,7 @@ private fun mbpsText(value: Int): String =
 private fun countText(value: Int): String =
     if (value <= 0) UNAVAILABLE_TEXT else value.toString()
 
-private fun gbTodayText(value: Double): String =
-    if (value < 0.0) UNAVAILABLE_TEXT else String.format(Locale.US, "%.2f GB", value)
+private fun gbTodayText(value: Double): String = dataAmountText(value)
 
 @Composable
 private fun DeviceInfoRow(@StringRes labelRes: Int, value: String) {

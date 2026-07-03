@@ -179,22 +179,30 @@ fun ScreensaverContent(context: Context) {
     
     var timeText by remember { mutableStateOf("") }
     var secondsText by remember { mutableStateOf("") }
+    var amPmText by remember { mutableStateOf("") }
     var dateText by remember { mutableStateOf("") }
     var isLayoutSwapped by remember {
         mutableStateOf(preferences.getBoolean(DreamPreferences.KEY_LAYOUT_SWAPPED, false))
     }
     val configuration = LocalConfiguration.current
     val currentLocale = configuration.locales[0]
+    // Honor the device's 12/24-hour clock preference instead of hardcoding 24-hour time,
+    // so the screensaver clock reads naturally on every locale/brand.
+    val is24Hour = remember(configuration) {
+        android.text.format.DateFormat.is24HourFormat(context)
+    }
 
-    LaunchedEffect(currentLocale) {
-        val timeFormat = SimpleDateFormat("HH:mm", currentLocale)
+    LaunchedEffect(currentLocale, is24Hour) {
+        val timeFormat = SimpleDateFormat(if (is24Hour) "HH:mm" else "h:mm", currentLocale)
         val secondsFormat = SimpleDateFormat("ss", currentLocale)
+        val amPmFormat = SimpleDateFormat("a", currentLocale)
         val dateFormat = SimpleDateFormat(context.getString(R.string.dream_date_pattern), currentLocale)
-        
+
         while (true) {
             val now = Date()
             timeText = timeFormat.format(now)
             secondsText = secondsFormat.format(now)
+            amPmText = if (is24Hour) "" else amPmFormat.format(now)
             dateText = dateFormat.format(now).replaceFirstChar { it.uppercase(currentLocale) }
             kotlinx.coroutines.delay(1000)
         }
@@ -286,7 +294,8 @@ fun ScreensaverContent(context: Context) {
                         dateText = dateText,
                         clockSize = clockSize,
                         secondsSize = secondsSize,
-                        dateSize = if (clockSize < 100) 22 else 30
+                        dateSize = if (clockSize < 100) 22 else 30,
+                        amPmText = amPmText
                     )
 
                     Box(
@@ -325,7 +334,8 @@ fun ScreensaverContent(context: Context) {
                         dateText = dateText,
                         clockSize = clockSize,
                         secondsSize = secondsSize,
-                        dateSize = if (clockSize < 100) 22 else 28
+                        dateSize = if (clockSize < 100) 22 else 28,
+                        amPmText = amPmText
                     )
 
                     Spacer(modifier = Modifier.weight(1f))
@@ -386,7 +396,8 @@ fun ClockBlock(
     dateText: String,
     clockSize: Int,
     secondsSize: Int,
-    dateSize: Int
+    dateSize: Int,
+    amPmText: String = ""
 ) {
     Column(
         modifier = modifier,
@@ -403,14 +414,23 @@ fun ClockBlock(
                 letterSpacing = 0.sp
             )
             Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = ":$secondsText",
-                fontSize = secondsSize.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF38BDF8),
-                style = TextStyle(fontFeatureSettings = "tnum"),
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
+            Column(modifier = Modifier.padding(bottom = 16.dp)) {
+                Text(
+                    text = ":$secondsText",
+                    fontSize = secondsSize.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF38BDF8),
+                    style = TextStyle(fontFeatureSettings = "tnum")
+                )
+                if (amPmText.isNotEmpty()) {
+                    Text(
+                        text = amPmText,
+                        fontSize = (secondsSize * 0.6f).sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFF8B929C)
+                    )
+                }
+            }
         }
         Spacer(modifier = Modifier.height(8.dp))
         Text(

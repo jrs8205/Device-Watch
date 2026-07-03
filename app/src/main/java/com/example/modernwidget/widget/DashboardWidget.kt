@@ -24,6 +24,7 @@ import androidx.glance.layout.Box
 import androidx.glance.layout.Column
 import androidx.glance.layout.Row
 import androidx.glance.layout.Spacer
+import androidx.glance.layout.fillMaxHeight
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.height
@@ -145,12 +146,9 @@ fun WidgetContent() {
 
     val batteryLevel = prefs[RefreshStatsAction.BATTERY_LEVEL] ?: UNAVAILABLE_INT
     val batteryStatus = prefs[RefreshStatsAction.BATTERY_STATUS] ?: UNAVAILABLE_TEXT
-    val batteryHealth = prefs[RefreshStatsAction.BATTERY_HEALTH] ?: UNAVAILABLE_TEXT
     val batteryTemp = prefs[RefreshStatsAction.BATTERY_TEMP] ?: UNAVAILABLE_DOUBLE
     val batteryVoltage = prefs[RefreshStatsAction.BATTERY_VOLTAGE] ?: UNAVAILABLE_DOUBLE
     val timeRemaining = prefs[RefreshStatsAction.TIME_REMAINING] ?: UNAVAILABLE_TEXT
-    val batteryCycles = prefs[RefreshStatsAction.BATTERY_CYCLE_COUNT] ?: UNAVAILABLE_INT
-    val batteryCapacity = prefs[RefreshStatsAction.BATTERY_CAPACITY] ?: UNAVAILABLE_INT
 
     val totalRam = prefs[RefreshStatsAction.TOTAL_RAM] ?: UNAVAILABLE_DOUBLE
     val usedRam = prefs[RefreshStatsAction.USED_RAM] ?: UNAVAILABLE_DOUBLE
@@ -188,13 +186,14 @@ fun WidgetContent() {
             .appWidgetBackground()
             .background(colors.cardBackground)
             .cornerRadius(30.dp)
-            .padding(22.dp)
+            .padding(18.dp)
     ) {
-        // 2x3 grid (6 metric tiles, 12dp gap)
+        // 2x3 grid (6 metric tiles, 12dp gap). Each row takes an equal third of the grid
+        // height so the last row can never be squeezed out and clipped by the rows above it.
         Column(
             modifier = GlanceModifier.fillMaxWidth().defaultWeight()
         ) {
-            Row(modifier = GlanceModifier.fillMaxWidth()) {
+            Row(modifier = GlanceModifier.fillMaxWidth().defaultWeight()) {
                 MetricTile(
                     title = context.getString(R.string.widget_tile_battery),
                     value = percentText(batteryLevel),
@@ -232,7 +231,7 @@ fun WidgetContent() {
                 )
             }
             Spacer(modifier = GlanceModifier.height(12.dp))
-            Row(modifier = GlanceModifier.fillMaxWidth()) {
+            Row(modifier = GlanceModifier.fillMaxWidth().defaultWeight()) {
                 MetricTile(
                     title = context.getString(R.string.widget_tile_cpu),
                     value = percentText(cpuLoad),
@@ -268,48 +267,105 @@ fun WidgetContent() {
                     colors = colors
                 )
             }
-            Spacer(modifier = GlanceModifier.height(12.dp))
-            Row(modifier = GlanceModifier.fillMaxWidth()) {
-                MetricTile(
-                    title = context.getString(R.string.widget_tile_network),
-                    value = wifiSsid,
-                    subtext = "",
-                    bottomText = context.getString(R.string.widget_today_value, gbText(wifiBytesToday)),
-                    progressPercent = null,
-                    standardAccent = colors.networkAccent,
-                    isLimitHigh = false,
-                    iconRes = R.drawable.ic_widget_wifi,
-                    modifier = GlanceModifier.defaultWeight().clickable(
-                        actionRunCallback<LaunchSettingsAction>(
-                            actionParametersOf(LaunchSettingsAction.SettingsActionKey to android.provider.Settings.ACTION_WIFI_SETTINGS)
-                        )
-                    ),
-                    colors = colors,
-                    kind = MetricTileKind.Wifi,
-                    wifiDown = wifiSpeedDown,
-                    wifiUp = wifiSpeedUp,
-                    wifiBand = wifiBand
+        }
+
+        Spacer(modifier = GlanceModifier.height(8.dp))
+
+        // Full-width Wi-Fi row (same style as the mobile row below): icon, SSID + band and
+        // link speeds on the left, today's Wi-Fi data usage on the right.
+        Column(
+            modifier = GlanceModifier
+                .fillMaxWidth()
+                .background(colors.tileBackground)
+                .cornerRadius(20.dp)
+                .padding(17.dp)
+                .clickable(
+                    actionRunCallback<LaunchSettingsAction>(
+                        actionParametersOf(LaunchSettingsAction.SettingsActionKey to android.provider.Settings.ACTION_WIFI_SETTINGS)
+                    )
+                )
+        ) {
+            Row(
+                modifier = GlanceModifier.fillMaxWidth(),
+                verticalAlignment = Alignment.Vertical.CenterVertically
+            ) {
+                Image(
+                    provider = ImageProvider(R.drawable.ic_widget_wifi),
+                    contentDescription = context.getString(R.string.widget_tile_network),
+                    modifier = GlanceModifier.size(30.dp),
+                    colorFilter = ColorFilter.tint(colors.networkAccent)
                 )
                 Spacer(modifier = GlanceModifier.width(12.dp))
-                MetricTile(
-                    title = context.getString(R.string.widget_tile_battery_health),
-                    value = batteryHealth,
-                    subtext = "",
-                    bottomText = cycleText(context, batteryCycles),
-                    progressPercent = null,
-                    standardAccent = colors.healthAccent,
-                    isLimitHigh = false,
-                    iconRes = R.drawable.ic_widget_heart,
-                    iconColor = ColorProvider(Color(0xFF34D399)),
-                    modifier = GlanceModifier.defaultWeight().clickable(
-                        actionRunCallback<LaunchSettingsAction>(
-                            actionParametersOf(LaunchSettingsAction.SettingsActionKey to "android.intent.action.POWER_USAGE_SUMMARY")
+                Column(modifier = GlanceModifier.defaultWeight()) {
+                    Text(
+                        text = if (wifiBand != UNAVAILABLE_TEXT) "$wifiSsid · $wifiBand" else wifiSsid,
+                        style = TextStyle(
+                            color = colors.textPrimary,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
+                        ),
+                        maxLines = 1
+                    )
+                    Row(verticalAlignment = Alignment.Vertical.CenterVertically) {
+                        Text(
+                            text = "↓ ",
+                            style = TextStyle(
+                                color = colors.downloadAccent,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold
+                            )
                         )
-                    ),
-                    colors = colors,
-                    kind = MetricTileKind.BatteryHealth,
-                    healthCapacity = batteryCapacity
-                )
+                        Text(
+                            text = speedText(wifiSpeedDown),
+                            style = TextStyle(color = colors.textMuted, fontSize = 13.sp),
+                            maxLines = 1
+                        )
+                        Spacer(modifier = GlanceModifier.width(8.dp))
+                        Text(
+                            text = "↑ ",
+                            style = TextStyle(
+                                color = colors.uploadAccent,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        )
+                        Text(
+                            text = speedText(wifiSpeedUp),
+                            style = TextStyle(color = colors.textMuted, fontSize = 13.sp),
+                            maxLines = 1
+                        )
+                    }
+                }
+                Spacer(modifier = GlanceModifier.width(16.dp))
+                Column(horizontalAlignment = Alignment.Horizontal.End) {
+                    Text(
+                        text = dataAmountText(wifiBytesToday),
+                        style = TextStyle(
+                            color = colors.textPrimary,
+                            fontSize = 17.sp,
+                            fontWeight = FontWeight.Bold
+                        ),
+                        maxLines = 1
+                    )
+                    Row(verticalAlignment = Alignment.Vertical.CenterVertically) {
+                        Image(
+                            provider = ImageProvider(R.drawable.ic_widget_swap),
+                            contentDescription = null,
+                            modifier = GlanceModifier.size(15.dp),
+                            colorFilter = ColorFilter.tint(colors.textMuted)
+                        )
+                        Spacer(modifier = GlanceModifier.width(4.dp))
+                        Text(
+                            text = context.getString(R.string.mobile_data_today_label),
+                            style = TextStyle(
+                                color = colors.textMuted,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold
+                            ),
+                            maxLines = 1
+                        )
+                    }
+                }
             }
         }
 
@@ -474,9 +530,10 @@ fun MetricTile(
 
     Column(
         modifier = modifier
+            .fillMaxHeight()
             .background(colors.tileBackground)
             .cornerRadius(20.dp)
-            .padding(18.dp)
+            .padding(16.dp)
     ) {
         Row(
             modifier = GlanceModifier.fillMaxWidth(),
@@ -500,7 +557,7 @@ fun MetricTile(
             )
         }
 
-        Spacer(modifier = GlanceModifier.height(8.dp))
+        Spacer(modifier = GlanceModifier.height(2.dp))
 
         if (kind == MetricTileKind.Wifi && wifiDown != null && wifiUp != null) {
             Text(
@@ -510,9 +567,9 @@ fun MetricTile(
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold
                 ),
-                maxLines = 2
+                maxLines = 1
             )
-            Spacer(modifier = GlanceModifier.height(8.dp))
+            Spacer(modifier = GlanceModifier.height(6.dp))
             if (wifiBand != UNAVAILABLE_TEXT) {
                 Box(
                     modifier = GlanceModifier
@@ -567,7 +624,7 @@ fun MetricTile(
                 ),
                 maxLines = 1
             )
-            Spacer(modifier = GlanceModifier.height(10.dp))
+            Spacer(modifier = GlanceModifier.height(8.dp))
             Column {
                 Text(
                     text = androidx.glance.LocalContext.current.getString(R.string.widget_capacity_label),
@@ -723,7 +780,23 @@ fun signalQualityText(context: Context, value: Int): String {
 fun mobileDataText(usedGb: Double, totalGb: Double): String {
     return when {
         usedGb < 0.0 -> UNAVAILABLE_TEXT
-        totalGb > 0.0 -> "${gbText(usedGb)} / ${gbText(totalGb, 0)}"
-        else -> gbText(usedGb)
+        totalGb > 0.0 -> "${dataAmountText(usedGb)} / ${gbText(totalGb, 0)}"
+        else -> dataAmountText(usedGb)
+    }
+}
+
+/**
+ * Data-usage amount with an adaptive unit. Values under 1 GB are shown in megabytes so that
+ * small-but-real usage (a few MB on a Wi-Fi-heavy day) never renders as a broken-looking
+ * "0.0 GB". Values of 1 GB and above keep the compact one-decimal GB form.
+ */
+fun dataAmountText(gbValue: Double): String {
+    if (gbValue < 0.0) return UNAVAILABLE_TEXT
+    if (gbValue >= 1.0) return gbText(gbValue)
+    val mb = gbValue * 1024.0
+    return when {
+        mb >= 10.0 -> String.format(Locale.getDefault(), "%.0f MB", mb)
+        mb >= 0.05 -> String.format(Locale.getDefault(), "%.1f MB", mb)
+        else -> "0 MB"
     }
 }

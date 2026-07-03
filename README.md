@@ -6,7 +6,7 @@ The default app language is English. Finnish users get a localized app name and 
 
 ## Features
 
-- Home screen widget for battery, memory, CPU, storage, Wi-Fi, mobile network, data usage, battery health, uptime, and last update time
+- Home screen widget for battery, memory, CPU, storage, Wi-Fi, mobile network, data usage, uptime, and last update time
 - Interactive Android screensaver with a large clock, date, charging status, battery percentage, voltage, and temperature
 - Remembered screensaver rotation setting for repeated charging sessions
 - Larger screensaver rotation touch target for easier use

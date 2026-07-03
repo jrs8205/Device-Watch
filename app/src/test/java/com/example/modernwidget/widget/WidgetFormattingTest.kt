@@ -66,4 +66,20 @@ class WidgetFormattingTest {
         assertThat(mobileDataText(1.5, UNAVAILABLE_DOUBLE)).isEqualTo("1.5 GB")
         assertThat(mobileDataText(1.5, 10.0)).isEqualTo("1.5 GB / 10 GB")
     }
+
+    @Test
+    fun `mobileDataText shows small real usage in megabytes instead of a zero-looking GB`() {
+        // 0.15 MB of real usage must not render as "0.0 GB".
+        assertThat(mobileDataText(0.00015, UNAVAILABLE_DOUBLE)).isEqualTo("0.2 MB")
+    }
+
+    @Test
+    fun `dataAmountText scales between MB and GB`() {
+        assertThat(dataAmountText(UNAVAILABLE_DOUBLE)).isEqualTo(UNAVAILABLE_TEXT)
+        assertThat(dataAmountText(1.5)).isEqualTo("1.5 GB")
+        assertThat(dataAmountText(0.5)).isEqualTo("512 MB")
+        assertThat(dataAmountText(15.0 / 1024.0)).isEqualTo("15 MB")
+        assertThat(dataAmountText(0.00015)).isEqualTo("0.2 MB")
+        assertThat(dataAmountText(0.0)).isEqualTo("0 MB")
+    }
 }

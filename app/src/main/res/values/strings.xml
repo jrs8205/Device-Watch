@@ -133,7 +133,7 @@
     <string name="battery_time_until_full_minutes">%1$dm until full</string>
     <string name="battery_time_remaining_hours">~%1$dh %2$dm</string>
     <string name="battery_time_remaining_minutes">~%1$dm</string>
-    <string name="wifi_connected">Wi-Fi connected</string>
+    <string name="wifi_connected">Wi-Fi</string>
     <string name="not_connected">Not connected</string>
     <string name="mobile_data_today_label">DATA TODAY</string>
     <string name="mobile_data_since_boot_label">DATA SINCE BOOT</string>
