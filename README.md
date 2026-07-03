@@ -1,5 +1,9 @@
 # Device Watch
 
+[![Latest release](https://img.shields.io/github/v/release/jrs8205/Device-Watch?sort=semver)](https://github.com/jrs8205/Device-Watch/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/jrs8205/Device-Watch/total)](https://github.com/jrs8205/Device-Watch/releases)
+[![Built with Jetpack Compose](https://img.shields.io/badge/Built%20with-Jetpack%20Compose-4285F4)](https://developer.android.com/jetpack/compose)
+
 Device Watch is an Android device monitoring app with a Jetpack Glance home screen widget and an interactive screensaver for charging or docked use.
 
 The default app language is English. Finnish users get a localized app name and UI through Android's `values-fi` resources.
@@ -20,6 +24,15 @@ The default app language is English. Finnish users get a localized app name and 
 - Release build configured with R8 minification and resource shrinking
 
 Every metric is real data read from Android and kernel sources. When a value is not available with the permissions granted, the UI shows a dash (`—`) instead of a fabricated value.
+
+## Download
+
+Download the latest signed APK from the
+[**Releases**](https://github.com/jrs8205/Device-Watch/releases/latest) page and open it on your
+device to install. Because every release is signed with the same key, later versions install
+cleanly as an update over an existing one.
+
+Requires **Android 8.0 (API 26)** or newer.
 
 ## Architecture
 
