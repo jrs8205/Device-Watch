@@ -29,6 +29,12 @@
     <string name="force_portrait_description">Keep the screensaver upright even when the device is in landscape.</string>
     <string name="dim_screensaver_title">Dim the screensaver</string>
     <string name="dim_screensaver_description">Lower the screen brightness while the screensaver is showing (easier on the eyes overnight).</string>
+    <string name="night_dim_title">Dim at night</string>
+    <string name="night_dim_description">Dim the screensaver automatically between the selected times.</string>
+    <string name="night_dim_start_label">Starts %1$s</string>
+    <string name="night_dim_end_label">Ends %1$s</string>
+    <string name="action_ok">OK</string>
+    <string name="action_cancel">Cancel</string>
     <string name="open_screensaver_settings">Open screensaver settings</string>
     <string name="screensaver_charging_hint">The screensaver is turned on from Android\'s system settings, and it appears when the screen turns off while the device is charging. On some phones (e.g. Samsung) it only starts while charging, and you may need to turn off Always On Display if it shows instead.</string>
 

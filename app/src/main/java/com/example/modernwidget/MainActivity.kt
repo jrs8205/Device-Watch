@@ -77,6 +77,54 @@ fun SystemDashboardScreen(viewModel: DashboardViewModel = hiltViewModel()) {
     var dimScreensaver by remember {
         mutableStateOf(dreamPrefs.getBoolean(DreamPreferences.KEY_DIM_SCREENSAVER, false))
     }
+    var nightDimScreensaver by remember {
+        mutableStateOf(dreamPrefs.getBoolean(DreamPreferences.KEY_NIGHT_DIM, false))
+    }
+    var nightDimStartMinutes by remember {
+        mutableIntStateOf(
+            dreamPrefs.getInt(
+                DreamPreferences.KEY_NIGHT_DIM_START_MINUTES,
+                DreamPreferences.DEFAULT_NIGHT_DIM_START_MINUTES
+            )
+        )
+    }
+    var nightDimEndMinutes by remember {
+        mutableIntStateOf(
+            dreamPrefs.getInt(
+                DreamPreferences.KEY_NIGHT_DIM_END_MINUTES,
+                DreamPreferences.DEFAULT_NIGHT_DIM_END_MINUTES
+            )
+        )
+    }
+    var showNightDimStartPicker by remember { mutableStateOf(false) }
+    var showNightDimEndPicker by remember { mutableStateOf(false) }
+
+    if (showNightDimStartPicker) {
+        NightDimTimePickerDialog(
+            initialMinutes = nightDimStartMinutes,
+            onConfirm = { minutes ->
+                nightDimStartMinutes = minutes
+                dreamPrefs.edit()
+                    .putInt(DreamPreferences.KEY_NIGHT_DIM_START_MINUTES, minutes)
+                    .apply()
+                showNightDimStartPicker = false
+            },
+            onDismiss = { showNightDimStartPicker = false }
+        )
+    }
+    if (showNightDimEndPicker) {
+        NightDimTimePickerDialog(
+            initialMinutes = nightDimEndMinutes,
+            onConfirm = { minutes ->
+                nightDimEndMinutes = minutes
+                dreamPrefs.edit()
+                    .putInt(DreamPreferences.KEY_NIGHT_DIM_END_MINUTES, minutes)
+                    .apply()
+                showNightDimEndPicker = false
+            },
+            onDismiss = { showNightDimEndPicker = false }
+        )
+    }
 
     // Start the background monitoring service (independent of the notification permission result).
     fun startSystemMonitorService() {
@@ -639,6 +687,70 @@ fun SystemDashboardScreen(viewModel: DashboardViewModel = hiltViewModel()) {
 
                         Spacer(modifier = Modifier.height(16.dp))
 
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = stringResource(R.string.night_dim_title),
+                                    fontWeight = FontWeight.Medium,
+                                    fontSize = 14.sp
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = stringResource(R.string.night_dim_description),
+                                    fontSize = 11.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Switch(
+                                checked = nightDimScreensaver,
+                                onCheckedChange = { checked ->
+                                    nightDimScreensaver = checked
+                                    dreamPrefs.edit()
+                                        .putBoolean(DreamPreferences.KEY_NIGHT_DIM, checked)
+                                        .apply()
+                                }
+                            )
+                        }
+
+                        if (nightDimScreensaver) {
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Row(modifier = Modifier.fillMaxWidth()) {
+                                OutlinedButton(
+                                    onClick = { showNightDimStartPicker = true },
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(12.dp)
+                                ) {
+                                    Text(
+                                        text = stringResource(
+                                            R.string.night_dim_start_label,
+                                            minutesText(nightDimStartMinutes)
+                                        ),
+                                        fontSize = 12.sp
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(12.dp))
+                                OutlinedButton(
+                                    onClick = { showNightDimEndPicker = true },
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(12.dp)
+                                ) {
+                                    Text(
+                                        text = stringResource(
+                                            R.string.night_dim_end_label,
+                                            minutesText(nightDimEndMinutes)
+                                        ),
+                                        fontSize = 12.sp
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
                         OutlinedButton(
                             onClick = { openSpecialAccessSettings(Settings.ACTION_DREAM_SETTINGS) },
                             modifier = Modifier.fillMaxWidth(),
@@ -725,6 +837,38 @@ private fun countText(value: Int): String =
     if (value <= 0) UNAVAILABLE_TEXT else value.toString()
 
 private fun gbTodayText(value: Double): String = dataAmountText(value)
+
+private fun minutesText(minutes: Int): String =
+    String.format(Locale.getDefault(), "%02d:%02d", minutes / 60, minutes % 60)
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun NightDimTimePickerDialog(
+    initialMinutes: Int,
+    onConfirm: (Int) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val context = LocalContext.current
+    val state = rememberTimePickerState(
+        initialHour = initialMinutes / 60,
+        initialMinute = initialMinutes % 60,
+        is24Hour = android.text.format.DateFormat.is24HourFormat(context)
+    )
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(onClick = { onConfirm(state.hour * 60 + state.minute) }) {
+                Text(stringResource(R.string.action_ok))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.action_cancel))
+            }
+        },
+        text = { TimePicker(state = state) }
+    )
+}
 
 @Composable
 private fun DeviceInfoRow(@StringRes labelRes: Int, value: String) {

@@ -1,12 +1,19 @@
 package com.example.modernwidget.system
 
+import android.app.AlarmManager
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.SharedPreferences
 import android.content.pm.ActivityInfo
 import android.os.BatteryManager
 import android.service.dreams.DreamService
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -44,7 +51,9 @@ import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
+import kotlin.math.abs
 
 class MonitorDreamService : DreamService(), LifecycleOwner, ViewModelStoreOwner, SavedStateRegistryOwner {
 
@@ -81,11 +90,11 @@ class MonitorDreamService : DreamService(), LifecycleOwner, ViewModelStoreOwner,
             ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
         }
 
-        // Optional dim mode (user setting). By default a dream is drawn at full brightness; when
-        // enabled we drop to a low brightness for bedside/overnight charging. Must be set no later
-        // than onDreamingStarted(), so onAttachedToWindow() is a valid place.
-        val dimScreensaver = dreamPrefs.getBoolean(DreamPreferences.KEY_DIM_SCREENSAVER, false)
-        setScreenBright(!dimScreensaver)
+        // Optional dim mode (user setting): manual dim, or an automatic night window. Must be set
+        // no later than onDreamingStarted(), so onAttachedToWindow() is a valid place. The clock
+        // loop re-evaluates this once a minute so a running screensaver dims/brightens live when
+        // the night window starts or ends.
+        setScreenBright(!shouldDimNow(dreamPrefs, currentMinuteOfDay()))
 
         val composeView = ComposeView(this).apply {
             setViewTreeLifecycleOwner(this@MonitorDreamService)
@@ -122,6 +131,7 @@ fun ScreensaverContent(context: Context) {
     var batteryTemp by remember { mutableDoubleStateOf(25.6) }
     var batteryVoltage by remember { mutableDoubleStateOf(3.88) }
     var chargeFullAtMs by remember { mutableLongStateOf(-1L) }
+    var chargeWatts by remember { mutableStateOf<Double?>(null) }
     var hasSentFullBatteryNotification by remember { mutableStateOf(false) }
     val preferences = remember(context) {
         context.getSharedPreferences(DreamPreferences.PREFS_NAME, Context.MODE_PRIVATE)
@@ -156,14 +166,27 @@ fun ScreensaverContent(context: Context) {
                 val volt = intent.getIntExtra(BatteryManager.EXTRA_VOLTAGE, 0)
                 batteryVoltage = volt / 1000.0
 
+                val batteryManager =
+                    context.getSystemService(Context.BATTERY_SERVICE) as? BatteryManager
+
+                // Live charging power. CURRENT_NOW is documented as µA but some OEMs report mA
+                // and the sign convention varies; chargingWatts() normalizes both and returns
+                // null for missing/implausible readings (then no wattage is shown).
+                chargeWatts = if (charging && batteryManager != null) {
+                    chargingWatts(
+                        batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW),
+                        volt / 1000.0
+                    )
+                } else {
+                    null
+                }
+
                 // Capture the absolute "battery full" wall-clock time ONCE, at the moment we
                 // read the remaining duration. Previously the raw remaining-duration was stored
                 // and added to System.currentTimeMillis() on every recomposition (once a second),
                 // which made the estimate drift ~1 s later per second between battery broadcasts.
-                chargeFullAtMs = if (charging &&
+                chargeFullAtMs = if (charging && batteryManager != null &&
                     android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
-                    val batteryManager =
-                        context.getSystemService(Context.BATTERY_SERVICE) as BatteryManager
                     val remaining = batteryManager.computeChargeTimeRemaining()
                     if (remaining > 0L) System.currentTimeMillis() + remaining else -1L
                 } else {
@@ -181,6 +204,7 @@ fun ScreensaverContent(context: Context) {
     var secondsText by remember { mutableStateOf("") }
     var amPmText by remember { mutableStateOf("") }
     var dateText by remember { mutableStateOf("") }
+    var alarmText by remember { mutableStateOf("") }
     var isLayoutSwapped by remember {
         mutableStateOf(preferences.getBoolean(DreamPreferences.KEY_LAYOUT_SWAPPED, false))
     }
@@ -197,6 +221,8 @@ fun ScreensaverContent(context: Context) {
         val secondsFormat = SimpleDateFormat("ss", currentLocale)
         val amPmFormat = SimpleDateFormat("a", currentLocale)
         val dateFormat = SimpleDateFormat(context.getString(R.string.dream_date_pattern), currentLocale)
+        val alarmFormat = SimpleDateFormat(if (is24Hour) "EEE HH:mm" else "EEE h:mm a", currentLocale)
+        var lastMinuteOfDay = -1
 
         while (true) {
             val now = Date()
@@ -204,7 +230,21 @@ fun ScreensaverContent(context: Context) {
             secondsText = secondsFormat.format(now)
             amPmText = if (is24Hour) "" else amPmFormat.format(now)
             dateText = dateFormat.format(now).replaceFirstChar { it.uppercase(currentLocale) }
-            kotlinx.coroutines.delay(1000)
+
+            // Once-a-minute work: the next-alarm line and the live dim state (so a screensaver
+            // that runs across the night-dim window edges dims/brightens without a restart).
+            val minuteOfDay = currentMinuteOfDay()
+            if (minuteOfDay != lastMinuteOfDay) {
+                lastMinuteOfDay = minuteOfDay
+                alarmText = (context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager)
+                    ?.nextAlarmClock?.triggerTime
+                    ?.let { "⏰ " + alarmFormat.format(Date(it)) }
+                    ?: ""
+                (context as? DreamService)?.setScreenBright(!shouldDimNow(preferences, minuteOfDay))
+            }
+
+            // Sleep exactly to the next second boundary so the seconds never visibly skip.
+            kotlinx.coroutines.delay(1000L - (System.currentTimeMillis() % 1000L))
         }
     }
     
@@ -232,14 +272,62 @@ fun ScreensaverContent(context: Context) {
         ""
     }
 
-    val voltStr = String.format(currentLocale, "%.2f", batteryVoltage)
-    val tempStr = String.format(currentLocale, "%.1f", batteryTemp)
+    // Battery details line: volts and temperature, plus live charging power when available.
+    val detailsStr = buildString {
+        append(String.format(currentLocale, "%.2f", batteryVoltage))
+        append(" V  ·  ")
+        append(String.format(currentLocale, "%.1f", batteryTemp))
+        append(" °C")
+        if (isCharging) {
+            chargeWatts?.let {
+                append("  ·  ")
+                append(String.format(currentLocale, "%.1f", it))
+                append(" W")
+            }
+        }
+    }
     val batteryGradientColors = getBatteryGradientColors(batteryLevel)
+
+    // Soft pulse on the charging bolt; composed only while charging so no animation
+    // frames are produced when the device is on battery.
+    val boltAlpha = if (isCharging) {
+        val boltTransition = rememberInfiniteTransition(label = "boltPulse")
+        val pulsedAlpha by boltTransition.animateFloat(
+            initialValue = 0.45f,
+            targetValue = 1f,
+            animationSpec = infiniteRepeatable(tween(1100), RepeatMode.Reverse),
+            label = "boltAlpha"
+        )
+        pulsedAlpha
+    } else {
+        1f
+    }
 
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF000000))
+            // Dark vertical gradient tinted by the battery level: the viewer's top stays pure
+            // black (clock legibility, burn-in) and the battery-colored tone builds up toward
+            // the viewer's bottom. The background does not rotate with the 180° layout flip,
+            // so when the layout is swapped (phone docked upside down) the gradient is
+            // mirrored to keep the glow at the bottom of what the user actually sees.
+            .background(
+                Brush.verticalGradient(
+                    colorStops = if (isLayoutSwapped) {
+                        arrayOf(
+                            0.0f to batteryTintDeep(batteryLevel),
+                            0.6f to Color(0xFF000000),
+                            1.0f to Color(0xFF000000)
+                        )
+                    } else {
+                        arrayOf(
+                            0.0f to Color(0xFF000000),
+                            0.4f to Color(0xFF000000),
+                            1.0f to batteryTintDeep(batteryLevel)
+                        )
+                    }
+                )
+            )
             .clickable {
                 (context as? DreamService)?.finish()
             },
@@ -295,7 +383,8 @@ fun ScreensaverContent(context: Context) {
                         clockSize = clockSize,
                         secondsSize = secondsSize,
                         dateSize = if (clockSize < 100) 22 else 30,
-                        amPmText = amPmText
+                        amPmText = amPmText,
+                        alarmText = alarmText
                     )
 
                     Box(
@@ -312,9 +401,9 @@ fun ScreensaverContent(context: Context) {
                         isCharging = isCharging,
                         batteryLevel = batteryLevel,
                         batteryGradientColors = batteryGradientColors,
-                        voltStr = voltStr,
-                        tempStr = tempStr,
-                        fullTimeStr = fullTimeStr
+                        detailsStr = detailsStr,
+                        fullTimeStr = fullTimeStr,
+                        boltAlpha = boltAlpha
                     )
                 }
             } else {
@@ -335,7 +424,8 @@ fun ScreensaverContent(context: Context) {
                         clockSize = clockSize,
                         secondsSize = secondsSize,
                         dateSize = if (clockSize < 100) 22 else 28,
-                        amPmText = amPmText
+                        amPmText = amPmText,
+                        alarmText = alarmText
                     )
 
                     Spacer(modifier = Modifier.weight(1f))
@@ -345,9 +435,9 @@ fun ScreensaverContent(context: Context) {
                         isCharging = isCharging,
                         batteryLevel = batteryLevel,
                         batteryGradientColors = batteryGradientColors,
-                        voltStr = voltStr,
-                        tempStr = tempStr,
-                        fullTimeStr = fullTimeStr
+                        detailsStr = detailsStr,
+                        fullTimeStr = fullTimeStr,
+                        boltAlpha = boltAlpha
                     )
 
                     Spacer(modifier = Modifier.weight(1f))
@@ -397,7 +487,8 @@ fun ClockBlock(
     clockSize: Int,
     secondsSize: Int,
     dateSize: Int,
-    amPmText: String = ""
+    amPmText: String = "",
+    alarmText: String = ""
 ) {
     Column(
         modifier = modifier,
@@ -439,6 +530,16 @@ fun ClockBlock(
             fontWeight = FontWeight.Medium,
             color = Color(0xFF8B929C)
         )
+        if (alarmText.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = alarmText,
+                fontSize = (dateSize * 0.72f).sp,
+                fontWeight = FontWeight.Medium,
+                color = Color(0xFF6E7681),
+                style = TextStyle(fontFeatureSettings = "tnum")
+            )
+        }
     }
 }
 
@@ -448,9 +549,9 @@ fun BatteryBlockLandscape(
     isCharging: Boolean,
     batteryLevel: Int,
     batteryGradientColors: List<Color>,
-    voltStr: String,
-    tempStr: String,
-    fullTimeStr: String
+    detailsStr: String,
+    fullTimeStr: String,
+    boltAlpha: Float = 1f
 ) {
     Column(
         modifier = modifier,
@@ -460,7 +561,8 @@ fun BatteryBlockLandscape(
             Text(
                 text = if (isCharging) "⚡" else "🔋",
                 fontSize = 30.sp,
-                color = if (isCharging) Color(0xFFFBBF24) else Color(0xFF34D399)
+                color = if (isCharging) Color(0xFFFBBF24) else Color(0xFF34D399),
+                modifier = Modifier.graphicsLayer { alpha = boltAlpha }
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
@@ -520,13 +622,13 @@ fun BatteryBlockLandscape(
         Spacer(modifier = Modifier.height(14.dp))
 
         Text(
-            text = "$voltStr V  ·  $tempStr °C",
+            text = detailsStr,
             fontSize = 24.sp,
             fontWeight = FontWeight.Medium,
             color = Color(0xFF9AA0A8),
             style = TextStyle(fontFeatureSettings = "tnum")
         )
-        
+
         if (fullTimeStr.isNotEmpty()) {
             Spacer(modifier = Modifier.height(6.dp))
             Text(
@@ -546,9 +648,9 @@ fun BatteryBlockPortrait(
     isCharging: Boolean,
     batteryLevel: Int,
     batteryGradientColors: List<Color>,
-    voltStr: String,
-    tempStr: String,
-    fullTimeStr: String
+    detailsStr: String,
+    fullTimeStr: String,
+    boltAlpha: Float = 1f
 ) {
     Column(
         modifier = modifier,
@@ -558,7 +660,8 @@ fun BatteryBlockPortrait(
             Text(
                 text = if (isCharging) "⚡" else "🔋",
                 fontSize = 32.sp,
-                color = if (isCharging) Color(0xFFFBBF24) else Color(0xFF34D399)
+                color = if (isCharging) Color(0xFFFBBF24) else Color(0xFF34D399),
+                modifier = Modifier.graphicsLayer { alpha = boltAlpha }
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
@@ -616,9 +719,9 @@ fun BatteryBlockPortrait(
         }
         
         Spacer(modifier = Modifier.height(16.dp))
-        
+
         Text(
-            text = "$voltStr V  ·  $tempStr °C",
+            text = detailsStr,
             fontSize = 24.sp,
             fontWeight = FontWeight.Medium,
             color = Color(0xFF9AA0A8),
@@ -730,4 +833,74 @@ fun getBatteryGradientColors(level: Int): List<Color> {
         level <= 60 -> listOf(Color(0xFFF59E0B), Color(0xFFFBBF24))
         else -> listOf(Color(0xFF34D399), Color(0xFF6EE7A8))
     }
+}
+
+/**
+ * Deep background tint matching the battery-bar color thresholds. Used as the bottom stop
+ * of the screensaver's background gradient (black at the top). Values are bright enough to
+ * read as a clear color glow on an OLED panel while staying comfortably dark.
+ */
+fun batteryTintDeep(level: Int): Color {
+    return when {
+        level <= 20 -> Color(0xFF4A1210)
+        level <= 60 -> Color(0xFF46360A)
+        else -> Color(0xFF0E4A36)
+    }
+}
+
+/** Minutes since local midnight, for the night-dim window check. */
+internal fun currentMinuteOfDay(): Int {
+    val calendar = Calendar.getInstance()
+    return calendar.get(Calendar.HOUR_OF_DAY) * 60 + calendar.get(Calendar.MINUTE)
+}
+
+/**
+ * Effective dim state: the manual dim switch, or the automatic night window when enabled.
+ * Pure apart from the SharedPreferences reads so the window logic itself is unit-testable
+ * via [isInNightWindow].
+ */
+internal fun shouldDimNow(prefs: SharedPreferences, nowMinutes: Int): Boolean {
+    if (prefs.getBoolean(DreamPreferences.KEY_DIM_SCREENSAVER, false)) return true
+    if (!prefs.getBoolean(DreamPreferences.KEY_NIGHT_DIM, false)) return false
+    return isInNightWindow(
+        nowMinutes,
+        prefs.getInt(
+            DreamPreferences.KEY_NIGHT_DIM_START_MINUTES,
+            DreamPreferences.DEFAULT_NIGHT_DIM_START_MINUTES
+        ),
+        prefs.getInt(
+            DreamPreferences.KEY_NIGHT_DIM_END_MINUTES,
+            DreamPreferences.DEFAULT_NIGHT_DIM_END_MINUTES
+        )
+    )
+}
+
+/**
+ * Whether [nowMinutes] (minutes since midnight) falls inside the window from [startMinutes]
+ * (inclusive) to [endMinutes] (exclusive). A window that crosses midnight (e.g. 22:00–07:00)
+ * is handled; an empty window (start == end) never matches.
+ */
+internal fun isInNightWindow(nowMinutes: Int, startMinutes: Int, endMinutes: Int): Boolean {
+    if (startMinutes == endMinutes) return false
+    return if (startMinutes < endMinutes) {
+        nowMinutes >= startMinutes && nowMinutes < endMinutes
+    } else {
+        nowMinutes >= startMinutes || nowMinutes < endMinutes
+    }
+}
+
+/**
+ * Charging power in watts from BATTERY_PROPERTY_CURRENT_NOW and the battery voltage.
+ * CURRENT_NOW is documented as µA, but some OEMs report mA and the sign convention for
+ * charge/discharge also varies — so the magnitude is used, and a reading that is only
+ * plausible as mA is rescaled. Returns null when the reading is missing or implausible
+ * (never show a fabricated value).
+ */
+internal fun chargingWatts(currentRaw: Int, voltageVolts: Double): Double? {
+    if (currentRaw == 0 || currentRaw == Int.MIN_VALUE || voltageVolts <= 0.0) return null
+    val plausibleWatts = 0.5..150.0
+    val wattsAsMicroAmps = abs(currentRaw.toDouble()) / 1_000_000.0 * voltageVolts
+    if (wattsAsMicroAmps in plausibleWatts) return wattsAsMicroAmps
+    val wattsAsMilliAmps = wattsAsMicroAmps * 1000.0
+    return wattsAsMilliAmps.takeIf { it in plausibleWatts }
 }

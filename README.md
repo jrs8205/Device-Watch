@@ -7,8 +7,11 @@ The default app language is English. Finnish users get a localized app name and 
 ## Features
 
 - Home screen widget for battery, memory, CPU, storage, Wi-Fi, mobile network, data usage, uptime, and last update time
-- Interactive Android screensaver with a large clock, date, charging status, battery percentage, voltage, and temperature
-- Remembered screensaver rotation setting for repeated charging sessions
+- Interactive Android screensaver with a large clock, date, next alarm, charging status, battery percentage, voltage, temperature, and live charging power in watts
+- Screensaver clock follows the device 12/24-hour setting, with a second-aligned tick
+- Battery-level-tinted background gradient and a softly pulsing charge indicator in the screensaver
+- Optional screensaver dimming: manual, or automatic on a configurable night schedule (default 22:00–07:00)
+- Remembered screensaver rotation setting for repeated charging sessions; the background gradient mirrors with the 180° layout swap
 - Larger screensaver rotation touch target for easier use
 - Battery full notification while the screensaver is active
 - English default resources with Finnish localization
@@ -94,8 +97,10 @@ JVM unit tests cover the pure parsing/maths and the ViewModel:
 ```
 
 - `SystemStatsParserTest` — CPU-load deltas, frequency residency/pressure, battery wear, mobile-generation mapping, Wi-Fi SSID/band, signal filtering
-- `WidgetFormattingTest` — widget display formatters (locale-pinned)
+- `WidgetFormattingTest` — widget display formatters (locale-pinned), adaptive MB/GB data amounts
 - `DashboardViewModelTest` — refresh, opacity load/commit, widget-installed flag (fake repository + fake widget controller)
+- `ClockFitTest` — screensaver clock width-fit math
+- `DreamLogicTest` — night-dim window (incl. crossing midnight) and charging-wattage normalization
 
 ## Build Outputs
 
@@ -125,6 +130,7 @@ app/src/main/java/com/example/modernwidget/
     DashboardViewModel.kt
   system/
     BatteryFullNotifier.kt
+    DreamPreferences.kt
     MonitorDreamService.kt
     SystemMonitorService.kt
   widget/
@@ -138,5 +144,7 @@ app/src/main/java/com/example/modernwidget/
 app/src/test/java/com/example/modernwidget/
   data/SystemStatsParserTest.kt
   presentation/DashboardViewModelTest.kt
+  system/ClockFitTest.kt
+  system/DreamLogicTest.kt
   widget/WidgetFormattingTest.kt
 ```

@@ -28,6 +28,12 @@
     <string name="force_portrait_description">Pidä näytönsäästäjä pystyssä, vaikka laite olisi vaaka-asennossa.</string>
     <string name="dim_screensaver_title">Himmennä näytönsäästäjä</string>
     <string name="dim_screensaver_description">Laske näytön kirkkautta näytönsäästäjän aikana (miellyttävämpi silmille yöllä).</string>
+    <string name="night_dim_title">Himmennä yöllä</string>
+    <string name="night_dim_description">Himmennä näytönsäästäjä automaattisesti valitulla aikavälillä.</string>
+    <string name="night_dim_start_label">Alkaa %1$s</string>
+    <string name="night_dim_end_label">Päättyy %1$s</string>
+    <string name="action_ok">OK</string>
+    <string name="action_cancel">Peruuta</string>
     <string name="open_screensaver_settings">Avaa näytönsäästäjän asetukset</string>
     <string name="screensaver_charging_hint">Näytönsäästäjä otetaan käyttöön Androidin järjestelmäasetuksista, ja se näkyy kun näyttö sammuu laitteen ollessa latauksessa. Joissakin puhelimissa (esim. Samsung) se käynnistyy vain latauksen aikana, ja Always On Display voi täytyä poistaa käytöstä, jos se näkyy sen sijaan.</string>
 
