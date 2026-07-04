@@ -4,16 +4,16 @@
 [![Downloads](https://img.shields.io/github/downloads/jrs8205/Device-Watch/total)](https://github.com/jrs8205/Device-Watch/releases)
 [![Built with Jetpack Compose](https://img.shields.io/badge/Built%20with-Jetpack%20Compose-4285F4)](https://developer.android.com/jetpack/compose)
 
-Device Watch is an Android device monitoring app with a Jetpack Glance home screen widget and an interactive screensaver for charging or docked use.
+Device Watch is an Android device monitoring app with a Jetpack Glance home screen widget, per-app usage insights (screen time, data, notifications and more), and an interactive screensaver for charging or docked use.
 
 The default app language is English. Finnish users get a localized app name and UI through Android's `values-fi` resources.
 
 ## Features
 
-- Home screen widget for battery, memory, CPU, storage, Wi-Fi, mobile network, data usage, uptime, and last update time
+- Home screen widget for battery, memory, CPU, storage, Wi-Fi, mobile network, data usage, uptime, today's screen time, and last update time
 - Tapping the widget anywhere opens the app
 - Data counters per calendar day or per one-month billing cycle with a configurable start day (month lengths handled automatically); the selection applies to the widget and the in-app data rows
-- Tabbed dashboard UI: Overview (live battery ring, RAM/CPU, data and usage counters), Apps (usage insights), Device (hardware, SIM and Wi-Fi details), and Settings
+- Tabbed dashboard UI: Overview (live battery ring, usage counters, RAM/CPU/storage meters and data counters — full widget parity for people who skip the widget), Apps (usage insights), Device (hardware, SIM and Wi-Fi details), and Settings
 - Apps tab: Digital-Wellbeing-style screen-time donut (top apps + others) with tappable legend, top data consumers today, and a last-opened list (oldest and never-used apps first, reversible) with per-app uninstall
 - Per-app detail sheet: screen time, times opened, last opened, data used and notifications today
 - Usage counters on the Overview tab, scoped to the same day/billing-cycle setting as the data counters: total screen time, screen unlocks (API 28+), a filtered notification count (ongoing notifications, group summaries and updates to an existing notification are not counted, so the number stays believable), device restarts and charging sessions
@@ -31,7 +31,7 @@ The default app language is English. Finnish users get a localized app name and 
 - Battery full notification while the screensaver is active
 - English default resources with Finnish localization
 - Runtime permission handling for location, phone state, nearby Wi-Fi devices, and notifications
-- Usage Access shortcut for daily network usage statistics
+- Usage Access shortcut for network and app-usage statistics
 - Release build configured with R8 minification and resource shrinking
 
 Every metric is real data read from Android and kernel sources. When a value is not available with the permissions granted, the UI shows a dash (`—`) instead of a fabricated value.
@@ -69,7 +69,7 @@ di/             Hilt modules and entry points
 ```
 
 - `SystemStatsRepositoryImpl` is the single source of truth. It is a `@Singleton`, reads system/kernel sources off the main thread on an injected dispatcher, and serializes its CPU-load snapshots with a `Mutex`.
-- `SystemDashboardScreen` observes the ViewModel with `collectAsStateWithLifecycle()` and obtains it via `hiltViewModel()`. The three tabs are flat destinations switched with saveable tab state (no navigation library); each tab keeps its own scroll position. Permission requests and the foreground-service start stay at screen level.
+- `SystemDashboardScreen` observes the ViewModels with `collectAsStateWithLifecycle()` and obtains them via `hiltViewModel()`. The four tabs are flat destinations switched with saveable tab state (no navigation library); each tab keeps its own scroll position. Permission requests and the foreground-service start stay at screen level.
 - Services and the widget receiver use `@AndroidEntryPoint`; the Glance `ActionCallback` reaches the graph through a Hilt `EntryPoint`.
 
 ## Tech Stack
