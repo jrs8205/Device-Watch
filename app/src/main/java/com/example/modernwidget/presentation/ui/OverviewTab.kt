@@ -1,5 +1,8 @@
 package com.example.modernwidget.presentation.ui
 
+import android.content.Intent
+import android.os.Build
+import android.provider.Settings
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -27,6 +30,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -233,6 +237,49 @@ internal fun OverviewTab(
         SettingsSectionCard(titleRes = R.string.data_counter_section) {
             DeviceInfoRow(wifiDataLabelRes(uiState.dataCounterMode), gbTodayText(currentStats.wifiBytesTodayGb))
             DeviceInfoRow(simDataLabelRes(uiState.dataCounterMode), gbTodayText(currentStats.mobileDataUsedGb))
+        }
+
+        // Daily usage counters: screen unlocks (API 28+) and filtered notifications
+        SettingsSectionCard(titleRes = R.string.usage_counters_section) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                DeviceInfoRow(R.string.unlock_count_label, countOrDashText(uiState.unlockCountToday))
+            }
+            if (uiState.notificationAccessEnabled) {
+                DeviceInfoRow(
+                    R.string.notification_count_label,
+                    countOrDashText(uiState.notificationCountToday)
+                )
+            } else {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = stringResource(R.string.notification_count_label),
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Text(
+                        text = com.example.modernwidget.data.UNAVAILABLE_TEXT,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                    TextButton(onClick = {
+                        try {
+                            context.startActivity(
+                                Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS).apply {
+                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                }
+                            )
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }) {
+                        Text(stringResource(R.string.notification_access_enable), fontSize = 12.sp)
+                    }
+                }
+            }
         }
 
         Spacer(modifier = Modifier.height(8.dp))

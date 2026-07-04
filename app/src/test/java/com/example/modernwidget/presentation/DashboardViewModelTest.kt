@@ -1,10 +1,16 @@
 package com.example.modernwidget.presentation
 
+import com.example.modernwidget.data.AppDataUsage
+import com.example.modernwidget.data.AppScreenTime
 import com.example.modernwidget.data.AppSettingsRepository
+import com.example.modernwidget.data.AppUsageRepository
 import com.example.modernwidget.data.DataCounterMode
 import com.example.modernwidget.data.DeviceInfo
+import com.example.modernwidget.data.LaunchableApp
+import com.example.modernwidget.data.NotificationStats
 import com.example.modernwidget.data.SystemStats
 import com.example.modernwidget.data.SystemStatsRepository
+import com.example.modernwidget.data.UNAVAILABLE_INT
 import com.example.modernwidget.widget.WidgetController
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.Dispatchers
@@ -41,7 +47,10 @@ class DashboardViewModelTest {
             val stats = sampleStats(batteryLevel = 77)
             val repository = FakeSystemStatsRepository(stats)
             val widget = FakeWidgetController(installed = true)
-            val viewModel = DashboardViewModel(repository, widget, FakeAppSettingsRepository())
+            val viewModel = DashboardViewModel(
+                repository, widget, FakeAppSettingsRepository(),
+                FakeAppUsageRepository(), FakeNotificationStats()
+            )
 
             // When
             viewModel.refresh()
@@ -61,7 +70,8 @@ class DashboardViewModelTest {
         // Given
         val widget = FakeWidgetController(installed = true, savedOpacity = 0.42f)
         val viewModel = DashboardViewModel(
-            FakeSystemStatsRepository(sampleStats()), widget, FakeAppSettingsRepository()
+            FakeSystemStatsRepository(sampleStats()), widget, FakeAppSettingsRepository(),
+            FakeAppUsageRepository(), FakeNotificationStats()
         )
 
         // When
@@ -77,7 +87,8 @@ class DashboardViewModelTest {
         // Given
         val widget = FakeWidgetController(installed = false, savedOpacity = null)
         val viewModel = DashboardViewModel(
-            FakeSystemStatsRepository(sampleStats()), widget, FakeAppSettingsRepository()
+            FakeSystemStatsRepository(sampleStats()), widget, FakeAppSettingsRepository(),
+            FakeAppUsageRepository(), FakeNotificationStats()
         )
 
         // When
@@ -93,7 +104,8 @@ class DashboardViewModelTest {
         // Given
         val widget = FakeWidgetController(installed = true)
         val viewModel = DashboardViewModel(
-            FakeSystemStatsRepository(sampleStats()), widget, FakeAppSettingsRepository()
+            FakeSystemStatsRepository(sampleStats()), widget, FakeAppSettingsRepository(),
+            FakeAppUsageRepository(), FakeNotificationStats()
         )
 
         // When
@@ -114,7 +126,8 @@ class DashboardViewModelTest {
             cycleDay = 15,
         )
         val viewModel = DashboardViewModel(
-            FakeSystemStatsRepository(sampleStats()), FakeWidgetController(installed = true), settings
+            FakeSystemStatsRepository(sampleStats()), FakeWidgetController(installed = true), settings,
+            FakeAppUsageRepository(), FakeNotificationStats()
         )
 
         // When
@@ -133,7 +146,9 @@ class DashboardViewModelTest {
             val settings = FakeAppSettingsRepository()
             val repository = FakeSystemStatsRepository(sampleStats())
             val widget = FakeWidgetController(installed = true)
-            val viewModel = DashboardViewModel(repository, widget, settings)
+            val viewModel = DashboardViewModel(
+                repository, widget, settings, FakeAppUsageRepository(), FakeNotificationStats()
+            )
 
             // When
             viewModel.onDataCounterModeSelected(DataCounterMode.BILLING_CYCLE)
@@ -153,7 +168,9 @@ class DashboardViewModelTest {
             val settings = FakeAppSettingsRepository()
             val repository = FakeSystemStatsRepository(sampleStats())
             val widget = FakeWidgetController(installed = true)
-            val viewModel = DashboardViewModel(repository, widget, settings)
+            val viewModel = DashboardViewModel(
+                repository, widget, settings, FakeAppUsageRepository(), FakeNotificationStats()
+            )
 
             // When
             viewModel.onCycleStartDayChange(21)
@@ -165,6 +182,51 @@ class DashboardViewModelTest {
             assertThat(viewModel.uiState.value.cycleStartDay).isEqualTo(21)
             assertThat(repository.callCount).isEqualTo(1)
             assertThat(widget.pushedStats).hasSize(1)
+        }
+
+    @Test
+    fun `given counters available, when refreshing, then unlock and notification counts load`() =
+        runTest(dispatcher) {
+            // Given
+            val viewModel = DashboardViewModel(
+                FakeSystemStatsRepository(sampleStats()),
+                FakeWidgetController(installed = true),
+                FakeAppSettingsRepository(),
+                FakeAppUsageRepository(unlockCount = 12),
+                FakeNotificationStats(enabled = true, total = 34),
+            )
+
+            // When
+            viewModel.refresh()
+            advanceUntilIdle()
+
+            // Then
+            val state = viewModel.uiState.value
+            assertThat(state.unlockCountToday).isEqualTo(12)
+            assertThat(state.notificationCountToday).isEqualTo(34)
+            assertThat(state.notificationAccessEnabled).isTrue()
+        }
+
+    @Test
+    fun `given listener disabled, when refreshing, then notification count is unavailable`() =
+        runTest(dispatcher) {
+            // Given
+            val viewModel = DashboardViewModel(
+                FakeSystemStatsRepository(sampleStats()),
+                FakeWidgetController(installed = true),
+                FakeAppSettingsRepository(),
+                FakeAppUsageRepository(unlockCount = 5),
+                FakeNotificationStats(enabled = false, total = 99),
+            )
+
+            // When
+            viewModel.refresh()
+            advanceUntilIdle()
+
+            // Then
+            val state = viewModel.uiState.value
+            assertThat(state.notificationCountToday).isEqualTo(UNAVAILABLE_INT)
+            assertThat(state.notificationAccessEnabled).isFalse()
         }
 }
 
@@ -217,23 +279,6 @@ private fun sampleDeviceInfo(): DeviceInfo = DeviceInfo(
     vpnActive = "No",
     dnsServers = "8.8.8.8",
 )
-
-private class FakeAppSettingsRepository(
-    var mode: DataCounterMode = DataCounterMode.DAY,
-    var cycleDay: Int = 1,
-) : AppSettingsRepository {
-    override fun dataCounterMode(): DataCounterMode = mode
-
-    override fun setDataCounterMode(mode: DataCounterMode) {
-        this.mode = mode
-    }
-
-    override fun cycleStartDay(): Int = cycleDay
-
-    override fun setCycleStartDay(day: Int) {
-        cycleDay = day
-    }
-}
 
 private class FakeWidgetController(
     private val installed: Boolean,

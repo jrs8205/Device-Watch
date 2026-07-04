@@ -6,6 +6,7 @@
     <string name="main_title">Järjestelmän tila</string>
     <string name="refresh">Päivitä</string>
     <string name="tab_overview">Yleiskuva</string>
+    <string name="tab_apps">Sovellukset</string>
     <string name="tab_device">Laite</string>
     <string name="tab_settings">Asetukset</string>
     <string name="widget_active_message">Kotiruudun widget on aktiivinen ja synkronoitu taustapalvelulla.</string>
@@ -26,6 +27,34 @@
     <string name="data_counter_mode_cycle">Kausi</string>
     <string name="data_counter_cycle_start">Kausi alkaa päivänä %1$d</string>
     <string name="data_counter_description">Laske datankäyttö kalenteripäivittäin tai kuukauden mittaisena laskutusjaksona, joka alkaa valittuna päivänä. Kuukausien pituudet huomioidaan automaattisesti.</string>
+
+    <string name="screen_time_section">RUUTUAIKA TÄNÄÄN</string>
+    <string name="screen_time_others">Muut</string>
+    <string name="data_consumers_section">ENITEN DATAA TÄNÄÄN</string>
+    <string name="last_opened_section">VIIMEKSI AVATUT</string>
+    <string name="last_used_never">Ei koskaan käytetty</string>
+    <string name="last_used_today">Tänään</string>
+    <plurals name="last_used_days">
+        <item quantity="one">%1$d päivä sitten</item>
+        <item quantity="other">%1$d päivää sitten</item>
+    </plurals>
+    <string name="uninstall_content_description">Poista sovellus</string>
+    <string name="sort_toggle_description">Käännä järjestys</string>
+    <string name="usage_counters_section">KÄYTTÖ TÄNÄÄN</string>
+    <string name="unlock_count_label">Lukituksen avaukset</string>
+    <string name="notification_count_label">Ilmoitukset</string>
+    <string name="notification_access_button">Ilmoitusten käyttöoikeus</string>
+    <string name="notification_access_enable">Ota käyttöön</string>
+    <string name="notification_access_hint">Ilmoitusten laskenta alkaa, kun ilmoitusten käyttöoikeus on myönnetty. Pysyviä ilmoituksia, ryhmäkoosteita ja olemassa olevan ilmoituksen päivityksiä ei lasketa.</string>
+    <string name="notification_listener_label">Ilmoituslaskuri</string>
+    <string name="privacy_dashboard_button">Yksityisyyden hallintapaneeli</string>
+    <string name="usage_access_needed_title">Käyttötietojen oikeus tarvitaan</string>
+    <string name="usage_access_needed_body">Myönnä käyttötietojen oikeus, jotta sovellus voi näyttää ruutuajan, sovellusten datankäytön ja viimeksi avatut sovellukset.</string>
+    <string name="app_detail_screen_time">Ruutuaika tänään</string>
+    <string name="app_detail_last_opened">Viimeksi avattu</string>
+    <string name="app_detail_launches">Avauskerrat tänään</string>
+    <string name="app_detail_data">Data tänään</string>
+    <string name="app_detail_notifications">Ilmoitukset tänään</string>
     <string name="special_access_section">ERIKOISOIKEUDET</string>
     <string name="usage_access_button">Datankäyttö</string>
     <string name="refresh_data">Päivitä tiedot</string>

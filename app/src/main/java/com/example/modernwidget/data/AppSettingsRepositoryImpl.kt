@@ -39,10 +39,18 @@ class AppSettingsRepositoryImpl @Inject constructor(
         prefs.edit().putInt(KEY_CYCLE_START_DAY, day.coerceIn(1, 31)).apply()
     }
 
+    override fun appsOldestFirst(): Boolean =
+        prefs.getBoolean(KEY_APPS_OLDEST_FIRST, true)
+
+    override fun setAppsOldestFirst(oldestFirst: Boolean) {
+        prefs.edit().putBoolean(KEY_APPS_OLDEST_FIRST, oldestFirst).apply()
+    }
+
     companion object {
         const val PREFS_NAME = "app_settings"
         const val KEY_DATA_COUNTER_MODE = "data_counter_mode"
         const val KEY_CYCLE_START_DAY = "cycle_start_day"
+        const val KEY_APPS_OLDEST_FIRST = "apps_oldest_first"
         const val DEFAULT_CYCLE_START_DAY = 1
     }
 }

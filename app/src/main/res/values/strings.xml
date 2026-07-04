@@ -7,6 +7,7 @@
     <string name="main_title">System Dashboard</string>
     <string name="refresh">Refresh</string>
     <string name="tab_overview">Overview</string>
+    <string name="tab_apps">Apps</string>
     <string name="tab_device">Device</string>
     <string name="tab_settings">Settings</string>
     <string name="widget_active_message">The home screen widget is active and synchronized by the background service.</string>
@@ -27,6 +28,34 @@
     <string name="data_counter_mode_cycle">Billing cycle</string>
     <string name="data_counter_cycle_start">Cycle starts on day %1$d</string>
     <string name="data_counter_description">Count data usage per calendar day or per one-month billing cycle starting on the selected day. Month lengths are handled automatically.</string>
+
+    <string name="screen_time_section">SCREEN TIME TODAY</string>
+    <string name="screen_time_others">Others</string>
+    <string name="data_consumers_section">TOP DATA TODAY</string>
+    <string name="last_opened_section">LAST OPENED</string>
+    <string name="last_used_never">Never used</string>
+    <string name="last_used_today">Today</string>
+    <plurals name="last_used_days">
+        <item quantity="one">%1$d day ago</item>
+        <item quantity="other">%1$d days ago</item>
+    </plurals>
+    <string name="uninstall_content_description">Uninstall</string>
+    <string name="sort_toggle_description">Reverse order</string>
+    <string name="usage_counters_section">USAGE TODAY</string>
+    <string name="unlock_count_label">Screen unlocks</string>
+    <string name="notification_count_label">Notifications</string>
+    <string name="notification_access_button">Notification access</string>
+    <string name="notification_access_enable">Enable</string>
+    <string name="notification_access_hint">Notification counting starts when notification access is granted. Ongoing notifications, group summaries and updates to an existing notification are not counted.</string>
+    <string name="notification_listener_label">Notification counter</string>
+    <string name="privacy_dashboard_button">Privacy dashboard</string>
+    <string name="usage_access_needed_title">Usage access required</string>
+    <string name="usage_access_needed_body">Grant usage access so the app can show screen time, app data usage and last-opened dates.</string>
+    <string name="app_detail_screen_time">Screen time today</string>
+    <string name="app_detail_last_opened">Last opened</string>
+    <string name="app_detail_launches">Times opened today</string>
+    <string name="app_detail_data">Data today</string>
+    <string name="app_detail_notifications">Notifications today</string>
     <string name="special_access_section">SPECIAL ACCESS</string>
     <string name="usage_access_button">Data usage</string>
     <string name="refresh_data">Refresh data</string>

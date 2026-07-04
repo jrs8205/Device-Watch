@@ -3,10 +3,13 @@ package com.example.modernwidget.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.modernwidget.data.AppSettingsRepository
+import com.example.modernwidget.data.AppUsageRepository
 import com.example.modernwidget.data.DataCounterMode
 import com.example.modernwidget.data.DeviceInfo
+import com.example.modernwidget.data.NotificationStats
 import com.example.modernwidget.data.SystemStats
 import com.example.modernwidget.data.SystemStatsRepository
+import com.example.modernwidget.data.UNAVAILABLE_INT
 import com.example.modernwidget.widget.WidgetController
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -29,6 +32,9 @@ data class DashboardUiState(
     val widgetOpacity: Float = DEFAULT_WIDGET_OPACITY,
     val dataCounterMode: DataCounterMode = DataCounterMode.DAY,
     val cycleStartDay: Int = 1,
+    val unlockCountToday: Int = UNAVAILABLE_INT,
+    val notificationCountToday: Int = UNAVAILABLE_INT,
+    val notificationAccessEnabled: Boolean = false,
 )
 
 @HiltViewModel
@@ -36,6 +42,8 @@ class DashboardViewModel @Inject constructor(
     private val repository: SystemStatsRepository,
     private val widgetController: WidgetController,
     private val settings: AppSettingsRepository,
+    private val appUsageRepository: AppUsageRepository,
+    private val notificationStats: NotificationStats,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DashboardUiState())
@@ -46,11 +54,21 @@ class DashboardViewModel @Inject constructor(
         viewModelScope.launch {
             val stats = repository.getStats()
             val widgetInstalled = widgetController.pushStats(stats)
+            val unlockCount = appUsageRepository.unlockCountToday()
+            val notificationAccess = notificationStats.isListenerEnabled()
+            val notificationCount = if (notificationAccess) {
+                notificationStats.totalForDay(java.time.LocalDate.now())
+            } else {
+                UNAVAILABLE_INT
+            }
             _uiState.update {
                 it.copy(
                     stats = stats,
                     isWidgetInstalled = widgetInstalled,
                     lastUpdated = currentTime(),
+                    unlockCountToday = unlockCount,
+                    notificationCountToday = notificationCount,
+                    notificationAccessEnabled = notificationAccess,
                 )
             }
         }

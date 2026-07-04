@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.Refresh
@@ -52,6 +53,7 @@ internal enum class DashboardTab(
     val icon: ImageVector,
 ) {
     Overview(R.string.tab_overview, Icons.Filled.Dashboard),
+    Apps(R.string.tab_apps, Icons.Filled.Apps),
     Device(R.string.tab_device, Icons.Filled.PhoneAndroid),
     Settings(R.string.tab_settings, Icons.Filled.Settings),
 }
@@ -163,6 +165,8 @@ fun SystemDashboardScreen(viewModel: DashboardViewModel = hiltViewModel()) {
                             uiState = uiState,
                             onRefresh = viewModel::refresh
                         )
+
+                        DashboardTab.Apps -> AppsTab()
 
                         DashboardTab.Device -> DeviceTab(uiState = uiState)
 

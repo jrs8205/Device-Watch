@@ -14,4 +14,9 @@ interface AppSettingsRepository {
     fun cycleStartDay(): Int
 
     fun setCycleStartDay(day: Int)
+
+    /** Apps-tab "last opened" order; true = oldest (and never-used) first. */
+    fun appsOldestFirst(): Boolean
+
+    fun setAppsOldestFirst(oldestFirst: Boolean)
 }

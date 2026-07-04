@@ -2,8 +2,11 @@ package com.example.modernwidget.presentation.ui
 
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.provider.Settings
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,8 +14,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -32,6 +37,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -122,6 +129,22 @@ internal fun SettingsTab(
         } catch (e: Exception) {
             e.printStackTrace()
         }
+    }
+
+    // Android 12+ ships a Privacy Dashboard activity behind a non-SDK action string;
+    // fall back to the plain privacy settings when it is missing (OEM/older Android).
+    fun openPrivacyDashboard() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            try {
+                context.startActivity(Intent("android.settings.PRIVACY_DASHBOARD").apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                })
+                return
+            } catch (_: Exception) {
+                // fall through to the generic privacy settings
+            }
+        }
+        openSpecialAccessSettings(Settings.ACTION_PRIVACY_SETTINGS)
     }
 
     Column(
@@ -375,17 +398,60 @@ internal fun SettingsTab(
 
         // Special access
         SettingsSectionCard(titleRes = R.string.special_access_section) {
+            OutlinedButton(
+                onClick = { openSpecialAccessSettings(Settings.ACTION_USAGE_ACCESS_SETTINGS) },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text(stringResource(R.string.usage_access_button), fontSize = 12.sp)
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                verticalAlignment = Alignment.CenterVertically
             ) {
+                Box(
+                    modifier = Modifier
+                        .size(10.dp)
+                        .clip(CircleShape)
+                        .background(
+                            if (uiState.notificationAccessEnabled) {
+                                Color(0xFF4CAF50)
+                            } else {
+                                Color(0xFFFF9800)
+                            }
+                        )
+                )
+                Spacer(modifier = Modifier.width(10.dp))
                 OutlinedButton(
-                    onClick = { openSpecialAccessSettings(Settings.ACTION_USAGE_ACCESS_SETTINGS) },
-                    modifier = Modifier.fillMaxWidth(),
+                    onClick = {
+                        openSpecialAccessSettings(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
+                    },
+                    modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text(stringResource(R.string.usage_access_button), fontSize = 12.sp)
+                    Text(stringResource(R.string.notification_access_button), fontSize = 12.sp)
                 }
+            }
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Text(
+                text = stringResource(R.string.notification_access_hint),
+                fontSize = 11.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            OutlinedButton(
+                onClick = { openPrivacyDashboard() },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text(stringResource(R.string.privacy_dashboard_button), fontSize = 12.sp)
             }
         }
     }

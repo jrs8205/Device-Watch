@@ -13,7 +13,11 @@ The default app language is English. Finnish users get a localized app name and 
 - Home screen widget for battery, memory, CPU, storage, Wi-Fi, mobile network, data usage, uptime, and last update time
 - Tapping the widget anywhere opens the app
 - Data counters per calendar day or per one-month billing cycle with a configurable start day (month lengths handled automatically); the selection applies to the widget and the in-app data rows
-- Tabbed dashboard UI: Overview (live battery ring, RAM/CPU, data counters), Device (hardware, SIM and Wi-Fi details), and Settings
+- Tabbed dashboard UI: Overview (live battery ring, RAM/CPU, data and usage counters), Apps (usage insights), Device (hardware, SIM and Wi-Fi details), and Settings
+- Apps tab: Digital-Wellbeing-style screen-time donut (top apps + others) with tappable legend, top data consumers today, and a last-opened list (oldest and never-used apps first, reversible) with per-app uninstall
+- Per-app detail sheet: screen time, times opened, last opened, data used and notifications today
+- Daily counters on the Overview tab: screen unlocks (API 28+) and a filtered notification count — ongoing notifications, group summaries and updates to an existing notification are not counted, so the number stays believable
+- Privacy dashboard shortcut for per-app location/microphone/camera usage (system view; that data is not exposed to third-party apps)
 - Interactive Android screensaver with a large clock, date, next alarm, charging status, battery percentage, voltage, temperature, and live charging power in watts
 - Screensaver clock follows the device 12/24-hour setting, with a second-aligned tick
 - Battery-level-tinted background gradient and a softly pulsing charge indicator in the screensaver
@@ -42,17 +46,21 @@ Requires **Android 8.0 (API 26)** or newer.
 The app follows an MVVM + repository structure with Hilt dependency injection.
 
 ```
-presentation/   DashboardViewModel + DashboardUiState (StateFlow)
+presentation/   DashboardViewModel + AppsViewModel (StateFlow UI state)
 presentation/ui Compose-only screen code: SystemDashboardScreen scaffold with a
-                Material 3 NavigationBar, Overview/Device/Settings tabs and shared
-                components (SettingsSectionCard, DeviceInfoRow)
-data/           SystemStatsRepository (interface) + SystemStatsRepositoryImpl (@Singleton)
-                AppSettingsRepository (data-counter mode + billing-cycle start day)
-                SystemStatsParser, DataPeriodCalculator (pure, unit-tested calculations)
-                SystemStats (immutable model + UNAVAILABLE_* sentinels)
+                Material 3 NavigationBar, Overview/Apps/Device/Settings tabs and
+                shared components (SettingsSectionCard, DeviceInfoRow, AppIcon,
+                ScreenTimeDonut, AppDetailSheet)
+data/           SystemStatsRepository + AppUsageRepository (per-app usage, on demand)
+                AppSettingsRepository (data-counter mode, cycle start day, sort order)
+                NotificationStats (daily notification counts, today + yesterday)
+                SystemStatsParser, DataPeriodCalculator, UsageEventAggregator,
+                NotificationCounting (pure, unit-tested calculations)
+                SystemStats / AppUsage models (+ UNAVAILABLE_* sentinels)
 widget/         Glance DashboardWidget, WidgetStateUpdater (DataStore writes),
                 WidgetController (port the ViewModel talks to), receiver and actions
-system/         SystemMonitorService (foreground), MonitorDreamService (screensaver)
+system/         SystemMonitorService (foreground), MonitorDreamService (screensaver),
+                NotificationCounterService (notification listener)
 di/             Hilt modules and entry points
 ```
 
@@ -91,8 +99,10 @@ The app requests only permissions that are used by the current feature set:
 - `NEARBY_WIFI_DEVICES`
 - `READ_PHONE_STATE`
 - `PACKAGE_USAGE_STATS`
+- `QUERY_ALL_PACKAGES` (resolve names/icons for the per-app data list; the app is distributed outside Google Play)
+- `REQUEST_DELETE_PACKAGES` (uninstall from the last-opened list via the system dialog)
 
-Do Not Disturb and Bluetooth control permissions are not requested.
+Notification counting additionally uses the optional Notification access special permission (a `NotificationListenerService`); counting starts when access is granted. Do Not Disturb and Bluetooth control permissions are not requested.
 
 ## Building
 
@@ -118,8 +128,11 @@ JVM unit tests cover the pure parsing/maths and the ViewModel:
 
 - `SystemStatsParserTest` — CPU-load deltas, frequency residency/pressure, battery wear, mobile-generation mapping, Wi-Fi SSID/band, signal filtering
 - `DataPeriodCalculatorTest` — billing-cycle period math (start-day clamping across month lengths, leap February, year rollover)
+- `UsageEventAggregatorTest` — foreground-session folding (in-app activity switches, unclosed sessions), donut segments, last-use sorting and day math
+- `NotificationCountingTest` — the "real notification" filter and count retention/purging
 - `WidgetFormattingTest` — widget display formatters (locale-pinned), adaptive MB/GB data amounts
-- `DashboardViewModelTest` — refresh, opacity load/commit, data-counter settings, widget-installed flag (fake repository, widget controller and settings)
+- `DashboardViewModelTest` — refresh, opacity load/commit, data-counter settings, daily counters, widget-installed flag (hand-written fakes)
+- `AppsViewModelTest` — Apps-tab loading, empty state without usage access, detail assembly, sort toggle persistence
 - `ClockFitTest` — screensaver clock width-fit math
 - `DreamLogicTest` — night-dim window (incl. crossing midnight) and charging-wattage normalization
 
@@ -141,27 +154,39 @@ app/src/main/java/com/example/modernwidget/
   data/
     AppSettingsRepository.kt
     AppSettingsRepositoryImpl.kt
+    AppUsage.kt
+    AppUsageRepository.kt
+    AppUsageRepositoryImpl.kt
     DataPeriod.kt
+    NotificationCounting.kt
+    NotificationStats.kt
+    NotificationStatsImpl.kt
     SystemStats.kt
     SystemStatsParser.kt
     SystemStatsRepository.kt
     SystemStatsRepositoryImpl.kt
+    UsageEventAggregator.kt
   di/
     DispatchersModule.kt
     RepositoryModule.kt
     RepositoryEntryPoint.kt
   presentation/
+    AppsViewModel.kt
     DashboardViewModel.kt
     ui/
+      AppDetailSheet.kt
+      AppsTab.kt
       DashboardComponents.kt
       DashboardTabs.kt
       DeviceTab.kt
       OverviewTab.kt
+      ScreenTimeDonut.kt
       SettingsTab.kt
   system/
     BatteryFullNotifier.kt
     DreamPreferences.kt
     MonitorDreamService.kt
+    NotificationCounterService.kt
     SystemMonitorService.kt
   widget/
     DashboardWidget.kt
@@ -172,8 +197,12 @@ app/src/main/java/com/example/modernwidget/
 
 app/src/test/java/com/example/modernwidget/
   data/DataPeriodCalculatorTest.kt
+  data/NotificationCountingTest.kt
   data/SystemStatsParserTest.kt
+  data/UsageEventAggregatorTest.kt
+  presentation/AppsViewModelTest.kt
   presentation/DashboardViewModelTest.kt
+  presentation/Fakes.kt
   system/ClockFitTest.kt
   system/DreamLogicTest.kt
   widget/WidgetFormattingTest.kt

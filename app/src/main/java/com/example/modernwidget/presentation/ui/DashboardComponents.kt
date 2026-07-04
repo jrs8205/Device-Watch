@@ -1,6 +1,10 @@
 package com.example.modernwidget.presentation.ui
 
+import android.content.Context
 import androidx.annotation.StringRes
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
@@ -9,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
@@ -20,19 +25,26 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.graphics.drawable.toBitmap
 import com.example.modernwidget.R
 import com.example.modernwidget.data.DataCounterMode
 import com.example.modernwidget.data.UNAVAILABLE_INT
 import com.example.modernwidget.data.UNAVAILABLE_TEXT
+import com.example.modernwidget.data.UsageEventAggregator
 import com.example.modernwidget.widget.dataAmountText
+import java.time.LocalDate
+import java.time.ZoneId
 import java.util.Locale
 
 /**
@@ -145,7 +157,58 @@ internal fun mbpsText(value: Int): String =
 internal fun countText(value: Int): String =
     if (value <= 0) UNAVAILABLE_TEXT else value.toString()
 
+/** Count where zero is a real value; only the sentinel renders a dash. */
+internal fun countOrDashText(value: Int): String =
+    if (value >= 0) value.toString() else UNAVAILABLE_TEXT
+
 internal fun gbTodayText(value: Double): String = dataAmountText(value)
 
 internal fun minutesText(minutes: Int): String =
     String.format(Locale.getDefault(), "%02d:%02d", minutes / 60, minutes % 60)
+
+/** Adaptive MB/GB text for a raw byte count (reuses the widget's formatter). */
+internal fun bytesText(bytes: Long): String = dataAmountText(bytes / GB_BYTES)
+
+/** Compact duration like "2h 14m" (locale strings), or "34 min" under one hour. */
+internal fun durationText(context: Context, millis: Long): String {
+    val totalMinutes = millis / 60_000L
+    val hours = totalMinutes / 60L
+    val minutes = totalMinutes % 60L
+    return if (hours > 0L) context.getString(R.string.uptime_short, hours, minutes) else "$minutes min"
+}
+
+/** "Never used" / "Today" / "N days ago" for a last-use timestamp. */
+@Composable
+internal fun lastUsedText(lastUsedEpochMillis: Long?): String {
+    val days = UsageEventAggregator.daysSinceLastUse(
+        lastUsedEpochMillis, LocalDate.now(), ZoneId.systemDefault()
+    )
+    return when {
+        days == null -> stringResource(R.string.last_used_never)
+        days == 0 -> stringResource(R.string.last_used_today)
+        else -> pluralStringResource(R.plurals.last_used_days, days, days)
+    }
+}
+
+/** App launcher icon loaded once per package; falls back to a plain circle. */
+@Composable
+internal fun AppIcon(packageName: String, modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    val bitmap = remember(packageName) {
+        try {
+            context.packageManager.getApplicationIcon(packageName)
+                .toBitmap(ICON_PIXELS, ICON_PIXELS)
+                .asImageBitmap()
+        } catch (_: Exception) {
+            null
+        }
+    }
+    if (bitmap != null) {
+        Image(bitmap = bitmap, contentDescription = null, modifier = modifier)
+    } else {
+        Box(modifier = modifier.background(MaterialTheme.colorScheme.surfaceVariant, CircleShape))
+    }
+}
+
+private const val GB_BYTES = 1024.0 * 1024.0 * 1024.0
+private const val ICON_PIXELS = 96

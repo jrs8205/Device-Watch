@@ -2,6 +2,10 @@ package com.example.modernwidget.di
 
 import com.example.modernwidget.data.AppSettingsRepository
 import com.example.modernwidget.data.AppSettingsRepositoryImpl
+import com.example.modernwidget.data.AppUsageRepository
+import com.example.modernwidget.data.AppUsageRepositoryImpl
+import com.example.modernwidget.data.NotificationStats
+import com.example.modernwidget.data.NotificationStatsImpl
 import com.example.modernwidget.data.SystemStatsRepository
 import com.example.modernwidget.data.SystemStatsRepositoryImpl
 import com.example.modernwidget.widget.GlanceWidgetController
@@ -27,4 +31,12 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindAppSettingsRepository(impl: AppSettingsRepositoryImpl): AppSettingsRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindAppUsageRepository(impl: AppUsageRepositoryImpl): AppUsageRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindNotificationStats(impl: NotificationStatsImpl): NotificationStats
 }

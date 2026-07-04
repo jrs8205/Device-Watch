@@ -15,6 +15,12 @@
     <uses-permission
         android:name="android.permission.PACKAGE_USAGE_STATS"
         tools:ignore="ProtectedPermissions" />
+    <!-- Needed to resolve names/icons for arbitrary UIDs reported by NetworkStats and to
+         list launchable apps. The app is distributed outside Google Play. -->
+    <uses-permission
+        android:name="android.permission.QUERY_ALL_PACKAGES"
+        tools:ignore="QueryAllPackagesPermission" />
+    <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />
 
     <application
         android:name=".MonitorApp"
@@ -57,6 +63,16 @@
             <meta-data
                 android:name="android.service.dreams"
                 android:resource="@xml/dream_info" />
+        </service>
+
+        <service
+            android:name=".system.NotificationCounterService"
+            android:exported="false"
+            android:label="@string/notification_listener_label"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
         </service>
 
         <receiver

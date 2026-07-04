@@ -1,0 +1,173 @@
+package com.example.modernwidget.data
+
+import com.google.common.truth.Truth.assertThat
+import org.junit.Test
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.ZoneOffset
+
+class UsageEventAggregatorTest {
+
+    private fun resume(pkg: String, t: Long) = UsageEventSample(pkg, UsageEventKind.RESUME, t)
+    private fun pause(pkg: String, t: Long) = UsageEventSample(pkg, UsageEventKind.PAUSE, t)
+
+    private fun screenTime(pkg: String, millis: Long) =
+        AppScreenTime(pkg, pkg, millis, launchCount = 1, lastUsedMillis = 0L)
+
+    private fun app(pkg: String, lastUsed: Long?) =
+        LaunchableApp(pkg, pkg, lastUsed, isSystemApp = false)
+
+    // --- aggregateForegroundTime ---
+
+    @Test
+    fun `given a simple session, when aggregating, then time launch and last use are recorded`() {
+        val usage = UsageEventAggregator.aggregateForegroundTime(
+            listOf(resume("a", 1_000), pause("a", 4_000)),
+            windowEndMillis = 10_000,
+        )
+
+        assertThat(usage["a"]).isEqualTo(PackageUsage(3_000, 1, 4_000))
+    }
+
+    @Test
+    fun `given an in-app activity switch, when aggregating, then still one session and one launch`() {
+        // Activity B resumes before activity A pauses inside the same app.
+        val usage = UsageEventAggregator.aggregateForegroundTime(
+            listOf(resume("a", 1_000), resume("a", 2_000), pause("a", 2_100), pause("a", 5_000)),
+            windowEndMillis = 10_000,
+        )
+
+        assertThat(usage["a"]).isEqualTo(PackageUsage(4_000, 1, 5_000))
+    }
+
+    @Test
+    fun `given interleaved apps, when aggregating, then totals are independent`() {
+        val usage = UsageEventAggregator.aggregateForegroundTime(
+            listOf(
+                resume("a", 1_000), pause("a", 2_000),
+                resume("b", 2_000), pause("b", 5_000),
+                resume("a", 6_000), pause("a", 7_000),
+            ),
+            windowEndMillis = 10_000,
+        )
+
+        assertThat(usage["a"]).isEqualTo(PackageUsage(2_000, 2, 7_000))
+        assertThat(usage["b"]).isEqualTo(PackageUsage(3_000, 1, 5_000))
+    }
+
+    @Test
+    fun `given an unclosed session, when aggregating, then it is cut at the window end`() {
+        val usage = UsageEventAggregator.aggregateForegroundTime(
+            listOf(resume("a", 8_000)),
+            windowEndMillis = 10_000,
+        )
+
+        assertThat(usage["a"]).isEqualTo(PackageUsage(2_000, 1, 10_000))
+    }
+
+    @Test
+    fun `given a pause without a prior resume, when aggregating, then it is ignored`() {
+        val usage = UsageEventAggregator.aggregateForegroundTime(
+            listOf(pause("a", 3_000)),
+            windowEndMillis = 10_000,
+        )
+
+        assertThat(usage).isEmpty()
+    }
+
+    @Test
+    fun `given unsorted events, when aggregating, then they are ordered by time first`() {
+        val usage = UsageEventAggregator.aggregateForegroundTime(
+            listOf(pause("a", 4_000), resume("a", 1_000)),
+            windowEndMillis = 10_000,
+        )
+
+        assertThat(usage["a"]).isEqualTo(PackageUsage(3_000, 1, 4_000))
+    }
+
+    // --- donutSegments ---
+
+    @Test
+    fun `given more apps than topN, when building segments, then an others bucket is added`() {
+        val segments = UsageEventAggregator.donutSegments(
+            listOf(screenTime("a", 6_000), screenTime("b", 3_000), screenTime("c", 1_000)),
+            topN = 2,
+        )
+
+        assertThat(segments.map { it.packageName }).containsExactly("a", "b", null).inOrder()
+        assertThat(segments[0].fraction).isWithin(0.001f).of(0.6f)
+        assertThat(segments[1].fraction).isWithin(0.001f).of(0.3f)
+        assertThat(segments[2].fraction).isWithin(0.001f).of(0.1f)
+        assertThat(segments[2].label).isNull()
+    }
+
+    @Test
+    fun `given fewer apps than topN, when building segments, then there is no others bucket`() {
+        val segments = UsageEventAggregator.donutSegments(
+            listOf(screenTime("a", 2_000), screenTime("b", 2_000)),
+            topN = 6,
+        )
+
+        assertThat(segments.map { it.packageName }).containsExactly("a", "b")
+        assertThat(segments.sumOf { it.fraction.toDouble() }).isWithin(0.001).of(1.0)
+    }
+
+    @Test
+    fun `given no usage, when building segments, then the result is empty`() {
+        assertThat(UsageEventAggregator.donutSegments(emptyList())).isEmpty()
+        assertThat(
+            UsageEventAggregator.donutSegments(listOf(screenTime("a", 0)))
+        ).isEmpty()
+    }
+
+    // --- sortByLastUse ---
+
+    @Test
+    fun `given oldest first, when sorting, then never-used apps come first`() {
+        val sorted = UsageEventAggregator.sortByLastUse(
+            listOf(app("x", 200), app("y", null), app("z", 100)),
+            oldestFirst = true,
+        )
+
+        assertThat(sorted.map { it.packageName }).containsExactly("y", "z", "x").inOrder()
+    }
+
+    @Test
+    fun `given newest first, when sorting, then never-used apps come last`() {
+        val sorted = UsageEventAggregator.sortByLastUse(
+            listOf(app("x", 200), app("y", null), app("z", 100)),
+            oldestFirst = false,
+        )
+
+        assertThat(sorted.map { it.packageName }).containsExactly("x", "z", "y").inOrder()
+    }
+
+    // --- daysSinceLastUse ---
+
+    @Test
+    fun `given no last use, when computing days, then null`() {
+        assertThat(
+            UsageEventAggregator.daysSinceLastUse(null, LocalDate.of(2026, 7, 4), ZoneOffset.UTC)
+        ).isNull()
+    }
+
+    @Test
+    fun `given use earlier today, when computing days, then zero`() {
+        val today = LocalDate.of(2026, 7, 4)
+        val millis = today.atTime(8, 0).toInstant(ZoneOffset.UTC).toEpochMilli()
+
+        assertThat(
+            UsageEventAggregator.daysSinceLastUse(millis, today, ZoneId.of("UTC"))
+        ).isEqualTo(0)
+    }
+
+    @Test
+    fun `given use just before midnight yesterday, when computing days, then one`() {
+        val today = LocalDate.of(2026, 7, 4)
+        val millis = LocalDate.of(2026, 7, 3).atTime(23, 59).toInstant(ZoneOffset.UTC).toEpochMilli()
+
+        assertThat(
+            UsageEventAggregator.daysSinceLastUse(millis, today, ZoneId.of("UTC"))
+        ).isEqualTo(1)
+    }
+}
