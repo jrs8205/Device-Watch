@@ -259,10 +259,13 @@ private fun HistoryBarChart(days: List<HistoryDay>, metric: HistoryMetric) {
 
         Spacer(modifier = Modifier.height(8.dp))
 
+        val chartScroll = rememberScrollState()
+        LaunchedEffect(days.size) { chartScroll.scrollTo(chartScroll.maxValue) }
+
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .horizontalScroll(rememberScrollState(initial = Int.MAX_VALUE))
+                .horizontalScroll(chartScroll)
         ) {
             Canvas(
                 modifier = Modifier
