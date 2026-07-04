@@ -50,6 +50,7 @@ class NotificationLogImpl internal constructor(
             .flatMap { file ->
                 file.readLines().asReversed().mapNotNull(NotificationLogCodec::decodeOrNull)
             }
+            .sortedByDescending { it.timeMillis }
     }
 
     private fun purge(today: LocalDate) {

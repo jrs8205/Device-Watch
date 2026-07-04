@@ -36,14 +36,18 @@ class NotificationCounterService : NotificationListenerService() {
     /** File writes happen off the main thread; the listener callback must not block. */
     private val ioScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
+    /** Keys of currently active notifications; a repost to one of these is an update, not new. */
     private val activeKeys = mutableSetOf<String>()
 
     override fun onListenerConnected() {
         super.onListenerConnected()
         activeKeys.clear()
         try {
+            // Seeding from the already-showing notifications prevents recounting them
+            // after every listener reconnect (reboot, access toggled off/on).
             activeNotifications?.forEach { activeKeys.add(it.key) }
         } catch (_: SecurityException) {
+            // Binder not fully connected yet; the set just starts empty.
         }
         notificationStats.purge(LocalDate.now())
     }

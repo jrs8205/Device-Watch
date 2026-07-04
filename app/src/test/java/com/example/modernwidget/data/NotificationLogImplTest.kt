@@ -58,4 +58,13 @@ class NotificationLogImplTest {
         assertThat(todayLog.entriesNewestFirst().map { it.title })
             .containsExactly("new-day", "old-day").inOrder()
     }
+
+    @Test
+    fun `entries are ordered by post time even when appended out of order`() {
+        val log = log()
+        log.append(entry(20L, "second"))
+        log.append(entry(10L, "first"))
+        assertThat(log.entriesNewestFirst().map { it.title })
+            .containsExactly("second", "first").inOrder()
+    }
 }
