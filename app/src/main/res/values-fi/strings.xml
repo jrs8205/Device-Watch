@@ -48,6 +48,7 @@
     <string name="boot_count_label">Käynnistykset</string>
     <string name="charge_count_label">Latauskerrat</string>
     <string name="history_title">Historia</string>
+    <string name="content_description_back">Takaisin</string>
     <string name="history_log_section">Ilmoitusloki</string>
     <string name="history_log_empty">Ilmoituksia ei ole vielä kirjattu. Kirjaus alkaa, kun ilmoitusten käyttöoikeus on myönnetty ja uusia ilmoituksia saapuu.</string>
     <string name="history_open">Avaa historia</string>

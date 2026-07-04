@@ -49,6 +49,7 @@
     <string name="boot_count_label">Restarts</string>
     <string name="charge_count_label">Charging sessions</string>
     <string name="history_title">History</string>
+    <string name="content_description_back">Back</string>
     <string name="history_log_section">Notification log</string>
     <string name="history_log_empty">No notifications recorded yet. Logging starts when notification access is granted and new notifications arrive.</string>
     <string name="history_open">Open history</string>
