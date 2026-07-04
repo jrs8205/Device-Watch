@@ -8,6 +8,7 @@ import com.example.modernwidget.data.DataCounterMode
 import com.example.modernwidget.data.LaunchableApp
 import com.example.modernwidget.data.NotificationStats
 import com.example.modernwidget.data.UsageHistory
+import com.example.modernwidget.data.UsageDayTally
 import com.example.modernwidget.data.UsageTotals
 import java.time.LocalDate
 
@@ -136,6 +137,22 @@ internal class FakeUsageHistory : UsageHistory {
 
     override fun chargesBetween(start: LocalDate, end: LocalDate): Int =
         sumInt(charges, start, end)
+
+    override fun dailyTallies(start: LocalDate, end: LocalDate): List<UsageDayTally> {
+        val result = mutableListOf<UsageDayTally>()
+        var day = start
+        while (!day.isAfter(end)) {
+            result += UsageDayTally(
+                day = day,
+                unlocks = unlocks[day] ?: 0,
+                screenTimeMillis = screen[day] ?: 0L,
+                boots = boots[day] ?: 0,
+                charges = charges[day] ?: 0,
+            )
+            day = day.plusDays(1)
+        }
+        return result
+    }
 
     override fun purge(today: LocalDate) {
         purgedWith = today

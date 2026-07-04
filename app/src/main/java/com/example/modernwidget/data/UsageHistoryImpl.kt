@@ -50,6 +50,22 @@ class UsageHistoryImpl @Inject constructor(
     override fun chargesBetween(start: LocalDate, end: LocalDate): Int =
         sumInt(PREFIX_CHARGES, start, end)
 
+    override fun dailyTallies(start: LocalDate, end: LocalDate): List<UsageDayTally> {
+        val result = mutableListOf<UsageDayTally>()
+        var day = start
+        while (!day.isAfter(end)) {
+            result += UsageDayTally(
+                day = day,
+                unlocks = prefs.getInt(key(PREFIX_UNLOCKS, day), 0),
+                screenTimeMillis = prefs.getLong(key(PREFIX_SCREEN, day), 0L),
+                boots = prefs.getInt(key(PREFIX_BOOTS, day), 0),
+                charges = prefs.getInt(key(PREFIX_CHARGES, day), 0),
+            )
+            day = day.plusDays(1)
+        }
+        return result
+    }
+
     override fun purge(today: LocalDate) {
         val retained = NotificationCounting.retainedDays(today)
         val stale = prefs.all.keys.filterNot { isRetainedHistoryKey(it, retained) }

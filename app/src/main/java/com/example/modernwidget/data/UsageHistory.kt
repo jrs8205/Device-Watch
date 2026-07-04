@@ -2,6 +2,15 @@ package com.example.modernwidget.data
 
 import java.time.LocalDate
 
+/** One day's stored tallies; days with no records are all zeros. */
+data class UsageDayTally(
+    val day: LocalDate,
+    val unlocks: Int,
+    val screenTimeMillis: Long,
+    val boots: Int,
+    val charges: Int,
+)
+
 /**
  * Daily usage tallies kept by the app itself, because Android exposes no
  * retroactive history for these: unlock counts and screen time are recorded
@@ -32,6 +41,9 @@ interface UsageHistory {
     fun bootsBetween(start: LocalDate, end: LocalDate): Int
 
     fun chargesBetween(start: LocalDate, end: LocalDate): Int
+
+    /** Per-day tallies for [start]..[end] inclusive, ascending, zero-filled. */
+    fun dailyTallies(start: LocalDate, end: LocalDate): List<UsageDayTally>
 
     fun purge(today: LocalDate)
 }
