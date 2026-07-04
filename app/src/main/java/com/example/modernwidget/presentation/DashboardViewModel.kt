@@ -2,6 +2,8 @@ package com.example.modernwidget.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.modernwidget.data.AppSettingsRepository
+import com.example.modernwidget.data.DataCounterMode
 import com.example.modernwidget.data.DeviceInfo
 import com.example.modernwidget.data.SystemStats
 import com.example.modernwidget.data.SystemStatsRepository
@@ -25,12 +27,15 @@ data class DashboardUiState(
     val isWidgetInstalled: Boolean = false,
     val lastUpdated: String = "--:--",
     val widgetOpacity: Float = DEFAULT_WIDGET_OPACITY,
+    val dataCounterMode: DataCounterMode = DataCounterMode.DAY,
+    val cycleStartDay: Int = 1,
 )
 
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
     private val repository: SystemStatsRepository,
     private val widgetController: WidgetController,
+    private val settings: AppSettingsRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DashboardUiState())
@@ -79,6 +84,34 @@ class DashboardViewModel @Inject constructor(
         viewModelScope.launch {
             widgetController.setOpacity(opacity)
         }
+    }
+
+    /** Loads the saved data-counter mode and billing-cycle start day into the state. */
+    fun loadDataCounterSettings() {
+        _uiState.update {
+            it.copy(
+                dataCounterMode = settings.dataCounterMode(),
+                cycleStartDay = settings.cycleStartDay(),
+            )
+        }
+    }
+
+    /** Persists the counter mode and re-queries stats so the widget shows the new period. */
+    fun onDataCounterModeSelected(mode: DataCounterMode) {
+        settings.setDataCounterMode(mode)
+        _uiState.update { it.copy(dataCounterMode = mode) }
+        refresh()
+    }
+
+    /** Live-updates the cycle-day slider value without persisting (called on every drag tick). */
+    fun onCycleStartDayChange(day: Int) {
+        _uiState.update { it.copy(cycleStartDay = day.coerceIn(1, 31)) }
+    }
+
+    /** Persists the dragged cycle start day and re-queries stats for the new period. */
+    fun commitCycleStartDay() {
+        settings.setCycleStartDay(_uiState.value.cycleStartDay)
+        refresh()
     }
 
     private fun currentTime(): String =

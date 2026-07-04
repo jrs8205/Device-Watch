@@ -11,6 +11,9 @@ The default app language is English. Finnish users get a localized app name and 
 ## Features
 
 - Home screen widget for battery, memory, CPU, storage, Wi-Fi, mobile network, data usage, uptime, and last update time
+- Tapping the widget anywhere opens the app
+- Data counters per calendar day or per one-month billing cycle with a configurable start day (month lengths handled automatically); the selection applies to the widget and the in-app data rows
+- Tabbed dashboard UI: Overview (live battery ring, RAM/CPU, data counters), Device (hardware, SIM and Wi-Fi details), and Settings
 - Interactive Android screensaver with a large clock, date, next alarm, charging status, battery percentage, voltage, temperature, and live charging power in watts
 - Screensaver clock follows the device 12/24-hour setting, with a second-aligned tick
 - Battery-level-tinted background gradient and a softly pulsing charge indicator in the screensaver
@@ -39,9 +42,13 @@ Requires **Android 8.0 (API 26)** or newer.
 The app follows an MVVM + repository structure with Hilt dependency injection.
 
 ```
-presentation/   DashboardViewModel + DashboardUiState (StateFlow), consumed by MainActivity
+presentation/   DashboardViewModel + DashboardUiState (StateFlow)
+presentation/ui Compose-only screen code: SystemDashboardScreen scaffold with a
+                Material 3 NavigationBar, Overview/Device/Settings tabs and shared
+                components (SettingsSectionCard, DeviceInfoRow)
 data/           SystemStatsRepository (interface) + SystemStatsRepositoryImpl (@Singleton)
-                SystemStatsParser (pure, unit-tested calculations)
+                AppSettingsRepository (data-counter mode + billing-cycle start day)
+                SystemStatsParser, DataPeriodCalculator (pure, unit-tested calculations)
                 SystemStats (immutable model + UNAVAILABLE_* sentinels)
 widget/         Glance DashboardWidget, WidgetStateUpdater (DataStore writes),
                 WidgetController (port the ViewModel talks to), receiver and actions
@@ -50,7 +57,7 @@ di/             Hilt modules and entry points
 ```
 
 - `SystemStatsRepositoryImpl` is the single source of truth. It is a `@Singleton`, reads system/kernel sources off the main thread on an injected dispatcher, and serializes its CPU-load snapshots with a `Mutex`.
-- `MainActivity` is a single Compose screen that observes the ViewModel with `collectAsStateWithLifecycle()` and obtains it via `hiltViewModel()`. Permission requests and the foreground-service start stay in the Activity.
+- `SystemDashboardScreen` observes the ViewModel with `collectAsStateWithLifecycle()` and obtains it via `hiltViewModel()`. The three tabs are flat destinations switched with saveable tab state (no navigation library); each tab keeps its own scroll position. Permission requests and the foreground-service start stay at screen level.
 - Services and the widget receiver use `@AndroidEntryPoint`; the Glance `ActionCallback` reaches the graph through a Hilt `EntryPoint`.
 
 ## Tech Stack
@@ -110,8 +117,9 @@ JVM unit tests cover the pure parsing/maths and the ViewModel:
 ```
 
 - `SystemStatsParserTest` — CPU-load deltas, frequency residency/pressure, battery wear, mobile-generation mapping, Wi-Fi SSID/band, signal filtering
+- `DataPeriodCalculatorTest` — billing-cycle period math (start-day clamping across month lengths, leap February, year rollover)
 - `WidgetFormattingTest` — widget display formatters (locale-pinned), adaptive MB/GB data amounts
-- `DashboardViewModelTest` — refresh, opacity load/commit, widget-installed flag (fake repository + fake widget controller)
+- `DashboardViewModelTest` — refresh, opacity load/commit, data-counter settings, widget-installed flag (fake repository, widget controller and settings)
 - `ClockFitTest` — screensaver clock width-fit math
 - `DreamLogicTest` — night-dim window (incl. crossing midnight) and charging-wattage normalization
 
@@ -131,6 +139,9 @@ app/src/main/java/com/example/modernwidget/
   MainActivity.kt
   MonitorApp.kt
   data/
+    AppSettingsRepository.kt
+    AppSettingsRepositoryImpl.kt
+    DataPeriod.kt
     SystemStats.kt
     SystemStatsParser.kt
     SystemStatsRepository.kt
@@ -141,6 +152,12 @@ app/src/main/java/com/example/modernwidget/
     RepositoryEntryPoint.kt
   presentation/
     DashboardViewModel.kt
+    ui/
+      DashboardComponents.kt
+      DashboardTabs.kt
+      DeviceTab.kt
+      OverviewTab.kt
+      SettingsTab.kt
   system/
     BatteryFullNotifier.kt
     DreamPreferences.kt
@@ -149,12 +166,12 @@ app/src/main/java/com/example/modernwidget/
   widget/
     DashboardWidget.kt
     DashboardWidgetReceiver.kt
-    LaunchSettingsAction.kt
     RefreshStatsAction.kt
     WidgetController.kt
     WidgetStateUpdater.kt
 
 app/src/test/java/com/example/modernwidget/
+  data/DataPeriodCalculatorTest.kt
   data/SystemStatsParserTest.kt
   presentation/DashboardViewModelTest.kt
   system/ClockFitTest.kt

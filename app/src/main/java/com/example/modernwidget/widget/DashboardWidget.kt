@@ -13,7 +13,6 @@ import androidx.glance.GlanceTheme
 import androidx.glance.Image
 import androidx.glance.ImageProvider
 import androidx.glance.appwidget.GlanceAppWidget
-import androidx.glance.appwidget.action.actionRunCallback
 import androidx.glance.appwidget.appWidgetBackground
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
@@ -37,8 +36,9 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
-import androidx.glance.action.actionParametersOf
+import androidx.glance.action.actionStartActivity
 import androidx.glance.action.clickable
+import com.example.modernwidget.MainActivity
 import com.example.modernwidget.R
 import com.example.modernwidget.data.UNAVAILABLE_DOUBLE
 import com.example.modernwidget.data.UNAVAILABLE_INT
@@ -170,6 +170,8 @@ fun WidgetContent() {
     val wifiSpeedDown = prefs[RefreshStatsAction.WIFI_SPEED_DOWN] ?: UNAVAILABLE_INT
     val wifiSpeedUp = prefs[RefreshStatsAction.WIFI_SPEED_UP] ?: UNAVAILABLE_INT
     val wifiBytesToday = prefs[RefreshStatsAction.WIFI_BYTES_TODAY] ?: UNAVAILABLE_DOUBLE
+    val wifiDataLabel = prefs[RefreshStatsAction.WIFI_DATA_LABEL]
+        ?: context.getString(R.string.mobile_data_today_label)
 
     val operatorName = prefs[RefreshStatsAction.OPERATOR_NAME] ?: UNAVAILABLE_TEXT
     val mobileNetworkType = prefs[RefreshStatsAction.MOBILE_NETWORK_TYPE] ?: UNAVAILABLE_TEXT
@@ -180,6 +182,8 @@ fun WidgetContent() {
 
     val uptime = prefs[RefreshStatsAction.UPTIME] ?: UNAVAILABLE_TEXT
     val lastUpdated = prefs[RefreshStatsAction.LAST_UPDATED] ?: UNAVAILABLE_TEXT
+    // The whole widget opens the app; the previous per-tile system-settings
+    // shortcuts were removed deliberately (user request in v1.1.0).
     Column(
         modifier = GlanceModifier
             .fillMaxSize()
@@ -187,6 +191,7 @@ fun WidgetContent() {
             .background(colors.cardBackground)
             .cornerRadius(30.dp)
             .padding(18.dp)
+            .clickable(actionStartActivity<MainActivity>())
     ) {
         // 2x3 grid (6 metric tiles, 12dp gap). Each row takes an equal third of the grid
         // height so the last row can never be squeezed out and clipped by the rows above it.
@@ -204,11 +209,7 @@ fun WidgetContent() {
                     isLimitHigh = false,
                     iconRes = R.drawable.ic_widget_battery,
                     iconColor = ColorProvider(Color(0xFF34D399)),
-                    modifier = GlanceModifier.defaultWeight().clickable(
-                        actionRunCallback<LaunchSettingsAction>(
-                            actionParametersOf(LaunchSettingsAction.SettingsActionKey to "android.intent.action.POWER_USAGE_SUMMARY")
-                        )
-                    ),
+                    modifier = GlanceModifier.defaultWeight(),
                     colors = colors
                 )
                 Spacer(modifier = GlanceModifier.width(12.dp))
@@ -222,11 +223,7 @@ fun WidgetContent() {
                     standardAccent = colors.ramAccent,
                     isLimitHigh = true,
                     iconRes = R.drawable.ic_widget_memory,
-                    modifier = GlanceModifier.defaultWeight().clickable(
-                        actionRunCallback<LaunchSettingsAction>(
-                            actionParametersOf(LaunchSettingsAction.SettingsActionKey to android.provider.Settings.ACTION_SETTINGS)
-                        )
-                    ),
+                    modifier = GlanceModifier.defaultWeight(),
                     colors = colors
                 )
             }
@@ -241,11 +238,7 @@ fun WidgetContent() {
                     standardAccent = colors.cpuAccent,
                     isLimitHigh = true,
                     iconRes = R.drawable.ic_widget_cpu,
-                    modifier = GlanceModifier.defaultWeight().clickable(
-                        actionRunCallback<LaunchSettingsAction>(
-                            actionParametersOf(LaunchSettingsAction.SettingsActionKey to android.provider.Settings.ACTION_SETTINGS)
-                        )
-                    ),
+                    modifier = GlanceModifier.defaultWeight(),
                     colors = colors
                 )
                 Spacer(modifier = GlanceModifier.width(12.dp))
@@ -259,11 +252,7 @@ fun WidgetContent() {
                     standardAccent = colors.storageAccent,
                     isLimitHigh = true,
                     iconRes = R.drawable.ic_widget_storage,
-                    modifier = GlanceModifier.defaultWeight().clickable(
-                        actionRunCallback<LaunchSettingsAction>(
-                            actionParametersOf(LaunchSettingsAction.SettingsActionKey to android.provider.Settings.ACTION_INTERNAL_STORAGE_SETTINGS)
-                        )
-                    ),
+                    modifier = GlanceModifier.defaultWeight(),
                     colors = colors
                 )
             }
@@ -279,11 +268,6 @@ fun WidgetContent() {
                 .background(colors.tileBackground)
                 .cornerRadius(20.dp)
                 .padding(17.dp)
-                .clickable(
-                    actionRunCallback<LaunchSettingsAction>(
-                        actionParametersOf(LaunchSettingsAction.SettingsActionKey to android.provider.Settings.ACTION_WIFI_SETTINGS)
-                    )
-                )
         ) {
             Row(
                 modifier = GlanceModifier.fillMaxWidth(),
@@ -356,7 +340,7 @@ fun WidgetContent() {
                         )
                         Spacer(modifier = GlanceModifier.width(4.dp))
                         Text(
-                            text = context.getString(R.string.mobile_data_today_label),
+                            text = wifiDataLabel,
                             style = TextStyle(
                                 color = colors.textMuted,
                                 fontSize = 10.sp,

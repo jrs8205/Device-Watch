@@ -53,6 +53,7 @@ class RefreshStatsAction : ActionCallback {
         val WIFI_SPEED_DOWN = intPreferencesKey("wifi_speed_down")
         val WIFI_SPEED_UP = intPreferencesKey("wifi_speed_up")
         val WIFI_BYTES_TODAY = doublePreferencesKey("wifi_bytes_today")
+        val WIFI_DATA_LABEL = stringPreferencesKey("wifi_data_label")
         
         val OPERATOR_NAME = stringPreferencesKey("operator_name")
         val MOBILE_NETWORK_TYPE = stringPreferencesKey("mobile_network_type")

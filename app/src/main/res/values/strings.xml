@@ -6,6 +6,9 @@
 
     <string name="main_title">System Dashboard</string>
     <string name="refresh">Refresh</string>
+    <string name="tab_overview">Overview</string>
+    <string name="tab_device">Device</string>
+    <string name="tab_settings">Settings</string>
     <string name="widget_active_message">The home screen widget is active and synchronized by the background service.</string>
     <string name="widget_not_added_message">The widget has not been added to the home screen yet. Long-press the home screen to add it.</string>
     <string name="battery_status_section">BATTERY STATUS (LIVE)</string>
@@ -19,6 +22,11 @@
     <string name="widget_settings_section">WIDGET SETTINGS</string>
     <string name="widget_opacity_title">Widget background opacity</string>
     <string name="widget_opacity_description" formatted="false">Adjust the home screen widget background opacity. 100% is fully opaque.</string>
+    <string name="data_counter_section">DATA COUNTER</string>
+    <string name="data_counter_mode_day">Per day</string>
+    <string name="data_counter_mode_cycle">Billing cycle</string>
+    <string name="data_counter_cycle_start">Cycle starts on day %1$d</string>
+    <string name="data_counter_description">Count data usage per calendar day or per one-month billing cycle starting on the selected day. Month lengths are handled automatically.</string>
     <string name="special_access_section">SPECIAL ACCESS</string>
     <string name="usage_access_button">Data usage</string>
     <string name="refresh_data">Refresh data</string>
@@ -66,6 +74,7 @@
     <string name="sim_status">SIM status</string>
     <string name="sim_slots">SIM slots</string>
     <string name="sim_data">Mobile data today</string>
+    <string name="sim_data_period">Mobile data this period</string>
 
     <string name="wifi_info_section">WI-FI</string>
     <string name="wifi_name">Network (SSID)</string>
@@ -75,6 +84,7 @@
     <string name="wifi_link_speed">Link speed</string>
     <string name="wifi_ip">IP address</string>
     <string name="wifi_data">Wi-Fi data today</string>
+    <string name="wifi_data_period">Wi-Fi data this period</string>
     <string name="wifi_vpn">VPN active</string>
     <string name="wifi_dns">DNS servers</string>
 
@@ -142,6 +152,7 @@
     <string name="wifi_connected">Wi-Fi</string>
     <string name="not_connected">Not connected</string>
     <string name="mobile_data_today_label">DATA TODAY</string>
+    <string name="data_period_label">DATA THIS PERIOD</string>
     <string name="mobile_data_since_boot_label">DATA SINCE BOOT</string>
     <string name="mobile_data_label">MOBILE DATA</string>
     <string name="cpu_load_label">load</string>

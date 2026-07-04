@@ -1,5 +1,7 @@
 package com.example.modernwidget.presentation
 
+import com.example.modernwidget.data.AppSettingsRepository
+import com.example.modernwidget.data.DataCounterMode
 import com.example.modernwidget.data.DeviceInfo
 import com.example.modernwidget.data.SystemStats
 import com.example.modernwidget.data.SystemStatsRepository
@@ -39,7 +41,7 @@ class DashboardViewModelTest {
             val stats = sampleStats(batteryLevel = 77)
             val repository = FakeSystemStatsRepository(stats)
             val widget = FakeWidgetController(installed = true)
-            val viewModel = DashboardViewModel(repository, widget)
+            val viewModel = DashboardViewModel(repository, widget, FakeAppSettingsRepository())
 
             // When
             viewModel.refresh()
@@ -58,7 +60,9 @@ class DashboardViewModelTest {
     fun `given a saved opacity, when loading, then state adopts it`() = runTest(dispatcher) {
         // Given
         val widget = FakeWidgetController(installed = true, savedOpacity = 0.42f)
-        val viewModel = DashboardViewModel(FakeSystemStatsRepository(sampleStats()), widget)
+        val viewModel = DashboardViewModel(
+            FakeSystemStatsRepository(sampleStats()), widget, FakeAppSettingsRepository()
+        )
 
         // When
         viewModel.loadWidgetOpacity()
@@ -72,7 +76,9 @@ class DashboardViewModelTest {
     fun `given no widget, when loading opacity, then default is kept`() = runTest(dispatcher) {
         // Given
         val widget = FakeWidgetController(installed = false, savedOpacity = null)
-        val viewModel = DashboardViewModel(FakeSystemStatsRepository(sampleStats()), widget)
+        val viewModel = DashboardViewModel(
+            FakeSystemStatsRepository(sampleStats()), widget, FakeAppSettingsRepository()
+        )
 
         // When
         viewModel.loadWidgetOpacity()
@@ -86,7 +92,9 @@ class DashboardViewModelTest {
     fun `given a dragged opacity, when committing, then it is persisted`() = runTest(dispatcher) {
         // Given
         val widget = FakeWidgetController(installed = true)
-        val viewModel = DashboardViewModel(FakeSystemStatsRepository(sampleStats()), widget)
+        val viewModel = DashboardViewModel(
+            FakeSystemStatsRepository(sampleStats()), widget, FakeAppSettingsRepository()
+        )
 
         // When
         viewModel.onWidgetOpacityChange(0.5f)
@@ -97,6 +105,67 @@ class DashboardViewModelTest {
         assertThat(viewModel.uiState.value.widgetOpacity).isEqualTo(0.5f)
         assertThat(widget.committedOpacity).isEqualTo(0.5f)
     }
+
+    @Test
+    fun `given saved counter settings, when loading, then state adopts them`() = runTest(dispatcher) {
+        // Given
+        val settings = FakeAppSettingsRepository(
+            mode = DataCounterMode.BILLING_CYCLE,
+            cycleDay = 15,
+        )
+        val viewModel = DashboardViewModel(
+            FakeSystemStatsRepository(sampleStats()), FakeWidgetController(installed = true), settings
+        )
+
+        // When
+        viewModel.loadDataCounterSettings()
+        advanceUntilIdle()
+
+        // Then
+        assertThat(viewModel.uiState.value.dataCounterMode).isEqualTo(DataCounterMode.BILLING_CYCLE)
+        assertThat(viewModel.uiState.value.cycleStartDay).isEqualTo(15)
+    }
+
+    @Test
+    fun `given mode selection, when selected, then persisted and stats repushed to widget`() =
+        runTest(dispatcher) {
+            // Given
+            val settings = FakeAppSettingsRepository()
+            val repository = FakeSystemStatsRepository(sampleStats())
+            val widget = FakeWidgetController(installed = true)
+            val viewModel = DashboardViewModel(repository, widget, settings)
+
+            // When
+            viewModel.onDataCounterModeSelected(DataCounterMode.BILLING_CYCLE)
+            advanceUntilIdle()
+
+            // Then
+            assertThat(settings.mode).isEqualTo(DataCounterMode.BILLING_CYCLE)
+            assertThat(viewModel.uiState.value.dataCounterMode).isEqualTo(DataCounterMode.BILLING_CYCLE)
+            assertThat(repository.callCount).isEqualTo(1)
+            assertThat(widget.pushedStats).hasSize(1)
+        }
+
+    @Test
+    fun `given dragged cycle day, when committing, then persisted and stats repushed`() =
+        runTest(dispatcher) {
+            // Given
+            val settings = FakeAppSettingsRepository()
+            val repository = FakeSystemStatsRepository(sampleStats())
+            val widget = FakeWidgetController(installed = true)
+            val viewModel = DashboardViewModel(repository, widget, settings)
+
+            // When
+            viewModel.onCycleStartDayChange(21)
+            viewModel.commitCycleStartDay()
+            advanceUntilIdle()
+
+            // Then
+            assertThat(settings.cycleDay).isEqualTo(21)
+            assertThat(viewModel.uiState.value.cycleStartDay).isEqualTo(21)
+            assertThat(repository.callCount).isEqualTo(1)
+            assertThat(widget.pushedStats).hasSize(1)
+        }
 }
 
 private class FakeSystemStatsRepository(private val stats: SystemStats) : SystemStatsRepository {
@@ -149,6 +218,23 @@ private fun sampleDeviceInfo(): DeviceInfo = DeviceInfo(
     dnsServers = "8.8.8.8",
 )
 
+private class FakeAppSettingsRepository(
+    var mode: DataCounterMode = DataCounterMode.DAY,
+    var cycleDay: Int = 1,
+) : AppSettingsRepository {
+    override fun dataCounterMode(): DataCounterMode = mode
+
+    override fun setDataCounterMode(mode: DataCounterMode) {
+        this.mode = mode
+    }
+
+    override fun cycleStartDay(): Int = cycleDay
+
+    override fun setCycleStartDay(day: Int) {
+        cycleDay = day
+    }
+}
+
 private class FakeWidgetController(
     private val installed: Boolean,
     private val savedOpacity: Float? = null,
@@ -196,6 +282,7 @@ private fun sampleStats(batteryLevel: Int = 50): SystemStats = SystemStats(
     wifiSpeedDown = 100,
     wifiSpeedUp = 50,
     wifiBytesTodayGb = 1.0,
+    wifiDataLabel = "DATA TODAY",
     operatorName = "Op",
     mobileNetworkType = "5G",
     mobileSignalDbm = -80,

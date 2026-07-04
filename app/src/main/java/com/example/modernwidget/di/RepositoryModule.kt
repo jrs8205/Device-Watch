@@ -1,5 +1,7 @@
 package com.example.modernwidget.di
 
+import com.example.modernwidget.data.AppSettingsRepository
+import com.example.modernwidget.data.AppSettingsRepositoryImpl
 import com.example.modernwidget.data.SystemStatsRepository
 import com.example.modernwidget.data.SystemStatsRepositoryImpl
 import com.example.modernwidget.widget.GlanceWidgetController
@@ -21,4 +23,8 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindWidgetController(impl: GlanceWidgetController): WidgetController
+
+    @Binds
+    @Singleton
+    abstract fun bindAppSettingsRepository(impl: AppSettingsRepositoryImpl): AppSettingsRepository
 }

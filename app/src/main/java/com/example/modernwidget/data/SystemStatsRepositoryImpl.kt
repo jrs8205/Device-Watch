@@ -52,7 +52,8 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.net.Inet4Address
-import java.util.Calendar
+import java.time.LocalDate
+import java.time.ZoneId
 import java.util.Locale
 import java.util.TimeZone
 import javax.inject.Inject
@@ -65,6 +66,7 @@ import kotlin.math.sqrt
 class SystemStatsRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context,
     @DefaultDispatcher private val dispatcher: CoroutineDispatcher,
+    private val settings: AppSettingsRepository,
 ) : SystemStatsRepository {
 
     // CPU load needs to compare two samples over time. These snapshots persist across
@@ -519,7 +521,23 @@ class SystemStatsRepositoryImpl @Inject constructor(
             wifiSsid
         }
 
-        val wifiBytesTodayGb = readNetworkUsageGb(ConnectivityManager.TYPE_WIFI)
+        // Data counters cover the user-selected period: the current calendar day (default)
+        // or a one-month billing cycle starting on the chosen day of month.
+        val counterMode = settings.dataCounterMode()
+        val periodStartMillis = DataPeriodCalculator
+            .periodStart(counterMode, settings.cycleStartDay(), LocalDate.now())
+            .atStartOfDay(ZoneId.systemDefault())
+            .toInstant()
+            .toEpochMilli()
+        val periodLabel = context.getString(
+            if (counterMode == DataCounterMode.DAY) {
+                R.string.mobile_data_today_label
+            } else {
+                R.string.data_period_label
+            }
+        )
+
+        val wifiBytesTodayGb = readNetworkUsageGb(ConnectivityManager.TYPE_WIFI, periodStartMillis)
 
         // RSSI / link speed / standard are not redacted by the location permission (only the
         // SSID/BSSID are), so these populate even when the identity read above is blocked.
@@ -556,12 +574,14 @@ class SystemStatsRepositoryImpl @Inject constructor(
             mobileNetworkType = UNAVAILABLE_TEXT
             mobileSignalDbm = UNAVAILABLE_INT
         }
-        val mobileDataTodayGb = readNetworkUsageGb(ConnectivityManager.TYPE_MOBILE)
+        val mobileDataTodayGb = readNetworkUsageGb(ConnectivityManager.TYPE_MOBILE, periodStartMillis)
         val mobileTrafficSinceBootGb = readMobileTrafficStatsGb()
         val mobileDataUsedGb = if (mobileDataTodayGb >= 0.0) mobileDataTodayGb else mobileTrafficSinceBootGb
         val mobileDataTotalGb = UNAVAILABLE_DOUBLE
+        // The TrafficStats fallback always counts since boot, so it keeps its own label
+        // regardless of the selected counter mode.
         val mobileDataLabel = when {
-            mobileDataTodayGb >= 0.0 -> context.getString(R.string.mobile_data_today_label)
+            mobileDataTodayGb >= 0.0 -> periodLabel
             mobileTrafficSinceBootGb >= 0.0 -> context.getString(R.string.mobile_data_since_boot_label)
             else -> context.getString(R.string.mobile_data_label)
         }
@@ -608,6 +628,7 @@ class SystemStatsRepositoryImpl @Inject constructor(
             wifiSpeedDown = wifiSpeedDown,
             wifiSpeedUp = wifiSpeedUp,
             wifiBytesTodayGb = wifiBytesTodayGb,
+            wifiDataLabel = periodLabel,
             operatorName = operatorName,
             mobileNetworkType = mobileNetworkType,
             mobileSignalDbm = mobileSignalDbm,
@@ -815,22 +836,16 @@ class SystemStatsRepositoryImpl @Inject constructor(
     }
 
     @Suppress("DEPRECATION")
-    private fun readNetworkUsageGb(networkType: Int): Double {
+    private fun readNetworkUsageGb(networkType: Int, startMillis: Long): Double {
         if (!hasUsageStatsAccess()) return UNAVAILABLE_DOUBLE
 
         return try {
             val statsManager = context.getSystemService(NetworkStatsManager::class.java)
                 ?: return UNAVAILABLE_DOUBLE
-            val startOfDay = Calendar.getInstance().apply {
-                set(Calendar.HOUR_OF_DAY, 0)
-                set(Calendar.MINUTE, 0)
-                set(Calendar.SECOND, 0)
-                set(Calendar.MILLISECOND, 0)
-            }.timeInMillis
             val bucket = statsManager.querySummaryForDevice(
                 networkType,
                 null,
-                startOfDay,
+                startMillis,
                 System.currentTimeMillis()
             )
             (bucket.rxBytes + bucket.txBytes).toDouble() / GB_BYTES

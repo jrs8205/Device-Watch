@@ -76,6 +76,7 @@ object WidgetStateUpdater {
         this[RefreshStatsAction.WIFI_SPEED_DOWN] = stats.wifiSpeedDown
         this[RefreshStatsAction.WIFI_SPEED_UP] = stats.wifiSpeedUp
         this[RefreshStatsAction.WIFI_BYTES_TODAY] = stats.wifiBytesTodayGb
+        this[RefreshStatsAction.WIFI_DATA_LABEL] = stats.wifiDataLabel
         this[RefreshStatsAction.OPERATOR_NAME] = stats.operatorName
         this[RefreshStatsAction.MOBILE_NETWORK_TYPE] = stats.mobileNetworkType
         this[RefreshStatsAction.MOBILE_SIGNAL_DBM] = stats.mobileSignalDbm

@@ -5,6 +5,9 @@
 
     <string name="main_title">Järjestelmän tila</string>
     <string name="refresh">Päivitä</string>
+    <string name="tab_overview">Yleiskuva</string>
+    <string name="tab_device">Laite</string>
+    <string name="tab_settings">Asetukset</string>
     <string name="widget_active_message">Kotiruudun widget on aktiivinen ja synkronoitu taustapalvelulla.</string>
     <string name="widget_not_added_message">Widgetiä ei ole vielä lisätty kotinäytölle. Paina pitkään kotinäyttöä lisätäksesi sen.</string>
     <string name="battery_status_section">AKUN TILA (REAALIAIKAINEN)</string>
@@ -18,6 +21,11 @@
     <string name="widget_settings_section">WIDGETIN ASETUKSET</string>
     <string name="widget_opacity_title">Widgetin taustan peittävyys</string>
     <string name="widget_opacity_description" formatted="false">Säädä kotinäytön widgetin taustan läpinäkyvyyttä. 100% on täysin kiinteä tausta.</string>
+    <string name="data_counter_section">DATALASKURI</string>
+    <string name="data_counter_mode_day">Päivä</string>
+    <string name="data_counter_mode_cycle">Kausi</string>
+    <string name="data_counter_cycle_start">Kausi alkaa päivänä %1$d</string>
+    <string name="data_counter_description">Laske datankäyttö kalenteripäivittäin tai kuukauden mittaisena laskutusjaksona, joka alkaa valittuna päivänä. Kuukausien pituudet huomioidaan automaattisesti.</string>
     <string name="special_access_section">ERIKOISOIKEUDET</string>
     <string name="usage_access_button">Datankäyttö</string>
     <string name="refresh_data">Päivitä tiedot</string>
@@ -65,6 +73,7 @@
     <string name="sim_status">SIM-tila</string>
     <string name="sim_slots">SIM-paikat</string>
     <string name="sim_data">Mobiilidata tänään</string>
+    <string name="sim_data_period">Mobiilidata kaudella</string>
 
     <string name="wifi_info_section">WI-FI</string>
     <string name="wifi_name">Verkko (SSID)</string>
@@ -74,6 +83,7 @@
     <string name="wifi_link_speed">Linkkinopeus</string>
     <string name="wifi_ip">IP-osoite</string>
     <string name="wifi_data">Wi-Fi-data tänään</string>
+    <string name="wifi_data_period">Wi-Fi-data kaudella</string>
     <string name="wifi_vpn">VPN käytössä</string>
     <string name="wifi_dns">DNS-palvelimet</string>
 
@@ -141,6 +151,7 @@
     <string name="wifi_connected">Wi-Fi</string>
     <string name="not_connected">Ei yhdistetty</string>
     <string name="mobile_data_today_label">DATA TÄNÄÄN</string>
+    <string name="data_period_label">DATA KAUDELLA</string>
     <string name="mobile_data_since_boot_label">DATA KÄYNN.</string>
     <string name="mobile_data_label">MOBIILIDATA</string>
     <string name="cpu_load_label">kuorma</string>
