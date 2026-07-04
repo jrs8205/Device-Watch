@@ -148,6 +148,42 @@ class SystemStatsParserTest {
         assertThat(filtered).containsExactly(-90, -40, -41, -140).inOrder()
     }
 
+    // --- battery discharge time remaining ---
+
+    @Test
+    fun `dischargeTimeRemainingMinutes computes from a microamp reading`() {
+        // Documented unit: CHARGE_COUNTER µAh, CURRENT_NOW µA. 3 000 000 / 500 000 = 6 h.
+        assertThat(SystemStatsParser.dischargeTimeRemainingMinutes(3_000_000, -500_000))
+            .isEqualTo(360)
+    }
+
+    @Test
+    fun `dischargeTimeRemainingMinutes rescales a milliamp reading`() {
+        // Real Samsung Z Flip 4 values: 1 530 780 µAh at 46 %, CURRENT_NOW -253 — that is
+        // mA, not µA. Read as µA this showed ~6 050 h; correct is 1 530 780 / 253 000
+        // ≈ 6,05 h = 363 min.
+        assertThat(SystemStatsParser.dischargeTimeRemainingMinutes(1_530_780, -253))
+            .isEqualTo(363)
+    }
+
+    @Test
+    fun `dischargeTimeRemainingMinutes ignores the sign convention`() {
+        assertThat(SystemStatsParser.dischargeTimeRemainingMinutes(3_000_000, 500_000))
+            .isEqualTo(360)
+    }
+
+    @Test
+    fun `dischargeTimeRemainingMinutes is null for missing or implausible readings`() {
+        assertThat(SystemStatsParser.dischargeTimeRemainingMinutes(0, -500_000)).isNull()
+        assertThat(SystemStatsParser.dischargeTimeRemainingMinutes(-1, -500_000)).isNull()
+        assertThat(SystemStatsParser.dischargeTimeRemainingMinutes(3_000_000, 0)).isNull()
+        assertThat(SystemStatsParser.dischargeTimeRemainingMinutes(3_000_000, Int.MIN_VALUE)).isNull()
+        // Implausible in both units: 1 µA and 0,001 A.
+        assertThat(SystemStatsParser.dischargeTimeRemainingMinutes(3_000_000, 1)).isNull()
+        // 20 000 000 µA = 20 A and 20 000 A as mA — both implausible.
+        assertThat(SystemStatsParser.dischargeTimeRemainingMinutes(3_000_000, -20_000_000)).isNull()
+    }
+
     // --- display density bucket ---
 
     @Test

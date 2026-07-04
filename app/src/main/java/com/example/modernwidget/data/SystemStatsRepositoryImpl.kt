@@ -59,7 +59,6 @@ import java.util.Locale
 import java.util.TimeZone
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
 
@@ -679,10 +678,8 @@ class SystemStatsRepositoryImpl @Inject constructor(
         } else {
             val chargeCounter = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER)
             val currentNow = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW)
-            if (chargeCounter > 0 && currentNow < 0 && currentNow != Int.MIN_VALUE) {
-                val currentAbs = abs(currentNow)
-                val remainingHours = chargeCounter.toDouble() / currentAbs.toDouble()
-                val totalMinutes = (remainingHours * 60).toInt()
+            val totalMinutes = SystemStatsParser.dischargeTimeRemainingMinutes(chargeCounter, currentNow)
+            if (totalMinutes != null) {
                 val hours = totalMinutes / 60
                 val minutes = totalMinutes % 60
                 if (hours > 0) {

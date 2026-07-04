@@ -2,6 +2,7 @@ package com.example.modernwidget.data
 
 import android.net.wifi.ScanResult
 import android.telephony.TelephonyManager
+import kotlin.math.abs
 import kotlin.math.roundToInt
 
 /**
@@ -216,4 +217,24 @@ internal object SystemStatsParser {
     fun isValidDbm(dbm: Int): Boolean = dbm in -140..-40
 
     fun filterValidDbm(values: Iterable<Int>): List<Int> = values.filter { isValidDbm(it) }
+
+    /**
+     * Remaining discharge time in minutes from BATTERY_PROPERTY_CHARGE_COUNTER (µAh) and
+     * BATTERY_PROPERTY_CURRENT_NOW. CURRENT_NOW is documented as µA, but some OEMs
+     * (e.g. Samsung) report mA and the sign convention for discharge also varies — so the
+     * magnitude is used, and a reading that is only plausible as mA is rescaled.
+     * Returns null when a reading is missing or implausible (never show a fabricated value).
+     */
+    fun dischargeTimeRemainingMinutes(chargeCounterMicroAh: Int, currentNowRaw: Int): Int? {
+        if (chargeCounterMicroAh <= 0) return null
+        if (currentNowRaw == 0 || currentNowRaw == Int.MIN_VALUE) return null
+        val plausibleAmps = 0.01..15.0
+        val magnitude = abs(currentNowRaw.toDouble())
+        val currentMicroAmps = when {
+            magnitude / 1_000_000.0 in plausibleAmps -> magnitude
+            magnitude / 1_000.0 in plausibleAmps -> magnitude * 1_000.0
+            else -> return null
+        }
+        return (chargeCounterMicroAh.toDouble() / currentMicroAmps * 60.0).toInt()
+    }
 }
