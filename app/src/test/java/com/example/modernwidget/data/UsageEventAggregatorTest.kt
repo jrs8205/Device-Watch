@@ -170,4 +170,52 @@ class UsageEventAggregatorTest {
             UsageEventAggregator.daysSinceLastUse(millis, today, ZoneId.of("UTC"))
         ).isEqualTo(1)
     }
+
+    // --- lastUsedTier ---
+
+    @Test
+    fun `given recent use, when computing tier, then normal`() {
+        assertThat(UsageEventAggregator.lastUsedTier(0)).isEqualTo(LastUsedTier.NORMAL)
+        assertThat(UsageEventAggregator.lastUsedTier(29)).isEqualTo(LastUsedTier.NORMAL)
+    }
+
+    @Test
+    fun `given one to three months, when computing tier, then aging`() {
+        assertThat(UsageEventAggregator.lastUsedTier(30)).isEqualTo(LastUsedTier.AGING)
+        assertThat(UsageEventAggregator.lastUsedTier(89)).isEqualTo(LastUsedTier.AGING)
+    }
+
+    @Test
+    fun `given over three months or never, when computing tier, then stale`() {
+        assertThat(UsageEventAggregator.lastUsedTier(90)).isEqualTo(LastUsedTier.STALE)
+        assertThat(UsageEventAggregator.lastUsedTier(400)).isEqualTo(LastUsedTier.STALE)
+        assertThat(UsageEventAggregator.lastUsedTier(null)).isEqualTo(LastUsedTier.STALE)
+    }
+
+    // --- topByLaunches ---
+
+    @Test
+    fun `given entries, when ranking by launches, then sorted and zero launches dropped`() {
+        val entries = listOf(
+            AppScreenTime("a", "a", 1_000, launchCount = 3, lastUsedMillis = 0),
+            AppScreenTime("b", "b", 500, launchCount = 10, lastUsedMillis = 0),
+            AppScreenTime("c", "c", 9_000, launchCount = 0, lastUsedMillis = 0),
+        )
+
+        val top = UsageEventAggregator.topByLaunches(entries)
+
+        assertThat(top.map { it.packageName }).containsExactly("b", "a").inOrder()
+    }
+
+    @Test
+    fun `given more entries than topN, when ranking, then truncated`() {
+        val entries = listOf(
+            AppScreenTime("a", "a", 0, launchCount = 3, lastUsedMillis = 0),
+            AppScreenTime("b", "b", 0, launchCount = 10, lastUsedMillis = 0),
+        )
+
+        val top = UsageEventAggregator.topByLaunches(entries, topN = 1)
+
+        assertThat(top.map { it.packageName }).containsExactly("b")
+    }
 }

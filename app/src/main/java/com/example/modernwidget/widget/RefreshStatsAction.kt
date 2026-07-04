@@ -65,5 +65,8 @@ class RefreshStatsAction : ActionCallback {
         val UPTIME = stringPreferencesKey("uptime")
         val LAST_UPDATED = stringPreferencesKey("last_updated")
         val BACKGROUND_OPACITY = floatPreferencesKey("background_opacity")
+
+        /** Pre-formatted screen-time text written by SystemMonitorService (~1/min). */
+        val SCREEN_TIME_TODAY = stringPreferencesKey("screen_time_today")
     }
 }

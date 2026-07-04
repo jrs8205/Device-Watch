@@ -8,6 +8,9 @@ interface NotificationStats {
 
     fun countForPackage(packageName: String, day: LocalDate): Int
 
+    /** Sum of daily totals over [start]..[end] (inclusive). */
+    fun totalBetween(start: LocalDate, end: LocalDate): Int
+
     fun increment(packageName: String, day: LocalDate)
 
     /** Drops counts older than the retention window (today + yesterday). */

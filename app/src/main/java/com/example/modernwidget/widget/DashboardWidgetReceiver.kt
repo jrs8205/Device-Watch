@@ -3,14 +3,17 @@ package com.example.modernwidget.widget
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import android.provider.Settings
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import com.example.modernwidget.data.SystemStatsRepository
+import com.example.modernwidget.data.UsageHistory
 import com.example.modernwidget.system.SystemMonitorService
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -19,11 +22,22 @@ class DashboardWidgetReceiver : GlanceAppWidgetReceiver() {
         get() = DashboardWidget()
 
     @Inject lateinit var repository: SystemStatsRepository
+    @Inject lateinit var usageHistory: UsageHistory
 
     override fun onReceive(context: Context, intent: Intent) {
         super.onReceive(context, intent)
 
         val action = intent.action
+
+        // Restart tally via BOOT_COUNT deltas: every receiver wake registers the
+        // current counter, so real boots are counted exactly once even though
+        // Android also re-delivers BOOT_COMPLETED after each app update.
+        try {
+            val bootCount = Settings.Global.getInt(context.contentResolver, Settings.Global.BOOT_COUNT)
+            usageHistory.registerBootCount(LocalDate.now(), bootCount)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
 
         if (action == Intent.ACTION_BOOT_COMPLETED ||
             action == "android.appwidget.action.APPWIDGET_UPDATE" ||

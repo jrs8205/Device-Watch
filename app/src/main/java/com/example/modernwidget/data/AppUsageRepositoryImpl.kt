@@ -4,7 +4,6 @@ import android.app.AppOpsManager
 import android.app.usage.NetworkStats
 import android.app.usage.NetworkStatsManager
 import android.app.usage.UsageEvents
-import android.app.usage.UsageStats
 import android.app.usage.UsageStatsManager
 import android.content.Context
 import android.content.Intent
@@ -16,6 +15,7 @@ import com.example.modernwidget.di.DefaultDispatcher
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
+import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import javax.inject.Inject
@@ -129,13 +129,7 @@ class AppUsageRepositoryImpl @Inject constructor(
             emptyList()
         }
 
-        val end = System.currentTimeMillis()
-        val usageByPackage: Map<String, UsageStats> = try {
-            usageStatsManager()?.queryAndAggregateUsageStats(end - LAST_USE_RANGE_MS, end)
-                ?: emptyMap()
-        } catch (_: Exception) {
-            emptyMap()
-        }
+        val lastUsedByPackage = queryLastUsedByPackage()
 
         activities
             .mapNotNull { it.activityInfo?.applicationInfo }
@@ -144,32 +138,129 @@ class AppUsageRepositoryImpl @Inject constructor(
                 LaunchableApp(
                     packageName = appInfo.packageName,
                     label = packageManager.getApplicationLabel(appInfo).toString(),
-                    lastUsedEpochMillis = usageByPackage[appInfo.packageName]
-                        ?.lastTimeUsed
-                        ?.takeIf { it > 0L },
+                    lastUsedEpochMillis = lastUsedByPackage[appInfo.packageName],
                     isSystemApp = (appInfo.flags and ApplicationInfo.FLAG_SYSTEM) != 0,
                 )
             }
     }
 
-    override suspend fun unlockCountToday(): Int = withContext(dispatcher) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) return@withContext UNAVAILABLE_INT
-        if (!hasUsageAccess()) return@withContext UNAVAILABLE_INT
-        val usageStatsManager = usageStatsManager() ?: return@withContext UNAVAILABLE_INT
+    /**
+     * Max lastTimeUsed per package, merged across every stats interval. A single
+     * queryAndAggregateUsageStats over the 2-year range picks the yearly interval,
+     * which can be completely empty on some devices/versions — merging yearly,
+     * monthly, weekly and daily buckets returns whatever the platform actually has.
+     */
+    private fun queryLastUsedByPackage(): Map<String, Long> {
+        val usageStatsManager = usageStatsManager() ?: return emptyMap()
+        val end = System.currentTimeMillis()
+        val start = end - LAST_USE_RANGE_MS
+        val intervals = intArrayOf(
+            UsageStatsManager.INTERVAL_YEARLY,
+            UsageStatsManager.INTERVAL_MONTHLY,
+            UsageStatsManager.INTERVAL_WEEKLY,
+            UsageStatsManager.INTERVAL_DAILY,
+        )
 
-        var count = 0
+        val lastUsedByPackage = mutableMapOf<String, Long>()
+        for (interval in intervals) {
+            try {
+                usageStatsManager.queryUsageStats(interval, start, end)?.forEach { bucket ->
+                    val lastUsed = bucket.lastTimeUsed
+                    if (lastUsed in 1..end) {
+                        lastUsedByPackage.merge(bucket.packageName, lastUsed, ::maxOf)
+                    }
+                }
+            } catch (_: Exception) {
+                // One interval failing shouldn't hide the others.
+            }
+        }
+        return lastUsedByPackage
+    }
+
+    override fun supportsUnlockCounting(): Boolean =
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
+
+    override suspend fun unlockCountsByDay(days: Int): Map<LocalDate, Int> = withContext(dispatcher) {
+        if (!supportsUnlockCounting() || !hasUsageAccess()) return@withContext emptyMap()
+        val usageStatsManager = usageStatsManager() ?: return@withContext emptyMap()
+        val zone = ZoneId.systemDefault()
+        val startMillis = LocalDate.now()
+            .minusDays((days - 1).coerceAtLeast(0).toLong())
+            .atStartOfDay(zone).toInstant().toEpochMilli()
+
+        val counts = mutableMapOf<LocalDate, Int>()
         try {
-            val events = usageStatsManager.queryEvents(startOfTodayMillis(), System.currentTimeMillis())
-                ?: return@withContext UNAVAILABLE_INT
+            val events = usageStatsManager.queryEvents(startMillis, System.currentTimeMillis())
+                ?: return@withContext emptyMap()
             val event = UsageEvents.Event()
             while (events.hasNextEvent()) {
                 events.getNextEvent(event)
-                if (event.eventType == UsageEvents.Event.KEYGUARD_HIDDEN) count++
+                if (event.eventType == UsageEvents.Event.KEYGUARD_HIDDEN) {
+                    val day = Instant.ofEpochMilli(event.timeStamp).atZone(zone).toLocalDate()
+                    counts.merge(day, 1, Int::plus)
+                }
             }
         } catch (_: Exception) {
-            return@withContext UNAVAILABLE_INT
+            return@withContext emptyMap()
         }
-        count
+        counts
+    }
+
+    override suspend fun screenTimeByDay(days: Int): Map<LocalDate, Long> = withContext(dispatcher) {
+        if (!hasUsageAccess()) return@withContext emptyMap()
+        val usageStatsManager = usageStatsManager() ?: return@withContext emptyMap()
+        val zone = ZoneId.systemDefault()
+        val startMillis = LocalDate.now()
+            .minusDays((days - 1).coerceAtLeast(0).toLong())
+            .atStartOfDay(zone).toInstant().toEpochMilli()
+
+        val totals = mutableMapOf<LocalDate, Long>()
+        try {
+            val buckets = usageStatsManager.queryUsageStats(
+                UsageStatsManager.INTERVAL_DAILY, startMillis, System.currentTimeMillis()
+            ) ?: return@withContext emptyMap()
+            for (bucket in buckets) {
+                val foreground = bucket.totalTimeInForeground
+                if (foreground <= 0L) continue
+                val day = Instant.ofEpochMilli(bucket.firstTimeStamp).atZone(zone).toLocalDate()
+                totals.merge(day, foreground, Long::plus)
+            }
+        } catch (_: Exception) {
+            return@withContext emptyMap()
+        }
+        totals
+    }
+
+    override suspend fun usageTotalsToday(): UsageTotals? = withContext(dispatcher) {
+        if (!hasUsageAccess()) return@withContext null
+        val usageStatsManager = usageStatsManager() ?: return@withContext null
+        val end = System.currentTimeMillis()
+
+        val samples = mutableListOf<UsageEventSample>()
+        var unlockCount = 0
+        try {
+            val events = usageStatsManager.queryEvents(startOfTodayMillis(), end)
+                ?: return@withContext null
+            val event = UsageEvents.Event()
+            while (events.hasNextEvent()) {
+                events.getNextEvent(event)
+                when (event.eventType) {
+                    UsageEvents.Event.ACTIVITY_RESUMED ->
+                        samples += UsageEventSample(event.packageName, UsageEventKind.RESUME, event.timeStamp)
+
+                    UsageEvents.Event.ACTIVITY_PAUSED ->
+                        samples += UsageEventSample(event.packageName, UsageEventKind.PAUSE, event.timeStamp)
+
+                    UsageEvents.Event.KEYGUARD_HIDDEN -> unlockCount++
+                }
+            }
+        } catch (_: Exception) {
+            return@withContext null
+        }
+
+        val screenTimeMillis = UsageEventAggregator.aggregateForegroundTime(samples, end)
+            .values.sumOf { it.foregroundMillis }
+        UsageTotals(screenTimeMillis, unlockCount)
     }
 
     private fun usageStatsManager(): UsageStatsManager? =

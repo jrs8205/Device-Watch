@@ -43,11 +43,16 @@ class NotificationCountingTest {
     }
 
     @Test
-    fun `given today, when computing retention, then today and yesterday are kept`() {
+    fun `given today, when computing retention, then the last 62 days are kept`() {
         val today = LocalDate.of(2026, 7, 4)
 
-        assertThat(NotificationCounting.retainedDays(today))
-            .containsExactly(LocalDate.of(2026, 7, 4), LocalDate.of(2026, 7, 3))
+        val retained = NotificationCounting.retainedDays(today)
+
+        assertThat(retained).hasSize(62)
+        assertThat(retained).contains(today)
+        assertThat(retained).contains(today.minusDays(1))
+        assertThat(retained).contains(today.minusDays(61))
+        assertThat(retained).doesNotContain(today.minusDays(62))
     }
 
     @Test
@@ -55,12 +60,12 @@ class NotificationCountingTest {
         val today = LocalDate.of(2026, 7, 4)
         val retained = NotificationCounting.retainedDays(today)
         val todayEpoch = today.toEpochDay()
-        val yesterdayEpoch = today.minusDays(1).toEpochDay()
-        val oldEpoch = today.minusDays(5).toEpochDay()
+        val recentEpoch = today.minusDays(30).toEpochDay()
+        val oldEpoch = today.minusDays(70).toEpochDay()
 
         assertThat(NotificationCounting.isRetainedStatsKey("total:$todayEpoch", retained)).isTrue()
         assertThat(
-            NotificationCounting.isRetainedStatsKey("pkg:$yesterdayEpoch:com.example.app", retained)
+            NotificationCounting.isRetainedStatsKey("pkg:$recentEpoch:com.example.app", retained)
         ).isTrue()
         assertThat(NotificationCounting.isRetainedStatsKey("total:$oldEpoch", retained)).isFalse()
         assertThat(NotificationCounting.isRetainedStatsKey("pkg:$oldEpoch:com.x", retained)).isFalse()

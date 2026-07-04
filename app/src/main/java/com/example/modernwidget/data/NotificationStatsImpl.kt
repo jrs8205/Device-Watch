@@ -25,6 +25,16 @@ class NotificationStatsImpl @Inject constructor(
     override fun countForPackage(packageName: String, day: LocalDate): Int =
         prefs.getInt(packageKey(packageName, day), 0)
 
+    override fun totalBetween(start: LocalDate, end: LocalDate): Int {
+        var day = start
+        var sum = 0
+        while (!day.isAfter(end)) {
+            sum += totalForDay(day)
+            day = day.plusDays(1)
+        }
+        return sum
+    }
+
     override fun increment(packageName: String, day: LocalDate) {
         prefs.edit()
             .putInt(totalKey(day), totalForDay(day) + 1)

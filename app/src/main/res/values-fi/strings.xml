@@ -33,7 +33,7 @@
     <string name="data_consumers_section">ENITEN DATAA TÄNÄÄN</string>
     <string name="last_opened_section">VIIMEKSI AVATUT</string>
     <string name="last_used_never">Ei koskaan käytetty</string>
-    <string name="last_used_today">Tänään</string>
+    <string name="last_used_today_at">Tänään %1$s</string>
     <plurals name="last_used_days">
         <item quantity="one">%1$d päivä sitten</item>
         <item quantity="other">%1$d päivää sitten</item>
@@ -41,8 +41,15 @@
     <string name="uninstall_content_description">Poista sovellus</string>
     <string name="sort_toggle_description">Käännä järjestys</string>
     <string name="usage_counters_section">KÄYTTÖ TÄNÄÄN</string>
+    <string name="usage_counters_section_period">KÄYTTÖ KAUDELLA</string>
+    <string name="screen_time_total_label">Ruutuaika</string>
     <string name="unlock_count_label">Lukituksen avaukset</string>
     <string name="notification_count_label">Ilmoitukset</string>
+    <string name="boot_count_label">Käynnistykset</string>
+    <string name="charge_count_label">Latauskerrat</string>
+    <string name="most_opened_section">ENITEN AVAUKSIA TÄNÄÄN</string>
+    <string name="cpu_load_row">Suoritinkuorma</string>
+    <string name="storage_row">Tallennustila</string>
     <string name="notification_access_button">Ilmoitusten käyttöoikeus</string>
     <string name="notification_access_enable">Ota käyttöön</string>
     <string name="notification_access_hint">Ilmoitusten laskenta alkaa, kun ilmoitusten käyttöoikeus on myönnetty. Pysyviä ilmoituksia, ryhmäkoosteita ja olemassa olevan ilmoituksen päivityksiä ei lasketa.</string>
@@ -127,6 +134,7 @@
     <string name="device_info_hdr">HDR</string>
     <string name="device_info_battery_tech">Akkutyyppi</string>
     <string name="device_info_battery_capacity">Akun kapasiteetti</string>
+    <string name="device_info_boot_count">Käynnistyksiä yhteensä</string>
 
     <string name="camera_info_section">KAMERAT</string>
     <string name="camera_count">Kameroita</string>
@@ -207,6 +215,7 @@
     <string name="widget_mobile_network">Mobiiliverkko</string>
     <string name="widget_signal_line">%1$s · %2$s signaali</string>
     <string name="widget_uptime">Käyntiaika %1$s</string>
+    <string name="widget_screen_time">Ruutu %1$s</string>
     <string name="widget_updated">Päivitetty %1$s</string>
     <string name="widget_capacity_label">KAPASITEETTI</string>
     <string name="signal_unavailable">signaali %1$s</string>

@@ -8,6 +8,8 @@ import com.example.modernwidget.data.NotificationStats
 import com.example.modernwidget.data.NotificationStatsImpl
 import com.example.modernwidget.data.SystemStatsRepository
 import com.example.modernwidget.data.SystemStatsRepositoryImpl
+import com.example.modernwidget.data.UsageHistory
+import com.example.modernwidget.data.UsageHistoryImpl
 import com.example.modernwidget.widget.GlanceWidgetController
 import com.example.modernwidget.widget.WidgetController
 import dagger.Binds
@@ -39,4 +41,8 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindNotificationStats(impl: NotificationStatsImpl): NotificationStats
+
+    @Binds
+    @Singleton
+    abstract fun bindUsageHistory(impl: UsageHistoryImpl): UsageHistory
 }

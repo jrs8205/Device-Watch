@@ -29,6 +29,12 @@ data class DonutSegment(
     val fraction: Float,
 )
 
+/**
+ * Staleness tier for the last-opened list. AGING approaches Google's ~3-month app
+ * hibernation threshold; STALE has crossed it (or was never used at all).
+ */
+enum class LastUsedTier { NORMAL, AGING, STALE }
+
 /** Pure aggregation math for the Apps tab. No Context, no I/O — mirrors SystemStatsParser. */
 object UsageEventAggregator {
 
@@ -146,4 +152,21 @@ object UsageEventAggregator {
         val lastDate = Instant.ofEpochMilli(lastUsedEpochMillis).atZone(zone).toLocalDate()
         return ChronoUnit.DAYS.between(lastDate, today).toInt().coerceAtLeast(0)
     }
+
+    /** Tier for the last-opened highlighting; null days = never used. */
+    fun lastUsedTier(daysSinceLastUse: Int?): LastUsedTier = when {
+        daysSinceLastUse == null || daysSinceLastUse >= STALE_DAYS -> LastUsedTier.STALE
+        daysSinceLastUse >= AGING_DAYS -> LastUsedTier.AGING
+        else -> LastUsedTier.NORMAL
+    }
+
+    /** Most-opened apps today: sorted by launch count, zero-launch entries dropped. */
+    fun topByLaunches(entries: List<AppScreenTime>, topN: Int = 5): List<AppScreenTime> =
+        entries.filter { it.launchCount > 0 }
+            .sortedByDescending { it.launchCount }
+            .take(topN)
+
+    /** Google hibernates unused apps after roughly three months. */
+    private const val STALE_DAYS = 90
+    private const val AGING_DAYS = 30
 }

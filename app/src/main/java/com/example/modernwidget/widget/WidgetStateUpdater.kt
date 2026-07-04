@@ -36,6 +36,24 @@ object WidgetStateUpdater {
         writeAndUpdate(context, glanceId, stats, currentTime())
     }
 
+    /**
+     * Writes the pre-formatted daily screen-time text to every widget. Kept out of
+     * [writeStats] on purpose: computing it needs a usage-events pass, which must
+     * never run inside the 5-second stats loop — the service throttles this to
+     * roughly once a minute.
+     */
+    suspend fun updateScreenTimeText(context: Context, text: String) {
+        val manager = GlanceAppWidgetManager(context)
+        for (glanceId in manager.getGlanceIds(DashboardWidget::class.java)) {
+            updateAppWidgetState(context, PreferencesGlanceStateDefinition, glanceId) { prefs ->
+                prefs.toMutablePreferences().apply {
+                    this[RefreshStatsAction.SCREEN_TIME_TODAY] = text
+                }
+            }
+            DashboardWidget().update(context, glanceId)
+        }
+    }
+
     private suspend fun writeAndUpdate(
         context: Context,
         glanceId: GlanceId,

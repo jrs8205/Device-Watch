@@ -10,9 +10,13 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.os.Build
 import android.os.IBinder
+import android.os.SystemClock
 import androidx.core.app.NotificationCompat
 import com.example.modernwidget.R
+import com.example.modernwidget.data.AppUsageRepository
 import com.example.modernwidget.data.SystemStatsRepository
+import com.example.modernwidget.data.UsageHistory
+import com.example.modernwidget.presentation.ui.durationText
 import com.example.modernwidget.widget.WidgetStateUpdater
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CancellationException
@@ -23,12 +27,17 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 import javax.inject.Inject
 
 @AndroidEntryPoint
 class SystemMonitorService : Service() {
 
     @Inject lateinit var repository: SystemStatsRepository
+    @Inject lateinit var appUsageRepository: AppUsageRepository
+    @Inject lateinit var usageHistory: UsageHistory
+
+    private var lastUsageRefreshMs = 0L
 
     private val serviceJob = SupervisorJob()
     private val serviceScope = CoroutineScope(serviceJob + Dispatchers.Default)
@@ -107,8 +116,34 @@ class SystemMonitorService : Service() {
         updateJob = serviceScope.launch {
             while (isActive && isScreenOn) {
                 updateWidgetStats(this@SystemMonitorService)
+                maybeRefreshUsage()
                 delay(5000)
             }
+        }
+    }
+
+    /**
+     * Computes today's screen time + unlock count and pushes the screen-time text
+     * to the widget. Throttled to about once a minute: it needs a usage-events
+     * pass, which must never run at the 5-second stats cadence.
+     */
+    private suspend fun maybeRefreshUsage() {
+        val now = SystemClock.elapsedRealtime()
+        if (lastUsageRefreshMs != 0L && now - lastUsageRefreshMs < USAGE_REFRESH_INTERVAL_MS) return
+        lastUsageRefreshMs = now
+        try {
+            val totals = appUsageRepository.usageTotalsToday() ?: return
+            val today = LocalDate.now()
+            usageHistory.recordScreenTime(today, totals.screenTimeMillis)
+            usageHistory.recordUnlocks(today, totals.unlockCount)
+            WidgetStateUpdater.updateScreenTimeText(
+                applicationContext,
+                durationText(applicationContext, totals.screenTimeMillis)
+            )
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
@@ -157,6 +192,12 @@ class SystemMonitorService : Service() {
     private fun registerBatteryTracker() {
         batteryReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent) {
+                // Charger-connection tally lives here because this runtime receiver is
+                // reliable; manifest-registered POWER_CONNECTED is an implicit broadcast
+                // that modern Android does not deliver.
+                if (intent.action == Intent.ACTION_POWER_CONNECTED) {
+                    usageHistory.incrementCharge(LocalDate.now())
+                }
                 serviceScope.launch {
                     updateWidgetStats(context)
                 }
@@ -183,5 +224,6 @@ class SystemMonitorService : Service() {
 
     companion object {
         private const val NOTIFICATION_ID = 1001
+        private const val USAGE_REFRESH_INTERVAL_MS = 60_000L
     }
 }

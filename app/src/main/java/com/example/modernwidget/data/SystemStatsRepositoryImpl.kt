@@ -29,6 +29,7 @@ import android.os.Environment
 import android.os.Process
 import android.os.StatFs
 import android.os.SystemClock
+import android.provider.Settings
 import android.util.DisplayMetrics
 import android.view.Display
 import android.webkit.WebView
@@ -146,6 +147,11 @@ class SystemStatsRepositoryImpl @Inject constructor(
         val webViewVersion = readWebViewVersion()
         val playServicesVersion = readPackageVersion("com.google.android.gms")
         val deviceFeatures = readDeviceFeatures()
+        val bootCountTotal = try {
+            Settings.Global.getInt(context.contentResolver, Settings.Global.BOOT_COUNT).toString()
+        } catch (_: Exception) {
+            UNAVAILABLE_TEXT
+        }
 
         val connManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
         val activeNetwork = connManager?.activeNetwork
@@ -186,6 +192,7 @@ class SystemStatsRepositoryImpl @Inject constructor(
             webViewVersion = webViewVersion,
             playServicesVersion = playServicesVersion,
             deviceFeatures = deviceFeatures,
+            bootCountTotal = bootCountTotal,
             vpnActive = vpnActive,
             dnsServers = dnsServers,
         )

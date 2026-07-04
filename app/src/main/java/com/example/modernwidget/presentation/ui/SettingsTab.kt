@@ -396,14 +396,21 @@ internal fun SettingsTab(
             )
         }
 
-        // Special access
+        // Special access — the dot is green when granted, red when missing
         SettingsSectionCard(titleRes = R.string.special_access_section) {
-            OutlinedButton(
-                onClick = { openSpecialAccessSettings(Settings.ACTION_USAGE_ACCESS_SETTINGS) },
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp)
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(stringResource(R.string.usage_access_button), fontSize = 12.sp)
+                AccessStatusDot(granted = uiState.usageAccessEnabled)
+                Spacer(modifier = Modifier.width(10.dp))
+                OutlinedButton(
+                    onClick = { openSpecialAccessSettings(Settings.ACTION_USAGE_ACCESS_SETTINGS) },
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text(stringResource(R.string.usage_access_button), fontSize = 12.sp)
+                }
             }
 
             Spacer(modifier = Modifier.height(10.dp))
@@ -412,18 +419,7 @@ internal fun SettingsTab(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(10.dp)
-                        .clip(CircleShape)
-                        .background(
-                            if (uiState.notificationAccessEnabled) {
-                                Color(0xFF4CAF50)
-                            } else {
-                                Color(0xFFFF9800)
-                            }
-                        )
-                )
+                AccessStatusDot(granted = uiState.notificationAccessEnabled)
                 Spacer(modifier = Modifier.width(10.dp))
                 OutlinedButton(
                     onClick = {
@@ -455,4 +451,14 @@ internal fun SettingsTab(
             }
         }
     }
+}
+
+@Composable
+private fun AccessStatusDot(granted: Boolean) {
+    Box(
+        modifier = Modifier
+            .size(10.dp)
+            .clip(CircleShape)
+            .background(if (granted) Color(0xFF4CAF50) else Color(0xFFF44336))
+    )
 }

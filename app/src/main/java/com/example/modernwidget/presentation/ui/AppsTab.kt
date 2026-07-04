@@ -36,7 +36,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -49,6 +48,7 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.modernwidget.R
 import com.example.modernwidget.data.LaunchableApp
+import com.example.modernwidget.data.UsageEventAggregator
 import com.example.modernwidget.presentation.AppsViewModel
 
 /** Apps tab: screen-time donut, top data consumers and the last-opened list. */
@@ -187,6 +187,39 @@ internal fun AppsTab(viewModel: AppsViewModel = hiltViewModel()) {
             }
         }
 
+        val mostOpened = UsageEventAggregator.topByLaunches(uiState.screenTimes)
+        if (mostOpened.isNotEmpty()) {
+            item(key = "most_opened") {
+                SettingsSectionCard(titleRes = R.string.most_opened_section) {
+                    mostOpened.forEach { entry ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable { viewModel.onAppSelected(entry.packageName) }
+                                .padding(vertical = 6.dp, horizontal = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            AppIcon(entry.packageName, modifier = Modifier.size(28.dp))
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = entry.label,
+                                fontSize = 14.sp,
+                                maxLines = 1,
+                                modifier = Modifier.weight(1f)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "${entry.launchCount}×",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
         item(key = "data_consumers") {
             SettingsSectionCard(titleRes = R.string.data_consumers_section) {
                 uiState.dataConsumers.take(10).forEach { consumer ->
@@ -286,14 +319,11 @@ private fun AppListRow(
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(text = app.label, fontSize = 14.sp, fontWeight = FontWeight.Medium, maxLines = 1)
+            val tier = UsageEventAggregator.lastUsedTier(daysSinceLastUse(app.lastUsedEpochMillis))
             Text(
                 text = lastUsedText(app.lastUsedEpochMillis),
                 fontSize = 12.sp,
-                color = if (app.lastUsedEpochMillis == null) {
-                    Color(0xFFE34948)
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                }
+                color = lastUsedTierColor(tier)
             )
         }
         if (!app.isSystemApp) {

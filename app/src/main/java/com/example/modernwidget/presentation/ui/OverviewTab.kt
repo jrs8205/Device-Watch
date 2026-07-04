@@ -1,7 +1,6 @@
 package com.example.modernwidget.presentation.ui
 
 import android.content.Intent
-import android.os.Build
 import android.provider.Settings
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -42,9 +41,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.modernwidget.R
+import com.example.modernwidget.data.DataCounterMode
+import com.example.modernwidget.data.UNAVAILABLE_TEXT
 import com.example.modernwidget.presentation.DashboardUiState
 
-/** Overview tab: widget status, live battery ring, RAM/CPU and the data counters. */
+/**
+ * Overview tab: widget status, live battery ring, usage counters for the selected
+ * period, full widget-parity system resources and the data counters — so the app
+ * shows everything the home-screen widget does, for people who skip the widget.
+ */
 @Composable
 internal fun OverviewTab(
     uiState: DashboardUiState,
@@ -164,7 +169,67 @@ internal fun OverviewTab(
             }
         }
 
-        // Resources (RAM & CPU)
+        // Usage counters for the selected period, right under the battery so they
+        // are visible without scrolling to the bottom.
+        SettingsSectionCard(
+            titleRes = if (uiState.dataCounterMode == DataCounterMode.DAY) {
+                R.string.usage_counters_section
+            } else {
+                R.string.usage_counters_section_period
+            }
+        ) {
+            DeviceInfoRow(
+                R.string.screen_time_total_label,
+                if (uiState.screenTimeMillis >= 0L) {
+                    durationText(context, uiState.screenTimeMillis)
+                } else {
+                    UNAVAILABLE_TEXT
+                }
+            )
+            if (uiState.unlockCountingSupported) {
+                DeviceInfoRow(R.string.unlock_count_label, countOrDashText(uiState.unlockCount))
+            }
+            if (uiState.notificationAccessEnabled) {
+                DeviceInfoRow(
+                    R.string.notification_count_label,
+                    countOrDashText(uiState.notificationCount)
+                )
+            } else {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = stringResource(R.string.notification_count_label),
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Text(
+                        text = UNAVAILABLE_TEXT,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                    TextButton(onClick = {
+                        try {
+                            context.startActivity(
+                                Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS).apply {
+                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                }
+                            )
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }) {
+                        Text(stringResource(R.string.notification_access_enable), fontSize = 12.sp)
+                    }
+                }
+            }
+            DeviceInfoRow(R.string.boot_count_label, uiState.bootCount.toString())
+            DeviceInfoRow(R.string.charge_count_label, uiState.chargeCount.toString())
+        }
+
+        // Resources (RAM, CPU, storage) — widget parity for people without the widget
         SettingsSectionCard(titleRes = R.string.system_resources_section) {
             Spacer(modifier = Modifier.height(4.dp))
 
@@ -187,13 +252,95 @@ internal fun OverviewTab(
             Spacer(modifier = Modifier.height(8.dp))
 
             LinearProgressIndicator(
-                progress = { currentStats.ramPercent.toFloat() / 100f },
+                progress = { currentStats.ramPercent.coerceAtLeast(0).toFloat() / 100f },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(8.dp)
                     .clip(RoundedCornerShape(4.dp)),
                 color = MaterialTheme.colorScheme.primary,
                 trackColor = MaterialTheme.colorScheme.surfaceVariant
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+            HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // CPU load (same data the widget's CPU tile shows)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(stringResource(R.string.cpu_load_row), fontWeight = FontWeight.Medium, fontSize = 14.sp)
+                val cpuValue = buildString {
+                    if (currentStats.cpuLoadPercent >= 0) {
+                        append("${currentStats.cpuLoadPercent} %")
+                    } else {
+                        append(UNAVAILABLE_TEXT)
+                    }
+                    if (currentStats.cpuFreqGhz >= 0.0) {
+                        append(" · ${"%.1f".format(currentStats.cpuFreqGhz)} GHz")
+                    }
+                }
+                Text(
+                    cpuValue,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            LinearProgressIndicator(
+                progress = { currentStats.cpuLoadPercent.coerceAtLeast(0).toFloat() / 100f },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(8.dp)
+                    .clip(RoundedCornerShape(4.dp)),
+                color = MaterialTheme.colorScheme.primary,
+                trackColor = MaterialTheme.colorScheme.surfaceVariant
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+            HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Storage (same data the widget's storage tile shows)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(stringResource(R.string.storage_row), fontWeight = FontWeight.Medium, fontSize = 14.sp)
+                val usedStr = "%.0f".format(currentStats.usedStorageGb)
+                val totalStr = "%.0f".format(currentStats.totalStorageGb)
+                Text(
+                    "$usedStr / $totalStr GB (${currentStats.storagePercent}%)",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            LinearProgressIndicator(
+                progress = { currentStats.storagePercent.coerceAtLeast(0).toFloat() / 100f },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(8.dp)
+                    .clip(RoundedCornerShape(4.dp)),
+                color = MaterialTheme.colorScheme.primary,
+                trackColor = MaterialTheme.colorScheme.surfaceVariant
+            )
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            val freeStorage = currentStats.totalStorageGb - currentStats.usedStorageGb
+            Text(
+                text = stringResource(R.string.widget_free_value, "%.0f GB".format(freeStorage)),
+                fontSize = 11.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.fillMaxWidth()
             )
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -237,49 +384,6 @@ internal fun OverviewTab(
         SettingsSectionCard(titleRes = R.string.data_counter_section) {
             DeviceInfoRow(wifiDataLabelRes(uiState.dataCounterMode), gbTodayText(currentStats.wifiBytesTodayGb))
             DeviceInfoRow(simDataLabelRes(uiState.dataCounterMode), gbTodayText(currentStats.mobileDataUsedGb))
-        }
-
-        // Daily usage counters: screen unlocks (API 28+) and filtered notifications
-        SettingsSectionCard(titleRes = R.string.usage_counters_section) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                DeviceInfoRow(R.string.unlock_count_label, countOrDashText(uiState.unlockCountToday))
-            }
-            if (uiState.notificationAccessEnabled) {
-                DeviceInfoRow(
-                    R.string.notification_count_label,
-                    countOrDashText(uiState.notificationCountToday)
-                )
-            } else {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = stringResource(R.string.notification_count_label),
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.weight(1f)
-                    )
-                    Text(
-                        text = com.example.modernwidget.data.UNAVAILABLE_TEXT,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium
-                    )
-                    TextButton(onClick = {
-                        try {
-                            context.startActivity(
-                                Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS).apply {
-                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                }
-                            )
-                        } catch (e: Exception) {
-                            e.printStackTrace()
-                        }
-                    }) {
-                        Text(stringResource(R.string.notification_access_enable), fontSize = 12.sp)
-                    }
-                }
-            }
         }
 
         Spacer(modifier = Modifier.height(8.dp))

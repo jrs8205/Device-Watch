@@ -5,11 +5,14 @@ import androidx.lifecycle.viewModelScope
 import com.example.modernwidget.data.AppSettingsRepository
 import com.example.modernwidget.data.AppUsageRepository
 import com.example.modernwidget.data.DataCounterMode
+import com.example.modernwidget.data.DataPeriodCalculator
 import com.example.modernwidget.data.DeviceInfo
 import com.example.modernwidget.data.NotificationStats
 import com.example.modernwidget.data.SystemStats
 import com.example.modernwidget.data.SystemStatsRepository
 import com.example.modernwidget.data.UNAVAILABLE_INT
+import com.example.modernwidget.data.UsageHistory
+import java.time.LocalDate
 import com.example.modernwidget.widget.WidgetController
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -32,8 +35,14 @@ data class DashboardUiState(
     val widgetOpacity: Float = DEFAULT_WIDGET_OPACITY,
     val dataCounterMode: DataCounterMode = DataCounterMode.DAY,
     val cycleStartDay: Int = 1,
-    val unlockCountToday: Int = UNAVAILABLE_INT,
-    val notificationCountToday: Int = UNAVAILABLE_INT,
+    // Usage counters, scoped to the selected counting period (day or billing cycle).
+    val screenTimeMillis: Long = -1L,
+    val unlockCount: Int = UNAVAILABLE_INT,
+    val notificationCount: Int = UNAVAILABLE_INT,
+    val bootCount: Int = 0,
+    val chargeCount: Int = 0,
+    val unlockCountingSupported: Boolean = true,
+    val usageAccessEnabled: Boolean = false,
     val notificationAccessEnabled: Boolean = false,
 )
 
@@ -44,6 +53,7 @@ class DashboardViewModel @Inject constructor(
     private val settings: AppSettingsRepository,
     private val appUsageRepository: AppUsageRepository,
     private val notificationStats: NotificationStats,
+    private val usageHistory: UsageHistory,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DashboardUiState())
@@ -54,21 +64,56 @@ class DashboardViewModel @Inject constructor(
         viewModelScope.launch {
             val stats = repository.getStats()
             val widgetInstalled = widgetController.pushStats(stats)
-            val unlockCount = appUsageRepository.unlockCountToday()
-            val notificationAccess = notificationStats.isListenerEnabled()
-            val notificationCount = if (notificationAccess) {
-                notificationStats.totalForDay(java.time.LocalDate.now())
-            } else {
-                UNAVAILABLE_INT
+
+            // Usage counters cover the same period as the data counters. Android keeps
+            // no long history for these, so daily values are recorded into our own
+            // store: unlock counts and per-day screen time are backfilled from the
+            // ~7 days Android remembers, today's values come from a precise event
+            // pass, and boots/charges are incremented as they happen elsewhere.
+            val today = LocalDate.now()
+            val periodStart = DataPeriodCalculator.periodStart(
+                settings.dataCounterMode(), settings.cycleStartDay(), today
+            )
+            val hasUsageAccess = appUsageRepository.hasUsageAccess()
+            val supportsUnlocks = appUsageRepository.supportsUnlockCounting()
+            if (hasUsageAccess) {
+                appUsageRepository.screenTimeByDay(HISTORY_BACKFILL_DAYS)
+                    .forEach { (day, millis) -> usageHistory.recordScreenTime(day, millis) }
+                appUsageRepository.unlockCountsByDay(HISTORY_BACKFILL_DAYS)
+                    .forEach { (day, count) -> usageHistory.recordUnlocks(day, count) }
+                appUsageRepository.usageTotalsToday()?.let { totals ->
+                    usageHistory.recordScreenTime(today, totals.screenTimeMillis)
+                    usageHistory.recordUnlocks(today, totals.unlockCount)
+                }
             }
+            usageHistory.purge(today)
+
+            val notificationAccess = notificationStats.isListenerEnabled()
             _uiState.update {
                 it.copy(
                     stats = stats,
                     isWidgetInstalled = widgetInstalled,
                     lastUpdated = currentTime(),
-                    unlockCountToday = unlockCount,
-                    notificationCountToday = notificationCount,
+                    usageAccessEnabled = hasUsageAccess,
+                    unlockCountingSupported = supportsUnlocks,
+                    screenTimeMillis = if (hasUsageAccess) {
+                        usageHistory.screenTimeBetween(periodStart, today)
+                    } else {
+                        -1L
+                    },
+                    unlockCount = if (hasUsageAccess && supportsUnlocks) {
+                        usageHistory.unlocksBetween(periodStart, today)
+                    } else {
+                        UNAVAILABLE_INT
+                    },
+                    bootCount = usageHistory.bootsBetween(periodStart, today),
+                    chargeCount = usageHistory.chargesBetween(periodStart, today),
                     notificationAccessEnabled = notificationAccess,
+                    notificationCount = if (notificationAccess) {
+                        notificationStats.totalBetween(periodStart, today)
+                    } else {
+                        UNAVAILABLE_INT
+                    },
                 )
             }
         }
@@ -134,4 +179,9 @@ class DashboardViewModel @Inject constructor(
 
     private fun currentTime(): String =
         SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
+
+    private companion object {
+        /** Android keeps detailed usage events for roughly a week. */
+        private const val HISTORY_BACKFILL_DAYS = 7
+    }
 }

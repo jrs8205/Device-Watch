@@ -182,6 +182,7 @@ fun WidgetContent() {
 
     val uptime = prefs[RefreshStatsAction.UPTIME] ?: UNAVAILABLE_TEXT
     val lastUpdated = prefs[RefreshStatsAction.LAST_UPDATED] ?: UNAVAILABLE_TEXT
+    val screenTimeText = prefs[RefreshStatsAction.SCREEN_TIME_TODAY]
     // The whole widget opens the app; the previous per-tile system-settings
     // shortcuts were removed deliberately (user request in v1.1.0).
     Column(
@@ -453,6 +454,17 @@ fun WidgetContent() {
                 maxLines = 1
             )
             Spacer(modifier = GlanceModifier.defaultWeight())
+            if (screenTimeText != null) {
+                Text(
+                    text = context.getString(R.string.widget_screen_time, screenTimeText),
+                    style = TextStyle(
+                        color = colors.textMuted,
+                        fontSize = 14.sp
+                    ),
+                    maxLines = 1
+                )
+                Spacer(modifier = GlanceModifier.defaultWeight())
+            }
             Text(
                 text = context.getString(R.string.widget_updated, lastUpdated),
                 style = TextStyle(

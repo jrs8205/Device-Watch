@@ -44,6 +44,7 @@ import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.modernwidget.R
+import com.example.modernwidget.presentation.AppsViewModel
 import com.example.modernwidget.presentation.DashboardViewModel
 import com.example.modernwidget.system.SystemMonitorService
 
@@ -60,7 +61,10 @@ internal enum class DashboardTab(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SystemDashboardScreen(viewModel: DashboardViewModel = hiltViewModel()) {
+fun SystemDashboardScreen(
+    viewModel: DashboardViewModel = hiltViewModel(),
+    appsViewModel: AppsViewModel = hiltViewModel(),
+) {
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -102,6 +106,11 @@ fun SystemDashboardScreen(viewModel: DashboardViewModel = hiltViewModel()) {
         viewModel.refresh()
     }
 
+    var selectedTabIndex by rememberSaveable { mutableIntStateOf(0) }
+    val safeTabIndex = selectedTabIndex.coerceIn(0, DashboardTab.entries.lastIndex)
+    val selectedTab = DashboardTab.entries[safeTabIndex]
+    val tabStateHolder = rememberSaveableStateHolder()
+
     LaunchedEffect(Unit) {
         viewModel.refresh()
         viewModel.loadWidgetOpacity()
@@ -115,11 +124,6 @@ fun SystemDashboardScreen(viewModel: DashboardViewModel = hiltViewModel()) {
         }
     }
 
-    var selectedTabIndex by rememberSaveable { mutableIntStateOf(0) }
-    val safeTabIndex = selectedTabIndex.coerceIn(0, DashboardTab.entries.lastIndex)
-    val selectedTab = DashboardTab.entries[safeTabIndex]
-    val tabStateHolder = rememberSaveableStateHolder()
-
     Scaffold(
         topBar = {
             TopAppBar(
@@ -130,7 +134,14 @@ fun SystemDashboardScreen(viewModel: DashboardViewModel = hiltViewModel()) {
                     )
                 },
                 actions = {
-                    IconButton(onClick = { viewModel.refresh() }) {
+                    IconButton(onClick = {
+                        viewModel.refresh()
+                        // The Apps tab has its own on-demand queries; refresh it too
+                        // when it is the one on screen.
+                        if (selectedTab == DashboardTab.Apps) {
+                            appsViewModel.refresh()
+                        }
+                    }) {
                         Icon(
                             imageVector = Icons.Filled.Refresh,
                             contentDescription = stringResource(R.string.refresh),
@@ -166,7 +177,7 @@ fun SystemDashboardScreen(viewModel: DashboardViewModel = hiltViewModel()) {
                             onRefresh = viewModel::refresh
                         )
 
-                        DashboardTab.Apps -> AppsTab()
+                        DashboardTab.Apps -> AppsTab(viewModel = appsViewModel)
 
                         DashboardTab.Device -> DeviceTab(uiState = uiState)
 

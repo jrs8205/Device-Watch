@@ -47,6 +47,8 @@ data class DeviceInfo(
     val webViewVersion: String,
     val playServicesVersion: String,
     val deviceFeatures: String,
+    /** Total boots since factory reset (Settings.Global.BOOT_COUNT, API 24+). */
+    val bootCountTotal: String,
     // Network (snapshot)
     val vpnActive: String,
     val dnsServers: String,

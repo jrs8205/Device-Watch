@@ -1,5 +1,7 @@
 package com.example.modernwidget.data
 
+import java.time.LocalDate
+
 /**
  * Per-app usage insights for the Apps tab: screen time, data usage, last-opened
  * dates and the daily unlock count. All queries are on-demand and potentially
@@ -21,6 +23,23 @@ interface AppUsageRepository {
     /** All launcher-visible apps with their last-used time over a ~2 year range. */
     suspend fun launchableAppsByLastUse(): List<LaunchableApp>
 
-    /** Keyguard-hidden count since midnight; [UNAVAILABLE_INT] below API 28 or without access. */
-    suspend fun unlockCountToday(): Int
+    /** Whether the platform can count unlocks at all (KEYGUARD_HIDDEN needs API 28). */
+    fun supportsUnlockCounting(): Boolean
+
+    /**
+     * Unlock (keyguard-hidden) counts bucketed by local date over the last [days]
+     * days including today. Empty without support or Usage Access. Android keeps
+     * detailed events only ~7 days, hence the backfill window.
+     */
+    suspend fun unlockCountsByDay(days: Int): Map<LocalDate, Int>
+
+    /**
+     * Per-day total foreground time from Android's daily usage buckets over the
+     * last [days] days. Bucket edges are approximate; today's value should be
+     * overwritten with the precise [usageTotalsToday] result.
+     */
+    suspend fun screenTimeByDay(days: Int): Map<LocalDate, Long>
+
+    /** Precise totals since local midnight in one event pass; null without access. */
+    suspend fun usageTotalsToday(): UsageTotals?
 }

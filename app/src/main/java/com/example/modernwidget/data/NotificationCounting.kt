@@ -18,10 +18,15 @@ object NotificationCounting {
         return !isOngoing && !isGroupSummary && !keyAlreadyActive
     }
 
-    /** The days whose counts are kept: today and yesterday. */
+    /**
+     * The days whose counts are kept: the last [RETENTION_DAYS] days, so that a
+     * full 31-day billing cycle can always be summed from stored daily counts.
+     */
     fun retainedDays(today: LocalDate): Set<LocalDate> {
-        return setOf(today, today.minusDays(1))
+        return (0L until RETENTION_DAYS).map { today.minusDays(it) }.toSet()
     }
+
+    private const val RETENTION_DAYS = 62L
 
     /** Keys look like `total:<epochDay>` or `pkg:<epochDay>:<packageName>`. Malformed keys are purged. */
     fun isRetainedStatsKey(prefsKey: String, retained: Set<LocalDate>): Boolean {

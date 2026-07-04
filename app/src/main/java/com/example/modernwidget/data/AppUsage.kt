@@ -25,6 +25,12 @@ data class LaunchableApp(
     val isSystemApp: Boolean,
 )
 
+/** Precise usage totals since local midnight, computed in one usage-events pass. */
+data class UsageTotals(
+    val screenTimeMillis: Long,
+    val unlockCount: Int,
+)
+
 /** Detail-sheet content for one app, assembled from the already-loaded tab data. */
 data class AppUsageDetail(
     val packageName: String,

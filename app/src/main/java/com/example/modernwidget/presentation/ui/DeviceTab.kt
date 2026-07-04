@@ -70,6 +70,7 @@ internal fun DeviceTab(uiState: DashboardUiState) {
                 DeviceInfoRow(R.string.system_webview, info.webViewVersion)
                 DeviceInfoRow(R.string.system_play_services, info.playServicesVersion)
                 DeviceInfoRow(R.string.system_features, info.deviceFeatures)
+                DeviceInfoRow(R.string.device_info_boot_count, info.bootCountTotal)
             }
         }
 

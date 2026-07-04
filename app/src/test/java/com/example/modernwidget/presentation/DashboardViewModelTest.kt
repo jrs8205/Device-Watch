@@ -1,16 +1,15 @@
 package com.example.modernwidget.presentation
 
-import com.example.modernwidget.data.AppDataUsage
-import com.example.modernwidget.data.AppScreenTime
 import com.example.modernwidget.data.AppSettingsRepository
 import com.example.modernwidget.data.AppUsageRepository
 import com.example.modernwidget.data.DataCounterMode
 import com.example.modernwidget.data.DeviceInfo
-import com.example.modernwidget.data.LaunchableApp
 import com.example.modernwidget.data.NotificationStats
 import com.example.modernwidget.data.SystemStats
 import com.example.modernwidget.data.SystemStatsRepository
 import com.example.modernwidget.data.UNAVAILABLE_INT
+import com.example.modernwidget.data.UsageHistory
+import com.example.modernwidget.data.UsageTotals
 import com.example.modernwidget.widget.WidgetController
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.Dispatchers
@@ -24,6 +23,7 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
+import java.time.LocalDate
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DashboardViewModelTest {
@@ -40,6 +40,15 @@ class DashboardViewModelTest {
         Dispatchers.resetMain()
     }
 
+    private fun buildViewModel(
+        repository: SystemStatsRepository = FakeSystemStatsRepository(sampleStats()),
+        widget: WidgetController = FakeWidgetController(installed = true),
+        settings: AppSettingsRepository = FakeAppSettingsRepository(),
+        appUsage: AppUsageRepository = FakeAppUsageRepository(),
+        notifications: NotificationStats = FakeNotificationStats(),
+        history: UsageHistory = FakeUsageHistory(),
+    ) = DashboardViewModel(repository, widget, settings, appUsage, notifications, history)
+
     @Test
     fun `given fresh stats, when refreshing, then state reflects repository and widget flag`() =
         runTest(dispatcher) {
@@ -47,10 +56,7 @@ class DashboardViewModelTest {
             val stats = sampleStats(batteryLevel = 77)
             val repository = FakeSystemStatsRepository(stats)
             val widget = FakeWidgetController(installed = true)
-            val viewModel = DashboardViewModel(
-                repository, widget, FakeAppSettingsRepository(),
-                FakeAppUsageRepository(), FakeNotificationStats()
-            )
+            val viewModel = buildViewModel(repository = repository, widget = widget)
 
             // When
             viewModel.refresh()
@@ -69,10 +75,7 @@ class DashboardViewModelTest {
     fun `given a saved opacity, when loading, then state adopts it`() = runTest(dispatcher) {
         // Given
         val widget = FakeWidgetController(installed = true, savedOpacity = 0.42f)
-        val viewModel = DashboardViewModel(
-            FakeSystemStatsRepository(sampleStats()), widget, FakeAppSettingsRepository(),
-            FakeAppUsageRepository(), FakeNotificationStats()
-        )
+        val viewModel = buildViewModel(widget = widget)
 
         // When
         viewModel.loadWidgetOpacity()
@@ -86,10 +89,7 @@ class DashboardViewModelTest {
     fun `given no widget, when loading opacity, then default is kept`() = runTest(dispatcher) {
         // Given
         val widget = FakeWidgetController(installed = false, savedOpacity = null)
-        val viewModel = DashboardViewModel(
-            FakeSystemStatsRepository(sampleStats()), widget, FakeAppSettingsRepository(),
-            FakeAppUsageRepository(), FakeNotificationStats()
-        )
+        val viewModel = buildViewModel(widget = widget)
 
         // When
         viewModel.loadWidgetOpacity()
@@ -103,10 +103,7 @@ class DashboardViewModelTest {
     fun `given a dragged opacity, when committing, then it is persisted`() = runTest(dispatcher) {
         // Given
         val widget = FakeWidgetController(installed = true)
-        val viewModel = DashboardViewModel(
-            FakeSystemStatsRepository(sampleStats()), widget, FakeAppSettingsRepository(),
-            FakeAppUsageRepository(), FakeNotificationStats()
-        )
+        val viewModel = buildViewModel(widget = widget)
 
         // When
         viewModel.onWidgetOpacityChange(0.5f)
@@ -125,10 +122,7 @@ class DashboardViewModelTest {
             mode = DataCounterMode.BILLING_CYCLE,
             cycleDay = 15,
         )
-        val viewModel = DashboardViewModel(
-            FakeSystemStatsRepository(sampleStats()), FakeWidgetController(installed = true), settings,
-            FakeAppUsageRepository(), FakeNotificationStats()
-        )
+        val viewModel = buildViewModel(settings = settings)
 
         // When
         viewModel.loadDataCounterSettings()
@@ -146,9 +140,7 @@ class DashboardViewModelTest {
             val settings = FakeAppSettingsRepository()
             val repository = FakeSystemStatsRepository(sampleStats())
             val widget = FakeWidgetController(installed = true)
-            val viewModel = DashboardViewModel(
-                repository, widget, settings, FakeAppUsageRepository(), FakeNotificationStats()
-            )
+            val viewModel = buildViewModel(repository = repository, widget = widget, settings = settings)
 
             // When
             viewModel.onDataCounterModeSelected(DataCounterMode.BILLING_CYCLE)
@@ -168,9 +160,7 @@ class DashboardViewModelTest {
             val settings = FakeAppSettingsRepository()
             val repository = FakeSystemStatsRepository(sampleStats())
             val widget = FakeWidgetController(installed = true)
-            val viewModel = DashboardViewModel(
-                repository, widget, settings, FakeAppUsageRepository(), FakeNotificationStats()
-            )
+            val viewModel = buildViewModel(repository = repository, widget = widget, settings = settings)
 
             // When
             viewModel.onCycleStartDayChange(21)
@@ -185,15 +175,27 @@ class DashboardViewModelTest {
         }
 
     @Test
-    fun `given counters available, when refreshing, then unlock and notification counts load`() =
+    fun `given day mode, when refreshing, then today's totals are recorded and shown`() =
         runTest(dispatcher) {
             // Given
-            val viewModel = DashboardViewModel(
-                FakeSystemStatsRepository(sampleStats()),
-                FakeWidgetController(installed = true),
-                FakeAppSettingsRepository(),
-                FakeAppUsageRepository(unlockCount = 12),
-                FakeNotificationStats(enabled = true, total = 34),
+            val today = LocalDate.now()
+            val yesterday = today.minusDays(1)
+            val appUsage = FakeAppUsageRepository(
+                unlocksByDay = mapOf(yesterday to 5, today to 6),
+                screenByDay = mapOf(yesterday to 1_000_000L),
+                totalsToday = UsageTotals(screenTimeMillis = 3_600_000L, unlockCount = 7),
+            )
+            val notifications = FakeNotificationStats(
+                enabled = true,
+                totalsByDay = mapOf(yesterday to 9, today to 4),
+            )
+            val history = FakeUsageHistory().apply {
+                boots[today] = 2
+                boots[yesterday] = 1 // outside the day period
+                incrementCharge(today)
+            }
+            val viewModel = buildViewModel(
+                appUsage = appUsage, notifications = notifications, history = history
             )
 
             // When
@@ -202,21 +204,45 @@ class DashboardViewModelTest {
 
             // Then
             val state = viewModel.uiState.value
-            assertThat(state.unlockCountToday).isEqualTo(12)
-            assertThat(state.notificationCountToday).isEqualTo(34)
-            assertThat(state.notificationAccessEnabled).isTrue()
+            assertThat(state.usageAccessEnabled).isTrue()
+            assertThat(state.screenTimeMillis).isEqualTo(3_600_000L)
+            assertThat(state.unlockCount).isEqualTo(7)
+            assertThat(state.notificationCount).isEqualTo(4)
+            assertThat(state.bootCount).isEqualTo(2)
+            assertThat(state.chargeCount).isEqualTo(1)
+            // Backfill was written into the history store, and old days purged.
+            assertThat(history.unlocks[yesterday]).isEqualTo(5)
+            assertThat(history.screen[yesterday]).isEqualTo(1_000_000L)
+            assertThat(history.purgedWith).isEqualTo(today)
         }
 
     @Test
-    fun `given listener disabled, when refreshing, then notification count is unavailable`() =
+    fun `given cycle mode, when refreshing, then sums cover the whole period`() =
         runTest(dispatcher) {
-            // Given
-            val viewModel = DashboardViewModel(
-                FakeSystemStatsRepository(sampleStats()),
-                FakeWidgetController(installed = true),
-                FakeAppSettingsRepository(),
-                FakeAppUsageRepository(unlockCount = 5),
-                FakeNotificationStats(enabled = false, total = 99),
+            // Given a cycle that started yesterday regardless of the calendar date
+            val today = LocalDate.now()
+            val yesterday = today.minusDays(1)
+            val settings = FakeAppSettingsRepository(
+                mode = DataCounterMode.BILLING_CYCLE,
+                cycleDay = yesterday.dayOfMonth,
+            )
+            val appUsage = FakeAppUsageRepository(
+                totalsToday = UsageTotals(screenTimeMillis = 2_000L, unlockCount = 7),
+            )
+            val notifications = FakeNotificationStats(
+                enabled = true,
+                totalsByDay = mapOf(yesterday to 3, today to 4),
+            )
+            val history = FakeUsageHistory().apply {
+                recordUnlocks(yesterday, 10)
+                recordScreenTime(yesterday, 1_000L)
+                boots[yesterday] = 1
+                boots[today] = 1
+                incrementCharge(yesterday)
+            }
+            val viewModel = buildViewModel(
+                settings = settings, appUsage = appUsage,
+                notifications = notifications, history = history
             )
 
             // When
@@ -225,7 +251,35 @@ class DashboardViewModelTest {
 
             // Then
             val state = viewModel.uiState.value
-            assertThat(state.notificationCountToday).isEqualTo(UNAVAILABLE_INT)
+            assertThat(state.unlockCount).isEqualTo(17)
+            assertThat(state.screenTimeMillis).isEqualTo(3_000L)
+            assertThat(state.bootCount).isEqualTo(2)
+            assertThat(state.chargeCount).isEqualTo(1)
+            assertThat(state.notificationCount).isEqualTo(7)
+        }
+
+    @Test
+    fun `given no usage access, when refreshing, then usage values unavailable but boots remain`() =
+        runTest(dispatcher) {
+            // Given
+            val today = LocalDate.now()
+            val history = FakeUsageHistory().apply { boots[today] = 1 }
+            val viewModel = buildViewModel(
+                appUsage = FakeAppUsageRepository(hasAccess = false),
+                history = history,
+            )
+
+            // When
+            viewModel.refresh()
+            advanceUntilIdle()
+
+            // Then
+            val state = viewModel.uiState.value
+            assertThat(state.usageAccessEnabled).isFalse()
+            assertThat(state.unlockCount).isEqualTo(UNAVAILABLE_INT)
+            assertThat(state.screenTimeMillis).isEqualTo(-1L)
+            assertThat(state.bootCount).isEqualTo(1)
+            assertThat(state.notificationCount).isEqualTo(UNAVAILABLE_INT)
             assertThat(state.notificationAccessEnabled).isFalse()
         }
 }
@@ -276,6 +330,7 @@ private fun sampleDeviceInfo(): DeviceInfo = DeviceInfo(
     webViewVersion = "120.0",
     playServicesVersion = "24.0",
     deviceFeatures = "NFC, Fingerprint",
+    bootCountTotal = "42",
     vpnActive = "No",
     dnsServers = "8.8.8.8",
 )

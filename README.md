@@ -16,7 +16,11 @@ The default app language is English. Finnish users get a localized app name and 
 - Tabbed dashboard UI: Overview (live battery ring, RAM/CPU, data and usage counters), Apps (usage insights), Device (hardware, SIM and Wi-Fi details), and Settings
 - Apps tab: Digital-Wellbeing-style screen-time donut (top apps + others) with tappable legend, top data consumers today, and a last-opened list (oldest and never-used apps first, reversible) with per-app uninstall
 - Per-app detail sheet: screen time, times opened, last opened, data used and notifications today
-- Daily counters on the Overview tab: screen unlocks (API 28+) and a filtered notification count — ongoing notifications, group summaries and updates to an existing notification are not counted, so the number stays believable
+- Usage counters on the Overview tab, scoped to the same day/billing-cycle setting as the data counters: total screen time, screen unlocks (API 28+), a filtered notification count (ongoing notifications, group summaries and updates to an existing notification are not counted, so the number stays believable), device restarts and charging sessions
+- The app keeps its own 62-day daily history for these counters (Android has no retroactive API): unlocks and screen time are backfilled from the ~7 days Android remembers, restarts are derived from BOOT_COUNT deltas (immune to Android re-delivering BOOT_COMPLETED after app updates), and notification/charging tallies accumulate from install onward
+- Today's screen time also appears in the widget footer, refreshed at most once a minute so the 5-second widget loop stays untouched
+- Most-opened-today list on the Apps tab, and last-opened rows show the clock time for apps used today (following the system 12/24-hour setting) with two-tier staleness colors: amber after 1 month unused, red after 3 months (Google's app-hibernation threshold) or never used
+- Special-access buttons show a green/red status dot for granted/missing access
 - Privacy dashboard shortcut for per-app location/microphone/camera usage (system view; that data is not exposed to third-party apps)
 - Interactive Android screensaver with a large clock, date, next alarm, charging status, battery percentage, voltage, temperature, and live charging power in watts
 - Screensaver clock follows the device 12/24-hour setting, with a second-aligned tick
@@ -53,7 +57,7 @@ presentation/ui Compose-only screen code: SystemDashboardScreen scaffold with a
                 ScreenTimeDonut, AppDetailSheet)
 data/           SystemStatsRepository + AppUsageRepository (per-app usage, on demand)
                 AppSettingsRepository (data-counter mode, cycle start day, sort order)
-                NotificationStats (daily notification counts, today + yesterday)
+                NotificationStats + UsageHistory (own daily tallies, 62-day retention)
                 SystemStatsParser, DataPeriodCalculator, UsageEventAggregator,
                 NotificationCounting (pure, unit-tested calculations)
                 SystemStats / AppUsage models (+ UNAVAILABLE_* sentinels)
@@ -128,8 +132,9 @@ JVM unit tests cover the pure parsing/maths and the ViewModel:
 
 - `SystemStatsParserTest` — CPU-load deltas, frequency residency/pressure, battery wear, mobile-generation mapping, Wi-Fi SSID/band, signal filtering
 - `DataPeriodCalculatorTest` — billing-cycle period math (start-day clamping across month lengths, leap February, year rollover)
-- `UsageEventAggregatorTest` — foreground-session folding (in-app activity switches, unclosed sessions), donut segments, last-use sorting and day math
+- `UsageEventAggregatorTest` — foreground-session folding (in-app activity switches, unclosed sessions), donut segments, last-use sorting, day math, staleness tiers and launch-count ranking
 - `NotificationCountingTest` — the "real notification" filter and count retention/purging
+- `UsageHistoryLogicTest` — BOOT_COUNT delta dedup and history-key retention
 - `WidgetFormattingTest` — widget display formatters (locale-pinned), adaptive MB/GB data amounts
 - `DashboardViewModelTest` — refresh, opacity load/commit, data-counter settings, daily counters, widget-installed flag (hand-written fakes)
 - `AppsViewModelTest` — Apps-tab loading, empty state without usage access, detail assembly, sort toggle persistence
@@ -166,6 +171,8 @@ app/src/main/java/com/example/modernwidget/
     SystemStatsRepository.kt
     SystemStatsRepositoryImpl.kt
     UsageEventAggregator.kt
+    UsageHistory.kt
+    UsageHistoryImpl.kt
   di/
     DispatchersModule.kt
     RepositoryModule.kt
@@ -200,6 +207,7 @@ app/src/test/java/com/example/modernwidget/
   data/NotificationCountingTest.kt
   data/SystemStatsParserTest.kt
   data/UsageEventAggregatorTest.kt
+  data/UsageHistoryLogicTest.kt
   presentation/AppsViewModelTest.kt
   presentation/DashboardViewModelTest.kt
   presentation/Fakes.kt

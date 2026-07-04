@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.annotation.StringRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -28,6 +29,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
@@ -39,12 +41,14 @@ import androidx.compose.ui.unit.sp
 import androidx.core.graphics.drawable.toBitmap
 import com.example.modernwidget.R
 import com.example.modernwidget.data.DataCounterMode
+import com.example.modernwidget.data.LastUsedTier
 import com.example.modernwidget.data.UNAVAILABLE_INT
 import com.example.modernwidget.data.UNAVAILABLE_TEXT
 import com.example.modernwidget.data.UsageEventAggregator
 import com.example.modernwidget.widget.dataAmountText
 import java.time.LocalDate
 import java.time.ZoneId
+import java.util.Date
 import java.util.Locale
 
 /**
@@ -177,17 +181,44 @@ internal fun durationText(context: Context, millis: Long): String {
     return if (hours > 0L) context.getString(R.string.uptime_short, hours, minutes) else "$minutes min"
 }
 
-/** "Never used" / "Today" / "N days ago" for a last-use timestamp. */
-@Composable
-internal fun lastUsedText(lastUsedEpochMillis: Long?): String {
-    val days = UsageEventAggregator.daysSinceLastUse(
+/** Whole days since the last use, or null when never used. */
+internal fun daysSinceLastUse(lastUsedEpochMillis: Long?): Int? =
+    UsageEventAggregator.daysSinceLastUse(
         lastUsedEpochMillis, LocalDate.now(), ZoneId.systemDefault()
     )
+
+/**
+ * "Never used" / "Today 10.54" / "N days ago" for a last-use timestamp. Today's
+ * clock time follows the system 12/24-hour setting automatically
+ * (DateFormat.getTimeFormat honors it and the locale).
+ */
+@Composable
+internal fun lastUsedText(lastUsedEpochMillis: Long?): String {
+    val context = LocalContext.current
+    val days = daysSinceLastUse(lastUsedEpochMillis)
     return when {
         days == null -> stringResource(R.string.last_used_never)
-        days == 0 -> stringResource(R.string.last_used_today)
+        days == 0 -> stringResource(
+            R.string.last_used_today_at,
+            remember(lastUsedEpochMillis) {
+                android.text.format.DateFormat.getTimeFormat(context)
+                    .format(Date(lastUsedEpochMillis!!))
+            }
+        )
         else -> pluralStringResource(R.plurals.last_used_days, days, days)
     }
+}
+
+/**
+ * Highlight color for the last-opened list: STALE (over Google's ~3-month app
+ * hibernation threshold, or never used) in error red, AGING (1–3 months) amber,
+ * recent in the normal muted ink.
+ */
+@Composable
+internal fun lastUsedTierColor(tier: LastUsedTier): Color = when (tier) {
+    LastUsedTier.STALE -> MaterialTheme.colorScheme.error
+    LastUsedTier.AGING -> if (isSystemInDarkTheme()) Color(0xFFEDA100) else Color(0xFF9A6700)
+    LastUsedTier.NORMAL -> MaterialTheme.colorScheme.onSurfaceVariant
 }
 
 /** App launcher icon loaded once per package; falls back to a plain circle. */

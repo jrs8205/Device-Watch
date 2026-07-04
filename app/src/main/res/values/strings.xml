@@ -34,7 +34,7 @@
     <string name="data_consumers_section">TOP DATA TODAY</string>
     <string name="last_opened_section">LAST OPENED</string>
     <string name="last_used_never">Never used</string>
-    <string name="last_used_today">Today</string>
+    <string name="last_used_today_at">Today %1$s</string>
     <plurals name="last_used_days">
         <item quantity="one">%1$d day ago</item>
         <item quantity="other">%1$d days ago</item>
@@ -42,8 +42,15 @@
     <string name="uninstall_content_description">Uninstall</string>
     <string name="sort_toggle_description">Reverse order</string>
     <string name="usage_counters_section">USAGE TODAY</string>
+    <string name="usage_counters_section_period">USAGE THIS PERIOD</string>
+    <string name="screen_time_total_label">Screen time</string>
     <string name="unlock_count_label">Screen unlocks</string>
     <string name="notification_count_label">Notifications</string>
+    <string name="boot_count_label">Restarts</string>
+    <string name="charge_count_label">Charging sessions</string>
+    <string name="most_opened_section">MOST OPENED TODAY</string>
+    <string name="cpu_load_row">Processor load</string>
+    <string name="storage_row">Storage</string>
     <string name="notification_access_button">Notification access</string>
     <string name="notification_access_enable">Enable</string>
     <string name="notification_access_hint">Notification counting starts when notification access is granted. Ongoing notifications, group summaries and updates to an existing notification are not counted.</string>
@@ -128,6 +135,7 @@
     <string name="device_info_hdr">HDR</string>
     <string name="device_info_battery_tech">Battery type</string>
     <string name="device_info_battery_capacity">Battery capacity</string>
+    <string name="device_info_boot_count">Total restarts</string>
 
     <string name="camera_info_section">CAMERAS</string>
     <string name="camera_count">Cameras</string>
@@ -208,6 +216,7 @@
     <string name="widget_mobile_network">Mobile network</string>
     <string name="widget_signal_line">%1$s · %2$s signal</string>
     <string name="widget_uptime">Uptime %1$s</string>
+    <string name="widget_screen_time">Screen %1$s</string>
     <string name="widget_updated">Updated %1$s</string>
     <string name="widget_capacity_label">CAPACITY</string>
     <string name="signal_unavailable">signal %1$s</string>
