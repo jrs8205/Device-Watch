@@ -14,10 +14,12 @@ The default app language is English. Finnish users get a localized app name and 
 - Tapping the widget anywhere opens the app
 - Data counters per calendar day or per one-month billing cycle with a configurable start day (month lengths handled automatically); the selection applies to the widget and the in-app data rows
 - Tabbed dashboard UI: Overview (live battery ring, usage counters, RAM/CPU/storage meters and data counters — full widget parity for people who skip the widget), Apps (usage insights), Device (hardware, SIM and Wi-Fi details), and Settings
-- Apps tab: Digital-Wellbeing-style screen-time donut (top apps + others) with tappable legend, top data consumers today, and a last-opened list (oldest and never-used apps first, reversible) with per-app uninstall
+- Apps tab: Digital-Wellbeing-style screen-time donut (top apps + others) with tappable legend, top data consumers today, and a last-opened list (oldest and never-used apps first, reversible) with per-app uninstall; home-screen launchers excluded from usage rankings
 - Per-app detail sheet: screen time, times opened, last opened, data used and notifications today
 - Usage counters on the Overview tab, scoped to the same day/billing-cycle setting as the data counters: total screen time, screen unlocks (API 28+), a filtered notification count (ongoing notifications, group summaries and updates to an existing notification are not counted, so the number stays believable), device restarts and charging sessions
 - The app keeps its own 62-day daily history for these counters (Android has no retroactive API): unlocks and screen time are backfilled from the ~7 days Android remembers, restarts are derived from BOOT_COUNT deltas (immune to Android re-delivering BOOT_COMPLETED after app updates), and notification/charging tallies accumulate from install onward
+- On-device notification log with app name, timestamp, title, and text; 7-day retention
+- History page featuring 62-day daily charts for screen time, unlocks, notifications, device restarts, and charging sessions (accessible from the usage card)
 - Today's screen time also appears in the widget footer, refreshed at most once a minute so the 5-second widget loop stays untouched
 - Most-opened-today list on the Apps tab, and last-opened rows show the clock time for apps used today (following the system 12/24-hour setting) with two-tier staleness colors: amber after 1 month unused, red after 3 months (Google's app-hibernation threshold) or never used
 - Special-access buttons show a green/red status dot for granted/missing access
