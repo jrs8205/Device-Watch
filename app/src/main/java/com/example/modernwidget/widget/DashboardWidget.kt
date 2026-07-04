@@ -435,7 +435,7 @@ fun WidgetContent() {
 
         // Footer row
         Row(
-            modifier = GlanceModifier.fillMaxWidth(),
+            modifier = GlanceModifier.fillMaxWidth().padding(end = 6.dp),
             verticalAlignment = Alignment.Vertical.CenterVertically
         ) {
             Image(
@@ -449,7 +449,7 @@ fun WidgetContent() {
                 text = context.getString(R.string.widget_uptime, uptime),
                 style = TextStyle(
                     color = colors.textMuted,
-                    fontSize = 14.sp
+                    fontSize = 13.sp
                 ),
                 maxLines = 1
             )
@@ -459,7 +459,7 @@ fun WidgetContent() {
                     text = context.getString(R.string.widget_screen_time, screenTimeText),
                     style = TextStyle(
                         color = colors.textMuted,
-                        fontSize = 14.sp
+                        fontSize = 13.sp
                     ),
                     maxLines = 1
                 )
@@ -469,7 +469,7 @@ fun WidgetContent() {
                 text = context.getString(R.string.widget_updated, lastUpdated),
                 style = TextStyle(
                     color = colors.textMuted,
-                    fontSize = 14.sp
+                    fontSize = 13.sp
                 ),
                 maxLines = 1
             )
