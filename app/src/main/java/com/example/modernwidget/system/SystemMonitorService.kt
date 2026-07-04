@@ -155,18 +155,24 @@ class SystemMonitorService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     private fun startNotification() {
-        val channelId = "system_monitor_channel"
+        // IMPORTANCE_MIN keeps the mandatory foreground-service notification out of the
+        // status bar and collapsed at the bottom of the silent section. A channel's
+        // importance cannot be lowered after creation, so this is a NEW channel id and
+        // the old LOW-importance channel is deleted.
+        val channelId = "system_monitor_channel_min"
         val channelName = getString(R.string.monitor_channel_name)
-        
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            manager.deleteNotificationChannel("system_monitor_channel")
             val channel = NotificationChannel(
                 channelId,
                 channelName,
-                NotificationManager.IMPORTANCE_LOW
+                NotificationManager.IMPORTANCE_MIN
             ).apply {
                 description = getString(R.string.monitor_channel_description)
+                setShowBadge(false)
             }
-            val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             manager.createNotificationChannel(channel)
         }
 
@@ -174,8 +180,11 @@ class SystemMonitorService : Service() {
             .setContentTitle(getString(R.string.monitor_notification_title))
             .setContentText(getString(R.string.monitor_notification_text))
             .setSmallIcon(android.R.drawable.ic_menu_info_details)
-            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setPriority(NotificationCompat.PRIORITY_MIN)
             .setOngoing(true)
+            .setSilent(true)
+            .setShowWhen(false)
+            .setVisibility(NotificationCompat.VISIBILITY_SECRET)
             .build()
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
