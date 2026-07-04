@@ -255,6 +255,8 @@ class AppUsageRepositoryImpl @Inject constructor(
         val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
         val flags = PackageManager.MATCH_ALL
         context.packageManager.queryIntentActivities(intent, flags)
+            // Drops Settings' hidden FallbackHome (priority -1000) — it is not a real launcher.
+            .filter { it.priority >= 0 }
             .mapNotNull { it.activityInfo?.packageName }
             .toSet()
     } catch (_: Exception) {
