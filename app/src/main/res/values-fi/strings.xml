@@ -47,6 +47,12 @@
     <string name="notification_count_label">Ilmoitukset</string>
     <string name="boot_count_label">Käynnistykset</string>
     <string name="charge_count_label">Latauskerrat</string>
+    <string name="history_title">Historia</string>
+    <string name="history_log_section">Ilmoitusloki</string>
+    <string name="history_log_empty">Ilmoituksia ei ole vielä kirjattu. Kirjaus alkaa, kun ilmoitusten käyttöoikeus on myönnetty ja uusia ilmoituksia saapuu.</string>
+    <string name="history_open">Avaa historia</string>
+    <string name="history_today">Tänään</string>
+    <string name="history_yesterday">Eilen</string>
     <string name="most_opened_section">ENITEN AVAUKSIA TÄNÄÄN</string>
     <string name="cpu_load_row">Suoritinkuorma</string>
     <string name="storage_row">Tallennustila</string>

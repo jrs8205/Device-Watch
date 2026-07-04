@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
@@ -31,6 +32,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
@@ -111,6 +113,10 @@ fun SystemDashboardScreen(
     val selectedTab = DashboardTab.entries[safeTabIndex]
     val tabStateHolder = rememberSaveableStateHolder()
 
+    // Historia full-screen page, reached from the Overview usage-counters card.
+    var showHistory by rememberSaveable { mutableStateOf(false) }
+    BackHandler(enabled = showHistory) { showHistory = false }
+
     LaunchedEffect(Unit) {
         viewModel.refresh()
         viewModel.loadWidgetOpacity()
@@ -122,6 +128,11 @@ fun SystemDashboardScreen(
         } else {
             startSystemMonitorService()
         }
+    }
+
+    if (showHistory) {
+        HistoryPage(onBack = { showHistory = false })
+        return
     }
 
     Scaffold(
@@ -174,7 +185,8 @@ fun SystemDashboardScreen(
                     when (selectedTab) {
                         DashboardTab.Overview -> OverviewTab(
                             uiState = uiState,
-                            onRefresh = viewModel::refresh
+                            onRefresh = viewModel::refresh,
+                            onOpenHistory = { showHistory = true }
                         )
 
                         DashboardTab.Apps -> AppsTab(viewModel = appsViewModel)

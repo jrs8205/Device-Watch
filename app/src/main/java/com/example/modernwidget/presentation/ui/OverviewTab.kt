@@ -3,6 +3,7 @@ package com.example.modernwidget.presentation.ui
 import android.content.Intent
 import android.provider.Settings
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,6 +20,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -54,6 +56,7 @@ import com.example.modernwidget.presentation.DashboardUiState
 internal fun OverviewTab(
     uiState: DashboardUiState,
     onRefresh: () -> Unit,
+    onOpenHistory: () -> Unit,
 ) {
     val context = LocalContext.current
     val currentStats = uiState.stats ?: return
@@ -170,63 +173,77 @@ internal fun OverviewTab(
         }
 
         // Usage counters for the selected period, right under the battery so they
-        // are visible without scrolling to the bottom.
-        SettingsSectionCard(
-            titleRes = if (uiState.dataCounterMode == DataCounterMode.DAY) {
-                R.string.usage_counters_section
-            } else {
-                R.string.usage_counters_section_period
-            }
+        // are visible without scrolling to the bottom. The whole card opens the
+        // Historia page (62-day charts + notification log).
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(20.dp))
+                .clickable(onClick = onOpenHistory)
         ) {
-            DeviceInfoRow(
-                R.string.screen_time_total_label,
-                if (uiState.screenTimeMillis >= 0L) {
-                    durationText(context, uiState.screenTimeMillis)
+            SettingsSectionCard(
+                titleRes = if (uiState.dataCounterMode == DataCounterMode.DAY) {
+                    R.string.usage_counters_section
                 } else {
-                    UNAVAILABLE_TEXT
+                    R.string.usage_counters_section_period
                 }
-            )
-            if (uiState.unlockCountingSupported) {
-                DeviceInfoRow(R.string.unlock_count_label, countOrDashText(uiState.unlockCount))
-            }
-            if (uiState.notificationAccessEnabled) {
-                DeviceInfoRow(
-                    R.string.notification_count_label,
-                    countOrDashText(uiState.notificationCount)
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = stringResource(R.string.history_open),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.align(Alignment.End)
                 )
-            } else {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = stringResource(R.string.notification_count_label),
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.weight(1f)
+                DeviceInfoRow(
+                    R.string.screen_time_total_label,
+                    if (uiState.screenTimeMillis >= 0L) {
+                        durationText(context, uiState.screenTimeMillis)
+                    } else {
+                        UNAVAILABLE_TEXT
+                    }
+                )
+                if (uiState.unlockCountingSupported) {
+                    DeviceInfoRow(R.string.unlock_count_label, countOrDashText(uiState.unlockCount))
+                }
+                if (uiState.notificationAccessEnabled) {
+                    DeviceInfoRow(
+                        R.string.notification_count_label,
+                        countOrDashText(uiState.notificationCount)
                     )
-                    Text(
-                        text = UNAVAILABLE_TEXT,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium
-                    )
-                    TextButton(onClick = {
-                        try {
-                            context.startActivity(
-                                Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS).apply {
-                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                }
-                            )
-                        } catch (e: Exception) {
-                            e.printStackTrace()
+                } else {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = stringResource(R.string.notification_count_label),
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Text(
+                            text = UNAVAILABLE_TEXT,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                        TextButton(onClick = {
+                            try {
+                                context.startActivity(
+                                    Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS).apply {
+                                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                    }
+                                )
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                            }
+                        }) {
+                            Text(stringResource(R.string.notification_access_enable), fontSize = 12.sp)
                         }
-                    }) {
-                        Text(stringResource(R.string.notification_access_enable), fontSize = 12.sp)
                     }
                 }
+                DeviceInfoRow(R.string.boot_count_label, uiState.bootCount.toString())
+                DeviceInfoRow(R.string.charge_count_label, uiState.chargeCount.toString())
             }
-            DeviceInfoRow(R.string.boot_count_label, uiState.bootCount.toString())
-            DeviceInfoRow(R.string.charge_count_label, uiState.chargeCount.toString())
         }
 
         // Resources (RAM, CPU, storage) — widget parity for people without the widget
