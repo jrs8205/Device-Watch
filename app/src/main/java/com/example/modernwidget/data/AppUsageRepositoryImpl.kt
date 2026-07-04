@@ -54,16 +54,7 @@ class AppUsageRepositoryImpl @Inject constructor(
             val event = UsageEvents.Event()
             while (events.hasNextEvent()) {
                 events.getNextEvent(event)
-                // ACTIVITY_RESUMED/PAUSED share the numeric values of the legacy
-                // MOVE_TO_FOREGROUND/BACKGROUND constants, so one branch covers both eras.
-                val kind = when (event.eventType) {
-                    UsageEvents.Event.ACTIVITY_RESUMED -> UsageEventKind.RESUME
-                    UsageEvents.Event.ACTIVITY_PAUSED -> UsageEventKind.PAUSE
-                    else -> null
-                }
-                if (kind != null) {
-                    samples += UsageEventSample(event.packageName, kind, event.timeStamp)
-                }
+                usageEventSample(event)?.let { samples += it }
             }
         } catch (_: Exception) {
             return@withContext emptyList()
@@ -244,14 +235,10 @@ class AppUsageRepositoryImpl @Inject constructor(
             val event = UsageEvents.Event()
             while (events.hasNextEvent()) {
                 events.getNextEvent(event)
-                when (event.eventType) {
-                    UsageEvents.Event.ACTIVITY_RESUMED ->
-                        samples += UsageEventSample(event.packageName, UsageEventKind.RESUME, event.timeStamp)
-
-                    UsageEvents.Event.ACTIVITY_PAUSED ->
-                        samples += UsageEventSample(event.packageName, UsageEventKind.PAUSE, event.timeStamp)
-
-                    UsageEvents.Event.KEYGUARD_HIDDEN -> unlockCount++
+                if (event.eventType == UsageEvents.Event.KEYGUARD_HIDDEN) {
+                    unlockCount++
+                } else {
+                    usageEventSample(event)?.let { samples += it }
                 }
             }
         } catch (_: Exception) {
@@ -261,6 +248,32 @@ class AppUsageRepositoryImpl @Inject constructor(
         val screenTimeMillis = UsageEventAggregator.aggregateForegroundTime(samples, end)
             .values.sumOf { it.foregroundMillis }
         UsageTotals(screenTimeMillis, unlockCount)
+    }
+
+    /**
+     * ACTIVITY_RESUMED/PAUSED share the numeric values of the legacy
+     * MOVE_TO_FOREGROUND/BACKGROUND constants, so one branch covers both eras.
+     * ACTIVITY_STOPPED also maps to CLOSE: some devices (Pixel 10 Pro) skip the
+     * PAUSED event and only emit STOPPED, which used to leave sessions open and
+     * inflate daily screen time absurdly. SCREEN_NON_INTERACTIVE closes everything.
+     */
+    private fun usageEventSample(event: UsageEvents.Event): UsageEventSample? {
+        val kind = when (event.eventType) {
+            UsageEvents.Event.ACTIVITY_RESUMED -> UsageEventKind.RESUME
+
+            UsageEvents.Event.ACTIVITY_PAUSED,
+            UsageEvents.Event.ACTIVITY_STOPPED -> UsageEventKind.CLOSE
+
+            UsageEvents.Event.SCREEN_NON_INTERACTIVE -> UsageEventKind.SCREEN_OFF
+
+            else -> return null
+        }
+        return UsageEventSample(
+            packageName = event.packageName ?: "",
+            kind = kind,
+            timeMillis = event.timeStamp,
+            className = event.className ?: "",
+        )
     }
 
     private fun usageStatsManager(): UsageStatsManager? =

@@ -5,13 +5,19 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 
-/** Platform-free projection of a usage event: what happened to which package and when. */
-enum class UsageEventKind { RESUME, PAUSE }
+/**
+ * Platform-free projection of a usage event. CLOSE covers both ACTIVITY_PAUSED and
+ * ACTIVITY_STOPPED — some devices (e.g. Pixel 10 Pro) skip the PAUSED event for a
+ * quarter of resumes and only emit STOPPED, which left sessions open forever and
+ * inflated daily screen time past 60 hours. SCREEN_OFF closes everything at once.
+ */
+enum class UsageEventKind { RESUME, CLOSE, SCREEN_OFF }
 
 data class UsageEventSample(
     val packageName: String,
     val kind: UsageEventKind,
     val timeMillis: Long,
+    val className: String = "",
 )
 
 /** Aggregated per-package result over the queried window. */
@@ -39,48 +45,61 @@ enum class LastUsedTier { NORMAL, AGING, STALE }
 object UsageEventAggregator {
 
     /**
-     * Folds a window of RESUME/PAUSE events into per-package foreground time,
-     * launch count and last-use time.
+     * Folds a window of RESUME/CLOSE/SCREEN_OFF events into per-package foreground
+     * time, launch count and last-use time.
      *
-     * Sessions are tracked with an open-activity counter per package, because an
-     * in-app activity switch fires RESUME(new) before PAUSE(old): the counter goes
-     * 1→2→1 and the session stays open, so switching screens inside an app is not
-     * a new "launch". A launch is only the 0→1 transition. A PAUSE with no open
-     * session means the app was already foregrounded when the window started; the
-     * pre-window sliver is deliberately dropped. A session still open at the end
-     * of the window is cut at [windowEndMillis].
+     * Sessions are tracked with a per-package SET of open activity class names —
+     * not a counter — because devices emit both PAUSED and STOPPED for the same
+     * activity (a counter would double-decrement), and some devices skip PAUSED
+     * entirely (a counter would leave the session open forever and inflate daily
+     * screen time past 60 hours, as seen on a Pixel 10 Pro). An in-app activity
+     * switch (RESUME new before CLOSE old) keeps the session open; a launch is
+     * only the empty→non-empty transition. SCREEN_OFF force-closes every open
+     * session. A CLOSE for an unknown activity is ignored (session began before
+     * the window; the pre-window sliver is deliberately dropped). A session still
+     * open at the end of the window is cut at [windowEndMillis].
      */
     fun aggregateForegroundTime(
         events: List<UsageEventSample>,
         windowEndMillis: Long,
     ): Map<String, PackageUsage> {
         class State {
-            var openCount = 0
+            val openClasses = mutableSetOf<String>()
             var sessionStartMillis = 0L
             var foregroundMillis = 0L
             var launchCount = 0
             var lastUsedMillis = 0L
+
+            fun closeSession(timeMillis: Long) {
+                foregroundMillis += (timeMillis - sessionStartMillis).coerceAtLeast(0)
+                lastUsedMillis = timeMillis
+                openClasses.clear()
+            }
         }
 
         val states = mutableMapOf<String, State>()
         for (event in events.sortedBy { it.timeMillis }) {
-            val state = states.getOrPut(event.packageName) { State() }
             when (event.kind) {
                 UsageEventKind.RESUME -> {
-                    if (state.openCount == 0) {
+                    val state = states.getOrPut(event.packageName) { State() }
+                    if (state.openClasses.isEmpty()) {
                         state.sessionStartMillis = event.timeMillis
                         state.launchCount++
                     }
-                    state.openCount++
+                    state.openClasses.add(event.className)
                 }
 
-                UsageEventKind.PAUSE -> {
-                    if (state.openCount > 0) {
-                        state.openCount--
-                        if (state.openCount == 0) {
-                            state.foregroundMillis +=
-                                (event.timeMillis - state.sessionStartMillis).coerceAtLeast(0)
-                            state.lastUsedMillis = event.timeMillis
+                UsageEventKind.CLOSE -> {
+                    val state = states[event.packageName] ?: continue
+                    if (state.openClasses.remove(event.className) && state.openClasses.isEmpty()) {
+                        state.closeSession(event.timeMillis)
+                    }
+                }
+
+                UsageEventKind.SCREEN_OFF -> {
+                    for (state in states.values) {
+                        if (state.openClasses.isNotEmpty()) {
+                            state.closeSession(event.timeMillis)
                         }
                     }
                 }
@@ -92,7 +111,7 @@ object UsageEventAggregator {
             .mapValues { (_, state) ->
                 var foreground = state.foregroundMillis
                 var lastUsed = state.lastUsedMillis
-                if (state.openCount > 0) {
+                if (state.openClasses.isNotEmpty()) {
                     foreground += (windowEndMillis - state.sessionStartMillis).coerceAtLeast(0)
                     lastUsed = windowEndMillis
                 }

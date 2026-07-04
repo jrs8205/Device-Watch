@@ -8,8 +8,13 @@ import java.time.ZoneOffset
 
 class UsageEventAggregatorTest {
 
-    private fun resume(pkg: String, t: Long) = UsageEventSample(pkg, UsageEventKind.RESUME, t)
-    private fun pause(pkg: String, t: Long) = UsageEventSample(pkg, UsageEventKind.PAUSE, t)
+    private fun resume(pkg: String, t: Long, cls: String = "c1") =
+        UsageEventSample(pkg, UsageEventKind.RESUME, t, cls)
+
+    private fun close(pkg: String, t: Long, cls: String = "c1") =
+        UsageEventSample(pkg, UsageEventKind.CLOSE, t, cls)
+
+    private fun screenOff(t: Long) = UsageEventSample("", UsageEventKind.SCREEN_OFF, t)
 
     private fun screenTime(pkg: String, millis: Long) =
         AppScreenTime(pkg, pkg, millis, launchCount = 1, lastUsedMillis = 0L)
@@ -22,7 +27,7 @@ class UsageEventAggregatorTest {
     @Test
     fun `given a simple session, when aggregating, then time launch and last use are recorded`() {
         val usage = UsageEventAggregator.aggregateForegroundTime(
-            listOf(resume("a", 1_000), pause("a", 4_000)),
+            listOf(resume("a", 1_000), close("a", 4_000)),
             windowEndMillis = 10_000,
         )
 
@@ -31,9 +36,14 @@ class UsageEventAggregatorTest {
 
     @Test
     fun `given an in-app activity switch, when aggregating, then still one session and one launch`() {
-        // Activity B resumes before activity A pauses inside the same app.
+        // Activity c2 resumes before activity c1 pauses inside the same app.
         val usage = UsageEventAggregator.aggregateForegroundTime(
-            listOf(resume("a", 1_000), resume("a", 2_000), pause("a", 2_100), pause("a", 5_000)),
+            listOf(
+                resume("a", 1_000, "c1"),
+                resume("a", 2_000, "c2"),
+                close("a", 2_100, "c1"),
+                close("a", 5_000, "c2"),
+            ),
             windowEndMillis = 10_000,
         )
 
@@ -44,9 +54,9 @@ class UsageEventAggregatorTest {
     fun `given interleaved apps, when aggregating, then totals are independent`() {
         val usage = UsageEventAggregator.aggregateForegroundTime(
             listOf(
-                resume("a", 1_000), pause("a", 2_000),
-                resume("b", 2_000), pause("b", 5_000),
-                resume("a", 6_000), pause("a", 7_000),
+                resume("a", 1_000), close("a", 2_000),
+                resume("b", 2_000), close("b", 5_000),
+                resume("a", 6_000), close("a", 7_000),
             ),
             windowEndMillis = 10_000,
         )
@@ -66,9 +76,9 @@ class UsageEventAggregatorTest {
     }
 
     @Test
-    fun `given a pause without a prior resume, when aggregating, then it is ignored`() {
+    fun `given a close without a prior resume, when aggregating, then it is ignored`() {
         val usage = UsageEventAggregator.aggregateForegroundTime(
-            listOf(pause("a", 3_000)),
+            listOf(close("a", 3_000)),
             windowEndMillis = 10_000,
         )
 
@@ -78,11 +88,55 @@ class UsageEventAggregatorTest {
     @Test
     fun `given unsorted events, when aggregating, then they are ordered by time first`() {
         val usage = UsageEventAggregator.aggregateForegroundTime(
-            listOf(pause("a", 4_000), resume("a", 1_000)),
+            listOf(close("a", 4_000), resume("a", 1_000)),
             windowEndMillis = 10_000,
         )
 
         assertThat(usage["a"]).isEqualTo(PackageUsage(3_000, 1, 4_000))
+    }
+
+    @Test
+    fun `given pause and stop of one activity while another is open, then the session stays open`() {
+        // The same activity emits both PAUSED and STOPPED; the duplicate close must
+        // not end the session while another activity of the app is still resumed.
+        val usage = UsageEventAggregator.aggregateForegroundTime(
+            listOf(
+                resume("a", 1_000, "c1"),
+                resume("a", 1_500, "c2"),
+                close("a", 2_000, "c1"),
+                close("a", 2_100, "c1"),
+                close("a", 5_000, "c2"),
+            ),
+            windowEndMillis = 10_000,
+        )
+
+        assertThat(usage["a"]).isEqualTo(PackageUsage(4_000, 1, 5_000))
+    }
+
+    @Test
+    fun `given only a stop event, when aggregating, then the session still closes`() {
+        // Some devices skip ACTIVITY_PAUSED entirely and only emit STOPPED.
+        val usage = UsageEventAggregator.aggregateForegroundTime(
+            listOf(resume("a", 1_000, "c1"), close("a", 3_000, "c1")),
+            windowEndMillis = 10_000,
+        )
+
+        assertThat(usage["a"]).isEqualTo(PackageUsage(2_000, 1, 3_000))
+    }
+
+    @Test
+    fun `given a screen-off event, when aggregating, then every open session closes`() {
+        val usage = UsageEventAggregator.aggregateForegroundTime(
+            listOf(
+                resume("a", 1_000, "c1"),
+                screenOff(3_000),
+                resume("a", 5_000, "c1"),
+                close("a", 6_000, "c1"),
+            ),
+            windowEndMillis = 10_000,
+        )
+
+        assertThat(usage["a"]).isEqualTo(PackageUsage(3_000, 2, 6_000))
     }
 
     // --- donutSegments ---
