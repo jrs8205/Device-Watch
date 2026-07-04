@@ -185,6 +185,16 @@ object UsageEventAggregator {
             .sortedByDescending { it.launchCount }
             .take(topN)
 
+    /**
+     * Drops home-screen launchers from usage rankings: every trip to the home screen
+     * counts as a launcher "launch", which otherwise dominates the donut and the
+     * most-opened list (Digital Wellbeing hides launchers the same way).
+     */
+    fun excludeLaunchers(
+        screenTimes: List<AppScreenTime>,
+        launcherPackages: Set<String>,
+    ): List<AppScreenTime> = screenTimes.filterNot { it.packageName in launcherPackages }
+
     /** Google hibernates unused apps after roughly three months. */
     private const val STALE_DAYS = 90
     private const val AGING_DAYS = 30

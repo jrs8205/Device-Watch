@@ -8,6 +8,7 @@ import android.app.usage.UsageStatsManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ApplicationInfo
+import android.content.pm.PackageManager
 import android.net.ConnectivityManager
 import android.os.Build
 import android.os.Process
@@ -248,6 +249,16 @@ class AppUsageRepositoryImpl @Inject constructor(
         val screenTimeMillis = UsageEventAggregator.aggregateForegroundTime(samples, end)
             .values.sumOf { it.foregroundMillis }
         UsageTotals(screenTimeMillis, unlockCount)
+    }
+
+    override fun launcherPackages(): Set<String> = try {
+        val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
+        val flags = PackageManager.MATCH_ALL
+        context.packageManager.queryIntentActivities(intent, flags)
+            .mapNotNull { it.activityInfo?.packageName }
+            .toSet()
+    } catch (_: Exception) {
+        emptySet()
     }
 
     /**

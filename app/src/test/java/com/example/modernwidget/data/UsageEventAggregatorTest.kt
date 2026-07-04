@@ -272,4 +272,22 @@ class UsageEventAggregatorTest {
 
         assertThat(top.map { it.packageName }).containsExactly("b")
     }
+
+    // --- excludeLaunchers ---
+
+    @Test
+    fun `excludeLaunchers drops launcher rows and keeps everything else`() {
+        val times = listOf(
+            AppScreenTime("com.sec.android.app.launcher", "One UI Home", 5_000L, 99, 1L),
+            AppScreenTime("com.whatsapp", "WhatsApp", 9_000L, 3, 2L),
+        )
+        val filtered = UsageEventAggregator.excludeLaunchers(times, setOf("com.sec.android.app.launcher"))
+        assertThat(filtered.map { it.packageName }).containsExactly("com.whatsapp")
+    }
+
+    @Test
+    fun `excludeLaunchers with empty set is a no-op`() {
+        val times = listOf(AppScreenTime("a", "A", 1L, 1, 1L))
+        assertThat(UsageEventAggregator.excludeLaunchers(times, emptySet())).isEqualTo(times)
+    }
 }

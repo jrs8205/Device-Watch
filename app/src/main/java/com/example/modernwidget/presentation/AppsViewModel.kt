@@ -70,7 +70,10 @@ class AppsViewModel @Inject constructor(
             }
 
             val oldestFirst = settings.appsOldestFirst()
-            val screenTimes = appUsageRepository.screenTimeToday()
+            val launchers = appUsageRepository.launcherPackages()
+            val screenTimes = UsageEventAggregator.excludeLaunchers(
+                appUsageRepository.screenTimeToday(), launchers
+            )
             val dataConsumers = appUsageRepository.dataConsumersToday()
             val apps = UsageEventAggregator.sortByLastUse(
                 appUsageRepository.launchableAppsByLastUse(), oldestFirst

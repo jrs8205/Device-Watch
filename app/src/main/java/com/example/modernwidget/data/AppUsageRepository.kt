@@ -42,4 +42,7 @@ interface AppUsageRepository {
 
     /** Precise totals since local midnight in one event pass; null without access. */
     suspend fun usageTotalsToday(): UsageTotals?
+
+    /** Packages that handle the HOME intent; used to keep launchers out of usage rankings. */
+    fun launcherPackages(): Set<String>
 }

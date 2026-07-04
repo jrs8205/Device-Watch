@@ -47,6 +47,7 @@ internal class FakeAppUsageRepository(
     var unlocksByDay: Map<LocalDate, Int> = emptyMap(),
     var screenByDay: Map<LocalDate, Long> = emptyMap(),
     var totalsToday: UsageTotals? = null,
+    var launchers: Set<String> = emptySet(),
 ) : AppUsageRepository {
     override fun hasUsageAccess(): Boolean = hasAccess
 
@@ -69,6 +70,8 @@ internal class FakeAppUsageRepository(
 
     override suspend fun usageTotalsToday(): UsageTotals? =
         if (hasAccess) totalsToday else null
+
+    override fun launcherPackages(): Set<String> = launchers
 }
 
 internal class FakeNotificationStats(

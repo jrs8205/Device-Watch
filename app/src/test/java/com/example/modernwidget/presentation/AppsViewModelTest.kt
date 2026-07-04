@@ -74,6 +74,32 @@ class AppsViewModelTest {
         }
 
     @Test
+    fun `given a launcher package, when refreshing, then it is excluded from screen times and donut`() =
+        runTest(dispatcher) {
+            // Given
+            val repository = FakeAppUsageRepository(
+                screenTimes = listOf(
+                    screenTime("com.sec.android.app.launcher", 9_000, launches = 47),
+                    screenTime("com.whatsapp", 3_000, launches = 5),
+                ),
+                launchers = setOf("com.sec.android.app.launcher"),
+            )
+            val viewModel = AppsViewModel(
+                repository, FakeAppSettingsRepository(), FakeNotificationStats()
+            )
+
+            // When
+            viewModel.refresh()
+            advanceUntilIdle()
+
+            // Then
+            val state = viewModel.uiState.value
+            assertThat(state.screenTimes.map { it.packageName }).containsExactly("com.whatsapp")
+            assertThat(state.totalScreenTimeMillis).isEqualTo(3_000)
+            assertThat(state.screenTimeSegments.map { it.packageName }).containsExactly("com.whatsapp")
+        }
+
+    @Test
     fun `given no usage access, when refreshing, then empty state is exposed`() =
         runTest(dispatcher) {
             // Given
