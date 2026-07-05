@@ -117,6 +117,10 @@ fun SystemDashboardScreen(
     var showHistory by rememberSaveable { mutableStateOf(false) }
     BackHandler(enabled = showHistory) { showHistory = false }
 
+    // "Since charge" full-screen page, reached from the Overview battery card.
+    var showSinceCharge by rememberSaveable { mutableStateOf(false) }
+    BackHandler(enabled = showSinceCharge) { showSinceCharge = false }
+
     LaunchedEffect(Unit) {
         viewModel.refresh()
         viewModel.loadWidgetOpacity()
@@ -132,6 +136,11 @@ fun SystemDashboardScreen(
 
     if (showHistory) {
         HistoryPage(onBack = { showHistory = false })
+        return
+    }
+
+    if (showSinceCharge) {
+        SinceChargePage(onBack = { showSinceCharge = false })
         return
     }
 
@@ -186,7 +195,8 @@ fun SystemDashboardScreen(
                         DashboardTab.Overview -> OverviewTab(
                             uiState = uiState,
                             onRefresh = viewModel::refresh,
-                            onOpenHistory = { showHistory = true }
+                            onOpenHistory = { showHistory = true },
+                            onOpenSinceCharge = { showSinceCharge = true }
                         )
 
                         DashboardTab.Apps -> AppsTab(viewModel = appsViewModel)

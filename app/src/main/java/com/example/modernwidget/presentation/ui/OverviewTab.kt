@@ -57,6 +57,7 @@ internal fun OverviewTab(
     uiState: DashboardUiState,
     onRefresh: () -> Unit,
     onOpenHistory: () -> Unit,
+    onOpenSinceCharge: () -> Unit,
 ) {
     val context = LocalContext.current
     val currentStats = uiState.stats ?: return
@@ -104,11 +105,30 @@ internal fun OverviewTab(
             }
         }
 
-        // Battery section
+        // Battery section — the whole card opens the "since charge" page.
         SettingsSectionCard(
             titleRes = R.string.battery_status_section,
+            modifier = Modifier
+                .clip(RoundedCornerShape(20.dp))
+                .clickable(onClick = onOpenSinceCharge),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.align(Alignment.End)
+            ) {
+                Text(
+                    text = stringResource(R.string.since_charge_title),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = stringResource(R.string.since_charge_open),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
             Spacer(modifier = Modifier.height(4.dp))
 
             Box(

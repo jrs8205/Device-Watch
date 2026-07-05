@@ -20,6 +20,7 @@ The default app language is English. Finnish users get a localized app name and 
 - The app keeps its own 62-day daily history for these counters (Android has no retroactive API): unlocks and screen time are backfilled from the ~7 days Android remembers, restarts are derived from BOOT_COUNT deltas (immune to Android re-delivering BOOT_COMPLETED after app updates), and notification/charging tallies accumulate from install onward
 - On-device notification log with app name, timestamp, title, and text; 7-day retention; tapping an entry opens the app that posted it (when still installed)
 - History page (opened from the usage card) listing exact daily values for the retained 62 days — screen time, unlocks, notifications, device restarts, and charging sessions; each metric states since when it has been collected, and the page refreshes itself while open
+- Since-charge page (opened from the battery card): the period since the battery was last charged full — or since the charger was unplugged, when charging stopped short of full — with elapsed time, battery drop and average drain, unlocks, notifications, Wi-Fi/mobile data, and a per-app screen-time donut over that window (Android does not expose real per-app battery percentages to third-party apps, so the page shows honest usage numbers instead)
 - Today's screen time also appears in the widget footer, refreshed at most once a minute so the 5-second widget loop stays untouched
 - Most-opened-today list on the Apps tab, and last-opened rows show the clock time for apps used today (following the system 12/24-hour setting) with two-tier staleness colors: amber after 1 month unused, red after 3 months (Google's app-hibernation threshold) or never used
 - Special-access buttons show a green/red status dot for granted/missing access
@@ -164,6 +165,9 @@ app/src/main/java/com/example/modernwidget/
     AppUsage.kt
     AppUsageRepository.kt
     AppUsageRepositoryImpl.kt
+    BatteryStatusReader.kt
+    ChargeAnchor.kt
+    ChargeAnchorStoreImpl.kt
     DataPeriod.kt
     NotificationCounting.kt
     NotificationLog.kt
@@ -185,6 +189,7 @@ app/src/main/java/com/example/modernwidget/
     AppsViewModel.kt
     DashboardViewModel.kt
     HistoryViewModel.kt
+    SinceChargeViewModel.kt
     ui/
       AppDetailSheet.kt
       AppsTab.kt
@@ -196,6 +201,7 @@ app/src/main/java/com/example/modernwidget/
       OverviewTab.kt
       ScreenTimeDonut.kt
       SettingsTab.kt
+      SinceChargePage.kt
   system/
     BatteryFullNotifier.kt
     DreamPreferences.kt
@@ -210,6 +216,7 @@ app/src/main/java/com/example/modernwidget/
     WidgetStateUpdater.kt
 
 app/src/test/java/com/example/modernwidget/
+  data/ChargeAnchorLogicTest.kt
   data/DataPeriodCalculatorTest.kt
   data/NotificationCountingTest.kt
   data/NotificationLogCodecTest.kt
@@ -221,6 +228,7 @@ app/src/test/java/com/example/modernwidget/
   presentation/DashboardViewModelTest.kt
   presentation/Fakes.kt
   presentation/HistoryViewModelTest.kt
+  presentation/SinceChargeViewModelTest.kt
   presentation/ui/HistoryListLogicTest.kt
   system/ClockFitTest.kt
   system/DreamLogicTest.kt
