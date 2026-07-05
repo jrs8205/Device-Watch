@@ -48,14 +48,24 @@ internal class FakeAppUsageRepository(
     var screenByDay: Map<LocalDate, Long> = emptyMap(),
     var totalsToday: UsageTotals? = null,
     var launchers: Set<String> = emptySet(),
+    var unlocksSince: Int? = 0,
 ) : AppUsageRepository {
     override fun hasUsageAccess(): Boolean = hasAccess
 
     override suspend fun screenTimeToday(): List<AppScreenTime> =
         if (hasAccess) screenTimes else emptyList()
 
+    override suspend fun screenTimeSince(startMillis: Long): List<AppScreenTime> =
+        if (hasAccess) screenTimes else emptyList()
+
     override suspend fun dataConsumersToday(): List<AppDataUsage> =
         if (hasAccess) dataConsumers else emptyList()
+
+    override suspend fun dataConsumersSince(startMillis: Long): List<AppDataUsage> =
+        if (hasAccess) dataConsumers else emptyList()
+
+    override suspend fun unlockCountSince(startMillis: Long): Int? =
+        if (hasAccess && supportsUnlocks) unlocksSince else null
 
     override suspend fun launchableAppsByLastUse(): List<LaunchableApp> =
         if (hasAccess) apps else emptyList()

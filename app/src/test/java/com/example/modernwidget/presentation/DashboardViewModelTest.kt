@@ -3,6 +3,7 @@ package com.example.modernwidget.presentation
 import com.example.modernwidget.data.AppSettingsRepository
 import com.example.modernwidget.data.AppUsageRepository
 import com.example.modernwidget.data.DataCounterMode
+import com.example.modernwidget.data.DataUsageSince
 import com.example.modernwidget.data.DeviceInfo
 import com.example.modernwidget.data.NotificationStats
 import com.example.modernwidget.data.SystemStats
@@ -294,6 +295,9 @@ private class FakeSystemStatsRepository(private val stats: SystemStats) : System
     }
 
     override suspend fun getDeviceInfo(): DeviceInfo = sampleDeviceInfo()
+
+    override suspend fun dataUsedSince(startMillis: Long): DataUsageSince =
+        DataUsageSince(wifiGb = 0.0, mobileGb = 0.0)
 }
 
 private fun sampleDeviceInfo(): DeviceInfo = DeviceInfo(

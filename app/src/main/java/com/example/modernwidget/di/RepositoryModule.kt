@@ -4,6 +4,10 @@ import com.example.modernwidget.data.AppSettingsRepository
 import com.example.modernwidget.data.AppSettingsRepositoryImpl
 import com.example.modernwidget.data.AppUsageRepository
 import com.example.modernwidget.data.AppUsageRepositoryImpl
+import com.example.modernwidget.data.BatteryStatusReader
+import com.example.modernwidget.data.BatteryStatusReaderImpl
+import com.example.modernwidget.data.ChargeAnchorStore
+import com.example.modernwidget.data.ChargeAnchorStoreImpl
 import com.example.modernwidget.data.NotificationLog
 import com.example.modernwidget.data.NotificationLogImpl
 import com.example.modernwidget.data.NotificationStats
@@ -51,4 +55,12 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindNotificationLog(impl: NotificationLogImpl): NotificationLog
+
+    @Binds
+    @Singleton
+    abstract fun bindChargeAnchorStore(impl: ChargeAnchorStoreImpl): ChargeAnchorStore
+
+    @Binds
+    @Singleton
+    abstract fun bindBatteryStatusReader(impl: BatteryStatusReaderImpl): BatteryStatusReader
 }

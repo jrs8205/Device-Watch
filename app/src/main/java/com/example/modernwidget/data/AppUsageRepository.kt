@@ -17,8 +17,17 @@ interface AppUsageRepository {
     /** Per-app foreground time, launch count and last use since local midnight. */
     suspend fun screenTimeToday(): List<AppScreenTime>
 
+    /** Per-app foreground time, launch count and last use since [startMillis]. */
+    suspend fun screenTimeSince(startMillis: Long): List<AppScreenTime>
+
     /** Per-UID Wi-Fi + (metered) mobile bytes since local midnight, largest first. */
     suspend fun dataConsumersToday(): List<AppDataUsage>
+
+    /** Per-UID Wi-Fi + (metered) mobile bytes since [startMillis], largest first. */
+    suspend fun dataConsumersSince(startMillis: Long): List<AppDataUsage>
+
+    /** Unlock (keyguard-hidden) count since [startMillis]; null without support or access. */
+    suspend fun unlockCountSince(startMillis: Long): Int?
 
     /** All launcher-visible apps with their last-used time over a ~2 year range. */
     suspend fun launchableAppsByLastUse(): List<LaunchableApp>

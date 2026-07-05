@@ -13,7 +13,10 @@ import android.os.IBinder
 import android.os.SystemClock
 import androidx.core.app.NotificationCompat
 import com.example.modernwidget.R
+import android.os.BatteryManager
 import com.example.modernwidget.data.AppUsageRepository
+import com.example.modernwidget.data.ChargeAnchorLogic
+import com.example.modernwidget.data.ChargeAnchorStore
 import com.example.modernwidget.data.SystemStatsRepository
 import com.example.modernwidget.data.UsageHistory
 import com.example.modernwidget.presentation.ui.durationText
@@ -36,8 +39,12 @@ class SystemMonitorService : Service() {
     @Inject lateinit var repository: SystemStatsRepository
     @Inject lateinit var appUsageRepository: AppUsageRepository
     @Inject lateinit var usageHistory: UsageHistory
+    @Inject lateinit var chargeAnchorStore: ChargeAnchorStore
 
     private var lastUsageRefreshMs = 0L
+
+    /** Latest level from BATTERY_CHANGED; POWER_DISCONNECTED carries no battery extras. */
+    @Volatile private var lastBatteryLevel = -1
 
     private val serviceJob = SupervisorJob()
     private val serviceScope = CoroutineScope(serviceJob + Dispatchers.Default)
@@ -201,11 +208,41 @@ class SystemMonitorService : Service() {
     private fun registerBatteryTracker() {
         batteryReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent) {
-                // Charger-connection tally lives here because this runtime receiver is
-                // reliable; manifest-registered POWER_CONNECTED is an implicit broadcast
-                // that modern Android does not deliver.
-                if (intent.action == Intent.ACTION_POWER_CONNECTED) {
-                    usageHistory.incrementCharge(LocalDate.now())
+                // Charger-connection tally and the "since charge" anchor live here
+                // because this runtime receiver is reliable; manifest-registered
+                // POWER_CONNECTED is an implicit broadcast that modern Android does
+                // not deliver.
+                when (intent.action) {
+                    Intent.ACTION_BATTERY_CHANGED -> {
+                        val level = batteryPercent(intent)
+                        if (level >= 0) lastBatteryLevel = level
+                        val plugged = intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0) != 0
+                        val status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1)
+                        chargeAnchorStore.save(
+                            ChargeAnchorLogic.onBatteryChanged(
+                                chargeAnchorStore.load(),
+                                level = level.coerceAtLeast(0),
+                                isPlugged = plugged,
+                                isFull = status == BatteryManager.BATTERY_STATUS_FULL || level >= 100,
+                                nowMillis = System.currentTimeMillis(),
+                            )
+                        )
+                    }
+                    Intent.ACTION_POWER_CONNECTED -> {
+                        usageHistory.incrementCharge(LocalDate.now())
+                        chargeAnchorStore.save(
+                            ChargeAnchorLogic.onPowerConnected(chargeAnchorStore.load())
+                        )
+                    }
+                    Intent.ACTION_POWER_DISCONNECTED -> {
+                        chargeAnchorStore.save(
+                            ChargeAnchorLogic.onPowerDisconnected(
+                                chargeAnchorStore.load(),
+                                level = lastBatteryLevel.coerceAtLeast(0),
+                                nowMillis = System.currentTimeMillis(),
+                            )
+                        )
+                    }
                 }
                 serviceScope.launch {
                     updateWidgetStats(context)
@@ -229,6 +266,13 @@ class SystemMonitorService : Service() {
         } catch (e: Exception) {
             e.printStackTrace()
         }
+    }
+
+    private fun batteryPercent(intent: Intent): Int {
+        val level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
+        val scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1)
+        if (level < 0 || scale <= 0) return -1
+        return level * 100 / scale
     }
 
     companion object {

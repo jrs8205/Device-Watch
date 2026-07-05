@@ -43,14 +43,17 @@ class AppUsageRepositoryImpl @Inject constructor(
         return mode == AppOpsManager.MODE_ALLOWED
     }
 
-    override suspend fun screenTimeToday(): List<AppScreenTime> = withContext(dispatcher) {
+    override suspend fun screenTimeToday(): List<AppScreenTime> =
+        screenTimeSince(startOfTodayMillis())
+
+    override suspend fun screenTimeSince(startMillis: Long): List<AppScreenTime> = withContext(dispatcher) {
         if (!hasUsageAccess()) return@withContext emptyList()
         val usageStatsManager = usageStatsManager() ?: return@withContext emptyList()
         val end = System.currentTimeMillis()
 
         val samples = mutableListOf<UsageEventSample>()
         try {
-            val events = usageStatsManager.queryEvents(startOfTodayMillis(), end)
+            val events = usageStatsManager.queryEvents(startMillis, end)
                 ?: return@withContext emptyList()
             val event = UsageEvents.Event()
             while (events.hasNextEvent()) {
@@ -74,12 +77,15 @@ class AppUsageRepositoryImpl @Inject constructor(
             .sortedByDescending { it.foregroundMillis }
     }
 
+    override suspend fun dataConsumersToday(): List<AppDataUsage> =
+        dataConsumersSince(startOfTodayMillis())
+
     @Suppress("DEPRECATION") // querySummary(networkType, ...) is the public per-UID API
-    override suspend fun dataConsumersToday(): List<AppDataUsage> = withContext(dispatcher) {
+    override suspend fun dataConsumersSince(startMillis: Long): List<AppDataUsage> = withContext(dispatcher) {
         if (!hasUsageAccess()) return@withContext emptyList()
         val statsManager = context.getSystemService(NetworkStatsManager::class.java)
             ?: return@withContext emptyList()
-        val start = startOfTodayMillis()
+        val start = startMillis
         val end = System.currentTimeMillis()
 
         val bytesByUid = mutableMapOf<Int, Long>()
@@ -171,6 +177,24 @@ class AppUsageRepositoryImpl @Inject constructor(
 
     override fun supportsUnlockCounting(): Boolean =
         Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
+
+    override suspend fun unlockCountSince(startMillis: Long): Int? = withContext(dispatcher) {
+        if (!supportsUnlockCounting() || !hasUsageAccess()) return@withContext null
+        val usageStatsManager = usageStatsManager() ?: return@withContext null
+        var count = 0
+        try {
+            val events = usageStatsManager.queryEvents(startMillis, System.currentTimeMillis())
+                ?: return@withContext null
+            val event = UsageEvents.Event()
+            while (events.hasNextEvent()) {
+                events.getNextEvent(event)
+                if (event.eventType == UsageEvents.Event.KEYGUARD_HIDDEN) count++
+            }
+        } catch (_: Exception) {
+            return@withContext null
+        }
+        count
+    }
 
     override suspend fun unlockCountsByDay(days: Int): Map<LocalDate, Int> = withContext(dispatcher) {
         if (!supportsUnlockCounting() || !hasUsageAccess()) return@withContext emptyMap()

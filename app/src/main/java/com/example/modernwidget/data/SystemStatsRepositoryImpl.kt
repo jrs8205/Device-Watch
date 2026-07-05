@@ -86,6 +86,13 @@ class SystemStatsRepositoryImpl @Inject constructor(
         computeDeviceInfo()
     }
 
+    override suspend fun dataUsedSince(startMillis: Long): DataUsageSince = withContext(dispatcher) {
+        DataUsageSince(
+            wifiGb = readNetworkUsageGb(ConnectivityManager.TYPE_WIFI, startMillis),
+            mobileGb = readNetworkUsageGb(ConnectivityManager.TYPE_MOBILE, startMillis),
+        )
+    }
+
     @Suppress("DEPRECATION") // Display.getRealMetrics/isHdr are the broadest cross-version reads
     private fun computeDeviceInfo(): DeviceInfo {
         val manufacturer = Build.MANUFACTURER
