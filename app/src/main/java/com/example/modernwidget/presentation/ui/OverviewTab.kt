@@ -174,7 +174,7 @@ internal fun OverviewTab(
 
         // Usage counters for the selected period, right under the battery so they
         // are visible without scrolling to the bottom. The whole card opens the
-        // Historia page (62-day charts + notification log).
+        // Historia page (daily history values + notification log).
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -188,12 +188,22 @@ internal fun OverviewTab(
                     R.string.usage_counters_section_period
                 }
             ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                    contentDescription = stringResource(R.string.history_open),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.align(Alignment.End)
-                )
+                ) {
+                    Text(
+                        text = stringResource(R.string.history_title),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                        contentDescription = stringResource(R.string.history_open),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
                 DeviceInfoRow(
                     R.string.screen_time_total_label,
                     if (uiState.screenTimeMillis >= 0L) {

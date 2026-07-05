@@ -48,7 +48,9 @@ class HistoryViewModel @Inject constructor(
 
     fun load() {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true) }
+            // Loading is only surfaced on the very first load; later calls are
+            // silent refreshes so the open page never flashes its empty states.
+            _uiState.update { it.copy(isLoading = it.days.isEmpty()) }
             val state = withContext(dispatcher) {
                 val today = LocalDate.now()
                 val start = today.minusDays(61)

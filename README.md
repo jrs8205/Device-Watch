@@ -18,8 +18,8 @@ The default app language is English. Finnish users get a localized app name and 
 - Per-app detail sheet: screen time, times opened, last opened, data used and notifications today
 - Usage counters on the Overview tab, scoped to the same day/billing-cycle setting as the data counters: total screen time, screen unlocks (API 28+), a filtered notification count (ongoing notifications, group summaries and updates to an existing notification are not counted, so the number stays believable), device restarts and charging sessions
 - The app keeps its own 62-day daily history for these counters (Android has no retroactive API): unlocks and screen time are backfilled from the ~7 days Android remembers, restarts are derived from BOOT_COUNT deltas (immune to Android re-delivering BOOT_COMPLETED after app updates), and notification/charging tallies accumulate from install onward
-- On-device notification log with app name, timestamp, title, and text; 7-day retention
-- History page featuring 62-day daily charts for screen time, unlocks, notifications, device restarts, and charging sessions (accessible from the usage card)
+- On-device notification log with app name, timestamp, title, and text; 7-day retention; tapping an entry opens the app that posted it (when still installed)
+- History page (opened from the usage card) listing exact daily values for the retained 62 days — screen time, unlocks, notifications, device restarts, and charging sessions; each metric states since when it has been collected, and the page refreshes itself while open
 - Today's screen time also appears in the widget footer, refreshed at most once a minute so the 5-second widget loop stays untouched
 - Most-opened-today list on the Apps tab, and last-opened rows show the clock time for apps used today (following the system 12/24-hour setting) with two-tier staleness colors: amber after 1 month unused, red after 3 months (Google's app-hibernation threshold) or never used
 - Special-access buttons show a green/red status dot for granted/missing access
@@ -166,6 +166,8 @@ app/src/main/java/com/example/modernwidget/
     AppUsageRepositoryImpl.kt
     DataPeriod.kt
     NotificationCounting.kt
+    NotificationLog.kt
+    NotificationLogImpl.kt
     NotificationStats.kt
     NotificationStatsImpl.kt
     SystemStats.kt
@@ -182,12 +184,15 @@ app/src/main/java/com/example/modernwidget/
   presentation/
     AppsViewModel.kt
     DashboardViewModel.kt
+    HistoryViewModel.kt
     ui/
       AppDetailSheet.kt
       AppsTab.kt
       DashboardComponents.kt
       DashboardTabs.kt
       DeviceTab.kt
+      HistoryListLogic.kt
+      HistoryPage.kt
       OverviewTab.kt
       ScreenTimeDonut.kt
       SettingsTab.kt
@@ -207,12 +212,16 @@ app/src/main/java/com/example/modernwidget/
 app/src/test/java/com/example/modernwidget/
   data/DataPeriodCalculatorTest.kt
   data/NotificationCountingTest.kt
+  data/NotificationLogCodecTest.kt
+  data/NotificationLogImplTest.kt
   data/SystemStatsParserTest.kt
   data/UsageEventAggregatorTest.kt
   data/UsageHistoryLogicTest.kt
   presentation/AppsViewModelTest.kt
   presentation/DashboardViewModelTest.kt
   presentation/Fakes.kt
+  presentation/HistoryViewModelTest.kt
+  presentation/ui/HistoryListLogicTest.kt
   system/ClockFitTest.kt
   system/DreamLogicTest.kt
   widget/WidgetFormattingTest.kt

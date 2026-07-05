@@ -5,6 +5,7 @@ import com.example.modernwidget.data.NotificationLogEntry
 import com.example.modernwidget.data.NotificationStats
 import com.example.modernwidget.data.UsageDayTally
 import com.example.modernwidget.data.UsageHistory
+import app.cash.turbine.test
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -47,7 +48,8 @@ class HistoryViewModelTest {
     }
 
     private class FakeStats : NotificationStats {
-        override fun totalForDay(day: LocalDate) = 7
+        var total = 7
+        override fun totalForDay(day: LocalDate) = total
         override fun countForPackage(packageName: String, day: LocalDate) = 0
         override fun totalBetween(start: LocalDate, end: LocalDate) = 0
         override fun increment(packageName: String, day: LocalDate) = Unit
@@ -79,5 +81,25 @@ class HistoryViewModelTest {
         assertThat(state.days.last().charges).isEqualTo(2)
         assertThat(state.logEntries).hasSize(1)
         assertThat(state.listenerEnabled).isTrue()
+    }
+
+    @Test
+    fun `reload refreshes data silently without flashing the loading state`() = runTest {
+        val stats = FakeStats()
+        val vm = HistoryViewModel(FakeHistory(), stats, FakeLog(), dispatcher)
+        vm.load()
+        dispatcher.scheduler.advanceUntilIdle()
+
+        vm.uiState.test {
+            assertThat(awaitItem().days.last().notifications).isEqualTo(7)
+
+            stats.total = 9
+            vm.load()
+            dispatcher.scheduler.advanceUntilIdle()
+
+            val refreshed = awaitItem()
+            assertThat(refreshed.isLoading).isFalse()
+            assertThat(refreshed.days.last().notifications).isEqualTo(9)
+        }
     }
 }

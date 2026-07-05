@@ -52,6 +52,9 @@
     <string name="history_log_section">Ilmoitusloki</string>
     <string name="history_log_empty">Ilmoituksia ei ole vielä kirjattu. Kirjaus alkaa, kun ilmoitusten käyttöoikeus on myönnetty ja uusia ilmoituksia saapuu.</string>
     <string name="history_open">Avaa historia</string>
+    <string name="history_collected_since">Kerätty %1$s alkaen</string>
+    <string name="history_log_open_app">Avaa sovellus</string>
+    <string name="history_metric_empty">Tälle mittarille ei ole vielä kertynyt historiaa. Päiväkohtaiset arvot ilmestyvät tähän datan kertyessä.</string>
     <string name="history_today">Tänään</string>
     <string name="history_yesterday">Eilen</string>
     <string name="most_opened_section">ENITEN AVAUKSIA TÄNÄÄN</string>

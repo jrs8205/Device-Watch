@@ -53,6 +53,9 @@
     <string name="history_log_section">Notification log</string>
     <string name="history_log_empty">No notifications recorded yet. Logging starts when notification access is granted and new notifications arrive.</string>
     <string name="history_open">Open history</string>
+    <string name="history_collected_since">Collected since %1$s</string>
+    <string name="history_log_open_app">Open app</string>
+    <string name="history_metric_empty">No history collected for this metric yet. Daily values appear here as data accumulates.</string>
     <string name="history_today">Today</string>
     <string name="history_yesterday">Yesterday</string>
     <string name="most_opened_section">MOST OPENED TODAY</string>

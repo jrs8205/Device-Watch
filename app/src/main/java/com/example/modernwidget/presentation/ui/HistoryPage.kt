@@ -2,10 +2,7 @@ package com.example.modernwidget.presentation.ui
 
 import android.content.Intent
 import android.provider.Settings
-import androidx.annotation.StringRes
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -17,6 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -41,11 +39,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLocale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -56,6 +52,7 @@ import com.example.modernwidget.R
 import com.example.modernwidget.data.NotificationLogEntry
 import com.example.modernwidget.presentation.HistoryDay
 import com.example.modernwidget.presentation.HistoryViewModel
+import kotlinx.coroutines.delay
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -63,26 +60,14 @@ import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.Date
 
-/** Metric shown by the history bar chart; label reuses the Overview usage-counter strings. */
-internal enum class HistoryMetric(@StringRes val labelRes: Int) {
-    ScreenTime(R.string.screen_time_total_label),
-    Unlocks(R.string.unlock_count_label),
-    Notifications(R.string.notification_count_label),
-    Boots(R.string.boot_count_label),
-    Charges(R.string.charge_count_label);
-
-    fun valueOf(day: HistoryDay): Long = when (this) {
-        ScreenTime -> day.screenTimeMillis
-        Unlocks -> day.unlocks.toLong()
-        Notifications -> day.notifications.toLong()
-        Boots -> day.boots.toLong()
-        Charges -> day.charges.toLong()
-    }
-}
+/** How often the open page silently re-reads counts and the log. */
+private const val REFRESH_INTERVAL_MS = 15_000L
 
 /**
  * Full-screen "Historia" page reached from the Overview usage-counters card:
- * a 62-day bar chart per metric plus the on-device notification log, grouped by day.
+ * per-metric daily values for the retained 62 days (newest first, starting from
+ * the first day the metric was collected) plus the on-device notification log,
+ * grouped by day.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -93,7 +78,14 @@ fun HistoryPage(
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    LaunchedEffect(Unit) { viewModel.load() }
+    // Initial load + silent refresh while the page stays open, so new
+    // notifications show up without leaving and re-entering the page.
+    LaunchedEffect(Unit) {
+        while (true) {
+            viewModel.load()
+            delay(REFRESH_INTERVAL_MS)
+        }
+    }
 
     var selectedMetric by rememberSaveable { mutableStateOf(HistoryMetric.ScreenTime) }
 
@@ -123,8 +115,21 @@ fun HistoryPage(
                 MetricChipRow(selected = selectedMetric, onSelect = { selectedMetric = it })
             }
 
-            item(key = "chart") {
-                HistoryBarChart(days = uiState.days, metric = selectedMetric)
+            val visibleDays = daysNewestFirstSinceFirstData(uiState.days, selectedMetric)
+            if (visibleDays.isEmpty()) {
+                if (!uiState.isLoading) {
+                    item(key = "metric_empty") {
+                        Text(
+                            text = stringResource(R.string.history_metric_empty),
+                            fontSize = 13.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            } else {
+                item(key = "day_list") {
+                    HistoryDayList(days = visibleDays, metric = selectedMetric)
+                }
             }
 
             item(key = "log_header") {
@@ -138,26 +143,28 @@ fun HistoryPage(
             }
 
             if (uiState.logEntries.isEmpty()) {
-                item(key = "log_empty") {
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        Text(
-                            text = stringResource(R.string.history_log_empty),
-                            fontSize = 13.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        if (!uiState.listenerEnabled) {
-                            TextButton(onClick = {
-                                try {
-                                    context.startActivity(
-                                        Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS).apply {
-                                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                        }
-                                    )
-                                } catch (e: Exception) {
-                                    e.printStackTrace()
+                if (!uiState.isLoading) {
+                    item(key = "log_empty") {
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            Text(
+                                text = stringResource(R.string.history_log_empty),
+                                fontSize = 13.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            if (!uiState.listenerEnabled) {
+                                TextButton(onClick = {
+                                    try {
+                                        context.startActivity(
+                                            Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS).apply {
+                                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                            }
+                                        )
+                                    } catch (e: Exception) {
+                                        e.printStackTrace()
+                                    }
+                                }) {
+                                    Text(stringResource(R.string.notification_access_enable), fontSize = 12.sp)
                                 }
-                            }) {
-                                Text(stringResource(R.string.notification_access_enable), fontSize = 12.sp)
                             }
                         }
                     }
@@ -201,6 +208,18 @@ private fun mediumDateFormatter(): DateTimeFormatter {
     return remember(locale) { DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale) }
 }
 
+/** Localized "weekday + day + month" formatter (e.g. "la 5. heinäk." / "Sat, Jul 5"). */
+@Composable
+private fun weekdayDateFormatter(): DateTimeFormatter {
+    val locale = LocalLocale.current.platformLocale
+    return remember(locale) {
+        DateTimeFormatter.ofPattern(
+            android.text.format.DateFormat.getBestDateTimePattern(locale, "EEEdMMM"),
+            locale
+        )
+    }
+}
+
 @Composable
 private fun MetricChipRow(selected: HistoryMetric, onSelect: (HistoryMetric) -> Unit) {
     Row(
@@ -219,81 +238,53 @@ private fun MetricChipRow(selected: HistoryMetric, onSelect: (HistoryMetric) -> 
     }
 }
 
-private val BAR_WIDTH = 10.dp
-private val BAR_GAP = 4.dp
-private val CHART_HEIGHT = 160.dp
-
 /**
- * Horizontally scrollable bar chart, one bar per day, scaled to the max value of
- * the selected metric. Tapping a bar selects it (shown in tertiary) and reveals
- * its date + value above the chart.
+ * Exact daily values for the selected metric, newest first. The caption tells
+ * since when the metric has been collected, so short histories don't read as
+ * missing data.
  */
 @Composable
-private fun HistoryBarChart(days: List<HistoryDay>, metric: HistoryMetric) {
+private fun HistoryDayList(days: List<HistoryDay>, metric: HistoryMetric) {
     val context = LocalContext.current
-    var selectedIndex by remember { mutableStateOf<Int?>(null) }
-    val barStride = BAR_WIDTH + BAR_GAP
-    val maxValue = (days.maxOfOrNull { metric.valueOf(it) } ?: 0L).coerceAtLeast(1L)
-    val primaryColor = MaterialTheme.colorScheme.primary
-    val tertiaryColor = MaterialTheme.colorScheme.tertiary
-    val dateFormatter = mediumDateFormatter()
+    val today = LocalDate.now()
+    val weekdayFormatter = weekdayDateFormatter()
+    val collectedSince = days.last().day.format(mediumDateFormatter())
 
     Column(modifier = Modifier.fillMaxWidth()) {
-        val selectedDay = selectedIndex?.let { days.getOrNull(it) }
-        val selectionText = selectedDay?.let { day ->
-            val valueText = if (metric == HistoryMetric.ScreenTime) {
-                durationText(context, day.screenTimeMillis)
-            } else {
-                metric.valueOf(day).toString()
-            }
-            val dateText = day.day.format(dateFormatter)
-            "$dateText  •  $valueText"
-        } ?: ""
         Text(
-            text = selectionText,
-            fontSize = 13.sp,
-            fontWeight = FontWeight.Bold,
-            minLines = 1,
-            modifier = Modifier.fillMaxWidth()
+            text = stringResource(R.string.history_collected_since, collectedSince),
+            fontSize = 11.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-
         Spacer(modifier = Modifier.height(8.dp))
-
-        val chartScroll = rememberScrollState()
-        LaunchedEffect(days.size) { chartScroll.scrollTo(chartScroll.maxValue) }
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalScroll(chartScroll)
-        ) {
-            Canvas(
+        days.forEach { day ->
+            val isToday = day.day == today
+            Row(
                 modifier = Modifier
-                    .width(barStride * days.size)
-                    .height(CHART_HEIGHT)
-                    .pointerInput(days, metric) {
-                        detectTapGestures { offset ->
-                            val index = (offset.x / barStride.toPx()).toInt()
-                            if (index in days.indices) {
-                                selectedIndex = index
-                            }
-                        }
-                    }
+                    .fillMaxWidth()
+                    .padding(vertical = 5.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                val strideExactPx = barStride.toPx()
-                val barWidthPx = BAR_WIDTH.toPx()
-                days.forEachIndexed { index, day ->
-                    val value = metric.valueOf(day)
-                    val heightFraction = (value.toFloat() / maxValue.toFloat()).coerceIn(0f, 1f)
-                    val barHeight = size.height * heightFraction
-                    val left = index * strideExactPx
-                    val top = size.height - barHeight
-                    drawRect(
-                        color = if (index == selectedIndex) tertiaryColor else primaryColor,
-                        topLeft = Offset(left, top),
-                        size = Size(barWidthPx, barHeight)
-                    )
-                }
+                Text(
+                    text = when (day.day) {
+                        today -> stringResource(R.string.history_today)
+                        today.minusDays(1) -> stringResource(R.string.history_yesterday)
+                        else -> day.day.format(weekdayFormatter)
+                    },
+                    fontSize = 13.sp,
+                    fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(1f)
+                )
+                Text(
+                    text = if (metric == HistoryMetric.ScreenTime) {
+                        durationText(context, day.screenTimeMillis)
+                    } else {
+                        metric.valueOf(day).toString()
+                    },
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
     }
@@ -302,9 +293,22 @@ private fun HistoryBarChart(days: List<HistoryDay>, metric: HistoryMetric) {
 @Composable
 private fun NotificationLogRow(entry: NotificationLogEntry) {
     val context = LocalContext.current
+    // The exact message can't be reopened later — a notification's content
+    // PendingIntent is app-private and dies with the notification — so tapping
+    // opens the app that posted it. Rows of uninstalled apps aren't tappable.
+    val launchIntent = remember(entry.packageName) {
+        context.packageManager.getLaunchIntentForPackage(entry.packageName)
+    }
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clickable(enabled = launchIntent != null) {
+                try {
+                    context.startActivity(launchIntent)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
             .padding(vertical = 6.dp),
         verticalAlignment = Alignment.Top
     ) {
@@ -340,6 +344,17 @@ private fun NotificationLogRow(entry: NotificationLogEntry) {
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 2
+            )
+        }
+        if (launchIntent != null) {
+            Spacer(modifier = Modifier.width(8.dp))
+            Icon(
+                painter = painterResource(R.drawable.ic_open_in_new),
+                contentDescription = stringResource(R.string.history_log_open_app),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier
+                    .align(Alignment.CenterVertically)
+                    .size(16.dp)
             )
         }
     }
