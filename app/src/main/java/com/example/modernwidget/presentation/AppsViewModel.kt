@@ -49,12 +49,16 @@ class AppsViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(AppsUiState())
     val uiState: StateFlow<AppsUiState> = _uiState.asStateFlow()
 
+    /** Screen times before launcher filtering, so the detail sheet can show launchers too. */
+    private var allScreenTimes: List<AppScreenTime> = emptyList()
+
     /** Reloads everything the tab shows. Called from the UI on every resume. */
     fun refresh() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
 
             if (!appUsageRepository.hasUsageAccess()) {
+                allScreenTimes = emptyList()
                 _uiState.update {
                     it.copy(
                         isLoading = false,
@@ -71,9 +75,8 @@ class AppsViewModel @Inject constructor(
 
             val oldestFirst = settings.appsOldestFirst()
             val launchers = appUsageRepository.launcherPackages()
-            val screenTimes = UsageEventAggregator.excludeLaunchers(
-                appUsageRepository.screenTimeToday(), launchers
-            )
+            allScreenTimes = appUsageRepository.screenTimeToday()
+            val screenTimes = UsageEventAggregator.excludeLaunchers(allScreenTimes, launchers)
             val dataConsumers = appUsageRepository.dataConsumersToday()
             val apps = UsageEventAggregator.sortByLastUse(
                 appUsageRepository.launchableAppsByLastUse(), oldestFirst
@@ -97,7 +100,7 @@ class AppsViewModel @Inject constructor(
     /** Assembles the detail sheet for [packageName] from the already-loaded lists. */
     fun onAppSelected(packageName: String) {
         val state = _uiState.value
-        val screenTime = state.screenTimes.firstOrNull { it.packageName == packageName }
+        val screenTime = allScreenTimes.firstOrNull { it.packageName == packageName }
         val app = state.apps.firstOrNull { it.packageName == packageName }
         val label = screenTime?.label
             ?: app?.label

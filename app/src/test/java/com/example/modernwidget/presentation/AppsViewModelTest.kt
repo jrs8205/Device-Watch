@@ -100,6 +100,35 @@ class AppsViewModelTest {
         }
 
     @Test
+    fun `given a launcher package, when selecting it, then the detail still shows its usage`() =
+        runTest(dispatcher) {
+            // Given
+            val repository = FakeAppUsageRepository(
+                screenTimes = listOf(
+                    screenTime("com.sec.android.app.launcher", 9_000, launches = 47, lastUsed = 5_000),
+                    screenTime("com.whatsapp", 3_000),
+                ),
+                launchers = setOf("com.sec.android.app.launcher"),
+            )
+            val viewModel = AppsViewModel(
+                repository, FakeAppSettingsRepository(), FakeNotificationStats()
+            )
+            viewModel.refresh()
+            advanceUntilIdle()
+
+            // When
+            viewModel.onAppSelected("com.sec.android.app.launcher")
+
+            // Then
+            val detail = viewModel.uiState.value.selectedDetail
+            assertThat(detail).isNotNull()
+            assertThat(detail!!.label).isEqualTo("label-com.sec.android.app.launcher")
+            assertThat(detail.foregroundMillisToday).isEqualTo(9_000)
+            assertThat(detail.launchCountToday).isEqualTo(47)
+            assertThat(detail.lastOpenedEpochMillis).isEqualTo(5_000)
+        }
+
+    @Test
     fun `given no usage access, when refreshing, then empty state is exposed`() =
         runTest(dispatcher) {
             // Given
