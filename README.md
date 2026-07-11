@@ -3,6 +3,7 @@
 [![Latest release](https://img.shields.io/github/v/release/jrs8205/Device-Watch?sort=semver)](https://github.com/jrs8205/Device-Watch/releases/latest)
 [![Downloads](https://img.shields.io/github/downloads/jrs8205/Device-Watch/total)](https://github.com/jrs8205/Device-Watch/releases)
 [![Built with Jetpack Compose](https://img.shields.io/badge/Built%20with-Jetpack%20Compose-4285F4)](https://developer.android.com/jetpack/compose)
+[![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](LICENSE)
 
 Device Watch is an Android device monitoring app with a Jetpack Glance home screen widget, per-app usage insights (screen time, data, notifications and more), and an interactive screensaver for charging or docked use.
 
@@ -236,3 +237,9 @@ app/src/test/java/com/example/modernwidget/
   system/DreamLogicTest.kt
   widget/WidgetFormattingTest.kt
 ```
+
+## License
+
+Device Watch is free software, licensed under the GNU General Public License,
+version 3 of the License, or (at your option) any later version
+(SPDX: `GPL-3.0-or-later`). See [LICENSE](LICENSE) for the full text.
