@@ -59,6 +59,12 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+    dependenciesInfo {
+        // The dependency-info block is encrypted with a Google Play key and cannot be
+        // audited, so F-Droid's reproducible builds require leaving it out.
+        includeInApk = false
+        includeInBundle = false
+    }
     buildFeatures {
         compose = true
         buildConfig = true
