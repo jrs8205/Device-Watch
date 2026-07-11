@@ -202,7 +202,7 @@ private fun SinceChargeScreenTimeCard(uiState: SinceChargeUiState) {
     val context = LocalContext.current
 
     SettingsSectionCard(
-        titleRes = R.string.screen_time_section,
+        titleRes = R.string.since_charge_screen_time_section,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         val colors = donutSegmentColors(uiState.screenTimeSegments)

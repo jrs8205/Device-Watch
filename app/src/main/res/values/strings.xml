@@ -71,6 +71,7 @@
     <string name="since_charge_empty">No period yet. It starts the next time the battery is charged full or the charger is unplugged.</string>
     <string name="since_charge_stale_note">This period is over a week old — Android keeps detailed usage events for about a week, so the app list may be incomplete.</string>
     <string name="since_charge_usage_access_missing">Usage access is required to show screen time for this period.</string>
+    <string name="since_charge_screen_time_section">SCREEN TIME THIS PERIOD</string>
     <string name="app_version_line">Version %1$s (%2$d)</string>
     <string name="since_charge_wifi">Wi-Fi data</string>
     <string name="since_charge_mobile">Mobile data</string>
