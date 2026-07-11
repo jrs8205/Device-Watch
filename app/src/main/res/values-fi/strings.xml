@@ -70,6 +70,7 @@
     <string name="since_charge_empty">Jaksoa ei ole vielä. Se alkaa kun akku on seuraavan kerran ladattu täyteen tai laturi irrotetaan.</string>
     <string name="since_charge_stale_note">Jakso on yli viikon vanha — Android säilyttää tarkkoja käyttötapahtumia noin viikon, joten sovelluslista voi olla vajaa.</string>
     <string name="since_charge_usage_access_missing">Ruutuajan näyttäminen tältä jaksolta vaatii käyttötietojen oikeuden.</string>
+    <string name="app_version_line">Versio %1$s (%2$d)</string>
     <string name="since_charge_wifi">Wi-Fi-data</string>
     <string name="since_charge_mobile">Mobiilidata</string>
     <string name="most_opened_section">ENITEN AVAUKSIA TÄNÄÄN</string>

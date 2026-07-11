@@ -44,6 +44,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.modernwidget.BuildConfig
 import com.example.modernwidget.R
 import com.example.modernwidget.data.DataCounterMode
 import com.example.modernwidget.presentation.DashboardUiState
@@ -450,6 +451,16 @@ internal fun SettingsTab(
                 Text(stringResource(R.string.privacy_dashboard_button), fontSize = 12.sp)
             }
         }
+
+        Text(
+            text = stringResource(
+                R.string.app_version_line,
+                BuildConfig.VERSION_NAME,
+                BuildConfig.VERSION_CODE,
+            ),
+            fontSize = 11.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 
