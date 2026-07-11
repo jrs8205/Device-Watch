@@ -10,6 +10,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.os.Build
 import android.os.IBinder
+import android.os.PowerManager
 import android.os.SystemClock
 import androidx.core.app.NotificationCompat
 import com.example.modernwidget.R
@@ -60,7 +61,11 @@ class SystemMonitorService : Service() {
         registerBatteryTracker()
         registerScreenTracker()
         registerConfigurationTracker()
-        startUpdateLoop()
+        // START_STICKY can recreate the service while the screen is already off, and
+        // SCREEN_ON/OFF are not sticky broadcasts — an assumed-true default would
+        // keep the 5 s loop polling until the next real screen event.
+        isScreenOn = (getSystemService(Context.POWER_SERVICE) as? PowerManager)?.isInteractive ?: true
+        if (isScreenOn) startUpdateLoop()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
