@@ -35,6 +35,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.annotation.StringRes
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -50,13 +51,9 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Date
-import java.util.Locale
 
 /** How often the open page silently re-reads the battery snapshot and usage. */
 private const val SINCE_CHARGE_REFRESH_MS = 15_000L
-
-/** Android keeps detailed usage events for roughly a week; older periods undercount. */
-private const val STALE_EVENTS_MS = 7L * 24 * 60 * 60 * 1000
 
 /**
  * Full-screen "since charge" page reached from the Overview battery card:
@@ -104,7 +101,8 @@ fun SinceChargePage(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            if (uiState.anchor == null) {
+            val anchor = uiState.anchor
+            if (anchor == null) {
                 if (!uiState.isLoading) {
                     item(key = "empty") {
                         Text(
@@ -117,8 +115,22 @@ fun SinceChargePage(
             } else {
                 item(key = "summary") { SinceChargeSummaryCard(uiState) }
 
+                // The notices live outside the screen-time card: exactly when there is
+                // no data to draw, the explanation must still be visible.
+                if (SinceChargeNotices.showUsageAccessNotice(hasAnchor = true, hasUsageAccess = uiState.hasUsageAccess)) {
+                    item(key = "usage_access") {
+                        DataQualityNotice(R.string.since_charge_usage_access_missing)
+                    }
+                }
+
                 if (uiState.screenTimeSegments.isNotEmpty()) {
                     item(key = "screen_time") { SinceChargeScreenTimeCard(uiState) }
+                }
+
+                if (SinceChargeNotices.showStaleNotice(hasAnchor = true, nowMillis = uiState.nowMillis, anchorMillis = anchor.timeMillis)) {
+                    item(key = "stale") {
+                        DataQualityNotice(R.string.since_charge_stale_note)
+                    }
                 }
             }
         }
@@ -165,7 +177,7 @@ private fun SinceChargeSummaryCard(uiState: SinceChargeUiState) {
                 if (drop >= 1 && hours >= 0.5) {
                     DeviceInfoRow(
                         R.string.since_charge_avg_drain,
-                        String.format(Locale.getDefault(), "%.1f %%/h", drop / hours)
+                        String.format(LocalLocale.current.platformLocale, "%.1f %%/h", drop / hours)
                     )
                 }
             }
@@ -188,7 +200,6 @@ private fun SinceChargeSummaryCard(uiState: SinceChargeUiState) {
 @Composable
 private fun SinceChargeScreenTimeCard(uiState: SinceChargeUiState) {
     val context = LocalContext.current
-    val anchor = uiState.anchor ?: return
 
     SettingsSectionCard(
         titleRes = R.string.screen_time_section,
@@ -236,15 +247,16 @@ private fun SinceChargeScreenTimeCard(uiState: SinceChargeUiState) {
                 )
             }
         }
-        if (uiState.nowMillis - anchor.timeMillis > STALE_EVENTS_MS) {
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = stringResource(R.string.since_charge_stale_note),
-                fontSize = 12.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
     }
+}
+
+@Composable
+private fun DataQualityNotice(@StringRes textRes: Int) {
+    Text(
+        text = stringResource(textRes),
+        fontSize = 12.sp,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+    )
 }
 
 /** Time for today's anchors, localized "weekday day month" + time for older ones. */

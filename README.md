@@ -201,6 +201,7 @@ app/src/main/java/com/example/modernwidget/
       OverviewTab.kt
       ScreenTimeDonut.kt
       SettingsTab.kt
+      SinceChargeNotices.kt
       SinceChargePage.kt
   system/
     BatteryFullNotifier.kt
@@ -230,6 +231,7 @@ app/src/test/java/com/example/modernwidget/
   presentation/HistoryViewModelTest.kt
   presentation/SinceChargeViewModelTest.kt
   presentation/ui/HistoryListLogicTest.kt
+  presentation/ui/SinceChargeNoticesTest.kt
   system/ClockFitTest.kt
   system/DreamLogicTest.kt
   widget/WidgetFormattingTest.kt
