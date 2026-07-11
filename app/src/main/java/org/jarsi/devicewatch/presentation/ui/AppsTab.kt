@@ -1,4 +1,4 @@
-package com.example.modernwidget.presentation.ui
+package org.jarsi.devicewatch.presentation.ui
 
 import android.content.Intent
 import android.provider.Settings
@@ -46,10 +46,10 @@ import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.modernwidget.R
-import com.example.modernwidget.data.LaunchableApp
-import com.example.modernwidget.data.UsageEventAggregator
-import com.example.modernwidget.presentation.AppsViewModel
+import org.jarsi.devicewatch.R
+import org.jarsi.devicewatch.data.LaunchableApp
+import org.jarsi.devicewatch.data.UsageEventAggregator
+import org.jarsi.devicewatch.presentation.AppsViewModel
 
 /** Apps tab: screen-time donut, top data consumers and the last-opened list. */
 @Composable

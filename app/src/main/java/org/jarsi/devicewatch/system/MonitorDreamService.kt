@@ -1,4 +1,4 @@
-package com.example.modernwidget.system
+package org.jarsi.devicewatch.system
 
 import android.app.AlarmManager
 import android.content.BroadcastReceiver
@@ -38,7 +38,7 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.modernwidget.R
+import org.jarsi.devicewatch.R
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry

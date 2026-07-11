@@ -1,4 +1,4 @@
-package com.example.modernwidget.presentation.ui
+package org.jarsi.devicewatch.presentation.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -40,11 +40,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.modernwidget.R
-import com.example.modernwidget.data.ChargeAnchorType
-import com.example.modernwidget.data.UNAVAILABLE_TEXT
-import com.example.modernwidget.presentation.SinceChargeUiState
-import com.example.modernwidget.presentation.SinceChargeViewModel
+import org.jarsi.devicewatch.R
+import org.jarsi.devicewatch.data.ChargeAnchorType
+import org.jarsi.devicewatch.data.UNAVAILABLE_TEXT
+import org.jarsi.devicewatch.presentation.SinceChargeUiState
+import org.jarsi.devicewatch.presentation.SinceChargeViewModel
 import kotlinx.coroutines.delay
 import java.time.Instant
 import java.time.LocalDate

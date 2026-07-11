@@ -1,4 +1,4 @@
-package com.example.modernwidget.widget
+package org.jarsi.devicewatch.widget
 
 import android.content.Context
 import androidx.compose.runtime.Composable
@@ -38,11 +38,11 @@ import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import androidx.glance.action.actionStartActivity
 import androidx.glance.action.clickable
-import com.example.modernwidget.MainActivity
-import com.example.modernwidget.R
-import com.example.modernwidget.data.UNAVAILABLE_DOUBLE
-import com.example.modernwidget.data.UNAVAILABLE_INT
-import com.example.modernwidget.data.UNAVAILABLE_TEXT
+import org.jarsi.devicewatch.MainActivity
+import org.jarsi.devicewatch.R
+import org.jarsi.devicewatch.data.UNAVAILABLE_DOUBLE
+import org.jarsi.devicewatch.data.UNAVAILABLE_INT
+import org.jarsi.devicewatch.data.UNAVAILABLE_TEXT
 import java.util.Locale
 
 class WidgetColors(

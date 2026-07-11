@@ -1,4 +1,4 @@
-package com.example.modernwidget.data
+package org.jarsi.devicewatch.data
 
 /** How the current "since charge" period started. */
 enum class ChargeAnchorType { FULL_CHARGE, UNPLUGGED }

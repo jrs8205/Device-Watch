@@ -1,4 +1,4 @@
-package com.example.modernwidget.di
+package org.jarsi.devicewatch.di
 
 import dagger.Module
 import dagger.Provides

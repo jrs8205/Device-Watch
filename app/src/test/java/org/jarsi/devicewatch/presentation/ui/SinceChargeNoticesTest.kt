@@ -1,4 +1,4 @@
-package com.example.modernwidget.presentation.ui
+package org.jarsi.devicewatch.presentation.ui
 
 import com.google.common.truth.Truth.assertThat
 import org.junit.Test

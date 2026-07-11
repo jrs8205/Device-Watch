@@ -1,4 +1,4 @@
-package com.example.modernwidget.presentation.ui
+package org.jarsi.devicewatch.presentation.ui
 
 import android.content.Context
 import androidx.annotation.StringRes
@@ -39,13 +39,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.graphics.drawable.toBitmap
-import com.example.modernwidget.R
-import com.example.modernwidget.data.DataCounterMode
-import com.example.modernwidget.data.LastUsedTier
-import com.example.modernwidget.data.UNAVAILABLE_INT
-import com.example.modernwidget.data.UNAVAILABLE_TEXT
-import com.example.modernwidget.data.UsageEventAggregator
-import com.example.modernwidget.widget.dataAmountText
+import org.jarsi.devicewatch.R
+import org.jarsi.devicewatch.data.DataCounterMode
+import org.jarsi.devicewatch.data.LastUsedTier
+import org.jarsi.devicewatch.data.UNAVAILABLE_INT
+import org.jarsi.devicewatch.data.UNAVAILABLE_TEXT
+import org.jarsi.devicewatch.data.UsageEventAggregator
+import org.jarsi.devicewatch.widget.dataAmountText
 import java.time.LocalDate
 import java.time.ZoneId
 import java.util.Date

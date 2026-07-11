@@ -1,12 +1,12 @@
-package com.example.modernwidget.system
+package org.jarsi.devicewatch.system
 
 import android.app.Notification
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
-import com.example.modernwidget.data.NotificationCounting
-import com.example.modernwidget.data.NotificationLog
-import com.example.modernwidget.data.NotificationLogEntry
-import com.example.modernwidget.data.NotificationStats
+import org.jarsi.devicewatch.data.NotificationCounting
+import org.jarsi.devicewatch.data.NotificationLog
+import org.jarsi.devicewatch.data.NotificationLogEntry
+import org.jarsi.devicewatch.data.NotificationStats
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

@@ -1,4 +1,4 @@
-package com.example.modernwidget.data
+package org.jarsi.devicewatch.data
 
 import android.net.wifi.ScanResult
 import android.telephony.TelephonyManager

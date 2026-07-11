@@ -1,4 +1,4 @@
-package com.example.modernwidget.data
+package org.jarsi.devicewatch.data
 
 /** Sentinel used for any string metric the platform refuses to expose. */
 const val UNAVAILABLE_TEXT = "—"

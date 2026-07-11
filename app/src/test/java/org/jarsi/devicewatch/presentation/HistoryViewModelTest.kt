@@ -1,10 +1,10 @@
-package com.example.modernwidget.presentation
+package org.jarsi.devicewatch.presentation
 
-import com.example.modernwidget.data.NotificationLog
-import com.example.modernwidget.data.NotificationLogEntry
-import com.example.modernwidget.data.NotificationStats
-import com.example.modernwidget.data.UsageDayTally
-import com.example.modernwidget.data.UsageHistory
+import org.jarsi.devicewatch.data.NotificationLog
+import org.jarsi.devicewatch.data.NotificationLogEntry
+import org.jarsi.devicewatch.data.NotificationStats
+import org.jarsi.devicewatch.data.UsageDayTally
+import org.jarsi.devicewatch.data.UsageHistory
 import app.cash.turbine.test
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.Dispatchers

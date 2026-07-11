@@ -1,4 +1,4 @@
-package com.example.modernwidget.data
+package org.jarsi.devicewatch.data
 
 import com.google.common.truth.Truth.assertThat
 import org.junit.Test

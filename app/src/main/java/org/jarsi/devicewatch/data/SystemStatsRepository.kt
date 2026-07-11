@@ -1,11 +1,11 @@
-package com.example.modernwidget.data
+package org.jarsi.devicewatch.data
 
 /**
  * Single source of truth for live device statistics.
  *
  * Implementations read real Android and kernel sources and must never return
  * fabricated values: when a metric is unavailable, the corresponding field uses
- * the documented unavailable sentinel ([com.example.modernwidget.system.UNAVAILABLE_TEXT] etc.).
+ * the documented unavailable sentinel ([org.jarsi.devicewatch.system.UNAVAILABLE_TEXT] etc.).
  */
 /** Device-level data usage over a window; negative values mean unavailable. */
 data class DataUsageSince(val wifiGb: Double, val mobileGb: Double)

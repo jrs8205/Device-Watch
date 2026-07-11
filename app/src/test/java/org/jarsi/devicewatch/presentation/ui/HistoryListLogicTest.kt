@@ -1,6 +1,6 @@
-package com.example.modernwidget.presentation.ui
+package org.jarsi.devicewatch.presentation.ui
 
-import com.example.modernwidget.presentation.HistoryDay
+import org.jarsi.devicewatch.presentation.HistoryDay
 import com.google.common.truth.Truth.assertThat
 import org.junit.Test
 import java.time.LocalDate

@@ -1,4 +1,4 @@
-package com.example.modernwidget.presentation.ui
+package org.jarsi.devicewatch.presentation.ui
 
 /**
  * Visibility rules for the since-charge page's data-quality notices. Pure logic —

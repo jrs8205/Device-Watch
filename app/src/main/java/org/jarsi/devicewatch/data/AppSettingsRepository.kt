@@ -1,4 +1,4 @@
-package com.example.modernwidget.data
+package org.jarsi.devicewatch.data
 
 /**
  * Process-wide user settings that both the UI and [SystemStatsRepository] read.

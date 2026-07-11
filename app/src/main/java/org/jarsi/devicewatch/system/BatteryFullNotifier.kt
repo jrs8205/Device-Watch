@@ -1,4 +1,4 @@
-package com.example.modernwidget.system
+package org.jarsi.devicewatch.system
 
 import android.Manifest
 import android.annotation.SuppressLint
@@ -12,8 +12,8 @@ import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
-import com.example.modernwidget.MainActivity
-import com.example.modernwidget.R
+import org.jarsi.devicewatch.MainActivity
+import org.jarsi.devicewatch.R
 
 object BatteryFullNotifier {
     private const val CHANNEL_ID = "battery_full_channel"

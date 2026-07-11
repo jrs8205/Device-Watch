@@ -1,4 +1,4 @@
-package com.example.modernwidget.ui.theme
+package org.jarsi.devicewatch.ui.theme
 
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme

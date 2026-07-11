@@ -1,4 +1,4 @@
-package com.example.modernwidget.presentation.ui
+package org.jarsi.devicewatch.presentation.ui
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -22,10 +22,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.modernwidget.R
-import com.example.modernwidget.data.AppUsageDetail
-import com.example.modernwidget.data.UNAVAILABLE_INT
-import com.example.modernwidget.data.UNAVAILABLE_TEXT
+import org.jarsi.devicewatch.R
+import org.jarsi.devicewatch.data.AppUsageDetail
+import org.jarsi.devicewatch.data.UNAVAILABLE_INT
+import org.jarsi.devicewatch.data.UNAVAILABLE_TEXT
 
 /** Bottom sheet with the per-app usage details assembled by AppsViewModel. */
 @OptIn(ExperimentalMaterial3Api::class)

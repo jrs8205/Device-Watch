@@ -1,4 +1,4 @@
-package com.example.modernwidget.presentation.ui
+package org.jarsi.devicewatch.presentation.ui
 
 import android.Manifest
 import android.content.Intent
@@ -45,10 +45,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.modernwidget.R
-import com.example.modernwidget.presentation.AppsViewModel
-import com.example.modernwidget.presentation.DashboardViewModel
-import com.example.modernwidget.system.SystemMonitorService
+import org.jarsi.devicewatch.R
+import org.jarsi.devicewatch.presentation.AppsViewModel
+import org.jarsi.devicewatch.presentation.DashboardViewModel
+import org.jarsi.devicewatch.system.SystemMonitorService
 
 /** The dashboard's flat bottom-navigation destinations, in display order. */
 internal enum class DashboardTab(

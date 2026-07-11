@@ -1,8 +1,8 @@
-package com.example.modernwidget.data
+package org.jarsi.devicewatch.data
 
 import android.telephony.TelephonyManager
-import com.example.modernwidget.data.SystemStatsParser.CoreFreq
-import com.example.modernwidget.data.SystemStatsParser.CpuSnapshot
+import org.jarsi.devicewatch.data.SystemStatsParser.CoreFreq
+import org.jarsi.devicewatch.data.SystemStatsParser.CpuSnapshot
 import com.google.common.truth.Truth.assertThat
 import org.junit.Test
 

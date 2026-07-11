@@ -1,4 +1,4 @@
-package com.example.modernwidget
+package org.jarsi.devicewatch
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -7,8 +7,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
-import com.example.modernwidget.presentation.ui.SystemDashboardScreen
-import com.example.modernwidget.ui.theme.ModernWidgetTheme
+import org.jarsi.devicewatch.presentation.ui.SystemDashboardScreen
+import org.jarsi.devicewatch.ui.theme.ModernWidgetTheme
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint

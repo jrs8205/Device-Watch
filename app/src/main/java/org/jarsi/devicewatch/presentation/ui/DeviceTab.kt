@@ -1,4 +1,4 @@
-package com.example.modernwidget.presentation.ui
+package org.jarsi.devicewatch.presentation.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -10,8 +10,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.example.modernwidget.R
-import com.example.modernwidget.presentation.DashboardUiState
+import org.jarsi.devicewatch.R
+import org.jarsi.devicewatch.presentation.DashboardUiState
 
 /** Device tab: static device facts plus the live SIM and Wi-Fi sections. */
 @Composable

@@ -157,7 +157,7 @@ APK and signing files are intentionally ignored by Git.
 ## Project Structure
 
 ```text
-app/src/main/java/com/example/modernwidget/
+app/src/main/java/org/jarsi/devicewatch/
   MainActivity.kt
   MonitorApp.kt
   data/
@@ -217,7 +217,7 @@ app/src/main/java/com/example/modernwidget/
     WidgetController.kt
     WidgetStateUpdater.kt
 
-app/src/test/java/com/example/modernwidget/
+app/src/test/java/org/jarsi/devicewatch/
   data/ChargeAnchorLogicTest.kt
   data/DataPeriodCalculatorTest.kt
   data/NotificationCountingTest.kt

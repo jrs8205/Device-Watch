@@ -15,11 +15,11 @@ val keystoreProperties = Properties().apply {
 }
 
 android {
-    namespace = "com.example.modernwidget"
+    namespace = "org.jarsi.devicewatch"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.example.modernwidget"
+        applicationId = "org.jarsi.devicewatch"
         minSdk = 26
         targetSdk = 35
         versionCode = 14

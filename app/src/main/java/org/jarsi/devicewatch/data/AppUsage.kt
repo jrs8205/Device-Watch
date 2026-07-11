@@ -1,4 +1,4 @@
-package com.example.modernwidget.data
+package org.jarsi.devicewatch.data
 
 /** Per-app foreground usage for the current day, aggregated from usage events. */
 data class AppScreenTime(

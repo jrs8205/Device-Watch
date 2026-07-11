@@ -1,4 +1,4 @@
-package com.example.modernwidget.presentation.ui
+package org.jarsi.devicewatch.presentation.ui
 
 import android.content.Context
 import android.content.Intent
@@ -44,11 +44,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.modernwidget.BuildConfig
-import com.example.modernwidget.R
-import com.example.modernwidget.data.DataCounterMode
-import com.example.modernwidget.presentation.DashboardUiState
-import com.example.modernwidget.system.DreamPreferences
+import org.jarsi.devicewatch.BuildConfig
+import org.jarsi.devicewatch.R
+import org.jarsi.devicewatch.data.DataCounterMode
+import org.jarsi.devicewatch.presentation.DashboardUiState
+import org.jarsi.devicewatch.system.DreamPreferences
 import kotlin.math.roundToInt
 
 /** Settings tab: data counter period, widget opacity, screensaver and special access. */

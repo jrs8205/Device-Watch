@@ -1,4 +1,4 @@
-package com.example.modernwidget.data
+package org.jarsi.devicewatch.data
 
 import android.content.Context
 import dagger.hilt.android.qualifiers.ApplicationContext

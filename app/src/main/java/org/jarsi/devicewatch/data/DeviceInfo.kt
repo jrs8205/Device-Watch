@@ -1,4 +1,4 @@
-package com.example.modernwidget.data
+package org.jarsi.devicewatch.data
 
 /**
  * Static device facts that any app can read without root. Produced once by

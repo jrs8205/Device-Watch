@@ -1,13 +1,13 @@
-package com.example.modernwidget.presentation
+package org.jarsi.devicewatch.presentation
 
-import com.example.modernwidget.data.AppDataUsage
-import com.example.modernwidget.data.AppScreenTime
-import com.example.modernwidget.data.AppSettingsRepository
-import com.example.modernwidget.data.AppUsageRepository
-import com.example.modernwidget.data.DataCounterMode
-import com.example.modernwidget.data.LaunchableApp
-import com.example.modernwidget.data.NotificationStats
-import com.example.modernwidget.data.UNAVAILABLE_INT
+import org.jarsi.devicewatch.data.AppDataUsage
+import org.jarsi.devicewatch.data.AppScreenTime
+import org.jarsi.devicewatch.data.AppSettingsRepository
+import org.jarsi.devicewatch.data.AppUsageRepository
+import org.jarsi.devicewatch.data.DataCounterMode
+import org.jarsi.devicewatch.data.LaunchableApp
+import org.jarsi.devicewatch.data.NotificationStats
+import org.jarsi.devicewatch.data.UNAVAILABLE_INT
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi

@@ -1,4 +1,4 @@
-package com.example.modernwidget.data
+package org.jarsi.devicewatch.data
 
 import android.content.Context
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -10,7 +10,7 @@ import javax.inject.Singleton
  * repository reads these inside its synchronous compute path (under the stats
  * mutex on the default dispatcher), and SharedPreferences values are memory-cached
  * after the first load — the same pattern the screensaver already uses with
- * [com.example.modernwidget.system.DreamPreferences].
+ * [org.jarsi.devicewatch.system.DreamPreferences].
  */
 @Singleton
 class AppSettingsRepositoryImpl @Inject constructor(

@@ -1,4 +1,4 @@
-package com.example.modernwidget.presentation.ui
+package org.jarsi.devicewatch.presentation.ui
 
 import android.content.Intent
 import android.provider.Settings
@@ -42,10 +42,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.modernwidget.R
-import com.example.modernwidget.data.DataCounterMode
-import com.example.modernwidget.data.UNAVAILABLE_TEXT
-import com.example.modernwidget.presentation.DashboardUiState
+import org.jarsi.devicewatch.R
+import org.jarsi.devicewatch.data.DataCounterMode
+import org.jarsi.devicewatch.data.UNAVAILABLE_TEXT
+import org.jarsi.devicewatch.presentation.DashboardUiState
 
 /**
  * Overview tab: widget status, live battery ring, usage counters for the selected

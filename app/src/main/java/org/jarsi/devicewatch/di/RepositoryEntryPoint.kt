@@ -1,6 +1,6 @@
-package com.example.modernwidget.di
+package org.jarsi.devicewatch.di
 
-import com.example.modernwidget.data.SystemStatsRepository
+import org.jarsi.devicewatch.data.SystemStatsRepository
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent

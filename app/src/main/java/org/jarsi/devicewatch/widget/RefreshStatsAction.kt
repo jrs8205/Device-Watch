@@ -1,4 +1,4 @@
-package com.example.modernwidget.widget
+package org.jarsi.devicewatch.widget
 
 import android.content.Context
 import androidx.datastore.preferences.core.doublePreferencesKey
@@ -8,7 +8,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.glance.GlanceId
 import androidx.glance.action.ActionParameters
 import androidx.glance.appwidget.action.ActionCallback
-import com.example.modernwidget.di.RepositoryEntryPoint
+import org.jarsi.devicewatch.di.RepositoryEntryPoint
 import dagger.hilt.android.EntryPointAccessors
 
 class RefreshStatsAction : ActionCallback {

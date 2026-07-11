@@ -1,15 +1,15 @@
-package com.example.modernwidget.presentation
+package org.jarsi.devicewatch.presentation
 
-import com.example.modernwidget.data.AppDataUsage
-import com.example.modernwidget.data.AppScreenTime
-import com.example.modernwidget.data.AppSettingsRepository
-import com.example.modernwidget.data.AppUsageRepository
-import com.example.modernwidget.data.DataCounterMode
-import com.example.modernwidget.data.LaunchableApp
-import com.example.modernwidget.data.NotificationStats
-import com.example.modernwidget.data.UsageHistory
-import com.example.modernwidget.data.UsageDayTally
-import com.example.modernwidget.data.UsageTotals
+import org.jarsi.devicewatch.data.AppDataUsage
+import org.jarsi.devicewatch.data.AppScreenTime
+import org.jarsi.devicewatch.data.AppSettingsRepository
+import org.jarsi.devicewatch.data.AppUsageRepository
+import org.jarsi.devicewatch.data.DataCounterMode
+import org.jarsi.devicewatch.data.LaunchableApp
+import org.jarsi.devicewatch.data.NotificationStats
+import org.jarsi.devicewatch.data.UsageHistory
+import org.jarsi.devicewatch.data.UsageDayTally
+import org.jarsi.devicewatch.data.UsageTotals
 import java.time.LocalDate
 
 /** Hand-written fakes shared by the presentation-layer ViewModel tests. */

@@ -1,4 +1,4 @@
-package com.example.modernwidget.widget
+package org.jarsi.devicewatch.widget
 
 import android.content.Context
 import androidx.datastore.preferences.core.MutablePreferences
@@ -6,14 +6,14 @@ import androidx.glance.GlanceId
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.state.updateAppWidgetState
 import androidx.glance.state.PreferencesGlanceStateDefinition
-import com.example.modernwidget.data.SystemStats
+import org.jarsi.devicewatch.data.SystemStats
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
 /**
  * Single write path for the Glance widget state. Callers obtain fresh [SystemStats]
- * from [com.example.modernwidget.data.SystemStatsRepository] and hand them here; this
+ * from [org.jarsi.devicewatch.data.SystemStatsRepository] and hand them here; this
  * object only serializes them into DataStore and asks Glance to re-render.
  */
 object WidgetStateUpdater {

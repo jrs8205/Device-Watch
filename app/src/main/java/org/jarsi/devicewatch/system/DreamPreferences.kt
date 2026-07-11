@@ -1,4 +1,4 @@
-package com.example.modernwidget.system
+package org.jarsi.devicewatch.system
 
 /**
  * Shared SharedPreferences keys for the screensaver (DreamService). Stored in a dedicated

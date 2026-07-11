@@ -1,8 +1,8 @@
-package com.example.modernwidget.presentation.ui
+package org.jarsi.devicewatch.presentation.ui
 
 import androidx.annotation.StringRes
-import com.example.modernwidget.R
-import com.example.modernwidget.presentation.HistoryDay
+import org.jarsi.devicewatch.R
+import org.jarsi.devicewatch.presentation.HistoryDay
 
 /** Metric shown by the history day list; label reuses the Overview usage-counter strings. */
 internal enum class HistoryMetric(@StringRes val labelRes: Int) {

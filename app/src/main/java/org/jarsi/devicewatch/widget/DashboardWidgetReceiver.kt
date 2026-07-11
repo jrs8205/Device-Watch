@@ -1,4 +1,4 @@
-package com.example.modernwidget.widget
+package org.jarsi.devicewatch.widget
 
 import android.content.Context
 import android.content.Intent
@@ -6,9 +6,9 @@ import android.os.Build
 import android.provider.Settings
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
-import com.example.modernwidget.data.SystemStatsRepository
-import com.example.modernwidget.data.UsageHistory
-import com.example.modernwidget.system.SystemMonitorService
+import org.jarsi.devicewatch.data.SystemStatsRepository
+import org.jarsi.devicewatch.data.UsageHistory
+import org.jarsi.devicewatch.system.SystemMonitorService
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

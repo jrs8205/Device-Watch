@@ -1,4 +1,4 @@
-package com.example.modernwidget.data
+package org.jarsi.devicewatch.data
 
 import android.content.Context
 import android.content.Intent
@@ -10,7 +10,7 @@ import javax.inject.Singleton
 
 /**
  * The battery's state right now, for the "since charge" view. A port (like
- * [com.example.modernwidget.widget.WidgetController]) so the ViewModel stays
+ * [org.jarsi.devicewatch.widget.WidgetController]) so the ViewModel stays
  * Context-free and JVM-testable.
  */
 interface BatteryStatusReader {

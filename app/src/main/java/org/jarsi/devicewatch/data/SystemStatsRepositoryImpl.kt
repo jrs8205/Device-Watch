@@ -1,4 +1,4 @@
-package com.example.modernwidget.data
+package org.jarsi.devicewatch.data
 
 import android.Manifest
 import android.annotation.TargetApi
@@ -44,8 +44,8 @@ import android.telephony.CellInfoWcdma
 import android.telephony.ServiceState
 import android.telephony.TelephonyManager
 import androidx.core.content.ContextCompat
-import com.example.modernwidget.R
-import com.example.modernwidget.di.DefaultDispatcher
+import org.jarsi.devicewatch.R
+import org.jarsi.devicewatch.di.DefaultDispatcher
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.sync.Mutex

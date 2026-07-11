@@ -1,4 +1,4 @@
-package com.example.modernwidget.system
+package org.jarsi.devicewatch.system
 
 import android.app.Notification
 import android.app.NotificationChannel
@@ -13,15 +13,15 @@ import android.os.IBinder
 import android.os.PowerManager
 import android.os.SystemClock
 import androidx.core.app.NotificationCompat
-import com.example.modernwidget.R
+import org.jarsi.devicewatch.R
 import android.os.BatteryManager
-import com.example.modernwidget.data.AppUsageRepository
-import com.example.modernwidget.data.ChargeAnchorLogic
-import com.example.modernwidget.data.ChargeAnchorStore
-import com.example.modernwidget.data.SystemStatsRepository
-import com.example.modernwidget.data.UsageHistory
-import com.example.modernwidget.presentation.ui.durationText
-import com.example.modernwidget.widget.WidgetStateUpdater
+import org.jarsi.devicewatch.data.AppUsageRepository
+import org.jarsi.devicewatch.data.ChargeAnchorLogic
+import org.jarsi.devicewatch.data.ChargeAnchorStore
+import org.jarsi.devicewatch.data.SystemStatsRepository
+import org.jarsi.devicewatch.data.UsageHistory
+import org.jarsi.devicewatch.presentation.ui.durationText
+import org.jarsi.devicewatch.widget.WidgetStateUpdater
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope

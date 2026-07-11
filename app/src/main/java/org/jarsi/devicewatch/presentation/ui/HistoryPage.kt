@@ -1,4 +1,4 @@
-package com.example.modernwidget.presentation.ui
+package org.jarsi.devicewatch.presentation.ui
 
 import android.content.Intent
 import android.provider.Settings
@@ -48,10 +48,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.modernwidget.R
-import com.example.modernwidget.data.NotificationLogEntry
-import com.example.modernwidget.presentation.HistoryDay
-import com.example.modernwidget.presentation.HistoryViewModel
+import org.jarsi.devicewatch.R
+import org.jarsi.devicewatch.data.NotificationLogEntry
+import org.jarsi.devicewatch.presentation.HistoryDay
+import org.jarsi.devicewatch.presentation.HistoryViewModel
 import kotlinx.coroutines.delay
 import java.time.Instant
 import java.time.LocalDate

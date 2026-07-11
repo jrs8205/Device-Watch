@@ -1,12 +1,12 @@
-package com.example.modernwidget.presentation
+package org.jarsi.devicewatch.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.modernwidget.data.NotificationLog
-import com.example.modernwidget.data.NotificationLogEntry
-import com.example.modernwidget.data.NotificationStats
-import com.example.modernwidget.data.UsageHistory
-import com.example.modernwidget.di.DefaultDispatcher
+import org.jarsi.devicewatch.data.NotificationLog
+import org.jarsi.devicewatch.data.NotificationLogEntry
+import org.jarsi.devicewatch.data.NotificationStats
+import org.jarsi.devicewatch.data.UsageHistory
+import org.jarsi.devicewatch.di.DefaultDispatcher
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.MutableStateFlow

@@ -1,11 +1,11 @@
-package com.example.modernwidget.widget
+package org.jarsi.devicewatch.widget
 
 import android.content.Context
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.state.getAppWidgetState
 import androidx.glance.appwidget.state.updateAppWidgetState
 import androidx.glance.state.PreferencesGlanceStateDefinition
-import com.example.modernwidget.data.SystemStats
+import org.jarsi.devicewatch.data.SystemStats
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import javax.inject.Inject
