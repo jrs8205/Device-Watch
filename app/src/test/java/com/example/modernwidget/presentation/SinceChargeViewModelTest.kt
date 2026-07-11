@@ -14,7 +14,9 @@ import com.example.modernwidget.data.SystemStats
 import com.example.modernwidget.data.SystemStatsRepository
 import com.example.modernwidget.data.AppScreenTime
 import com.example.modernwidget.data.UNAVAILABLE_INT
+import com.example.modernwidget.data.AppUsageRepository
 import com.google.common.truth.Truth.assertThat
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -74,11 +76,24 @@ class SinceChargeViewModelTest {
     private fun buildViewModel(
         store: ChargeAnchorStore = FakeAnchorStore(anchorState()),
         battery: BatteryStatusReader = FakeBattery(),
-        appUsage: FakeAppUsageRepository = FakeAppUsageRepository(),
+        appUsage: AppUsageRepository = FakeAppUsageRepository(),
         stats: SystemStatsRepository = FakeStatsRepository(),
         notifications: FakeNotificationStats = FakeNotificationStats(enabled = true),
         log: NotificationLog = FakeLog(emptyList()),
     ) = SinceChargeViewModel(store, battery, appUsage, stats, notifications, log, dispatcher)
+
+    /** Suspends every screen-time query on [gate] and counts the entries. */
+    private class GatedAppUsageRepository(
+        private val gate: CompletableDeferred<Unit>,
+    ) : AppUsageRepository by FakeAppUsageRepository() {
+        var screenTimeQueries = 0
+
+        override suspend fun screenTimeSince(startMillis: Long): List<AppScreenTime> {
+            screenTimeQueries++
+            gate.await()
+            return emptyList()
+        }
+    }
 
     @Test
     fun `without an anchor only the battery snapshot is exposed`() = runTest {
@@ -144,6 +159,44 @@ class SinceChargeViewModelTest {
         dispatcher.scheduler.advanceUntilIdle()
 
         assertThat(viewModel.uiState.value.notificationCount).isEqualTo(UNAVAILABLE_INT)
+    }
+
+    @Test
+    fun `a refresh while a load is in flight does not start a second load`() = runTest {
+        val gate = CompletableDeferred<Unit>()
+        val slowUsage = GatedAppUsageRepository(gate)
+        val viewModel = buildViewModel(appUsage = slowUsage)
+
+        viewModel.load()
+        dispatcher.scheduler.runCurrent()
+        viewModel.load()
+        dispatcher.scheduler.runCurrent()
+        gate.complete(Unit)
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertThat(slowUsage.screenTimeQueries).isEqualTo(1)
+    }
+
+    @Test
+    fun `an anchor change during a slow load is picked up by the next refresh`() = runTest {
+        val gate = CompletableDeferred<Unit>()
+        val store = FakeAnchorStore(anchorState(timeMillis = 1_000L))
+        val viewModel = buildViewModel(store = store, appUsage = GatedAppUsageRepository(gate))
+
+        viewModel.load()
+        dispatcher.scheduler.runCurrent()
+        store.state = anchorState(timeMillis = 2_000L)
+        viewModel.load()
+        gate.complete(Unit)
+        dispatcher.scheduler.advanceUntilIdle()
+
+        // The in-flight load's result lands; the newer anchor was not queried yet.
+        assertThat(viewModel.uiState.value.anchor?.timeMillis).isEqualTo(1_000L)
+
+        viewModel.load()
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertThat(viewModel.uiState.value.anchor?.timeMillis).isEqualTo(2_000L)
     }
 
     @Test

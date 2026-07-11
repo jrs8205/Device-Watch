@@ -17,6 +17,7 @@ import com.example.modernwidget.data.UsageEventAggregator
 import com.example.modernwidget.di.DefaultDispatcher
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -60,8 +61,14 @@ class SinceChargeViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(SinceChargeUiState())
     val uiState: StateFlow<SinceChargeUiState> = _uiState.asStateFlow()
 
+    private var loadJob: Job? = null
+
     fun load() {
-        viewModelScope.launch {
+        // Refreshes must not overlap: a slow load finishing after a newer one would
+        // write a stale anchor's numbers over fresh state. A skipped tick is caught
+        // up by the page's next 15 s refresh.
+        if (loadJob?.isActive == true) return
+        loadJob = viewModelScope.launch {
             // No isLoading toggling here: the initial state already loads, and
             // later calls are silent refreshes (same pattern as HistoryViewModel).
             val state = withContext(dispatcher) {
