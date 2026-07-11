@@ -47,6 +47,11 @@ Download the latest signed APK from the
 device to install. Because every release is signed with the same key, later versions install
 cleanly as an update over an existing one.
 
+> **Upgrading from v1.3.1 or older:** the application ID changed in v1.4.0 from
+> `com.example.modernwidget` to `org.jarsi.devicewatch`, so Android treats it as a new app.
+> Install the new version, re-grant its permissions, re-add the widget and re-select the
+> screensaver, then uninstall the old one. Collected usage history starts fresh.
+
 Requires **Android 8.0 (API 26)** or newer.
 
 ## Architecture
@@ -54,7 +59,8 @@ Requires **Android 8.0 (API 26)** or newer.
 The app follows an MVVM + repository structure with Hilt dependency injection.
 
 ```
-presentation/   DashboardViewModel + AppsViewModel (StateFlow UI state)
+presentation/   DashboardViewModel, AppsViewModel, HistoryViewModel and
+                SinceChargeViewModel (StateFlow UI state)
 presentation/ui Compose-only screen code: SystemDashboardScreen scaffold with a
                 Material 3 NavigationBar, Overview/Apps/Device/Settings tabs and
                 shared components (SettingsSectionCard, DeviceInfoRow, AppIcon,
@@ -140,8 +146,14 @@ JVM unit tests cover the pure parsing/maths and the ViewModel:
 - `NotificationCountingTest` — the "real notification" filter and count retention/purging
 - `UsageHistoryLogicTest` — BOOT_COUNT delta dedup and history-key retention
 - `WidgetFormattingTest` — widget display formatters (locale-pinned), adaptive MB/GB data amounts
+- `ChargeAnchorLogicTest` — the since-charge anchor state machine (full-charge vs unplug anchors, reboot persistence)
+- `NotificationLogCodecTest` / `NotificationLogImplTest` — notification-log line escaping, retention and ordering
+- `HistoryListLogicTest` — per-metric history trimming and "collected since" labels
+- `SinceChargeNoticesTest` — visibility of the usage-access and stale-period notices
 - `DashboardViewModelTest` — refresh, opacity load/commit, data-counter settings, daily counters, widget-installed flag (hand-written fakes)
 - `AppsViewModelTest` — Apps-tab loading, empty state without usage access, detail assembly, sort toggle persistence
+- `HistoryViewModelTest` — history-page loading and silent refresh
+- `SinceChargeViewModelTest` — since-charge window queries, empty state, non-overlapping refreshes
 - `ClockFitTest` — screensaver clock width-fit math
 - `DreamLogicTest` — night-dim window (incl. crossing midnight) and charging-wattage normalization
 
