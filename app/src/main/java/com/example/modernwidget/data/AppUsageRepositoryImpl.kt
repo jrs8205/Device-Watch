@@ -53,7 +53,9 @@ class AppUsageRepositoryImpl @Inject constructor(
 
         val samples = mutableListOf<UsageEventSample>()
         try {
-            val events = usageStatsManager.queryEvents(startMillis, end)
+            // The lookback makes a session already open at the window start visible
+            // (its RESUME precedes the window); the aggregator clamps it to startMillis.
+            val events = usageStatsManager.queryEvents(startMillis - SESSION_LOOKBACK_MS, end)
                 ?: return@withContext emptyList()
             val event = UsageEvents.Event()
             while (events.hasNextEvent()) {
@@ -64,7 +66,7 @@ class AppUsageRepositoryImpl @Inject constructor(
             return@withContext emptyList()
         }
 
-        UsageEventAggregator.aggregateForegroundTime(samples, end)
+        UsageEventAggregator.aggregateForegroundTime(samples, end, windowStartMillis = startMillis)
             .map { (packageName, usage) ->
                 AppScreenTime(
                     packageName = packageName,
@@ -251,17 +253,20 @@ class AppUsageRepositoryImpl @Inject constructor(
         if (!hasUsageAccess()) return@withContext null
         val usageStatsManager = usageStatsManager() ?: return@withContext null
         val end = System.currentTimeMillis()
+        val startOfToday = startOfTodayMillis()
 
         val samples = mutableListOf<UsageEventSample>()
         var unlockCount = 0
         try {
-            val events = usageStatsManager.queryEvents(startOfTodayMillis(), end)
+            // Same lookback as screenTimeSince, so a session spanning midnight
+            // contributes its today-part here too; unlocks stay today-only.
+            val events = usageStatsManager.queryEvents(startOfToday - SESSION_LOOKBACK_MS, end)
                 ?: return@withContext null
             val event = UsageEvents.Event()
             while (events.hasNextEvent()) {
                 events.getNextEvent(event)
                 if (event.eventType == UsageEvents.Event.KEYGUARD_HIDDEN) {
-                    unlockCount++
+                    if (event.timeStamp >= startOfToday) unlockCount++
                 } else {
                     usageEventSample(event)?.let { samples += it }
                 }
@@ -270,7 +275,8 @@ class AppUsageRepositoryImpl @Inject constructor(
             return@withContext null
         }
 
-        val screenTimeMillis = UsageEventAggregator.aggregateForegroundTime(samples, end)
+        val screenTimeMillis = UsageEventAggregator
+            .aggregateForegroundTime(samples, end, windowStartMillis = startOfToday)
             .values.sumOf { it.foregroundMillis }
         UsageTotals(screenTimeMillis, unlockCount)
     }
@@ -338,5 +344,12 @@ class AppUsageRepositoryImpl @Inject constructor(
     private companion object {
         /** How far back the "last opened" list looks. */
         private const val LAST_USE_RANGE_MS = 2L * 365 * 24 * 60 * 60 * 1000
+
+        /**
+         * Event lookback before a queried window so a session already open at the
+         * window start is seen and clamped, not dropped. 12 h covers any realistic
+         * uninterrupted foreground session; a longer one is missed like before.
+         */
+        private const val SESSION_LOOKBACK_MS = 12L * 60 * 60 * 1000
     }
 }

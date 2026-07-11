@@ -54,14 +54,20 @@ object UsageEventAggregator {
      * entirely (a counter would leave the session open forever and inflate daily
      * screen time past 60 hours, as seen on a Pixel 10 Pro). An in-app activity
      * switch (RESUME new before CLOSE old) keeps the session open; a launch is
-     * only the empty→non-empty transition. SCREEN_OFF force-closes every open
-     * session. A CLOSE for an unknown activity is ignored (session began before
-     * the window; the pre-window sliver is deliberately dropped). A session still
-     * open at the end of the window is cut at [windowEndMillis].
+     * only the empty→non-empty transition at or after [windowStartMillis]. SCREEN_OFF
+     * force-closes every open session. A CLOSE for an unknown activity is ignored
+     * (session began before the queried events; the pre-query sliver is deliberately
+     * dropped). A session still open at the end of the window is cut at [windowEndMillis].
+     *
+     * [windowStartMillis] supports anchored windows (the since-charge page): callers
+     * pass events queried from BEFORE the window start so that a session already open
+     * at the anchor is visible, and only its in-window part — start clamped to the
+     * anchor — is counted. Time accrued before the window is never included.
      */
     fun aggregateForegroundTime(
         events: List<UsageEventSample>,
         windowEndMillis: Long,
+        windowStartMillis: Long = 0L,
     ): Map<String, PackageUsage> {
         class State {
             val openClasses = mutableSetOf<String>()
@@ -71,7 +77,8 @@ object UsageEventAggregator {
             var lastUsedMillis = 0L
 
             fun closeSession(timeMillis: Long) {
-                foregroundMillis += (timeMillis - sessionStartMillis).coerceAtLeast(0)
+                foregroundMillis +=
+                    (timeMillis - sessionStartMillis.coerceAtLeast(windowStartMillis)).coerceAtLeast(0)
                 lastUsedMillis = timeMillis
                 openClasses.clear()
             }
@@ -84,7 +91,7 @@ object UsageEventAggregator {
                     val state = states.getOrPut(event.packageName) { State() }
                     if (state.openClasses.isEmpty()) {
                         state.sessionStartMillis = event.timeMillis
-                        state.launchCount++
+                        if (event.timeMillis >= windowStartMillis) state.launchCount++
                     }
                     state.openClasses.add(event.className)
                 }
@@ -107,16 +114,19 @@ object UsageEventAggregator {
         }
 
         return states
-            .filterValues { it.launchCount > 0 }
             .mapValues { (_, state) ->
                 var foreground = state.foregroundMillis
                 var lastUsed = state.lastUsedMillis
                 if (state.openClasses.isNotEmpty()) {
-                    foreground += (windowEndMillis - state.sessionStartMillis).coerceAtLeast(0)
+                    foreground += (windowEndMillis - state.sessionStartMillis.coerceAtLeast(windowStartMillis))
+                        .coerceAtLeast(0)
                     lastUsed = windowEndMillis
                 }
                 PackageUsage(foreground, state.launchCount, lastUsed)
             }
+            // launchCount alone is not enough: a session that began before the window
+            // has no in-window launch but real in-window foreground time.
+            .filterValues { it.launchCount > 0 || it.foregroundMillis > 0 }
     }
 
     /**

@@ -139,6 +139,69 @@ class UsageEventAggregatorTest {
         assertThat(usage["a"]).isEqualTo(PackageUsage(3_000, 2, 6_000))
     }
 
+    // --- aggregateForegroundTime with a window start (since-charge anchor) ---
+
+    @Test
+    fun `given a session open at the window start, when aggregating, then only the in-window part counts`() {
+        // The report's repro: app resumed before the anchor, closed after it.
+        val usage = UsageEventAggregator.aggregateForegroundTime(
+            listOf(resume("a", 1_000), close("a", 4_000)),
+            windowEndMillis = 10_000,
+            windowStartMillis = 3_000,
+        )
+
+        assertThat(usage["a"]).isEqualTo(PackageUsage(1_000, 0, 4_000))
+    }
+
+    @Test
+    fun `given a resume before the window start, when aggregating, then it does not count as a launch`() {
+        val usage = UsageEventAggregator.aggregateForegroundTime(
+            listOf(
+                resume("a", 1_000), close("a", 4_000),
+                resume("a", 5_000), close("a", 6_000),
+            ),
+            windowEndMillis = 10_000,
+            windowStartMillis = 3_000,
+        )
+
+        assertThat(usage["a"]).isEqualTo(PackageUsage(2_000, 1, 6_000))
+    }
+
+    @Test
+    fun `given a session entirely before the window start, when aggregating, then it is dropped`() {
+        val usage = UsageEventAggregator.aggregateForegroundTime(
+            listOf(resume("a", 1_000), close("a", 2_000)),
+            windowEndMillis = 10_000,
+            windowStartMillis = 3_000,
+        )
+
+        assertThat(usage).isEmpty()
+    }
+
+    @Test
+    fun `given a session spanning the whole window, when aggregating, then it is cut at both ends`() {
+        val usage = UsageEventAggregator.aggregateForegroundTime(
+            listOf(resume("a", 1_000)),
+            windowEndMillis = 10_000,
+            windowStartMillis = 3_000,
+        )
+
+        assertThat(usage["a"]).isEqualTo(PackageUsage(7_000, 0, 10_000))
+    }
+
+    @Test
+    fun `given a pre-window screen-off, when aggregating, then nothing is open at the window start`() {
+        // Overnight full-charge anchor: the screen went off before the anchor,
+        // so the pre-anchor session must contribute nothing after it.
+        val usage = UsageEventAggregator.aggregateForegroundTime(
+            listOf(resume("a", 1_000), screenOff(2_000)),
+            windowEndMillis = 10_000,
+            windowStartMillis = 3_000,
+        )
+
+        assertThat(usage).isEmpty()
+    }
+
     // --- donutSegments ---
 
     @Test
