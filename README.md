@@ -9,6 +9,21 @@ Device Watch is an Android device monitoring app with a Jetpack Glance home scre
 
 The default app language is English. Finnish users get a localized app name and UI through Android's `values-fi` resources.
 
+## Screenshots
+
+<p>
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/01.png" width="24%" alt="Home-screen widget" />
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/02.png" width="24%" alt="Overview tab" />
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/03.png" width="24%" alt="Screen-time donut" />
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/04.png" width="24%" alt="Since-charge view" />
+</p>
+<p>
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/05.png" width="24%" alt="Usage history" />
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/06.png" width="24%" alt="Most opened and top data" />
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/07.png" width="24%" alt="Last opened list" />
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/08.png" width="24%" alt="Charging screensaver" />
+</p>
+
 ## Features
 
 - Home screen widget for battery, memory, CPU, storage, Wi-Fi, mobile network, data usage, uptime, today's screen time, and last update time
