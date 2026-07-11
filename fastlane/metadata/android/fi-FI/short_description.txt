@@ -1,0 +1,1 @@
+Järjestelmämonitori-widget, sovellusten käyttötilastot ja latausnäytönsäästäjä
