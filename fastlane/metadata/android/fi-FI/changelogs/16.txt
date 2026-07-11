@@ -1,0 +1,2 @@
+• Latauksesta lähtien -sivun ruutuaikakortilla on nyt oma otsikko ("Ruutuaika tällä jaksolla")
+• APK ei enää sisällä Googlen salattua dependency-info-lohkoa, mikä mahdollistaa F-Droidin toistettavat buildit

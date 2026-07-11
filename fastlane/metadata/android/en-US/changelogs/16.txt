@@ -1,0 +1,2 @@
+• The screen time card on the Since charge page now has its own title instead of reusing "Screen time today"
+• The APK no longer embeds Google's encrypted dependency-info block, enabling F-Droid reproducible builds
