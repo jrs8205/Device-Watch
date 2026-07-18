@@ -75,6 +75,11 @@ install cleanly as an update over an existing one — from either source.
 
 Requires **Android 8.0 (API 26)** or newer.
 
+## Troubleshooting
+
+Common questions — the screensaver not starting, mobile data showing zero, notification counts,
+history retention — are answered in the [FAQ](FAQ.md).
+
 ## Architecture
 
 The app follows an MVVM + repository structure with Hilt dependency injection.
