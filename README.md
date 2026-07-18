@@ -1,6 +1,7 @@
 # Device Watch
 
 [![Latest release](https://img.shields.io/github/v/release/jrs8205/Device-Watch?sort=semver)](https://github.com/jrs8205/Device-Watch/releases/latest)
+[![F-Droid](https://img.shields.io/f-droid/v/org.jarsi.devicewatch)](https://f-droid.org/packages/org.jarsi.devicewatch)
 [![Downloads](https://img.shields.io/github/downloads/jrs8205/Device-Watch/total)](https://github.com/jrs8205/Device-Watch/releases)
 [![Built with Jetpack Compose](https://img.shields.io/badge/Built%20with-Jetpack%20Compose-4285F4)](https://developer.android.com/jetpack/compose)
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](LICENSE)
@@ -57,10 +58,15 @@ Every metric is real data read from Android and kernel sources. When a value is 
 
 ## Download
 
-Download the latest signed APK from the
+[<img src="https://fdroid.gitlab.io/artwork/badge/get-it-on.png" alt="Get it on F-Droid" height="80">](https://f-droid.org/packages/org.jarsi.devicewatch)
+
+Device Watch is available on
+[**F-Droid**](https://f-droid.org/packages/org.jarsi.devicewatch), which also delivers updates
+automatically. Alternatively, download the latest signed APK from the
 [**Releases**](https://github.com/jrs8205/Device-Watch/releases/latest) page and open it on your
-device to install. Because every release is signed with the same key, later versions install
-cleanly as an update over an existing one.
+device to install. Releases are built reproducibly and F-Droid verifies each build against the
+developer-signed APK, so both sources ship an APK signed with the same key and later versions
+install cleanly as an update over an existing one — from either source.
 
 > **Upgrading from v1.3.1 or older:** the application ID changed in v1.4.0 from
 > `com.example.modernwidget` to `org.jarsi.devicewatch`, so Android treats it as a new app.
