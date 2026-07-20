@@ -2,6 +2,7 @@
 
 [![Latest release](https://img.shields.io/github/v/release/jrs8205/Device-Watch?sort=semver)](https://github.com/jrs8205/Device-Watch/releases/latest)
 [![F-Droid](https://img.shields.io/f-droid/v/org.jarsi.devicewatch)](https://f-droid.org/packages/org.jarsi.devicewatch)
+[![Aptoide](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fws75.aptoide.com%2Fapi%2F7%2Fapp%2FgetMeta%3Fpackage_name%3Dorg.jarsi.devicewatch&query=%24.data.file.vername&label=Aptoide&prefix=v&color=FE6446)](https://device-watch.en.aptoide.com/app)
 [![Downloads](https://img.shields.io/github/downloads/jrs8205/Device-Watch/total)](https://github.com/jrs8205/Device-Watch/releases)
 [![Built with Jetpack Compose](https://img.shields.io/badge/Built%20with-Jetpack%20Compose-4285F4)](https://developer.android.com/jetpack/compose)
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](LICENSE)
