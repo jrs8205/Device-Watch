@@ -59,11 +59,13 @@ Every metric is real data read from Android and kernel sources. When a value is 
 ## Download
 
 [<img src="https://fdroid.gitlab.io/artwork/badge/get-it-on.png" alt="Get it on F-Droid" height="80">](https://f-droid.org/packages/org.jarsi.devicewatch)
+[<img src="assets/get-it-on-aptoide.svg" alt="Download from Aptoide" height="80">](https://aptoide-mmp.aptoide.com/api/v1/download?package_name=org.jarsi.devicewatch&oemid=584d342f9e68b0c33244b78f3cc21a24&redirect_url=https%3A%2F%2Fws.catappult.io%2Fapi%2FdirectToConsumer%2Forg.jarsi.devicewatch%2Fdownload)
 
 Device Watch is available on
 [**F-Droid**](https://f-droid.org/packages/org.jarsi.devicewatch), which also delivers updates
-automatically, and on [**Aptoide**](https://device-watch.en.aptoide.com/app). Alternatively,
-download the latest signed APK from the
+automatically, and on [**Aptoide**](https://device-watch.en.aptoide.com/app), which also offers a
+[direct APK download](https://aptoide-mmp.aptoide.com/api/v1/download?package_name=org.jarsi.devicewatch&oemid=584d342f9e68b0c33244b78f3cc21a24&redirect_url=https%3A%2F%2Fws.catappult.io%2Fapi%2FdirectToConsumer%2Forg.jarsi.devicewatch%2Fdownload).
+Alternatively, download the latest signed APK from the
 [**Releases**](https://github.com/jrs8205/Device-Watch/releases/latest) page and open it on your
 device to install. Releases are built reproducibly and F-Droid verifies each build against the
 developer-signed APK, so every source ships an APK signed with the same key and later versions
