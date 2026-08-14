@@ -18,22 +18,26 @@ import java.util.Locale
  */
 object WidgetStateUpdater {
 
-    /** Writes [stats] to every installed widget; returns whether any widget exists. */
+    /** Writes [stats] to every installed widget (both sizes); returns whether any widget exists. */
     suspend fun updateAll(context: Context, stats: SystemStats): Boolean {
         val manager = GlanceAppWidgetManager(context)
-        val glanceIds = manager.getGlanceIds(DashboardWidget::class.java)
         val now = currentTime()
 
-        for (glanceId in glanceIds) {
-            writeAndUpdate(context, glanceId, stats, now)
+        val dashboardIds = manager.getGlanceIds(DashboardWidget::class.java)
+        for (glanceId in dashboardIds) {
+            writeAndUpdate(context, DashboardWidget(), glanceId, stats, now)
+        }
+        val compactIds = manager.getGlanceIds(CompactWidget::class.java)
+        for (glanceId in compactIds) {
+            writeAndUpdate(context, CompactWidget(), glanceId, stats, now)
         }
 
-        return glanceIds.isNotEmpty()
+        return dashboardIds.isNotEmpty() || compactIds.isNotEmpty()
     }
 
-    /** Writes [stats] to a single widget instance. */
+    /** Writes [stats] to a single full-size widget instance. */
     suspend fun updateOne(context: Context, glanceId: GlanceId, stats: SystemStats) {
-        writeAndUpdate(context, glanceId, stats, currentTime())
+        writeAndUpdate(context, DashboardWidget(), glanceId, stats, currentTime())
     }
 
     /**
@@ -56,6 +60,7 @@ object WidgetStateUpdater {
 
     private suspend fun writeAndUpdate(
         context: Context,
+        widget: androidx.glance.appwidget.GlanceAppWidget,
         glanceId: GlanceId,
         stats: SystemStats,
         timestamp: String
@@ -65,7 +70,7 @@ object WidgetStateUpdater {
                 writeStats(stats, timestamp)
             }
         }
-        DashboardWidget().update(context, glanceId)
+        widget.update(context, glanceId)
     }
 
     private fun MutablePreferences.writeStats(stats: SystemStats, timestamp: String) {

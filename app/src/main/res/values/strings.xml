@@ -2,6 +2,8 @@
     <string name="app_name">Device Watch</string>
     <string name="dream_service_name">Device Watch</string>
     <string name="widget_description">Smart battery and system monitor on your home screen.</string>
+    <string name="compact_widget_label">Device Watch (compact)</string>
+    <string name="compact_widget_description">Compact battery and data usage widget.</string>
     <string name="fgs_special_use_subtype" translatable="false">System resources and battery status monitoring widget update</string>
 
     <string name="main_title">System Dashboard</string>

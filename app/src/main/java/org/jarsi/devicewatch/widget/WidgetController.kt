@@ -36,7 +36,9 @@ class GlanceWidgetController @Inject constructor(
 
     override suspend fun currentOpacity(): Float? {
         val manager = GlanceAppWidgetManager(context)
-        val glanceId = manager.getGlanceIds(DashboardWidget::class.java).firstOrNull() ?: return null
+        val glanceId = manager.getGlanceIds(DashboardWidget::class.java).firstOrNull()
+            ?: manager.getGlanceIds(CompactWidget::class.java).firstOrNull()
+            ?: return null
         return try {
             getAppWidgetState(context, PreferencesGlanceStateDefinition, glanceId)[
                 RefreshStatsAction.BACKGROUND_OPACITY
@@ -51,12 +53,20 @@ class GlanceWidgetController @Inject constructor(
     override suspend fun setOpacity(opacity: Float) {
         val manager = GlanceAppWidgetManager(context)
         for (glanceId in manager.getGlanceIds(DashboardWidget::class.java)) {
-            updateAppWidgetState(context, PreferencesGlanceStateDefinition, glanceId) { prefs ->
-                prefs.toMutablePreferences().apply {
-                    this[RefreshStatsAction.BACKGROUND_OPACITY] = opacity
-                }
-            }
+            writeOpacity(glanceId, opacity)
             DashboardWidget().update(context, glanceId)
+        }
+        for (glanceId in manager.getGlanceIds(CompactWidget::class.java)) {
+            writeOpacity(glanceId, opacity)
+            CompactWidget().update(context, glanceId)
+        }
+    }
+
+    private suspend fun writeOpacity(glanceId: androidx.glance.GlanceId, opacity: Float) {
+        updateAppWidgetState(context, PreferencesGlanceStateDefinition, glanceId) { prefs ->
+            prefs.toMutablePreferences().apply {
+                this[RefreshStatsAction.BACKGROUND_OPACITY] = opacity
+            }
         }
     }
 }

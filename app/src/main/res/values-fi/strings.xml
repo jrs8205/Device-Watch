@@ -2,6 +2,8 @@
     <string name="app_name">Laitevahti</string>
     <string name="dream_service_name">Laitevahti</string>
     <string name="widget_description">Älykäs akku- ja järjestelmämittari suoraan kotinäytöllä.</string>
+    <string name="compact_widget_label">Laitevahti (kompakti)</string>
+    <string name="compact_widget_description">Kompakti akku- ja datawidget.</string>
 
     <string name="main_title">Järjestelmän tila</string>
     <string name="refresh">Päivitä</string>
