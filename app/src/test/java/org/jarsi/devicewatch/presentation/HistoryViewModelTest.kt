@@ -1,5 +1,7 @@
 package org.jarsi.devicewatch.presentation
 
+import org.jarsi.devicewatch.data.BatteryHistory
+import org.jarsi.devicewatch.data.BatterySample
 import org.jarsi.devicewatch.data.DataUsageSince
 import org.jarsi.devicewatch.data.DeviceInfo
 import org.jarsi.devicewatch.data.MonthlyDataUsage
@@ -92,10 +94,30 @@ class HistoryViewModelTest {
         }
     }
 
+    /** In-memory store mirroring the real one: samplesSince filters and sorts ascending. */
+    private class FakeBatteryHistory : BatteryHistory {
+        private val base = System.currentTimeMillis() - 6L * 60 * 60 * 1000
+        private val stored = mutableListOf(
+            BatterySample(base + 2 * 60 * 60 * 1000, level = 61, charging = false),
+            BatterySample(base, level = 80, charging = true),
+            BatterySample(base + 60 * 60 * 1000, level = 72, charging = false),
+        )
+
+        /** sinceMillis of the latest samplesSince call, or -1 when never called. */
+        var requestedSince = -1L
+
+        override fun record(sample: BatterySample) { stored += sample }
+        override fun samplesSince(sinceMillis: Long): List<BatterySample> {
+            requestedSince = sinceMillis
+            return stored.filter { it.timeMillis >= sinceMillis }.sortedBy { it.timeMillis }
+        }
+    }
+
     private fun buildViewModel(
         stats: FakeStats = FakeStats(),
         statsRepository: FakeStatsRepository = FakeStatsRepository(),
-    ) = HistoryViewModel(FakeHistory(), stats, FakeLog(), statsRepository, dispatcher)
+        batteryHistory: FakeBatteryHistory = FakeBatteryHistory(),
+    ) = HistoryViewModel(FakeHistory(), stats, FakeLog(), statsRepository, batteryHistory, dispatcher)
 
     @Test
     fun `load exposes 62 ascending days with notification counts and the log`() = runTest {
@@ -113,6 +135,33 @@ class HistoryViewModelTest {
         assertThat(state.days.last().charges).isEqualTo(2)
         assertThat(state.logEntries).hasSize(1)
         assertThat(state.listenerEnabled).isTrue()
+    }
+
+    @Test
+    fun `load exposes the stored battery samples ascending`() = runTest {
+        val batteryHistory = FakeBatteryHistory()
+        val vm = buildViewModel(batteryHistory = batteryHistory)
+        vm.load()
+        dispatcher.scheduler.advanceUntilIdle()
+
+        val samples = vm.uiState.value.batterySamples
+        assertThat(samples).hasSize(3)
+        assertThat(samples.map { it.timeMillis }).isInOrder()
+        assertThat(samples.first().level).isEqualTo(80)
+        assertThat(samples.first().charging).isTrue()
+    }
+
+    @Test
+    fun `load asks for the full retained window and leaves day-week filtering to the UI`() = runTest {
+        val batteryHistory = FakeBatteryHistory()
+        val vm = buildViewModel(batteryHistory = batteryHistory)
+        vm.load()
+        dispatcher.scheduler.advanceUntilIdle()
+
+        val fourteenDays = 14L * 24 * 60 * 60 * 1000
+        val window = System.currentTimeMillis() - batteryHistory.requestedSince
+        assertThat(window).isAtLeast(fourteenDays)
+        assertThat(window).isLessThan(fourteenDays + 60_000L)
     }
 
     @Test

@@ -2,6 +2,9 @@ package org.jarsi.devicewatch.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import org.jarsi.devicewatch.data.BatteryHistory
+import org.jarsi.devicewatch.data.BatteryHistoryCodec
+import org.jarsi.devicewatch.data.BatterySample
 import org.jarsi.devicewatch.data.MonthlyDataUsage
 import org.jarsi.devicewatch.data.NotificationLog
 import org.jarsi.devicewatch.data.NotificationLogEntry
@@ -39,15 +42,21 @@ data class HistoryUiState(
     val monthlyUsage: List<MonthlyDataUsage> = emptyList(),
     val logEntries: List<NotificationLogEntry> = emptyList(),
     val listenerEnabled: Boolean = false,
+    /** The store's whole retained window, ascending; the chart picks its own range out of it. */
+    val batterySamples: List<BatterySample> = emptyList(),
 )
 
-/** State for the Historia page: 62-day tallies + monthly data usage + the notification log. */
+/**
+ * State for the Historia page: 62-day tallies + monthly data usage + the
+ * notification log + the retained battery history.
+ */
 @HiltViewModel
 class HistoryViewModel @Inject constructor(
     private val usageHistory: UsageHistory,
     private val notificationStats: NotificationStats,
     private val notificationLog: NotificationLog,
     private val statsRepository: SystemStatsRepository,
+    private val batteryHistory: BatteryHistory,
     @DefaultDispatcher private val dispatcher: CoroutineDispatcher,
 ) : ViewModel() {
 
@@ -112,6 +121,9 @@ class HistoryViewModel @Inject constructor(
                         monthlyUsage = resolveMonthlyUsage(forceMonthly, previousMonthly),
                         logEntries = notificationLog.entriesNewestFirst(),
                         listenerEnabled = notificationStats.isListenerEnabled(),
+                        batterySamples = batteryHistory.samplesSince(
+                            System.currentTimeMillis() - BATTERY_WINDOW_MILLIS
+                        ),
                     )
                 }
                 // Preserve the pull flag across the whole-state write; the finally
@@ -147,5 +159,10 @@ class HistoryViewModel @Inject constructor(
         } else {
             statsRepository.monthlyDataUsage()
         }
+    }
+
+    private companion object {
+        /** Everything the store keeps (14 d); the day/week chart ranges are cut from this. */
+        const val BATTERY_WINDOW_MILLIS = BatteryHistoryCodec.RETENTION_DAYS * 24 * 60 * 60 * 1000
     }
 }

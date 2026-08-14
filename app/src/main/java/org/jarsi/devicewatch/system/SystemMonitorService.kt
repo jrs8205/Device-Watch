@@ -16,6 +16,8 @@ import androidx.core.app.NotificationCompat
 import org.jarsi.devicewatch.R
 import android.os.BatteryManager
 import org.jarsi.devicewatch.data.AppUsageRepository
+import org.jarsi.devicewatch.data.BatteryHistory
+import org.jarsi.devicewatch.data.BatterySample
 import org.jarsi.devicewatch.data.ChargeAnchorLogic
 import org.jarsi.devicewatch.data.ChargeAnchorStore
 import org.jarsi.devicewatch.data.SystemStatsRepository
@@ -41,6 +43,7 @@ class SystemMonitorService : Service() {
     @Inject lateinit var appUsageRepository: AppUsageRepository
     @Inject lateinit var usageHistory: UsageHistory
     @Inject lateinit var chargeAnchorStore: ChargeAnchorStore
+    @Inject lateinit var batteryHistory: BatteryHistory
 
     private var lastUsageRefreshMs = 0L
 
@@ -232,6 +235,18 @@ class SystemMonitorService : Service() {
                                 nowMillis = System.currentTimeMillis(),
                             )
                         )
+                        // The store throttles the BATTERY_CHANGED stream itself. A quirky
+                        // EXTRA_SCALE can push the percentage past 100, which the store's
+                        // read path would later drop as corruption, so clamp it here.
+                        if (level >= 0) {
+                            batteryHistory.record(
+                                BatterySample(
+                                    timeMillis = System.currentTimeMillis(),
+                                    level = level.coerceIn(0, 100),
+                                    charging = plugged,
+                                )
+                            )
+                        }
                     }
                     Intent.ACTION_POWER_CONNECTED -> {
                         usageHistory.incrementCharge(LocalDate.now())
