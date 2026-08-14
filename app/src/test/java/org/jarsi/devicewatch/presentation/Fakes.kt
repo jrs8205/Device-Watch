@@ -4,6 +4,8 @@ import org.jarsi.devicewatch.data.AppDataUsage
 import org.jarsi.devicewatch.data.AppScreenTime
 import org.jarsi.devicewatch.data.AppSettingsRepository
 import org.jarsi.devicewatch.data.AppUsageRepository
+import org.jarsi.devicewatch.data.CHARGE_LIMIT_MAX
+import org.jarsi.devicewatch.data.CHARGE_LIMIT_MIN
 import org.jarsi.devicewatch.data.DataCounterMode
 import org.jarsi.devicewatch.data.LaunchableApp
 import org.jarsi.devicewatch.data.NotificationStats
@@ -17,6 +19,8 @@ import java.time.LocalDate
 internal class FakeAppSettingsRepository(
     var mode: DataCounterMode = DataCounterMode.DAY,
     var cycleDay: Int = 1,
+    /** Short name like [cycleDay]: `chargeLimitPercent` would clash with the setter's JVM signature. */
+    var chargeLimit: Int = 0,
     var oldestFirst: Boolean = true,
     var onboardingShown: Boolean = false,
 ) : AppSettingsRepository {
@@ -30,6 +34,18 @@ internal class FakeAppSettingsRepository(
 
     override fun setCycleStartDay(day: Int) {
         cycleDay = day
+    }
+
+    override fun chargeLimitPercent(): Int = chargeLimit
+
+    /** Mirrors the real store: 0 stays off, everything else snaps to a 50..95 slider stop. */
+    override fun setChargeLimitPercent(value: Int) {
+        chargeLimit = if (value <= 0) {
+            0
+        } else {
+            val bounded = value.coerceIn(CHARGE_LIMIT_MIN, CHARGE_LIMIT_MAX)
+            ((bounded + 2) / 5) * 5
+        }
     }
 
     override fun appsOldestFirst(): Boolean = oldestFirst

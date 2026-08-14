@@ -39,6 +39,21 @@ class AppSettingsRepositoryImpl @Inject constructor(
         prefs.edit().putInt(KEY_CYCLE_START_DAY, day.coerceIn(1, 31)).apply()
     }
 
+    override fun chargeLimitPercent(): Int =
+        coerceChargeLimit(prefs.getInt(KEY_CHARGE_LIMIT_PERCENT, 0))
+
+    override fun setChargeLimitPercent(value: Int) {
+        prefs.edit().putInt(KEY_CHARGE_LIMIT_PERCENT, coerceChargeLimit(value)).apply()
+    }
+
+    /** 0 means off; anything else lands on a slider stop between 50 % and 95 %. */
+    private fun coerceChargeLimit(value: Int): Int {
+        if (value <= 0) return 0
+        val bounded = value.coerceIn(CHARGE_LIMIT_MIN, CHARGE_LIMIT_MAX)
+        // Nearest slider stop; both bounds are multiples of 5, so this stays in range.
+        return ((bounded + 2) / 5) * 5
+    }
+
     override fun appsOldestFirst(): Boolean =
         prefs.getBoolean(KEY_APPS_OLDEST_FIRST, true)
 
@@ -58,6 +73,7 @@ class AppSettingsRepositoryImpl @Inject constructor(
         const val KEY_DATA_COUNTER_MODE = "data_counter_mode"
         const val KEY_CYCLE_START_DAY = "cycle_start_day"
         const val KEY_APPS_OLDEST_FIRST = "apps_oldest_first"
+        const val KEY_CHARGE_LIMIT_PERCENT = "charge_limit_percent"
         const val KEY_ONBOARDING_SHOWN = "onboarding_shown"
         /** Written from the UI helpers in OnboardingPage.kt (permanent-denial detection). */
         const val KEY_RUNTIME_PERMISSIONS_REQUESTED = "runtime_permissions_requested"

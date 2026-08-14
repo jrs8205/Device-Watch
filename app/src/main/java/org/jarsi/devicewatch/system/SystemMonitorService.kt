@@ -15,6 +15,7 @@ import android.os.SystemClock
 import androidx.core.app.NotificationCompat
 import org.jarsi.devicewatch.R
 import android.os.BatteryManager
+import org.jarsi.devicewatch.data.AppSettingsRepository
 import org.jarsi.devicewatch.data.AppUsageRepository
 import org.jarsi.devicewatch.data.BatteryHistory
 import org.jarsi.devicewatch.data.BatterySample
@@ -44,11 +45,18 @@ class SystemMonitorService : Service() {
     @Inject lateinit var usageHistory: UsageHistory
     @Inject lateinit var chargeAnchorStore: ChargeAnchorStore
     @Inject lateinit var batteryHistory: BatteryHistory
+    @Inject lateinit var appSettings: AppSettingsRepository
 
     private var lastUsageRefreshMs = 0L
 
     /** Latest level from BATTERY_CHANGED; POWER_DISCONNECTED carries no battery extras. */
     @Volatile private var lastBatteryLevel = -1
+
+    /**
+     * Charge-reminder latch. In-memory on purpose: only a service restart in the
+     * middle of a charge can lose it, and the worst case is one repeated reminder.
+     */
+    private var chargeLimitState = ChargeLimitLogic.State()
 
     private val serviceJob = SupervisorJob()
     private val serviceScope = CoroutineScope(serviceJob + Dispatchers.Default)
@@ -249,6 +257,21 @@ class SystemMonitorService : Service() {
                             )
                             serviceScope.launch { recordBatterySample(sample) }
                         }
+                        // Charge reminder. The limit is re-read here because settings
+                        // can change while the service runs; SharedPreferences is
+                        // memory-cached, so this stays cheap on the receiver thread.
+                        val decision = ChargeLimitLogic.onBatteryChanged(
+                            chargeLimitState,
+                            limitPercent = appSettings.chargeLimitPercent(),
+                            level = level,
+                            isPlugged = plugged,
+                        )
+                        chargeLimitState = decision.state
+                        if (decision.notify) {
+                            // Same quirky-EXTRA_SCALE clamp as the sample above, so the
+                            // notification can never claim more than 100 %.
+                            ChargeLimitNotifier.show(applicationContext, level.coerceIn(0, 100))
+                        }
                     }
                     Intent.ACTION_POWER_CONNECTED -> {
                         usageHistory.incrementCharge(LocalDate.now())
@@ -257,6 +280,7 @@ class SystemMonitorService : Service() {
                         )
                     }
                     Intent.ACTION_POWER_DISCONNECTED -> {
+                        chargeLimitState = ChargeLimitLogic.onPowerDisconnected(chargeLimitState)
                         chargeAnchorStore.save(
                             ChargeAnchorLogic.onPowerDisconnected(
                                 chargeAnchorStore.load(),

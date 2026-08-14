@@ -27,6 +27,10 @@
     <string name="data_counter_mode_cycle">Kausi</string>
     <string name="data_counter_cycle_start">Kausi alkaa päivänä %1$d</string>
     <string name="data_counter_description">Laske datankäyttö kalenteripäivittäin tai kuukauden mittaisena laskutusjaksona, joka alkaa valittuna päivänä. Kuukausien pituudet huomioidaan automaattisesti.</string>
+    <string name="battery_section_title">AKKU</string>
+    <string name="charge_limit_title">Latausmuistutus</string>
+    <string name="charge_limit_description">Ilmoittaa kun lataus saavuttaa valitun tason, jotta voit irrottaa laturin ajoissa akun suojaksi.</string>
+    <string name="charge_limit_value">Rajalla %1$d %%</string>
 
     <string name="screen_time_section">RUUTUAIKA TÄNÄÄN</string>
     <string name="screen_time_others">Muut</string>
@@ -262,6 +266,8 @@
     <string name="battery_full_channel_description">Ilmoitukset latauksesta ja akun tilasta.</string>
     <string name="battery_full_notification_title">Akku on ladattu täyteen</string>
     <string name="battery_full_notification_text" formatted="false">Akku saavutti 100% varauksen näytönsäästäjän ollessa käytössä.</string>
+    <string name="charge_limit_notification_title">Akku %1$d %%</string>
+    <string name="charge_limit_notification_text">Lataus saavutti asettamasi rajan — voit irrottaa laturin.</string>
 
     <string name="widget_tile_battery">AKKU</string>
     <string name="widget_tile_memory">MUISTI</string>
