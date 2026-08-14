@@ -5,14 +5,17 @@ import android.content.Intent
 import androidx.core.content.FileProvider
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import org.jarsi.devicewatch.R
 import org.jarsi.devicewatch.data.BatteryHistory
 import org.jarsi.devicewatch.data.BatteryHistoryCodec
 import org.jarsi.devicewatch.data.BatterySample
+import org.jarsi.devicewatch.data.DeviceInfo
 import org.jarsi.devicewatch.data.MonthlyDataUsage
 import org.jarsi.devicewatch.data.NotificationLog
 import org.jarsi.devicewatch.data.NotificationLogEntry
 import org.jarsi.devicewatch.data.NotificationStats
 import org.jarsi.devicewatch.data.SystemStatsRepository
+import org.jarsi.devicewatch.data.UNAVAILABLE_TEXT
 import org.jarsi.devicewatch.data.UsageHistory
 import org.jarsi.devicewatch.di.DefaultDispatcher
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -27,8 +30,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.YearMonth
 import java.time.ZoneId
+import java.util.Locale
 import javax.inject.Inject
 
 data class HistoryDay(
@@ -169,28 +174,70 @@ class HistoryViewModel @Inject constructor(
 
     /** Writes the 62-day tallies as CSV under cacheDir/exports and opens the share sheet. */
     fun exportUsageHistoryCsv(context: Context) {
-        exportCsv(context, fileStem = "device-watch-usage") {
+        exportFile(context, fileStem = "device-watch-usage", extension = "csv", mimeType = "text/csv") {
             CsvExporter.usageHistoryCsv(_uiState.value.days)
         }
     }
 
     /** Writes the retained notification log as CSV and opens the share sheet. */
     fun exportNotificationLogCsv(context: Context) {
-        exportCsv(context, fileStem = "device-watch-notifications") {
+        exportFile(
+            context,
+            fileStem = "device-watch-notifications",
+            extension = "csv",
+            mimeType = "text/csv",
+        ) {
             CsvExporter.notificationLogCsv(_uiState.value.logEntries, ZoneId.systemDefault())
         }
     }
 
-    private fun exportCsv(context: Context, fileStem: String, content: () -> String) {
+    /**
+     * Writes the whole Historia page as one self-contained HTML file — the form
+     * meant for reading, where CSV is the form meant for spreadsheets.
+     */
+    fun exportHtmlReport(context: Context) {
+        val labels = htmlReportLabels(context)
+        exportFile(
+            context,
+            fileStem = "device-watch-report",
+            extension = "html",
+            mimeType = "text/html",
+        ) {
+            val state = _uiState.value
+            HtmlReportBuilder.build(
+                HtmlReportData(
+                    deviceName = deviceName(statsRepository.getDeviceInfo()),
+                    generatedAt = LocalDateTime.now(),
+                    days = state.days,
+                    monthly = state.monthlyUsage,
+                    batterySamples = state.batterySamples,
+                    logEntries = state.logEntries,
+                    zone = ZoneId.systemDefault(),
+                    locale = Locale.getDefault(),
+                ),
+                labels,
+            )
+        }
+    }
+
+    private fun exportFile(
+        context: Context,
+        fileStem: String,
+        extension: String,
+        mimeType: String,
+        content: suspend () -> String,
+    ) {
         viewModelScope.launch {
             try {
                 val file = withContext(dispatcher) {
                     val dir = File(context.cacheDir, "exports").apply { mkdirs() }
-                    File(dir, "$fileStem-${LocalDate.now()}.csv").apply { writeText(content()) }
+                    purgeStaleExports(dir)
+                    val body = content()
+                    File(dir, "$fileStem-${LocalDate.now()}.$extension").apply { writeText(body) }
                 }
                 val uri = FileProvider.getUriForFile(context, FILE_PROVIDER_AUTHORITY, file)
                 val send = Intent(Intent.ACTION_SEND).apply {
-                    type = "text/csv"
+                    type = mimeType
                     putExtra(Intent.EXTRA_STREAM, uri)
                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 }
@@ -205,6 +252,61 @@ class HistoryViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Yesterday's exports have already been shared or dropped, and the receiving
+     * app holds its own copy — keeping them only grows the cache. Today's stay:
+     * a share sheet may still be reading the file the user just sent.
+     */
+    private fun purgeStaleExports(dir: File) {
+        val cutoff = System.currentTimeMillis() - EXPORT_RETENTION_MILLIS
+        dir.listFiles()?.forEach { file ->
+            if (file.isFile && file.lastModified() < cutoff) file.delete()
+        }
+    }
+
+    /** "Google Pixel 8a", but without repeating a manufacturer the model already names. */
+    private fun deviceName(info: DeviceInfo): String {
+        val model = info.model.takeIf { it != UNAVAILABLE_TEXT && it.isNotBlank() }
+        val maker = info.manufacturer.takeIf { it != UNAVAILABLE_TEXT && it.isNotBlank() }
+        return when {
+            model == null -> maker ?: ""
+            maker == null || model.startsWith(maker, ignoreCase = true) -> model
+            else -> "$maker $model"
+        }
+    }
+
+    private fun htmlReportLabels(context: Context) = HtmlReportLabels(
+        title = context.getString(R.string.report_title),
+        generatedAt = context.getString(R.string.report_generated_at),
+        summarySection = context.getString(R.string.report_summary_section),
+        summaryScreenTime = context.getString(R.string.report_summary_screen_time),
+        summaryUnlocks = context.getString(R.string.report_summary_unlocks),
+        summaryNotifications = context.getString(R.string.report_summary_notifications),
+        summaryData = context.getString(R.string.report_summary_data),
+        batterySection = context.getString(R.string.report_battery_section),
+        batteryChargingNote = context.getString(R.string.report_battery_charging_note),
+        daysSection = context.getString(R.string.report_days_section),
+        columnDay = context.getString(R.string.report_column_day),
+        columnScreenTime = context.getString(R.string.report_column_screen_time),
+        columnUnlocks = context.getString(R.string.report_column_unlocks),
+        columnNotifications = context.getString(R.string.report_column_notifications),
+        columnBoots = context.getString(R.string.report_column_boots),
+        columnCharges = context.getString(R.string.report_column_charges),
+        monthlySection = context.getString(R.string.report_monthly_section),
+        columnMonth = context.getString(R.string.report_column_month),
+        columnMobile = context.getString(R.string.report_column_mobile),
+        columnWifi = context.getString(R.string.report_column_wifi),
+        logSection = context.getString(R.string.report_log_section),
+        columnTime = context.getString(R.string.report_column_time),
+        columnApp = context.getString(R.string.report_column_app),
+        columnTitle = context.getString(R.string.report_column_title),
+        columnText = context.getString(R.string.report_column_text),
+        empty = context.getString(R.string.report_empty),
+        footer = context.getString(R.string.report_footer),
+        hourUnit = context.getString(R.string.report_hour_unit),
+        minuteUnit = context.getString(R.string.report_minute_unit),
+    )
+
     private companion object {
         /**
          * Wide enough to reach every sample the store still keeps — it retains whole
@@ -215,5 +317,8 @@ class HistoryViewModel @Inject constructor(
 
         /** Matches the manifest's FileProvider authority. */
         const val FILE_PROVIDER_AUTHORITY = "org.jarsi.devicewatch.fileprovider"
+
+        /** How long a written export stays in the cache before the next export clears it. */
+        const val EXPORT_RETENTION_MILLIS = 24L * 60 * 60 * 1000
     }
 }

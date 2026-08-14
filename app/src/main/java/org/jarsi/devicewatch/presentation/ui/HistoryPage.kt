@@ -23,6 +23,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -120,6 +121,14 @@ fun HistoryPage(
                         expanded = exportMenuOpen,
                         onDismissRequest = { exportMenuOpen = false }
                     ) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.export_report_html)) },
+                            onClick = withTapHaptic {
+                                exportMenuOpen = false
+                                viewModel.exportHtmlReport(context)
+                            }
+                        )
+                        HorizontalDivider()
                         DropdownMenuItem(
                             text = { Text(stringResource(R.string.export_usage_csv)) },
                             onClick = withTapHaptic {
