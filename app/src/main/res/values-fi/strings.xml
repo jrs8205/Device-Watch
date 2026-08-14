@@ -69,6 +69,9 @@
     <string name="history_log_open_app">Avaa sovellus</string>
     <string name="history_metric_empty">Tälle mittarille ei ole vielä kertynyt historiaa. Päiväkohtaiset arvot ilmestyvät tähän datan kertyessä.</string>
     <string name="history_today">Tänään</string>
+    <string name="export_menu_description">Vie</string>
+    <string name="export_usage_csv">Vie käyttöhistoria (CSV)</string>
+    <string name="export_log_csv">Vie ilmoitusloki (CSV)</string>
     <string name="history_yesterday">Eilen</string>
     <string name="history_monthly_data_section">Datankäyttö kuukausittain</string>
     <string name="history_monthly_mobile_column">Mobiili</string>

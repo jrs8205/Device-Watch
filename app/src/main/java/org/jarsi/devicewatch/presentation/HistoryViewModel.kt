@@ -1,5 +1,8 @@
 package org.jarsi.devicewatch.presentation
 
+import android.content.Context
+import android.content.Intent
+import androidx.core.content.FileProvider
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import org.jarsi.devicewatch.data.BatteryHistory
@@ -13,6 +16,7 @@ import org.jarsi.devicewatch.data.SystemStatsRepository
 import org.jarsi.devicewatch.data.UsageHistory
 import org.jarsi.devicewatch.di.DefaultDispatcher
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,8 +25,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
 import java.time.LocalDate
 import java.time.YearMonth
+import java.time.ZoneId
 import javax.inject.Inject
 
 data class HistoryDay(
@@ -161,6 +167,44 @@ class HistoryViewModel @Inject constructor(
         }
     }
 
+    /** Writes the 62-day tallies as CSV under cacheDir/exports and opens the share sheet. */
+    fun exportUsageHistoryCsv(context: Context) {
+        exportCsv(context, fileStem = "device-watch-usage") {
+            CsvExporter.usageHistoryCsv(_uiState.value.days)
+        }
+    }
+
+    /** Writes the retained notification log as CSV and opens the share sheet. */
+    fun exportNotificationLogCsv(context: Context) {
+        exportCsv(context, fileStem = "device-watch-notifications") {
+            CsvExporter.notificationLogCsv(_uiState.value.logEntries, ZoneId.systemDefault())
+        }
+    }
+
+    private fun exportCsv(context: Context, fileStem: String, content: () -> String) {
+        viewModelScope.launch {
+            try {
+                val file = withContext(dispatcher) {
+                    val dir = File(context.cacheDir, "exports").apply { mkdirs() }
+                    File(dir, "$fileStem-${LocalDate.now()}.csv").apply { writeText(content()) }
+                }
+                val uri = FileProvider.getUriForFile(context, FILE_PROVIDER_AUTHORITY, file)
+                val send = Intent(Intent.ACTION_SEND).apply {
+                    type = "text/csv"
+                    putExtra(Intent.EXTRA_STREAM, uri)
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                }
+                context.startActivity(Intent.createChooser(send, null))
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // A failed export must never take the page down; the share sheet
+                // simply does not open.
+                e.printStackTrace()
+            }
+        }
+    }
+
     private companion object {
         /**
          * Wide enough to reach every sample the store still keeps — it retains whole
@@ -168,5 +212,8 @@ class HistoryViewModel @Inject constructor(
          * depending on the time of day. The day/week chart ranges are cut from this.
          */
         const val BATTERY_WINDOW_MILLIS = BatteryHistoryCodec.RETENTION_DAYS * 24 * 60 * 60 * 1000
+
+        /** Matches the manifest's FileProvider authority. */
+        const val FILE_PROVIDER_AUTHORITY = "org.jarsi.devicewatch.fileprovider"
     }
 }
