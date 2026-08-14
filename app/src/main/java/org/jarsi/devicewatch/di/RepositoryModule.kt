@@ -4,6 +4,8 @@ import org.jarsi.devicewatch.data.AppSettingsRepository
 import org.jarsi.devicewatch.data.AppSettingsRepositoryImpl
 import org.jarsi.devicewatch.data.AppUsageRepository
 import org.jarsi.devicewatch.data.AppUsageRepositoryImpl
+import org.jarsi.devicewatch.data.BatteryHistory
+import org.jarsi.devicewatch.data.BatteryHistoryImpl
 import org.jarsi.devicewatch.data.BatteryStatusReader
 import org.jarsi.devicewatch.data.BatteryStatusReaderImpl
 import org.jarsi.devicewatch.data.ChargeAnchorStore
@@ -63,4 +65,8 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindBatteryStatusReader(impl: BatteryStatusReaderImpl): BatteryStatusReader
+
+    @Binds
+    @Singleton
+    abstract fun bindBatteryHistory(impl: BatteryHistoryImpl): BatteryHistory
 }
