@@ -44,6 +44,15 @@ class DataQuotaLogicTest {
     }
 
     @Test
+    fun `given both levels were already sent, when evaluating over the quota, then nothing is pending`() {
+        val pending = DataQuotaLogic.pendingThresholds(
+            quotaGb = 10.0, usedGb = 12.0, notified80 = true, notified100 = true
+        )
+
+        assertThat(pending).isEmpty()
+    }
+
+    @Test
     fun `given the warning was already sent, when evaluating again, then nothing is pending`() {
         val pending = DataQuotaLogic.pendingThresholds(
             quotaGb = 10.0, usedGb = 8.5, notified80 = true, notified100 = false

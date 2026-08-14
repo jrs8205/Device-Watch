@@ -60,7 +60,16 @@ class AppSettingsRepositoryImpl @Inject constructor(
         coerceDataQuota(prefs.getFloat(KEY_DATA_QUOTA_GB, 0f).toDouble())
 
     override fun setDataQuotaGb(value: Double) {
-        prefs.edit().putFloat(KEY_DATA_QUOTA_GB, coerceDataQuota(value).toFloat()).apply()
+        val coerced = coerceDataQuota(value)
+        val editor = prefs.edit().putFloat(KEY_DATA_QUOTA_GB, coerced.toFloat())
+        if (coerced != dataQuotaGb()) {
+            // A changed quota makes the 80 %/100 % crossings new events — re-arm
+            // both latches instead of staying silent for the rest of the period.
+            prefs.all.keys
+                .filter { it.startsWith("$KEY_DATA_QUOTA_NOTIFIED_PREFIX:") }
+                .forEach(editor::remove)
+        }
+        editor.apply()
     }
 
     /** 0 means no quota; anything else is a plan size bounded to 1..500 GB. */

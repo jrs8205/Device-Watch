@@ -332,7 +332,10 @@ class SystemMonitorService : Service() {
      */
     private fun maybeNotifyDataQuota(stats: SystemStats) {
         try {
-            val quotaGb = appSettings.dataQuotaGb()
+            // mobileDataTotalGb carries the quota only when one is set AND the
+            // period figure is available (usage access granted) — the since-boot
+            // fallback must never be compared against a period quota.
+            val quotaGb = stats.mobileDataTotalGb
             if (quotaGb <= 0.0) return
             val periodStartEpochDay = DataPeriodCalculator.periodStart(
                 appSettings.dataCounterMode(), appSettings.cycleStartDay(), LocalDate.now()

@@ -619,8 +619,14 @@ class SystemStatsRepositoryImpl @Inject constructor(
         val mobileTrafficSinceBootGb = readMobileTrafficStatsGb()
         val mobileDataUsedGb = if (mobileDataTodayGb >= 0.0) mobileDataTodayGb else mobileTrafficSinceBootGb
         // The user's plan allowance, when set: the widget and the overview render
-        // "used / quota" off this pair, and 0 (no quota) stays unavailable.
-        val mobileDataTotalGb = settings.dataQuotaGb().takeIf { it > 0.0 } ?: UNAVAILABLE_DOUBLE
+        // "used / quota" off this pair, and 0 (no quota) stays unavailable. Only
+        // exposed when the period figure itself is available — comparing the
+        // since-boot fallback against a period quota would draw a nonsense ratio.
+        val mobileDataTotalGb = if (mobileDataTodayGb >= 0.0) {
+            settings.dataQuotaGb().takeIf { it > 0.0 } ?: UNAVAILABLE_DOUBLE
+        } else {
+            UNAVAILABLE_DOUBLE
+        }
         // The TrafficStats fallback always counts since boot, so it keeps its own label
         // regardless of the selected counter mode.
         val mobileDataLabel = when {
