@@ -94,6 +94,7 @@ fun HistoryPage(
     }
 
     var selectedMetric by rememberSaveable { mutableStateOf(HistoryMetric.ScreenTime) }
+    var batteryRange by rememberSaveable { mutableStateOf(BatteryChartRange.Day) }
 
     Scaffold(
         topBar = {
@@ -125,6 +126,27 @@ fun HistoryPage(
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
+                // Held back until the first load finishes so the chart's empty text
+                // doesn't flash while the samples are still being read.
+                if (uiState.batterySamples.isNotEmpty() || !uiState.isLoading) {
+                    item(key = "battery_header") {
+                        Text(
+                            text = stringResource(R.string.history_battery_section),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                    item(key = "battery_chart") {
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            BatteryRangeChipRow(selected = batteryRange, onSelect = { batteryRange = it })
+                            Spacer(modifier = Modifier.height(8.dp))
+                            BatteryChart(samples = uiState.batterySamples, range = batteryRange)
+                        }
+                    }
+                }
+
                 item(key = "metric_chips") {
                     MetricChipRow(selected = selectedMetric, onSelect = { selectedMetric = it })
                 }
@@ -354,6 +376,22 @@ private fun MonthlyDataSection(
                 text = stringResource(R.string.history_monthly_metered_note),
                 fontSize = 11.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
+private fun BatteryRangeChipRow(selected: BatteryChartRange, onSelect: (BatteryChartRange) -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        BatteryChartRange.entries.forEach { range ->
+            FilterChip(
+                selected = range == selected,
+                onClick = withTapHaptic { onSelect(range) },
+                label = { Text(stringResource(range.labelRes), fontSize = 12.sp) }
             )
         }
     }

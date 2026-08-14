@@ -66,6 +66,10 @@
     <string name="access_state_missing">Not granted</string>
     <string name="history_monthly_metered_note">Android counts only metered mobile data. Usage on connections marked as unmetered (e.g. unlimited plans) is not included.</string>
     <string name="history_monthly_usage_access_missing">Usage access is required to show data usage.</string>
+    <string name="history_battery_section">Battery</string>
+    <string name="history_battery_day">24 h</string>
+    <string name="history_battery_week">Week</string>
+    <string name="history_battery_empty">Battery history appears here as the app collects it.</string>
     <string name="onboarding_skip">Skip</string>
     <string name="onboarding_next">Next</string>
     <string name="onboarding_back">Back</string>

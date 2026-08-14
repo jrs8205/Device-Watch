@@ -64,6 +64,10 @@
     <string name="access_state_missing">Ei myönnetty</string>
     <string name="history_monthly_metered_note">Android laskee vain maksulliseksi (metered) merkityn mobiilidatan. Rajattomaksi merkityn liittymän käyttö ei näy luvuissa.</string>
     <string name="history_monthly_usage_access_missing">Datankäytön näyttäminen vaatii käyttötietojen käyttöoikeuden.</string>
+    <string name="history_battery_section">Akku</string>
+    <string name="history_battery_day">24 h</string>
+    <string name="history_battery_week">Viikko</string>
+    <string name="history_battery_empty">Akkuhistoria ilmestyy tähän, kun sovellus on kerännyt sitä.</string>
     <string name="onboarding_skip">Ohita</string>
     <string name="onboarding_next">Seuraava</string>
     <string name="onboarding_back">Takaisin</string>
