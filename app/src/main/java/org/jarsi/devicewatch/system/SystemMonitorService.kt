@@ -235,17 +235,18 @@ class SystemMonitorService : Service() {
                                 nowMillis = System.currentTimeMillis(),
                             )
                         )
-                        // The store throttles the BATTERY_CHANGED stream itself. A quirky
-                        // EXTRA_SCALE can push the percentage past 100, which the store's
-                        // read path would later drop as corruption, so clamp it here.
+                        // The store throttles the BATTERY_CHANGED stream itself, but it
+                        // writes to disk on every call, so it runs off the main thread.
+                        // The sample is timestamped here, at delivery. A quirky EXTRA_SCALE
+                        // can push the percentage past 100, which the store's read path
+                        // would later drop as corruption, so clamp it too.
                         if (level >= 0) {
-                            batteryHistory.record(
-                                BatterySample(
-                                    timeMillis = System.currentTimeMillis(),
-                                    level = level.coerceIn(0, 100),
-                                    charging = plugged,
-                                )
+                            val sample = BatterySample(
+                                timeMillis = System.currentTimeMillis(),
+                                level = level.coerceIn(0, 100),
+                                charging = plugged,
                             )
+                            serviceScope.launch { batteryHistory.record(sample) }
                         }
                     }
                     Intent.ACTION_POWER_CONNECTED -> {
