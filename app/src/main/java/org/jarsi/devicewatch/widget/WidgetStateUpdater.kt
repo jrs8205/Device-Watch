@@ -107,6 +107,7 @@ object WidgetStateUpdater {
         this[RefreshStatsAction.MOBILE_DATA_TOTAL] = stats.mobileDataTotalGb
         this[RefreshStatsAction.MOBILE_DATA_LABEL] = stats.mobileDataLabel
         this[RefreshStatsAction.UPTIME] = stats.uptimeText
+        this[RefreshStatsAction.UPTIME_MILLIS] = stats.uptimeMillis
         this[RefreshStatsAction.LAST_UPDATED] = timestamp
     }
 

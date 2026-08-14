@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.datastore.preferences.core.doublePreferencesKey
 import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.glance.GlanceId
 import androidx.glance.action.ActionParameters
@@ -63,6 +64,9 @@ class RefreshStatsAction : ActionCallback {
         val MOBILE_DATA_LABEL = stringPreferencesKey("mobile_data_label")
         
         val UPTIME = stringPreferencesKey("uptime")
+
+        /** Raw uptime for the compact widget, which has no room for "523h 45m". */
+        val UPTIME_MILLIS = longPreferencesKey("uptime_millis")
         val LAST_UPDATED = stringPreferencesKey("last_updated")
         val BACKGROUND_OPACITY = floatPreferencesKey("background_opacity")
 

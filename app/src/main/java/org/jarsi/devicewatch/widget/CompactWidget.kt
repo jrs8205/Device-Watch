@@ -6,7 +6,6 @@ import android.content.res.Configuration
 import android.os.Build
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.datastore.preferences.core.Preferences
 import androidx.glance.ColorFilter
 import androidx.glance.GlanceId
@@ -27,6 +26,7 @@ import androidx.glance.layout.Alignment
 import androidx.glance.layout.Column
 import androidx.glance.layout.Row
 import androidx.glance.layout.Spacer
+import androidx.glance.layout.fillMaxHeight
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.height
@@ -38,6 +38,7 @@ import androidx.glance.state.PreferencesGlanceStateDefinition
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
+import androidx.glance.unit.ColorProvider
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -111,6 +112,13 @@ class CompactWidgetReceiver : GlanceAppWidgetReceiver() {
     }
 }
 
+/**
+ * Four labelled quadrants: battery, uptime, mobile data and Wi-Fi data. Every
+ * figure carries its own heading, because a 2×2 widget read at arm's length has
+ * no room for the reader to infer what a bare number means. The layout holds
+ * exactly four short lines so it survives a raised system font size — see
+ * [widgetSp] for the cap that keeps it from clipping.
+ */
 @Composable
 fun CompactWidgetContent() {
     val context = androidx.glance.LocalContext.current
@@ -122,12 +130,9 @@ fun CompactWidgetContent() {
     val colors = getWidgetColors(isDark, opacity)
 
     val batteryLevel = prefs[RefreshStatsAction.BATTERY_LEVEL] ?: UNAVAILABLE_INT
-    val batteryStatus = prefs[RefreshStatsAction.BATTERY_STATUS] ?: UNAVAILABLE_TEXT
+    val uptimeMillis = prefs[RefreshStatsAction.UPTIME_MILLIS] ?: -1L
     val mobileDataUsed = prefs[RefreshStatsAction.MOBILE_DATA_USED] ?: UNAVAILABLE_DOUBLE
-    val mobileDataTotal = prefs[RefreshStatsAction.MOBILE_DATA_TOTAL] ?: UNAVAILABLE_DOUBLE
-    val mobileDataLabel = prefs[RefreshStatsAction.MOBILE_DATA_LABEL]
-        ?: context.getString(R.string.mobile_data_label)
-    val wifiBytesToday = prefs[RefreshStatsAction.WIFI_BYTES_TODAY] ?: UNAVAILABLE_DOUBLE
+    val wifiBytes = prefs[RefreshStatsAction.WIFI_BYTES_TODAY] ?: UNAVAILABLE_DOUBLE
 
     Column(
         modifier = GlanceModifier
@@ -135,83 +140,123 @@ fun CompactWidgetContent() {
             .appWidgetBackground()
             .background(colors.cardBackground)
             .cornerRadius(30.dp)
-            .padding(14.dp)
+            .padding(12.dp)
             .clickable(actionStartActivity<MainActivity>())
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = GlanceModifier.fillMaxWidth()
-        ) {
-            Image(
-                provider = ImageProvider(R.drawable.ic_widget_battery),
-                contentDescription = null,
-                colorFilter = ColorFilter.tint(colors.batteryAccent),
-                modifier = GlanceModifier.size(16.dp)
+        Row(modifier = GlanceModifier.fillMaxWidth().defaultWeight()) {
+            CompactCell(
+                label = context.getString(R.string.widget_tile_battery),
+                value = percentText(batteryLevel),
+                valueColor = if (batteryLevel >= 0) {
+                    getMetricColor(batteryLevel, colors.batteryAccent, isLimitHigh = false)
+                } else {
+                    colors.textMuted
+                },
+                iconRes = R.drawable.ic_widget_battery,
+                iconColor = colors.batteryAccent,
+                colors = colors,
+                modifier = GlanceModifier.defaultWeight()
             )
-            Spacer(modifier = GlanceModifier.width(6.dp))
-            Text(
-                text = percentText(batteryLevel),
-                style = TextStyle(
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = colors.textPrimary
-                )
-            )
-            Spacer(modifier = GlanceModifier.defaultWeight())
-            Text(
-                text = batteryStatus,
-                style = TextStyle(fontSize = 10.sp, color = colors.textMuted)
+            Spacer(modifier = GlanceModifier.width(8.dp))
+            CompactCell(
+                label = context.getString(R.string.widget_tile_uptime),
+                value = compactUptimeText(
+                    millis = uptimeMillis,
+                    dayUnit = context.getString(R.string.unit_day_short),
+                    hourUnit = context.getString(R.string.unit_hour_short),
+                    minuteUnit = context.getString(R.string.unit_minute_short),
+                ),
+                valueColor = colors.textPrimary,
+                iconRes = R.drawable.ic_widget_schedule,
+                iconColor = colors.cpuAccent,
+                colors = colors,
+                modifier = GlanceModifier.defaultWeight()
             )
         }
-        Spacer(modifier = GlanceModifier.height(6.dp))
-        ProgressBar(
-            percent = batteryLevel,
-            activeColor = getMetricColor(batteryLevel, colors.batteryAccent, isLimitHigh = false),
-            trackColor = colors.progressTrack
-        )
-        Spacer(modifier = GlanceModifier.defaultWeight())
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = GlanceModifier.fillMaxWidth()
-        ) {
-            Image(
-                provider = ImageProvider(R.drawable.ic_widget_cellular),
-                contentDescription = null,
-                colorFilter = ColorFilter.tint(colors.mobileAccent),
-                modifier = GlanceModifier.size(14.dp)
+        Spacer(modifier = GlanceModifier.height(8.dp))
+        Row(modifier = GlanceModifier.fillMaxWidth().defaultWeight()) {
+            CompactCell(
+                label = context.getString(R.string.widget_tile_mobile),
+                value = dataAmountText(mobileDataUsed),
+                valueColor = colors.textPrimary,
+                iconRes = R.drawable.ic_widget_cellular,
+                iconColor = colors.mobileAccent,
+                colors = colors,
+                modifier = GlanceModifier.defaultWeight()
             )
-            Spacer(modifier = GlanceModifier.width(6.dp))
+            Spacer(modifier = GlanceModifier.width(8.dp))
+            CompactCell(
+                label = context.getString(R.string.widget_tile_wifi),
+                value = dataAmountText(wifiBytes),
+                valueColor = colors.textPrimary,
+                iconRes = R.drawable.ic_widget_wifi,
+                iconColor = colors.networkAccent,
+                colors = colors,
+                modifier = GlanceModifier.defaultWeight()
+            )
+        }
+    }
+}
+
+@Composable
+private fun CompactCell(
+    label: String,
+    value: String,
+    valueColor: ColorProvider,
+    iconRes: Int,
+    iconColor: ColorProvider,
+    colors: WidgetColors,
+    modifier: GlanceModifier = GlanceModifier,
+) {
+    Column(modifier = modifier.fillMaxHeight()) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Image(
+                provider = ImageProvider(iconRes),
+                contentDescription = null,
+                colorFilter = ColorFilter.tint(iconColor),
+                modifier = GlanceModifier.size(11.dp)
+            )
+            Spacer(modifier = GlanceModifier.width(4.dp))
             Text(
-                text = mobileDataLabel,
-                style = TextStyle(fontSize = 10.sp, color = colors.labelText)
+                text = label,
+                style = TextStyle(
+                    fontSize = widgetSp(9f),
+                    fontWeight = FontWeight.Bold,
+                    color = colors.labelText
+                ),
+                maxLines = 1
             )
         }
         Text(
-            text = mobileDataText(mobileDataUsed, mobileDataTotal),
+            text = value,
             style = TextStyle(
-                fontSize = 15.sp,
+                fontSize = widgetSp(16f),
                 fontWeight = FontWeight.Bold,
-                color = colors.textPrimary
-            )
+                color = valueColor
+            ),
+            maxLines = 1
         )
-        Spacer(modifier = GlanceModifier.height(4.dp))
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = GlanceModifier.fillMaxWidth()
-        ) {
-            Text(
-                text = context.getString(R.string.widget_tile_network),
-                style = TextStyle(fontSize = 10.sp, color = colors.labelText)
-            )
-            Spacer(modifier = GlanceModifier.defaultWeight())
-            Text(
-                text = dataAmountText(wifiBytesToday),
-                style = TextStyle(
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = colors.capacityText
-                )
-            )
-        }
+    }
+}
+
+/**
+ * Uptime in a single unit — the widest this cell ever gets is "22 pv". Dropping
+ * the smaller unit is deliberate: minute-level uptime matters on the large
+ * widget, not in a quadrant three characters wide.
+ */
+fun compactUptimeText(
+    millis: Long,
+    dayUnit: String,
+    hourUnit: String,
+    minuteUnit: String,
+): String {
+    if (millis < 0L) return UNAVAILABLE_TEXT
+    val minutes = millis / 60_000L
+    val hours = minutes / 60
+    val days = hours / 24
+    return when {
+        days >= 1 -> "$days $dayUnit"
+        hours >= 1 -> "$hours $hourUnit"
+        else -> "$minutes $minuteUnit"
     }
 }

@@ -694,7 +694,8 @@ class SystemStatsRepositoryImpl @Inject constructor(
             wifiLinkSpeedMbps = wifiLinkSpeedMbps,
             wifiStandard = wifiStandard,
             ipAddress = ipAddress,
-            uptimeText = uptimeText
+            uptimeText = uptimeText,
+            uptimeMillis = uptimeMs
         )
     }
 

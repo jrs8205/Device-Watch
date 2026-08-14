@@ -65,5 +65,7 @@ data class SystemStats(
     val wifiLinkSpeedMbps: Int,
     val wifiStandard: String,
     val ipAddress: String,
-    val uptimeText: String
+    val uptimeText: String,
+    /** Raw uptime so a caller too narrow for [uptimeText] can format its own. */
+    val uptimeMillis: Long = 0L
 )
