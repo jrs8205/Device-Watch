@@ -1,7 +1,7 @@
 package org.jarsi.devicewatch.presentation.ui
 
-import org.jarsi.devicewatch.data.BatterySample
 import com.google.common.truth.Truth.assertThat
+import org.jarsi.devicewatch.data.BatterySample
 import org.junit.Test
 
 class BatteryChartLogicTest {
@@ -13,6 +13,19 @@ class BatteryChartLogicTest {
     /** Sample [agoMillis] before the fixed "now" of these tests. */
     private fun sample(agoMillis: Long, level: Int, charging: Boolean = false) =
         BatterySample(timeMillis = now - agoMillis, level = level, charging = charging)
+
+    /** Where a reading [agoMillis] before now sits on the day chart's x axis. */
+    private fun dayX(agoMillis: Long): Float =
+        (24 * hour - agoMillis).toFloat() / (24 * hour).toFloat()
+
+    /** Spans the chart would shade, wired together exactly the way the canvas does it. */
+    private fun spansOf(
+        samples: List<BatterySample>,
+        range: BatteryChartRange = BatteryChartRange.Day,
+    ): List<ClosedFloatingPointRange<Float>> = BatteryChartLogic.chargingSpans(
+        BatteryChartLogic.points(samples, range, now),
+        BatteryChartLogic.segmentStarts(samples, range, now),
+    )
 
     @Test
     fun `the window start maps to the left edge and now to the right edge`() {
@@ -71,82 +84,82 @@ class BatteryChartLogicTest {
 
     @Test
     fun `consecutive charging samples merge into a single span`() {
-        val points = BatteryChartLogic.points(
+        val spans = spansOf(
             listOf(
-                sample(4 * hour, 40, charging = true),
-                sample(3 * hour, 60, charging = true),
-                sample(2 * hour, 80, charging = true),
-                sample(hour, 78),
-                sample(0, 76),
-            ),
-            BatteryChartRange.Day,
-            now,
+                sample(60 * minute, 40, charging = true),
+                sample(55 * minute, 60, charging = true),
+                sample(50 * minute, 80, charging = true),
+                sample(45 * minute, 78),
+                sample(40 * minute, 76),
+            )
         )
 
-        val spans = BatteryChartLogic.chargingSpans(points)
-
         assertThat(spans).hasSize(1)
-        assertThat(spans.single().start).isWithin(TOLERANCE).of(20f / 24f)
-        assertThat(spans.single().endInclusive).isWithin(TOLERANCE).of(23f / 24f)
+        assertThat(spans.single().start).isWithin(TOLERANCE).of(dayX(60 * minute))
+        assertThat(spans.single().endInclusive).isWithin(TOLERANCE).of(dayX(45 * minute))
     }
 
     @Test
     fun `separate charging sessions stay separate spans`() {
-        val points = BatteryChartLogic.points(
+        val spans = spansOf(
             listOf(
-                sample(6 * hour, 40, charging = true),
-                sample(5 * hour, 60),
-                sample(2 * hour, 50, charging = true),
-                sample(hour, 70),
-            ),
-            BatteryChartRange.Day,
-            now,
+                sample(90 * minute, 40, charging = true),
+                sample(85 * minute, 60),
+                sample(60 * minute, 50, charging = true),
+                sample(55 * minute, 70),
+            )
         )
 
-        val spans = BatteryChartLogic.chargingSpans(points)
-
         assertThat(spans).hasSize(2)
-        assertThat(spans.first().start).isWithin(TOLERANCE).of(18f / 24f)
-        assertThat(spans.last().endInclusive).isWithin(TOLERANCE).of(23f / 24f)
+        assertThat(spans.first().start).isWithin(TOLERANCE).of(dayX(90 * minute))
+        assertThat(spans.last().endInclusive).isWithin(TOLERANCE).of(dayX(55 * minute))
     }
 
     @Test
     fun `a lone charging sample is shaded up to the next reading`() {
-        val points = BatteryChartLogic.points(
-            listOf(sample(3 * hour, 40, charging = true), sample(2 * hour, 60)),
-            BatteryChartRange.Day,
-            now,
+        val span = spansOf(
+            listOf(sample(60 * minute, 40, charging = true), sample(55 * minute, 60))
+        ).single()
+
+        assertThat(span.start).isWithin(TOLERANCE).of(dayX(60 * minute))
+        assertThat(span.endInclusive).isWithin(TOLERANCE).of(dayX(55 * minute))
+    }
+
+    @Test
+    fun `a charging run stops at a break in the line instead of shading the gap`() {
+        val spans = spansOf(
+            listOf(
+                sample(10 * hour, 40, charging = true), // last reading before the gap
+                sample(60 * minute, 80, charging = true),
+                sample(55 * minute, 78),
+            )
         )
 
-        val span = BatteryChartLogic.chargingSpans(points).single()
-
-        assertThat(span.start).isWithin(TOLERANCE).of(21f / 24f)
-        assertThat(span.endInclusive).isWithin(TOLERANCE).of(22f / 24f)
+        assertThat(spans).hasSize(2)
+        // The pre-gap run ends where it started: it must not reach across the hole.
+        assertThat(spans.first().start).isWithin(TOLERANCE).of(dayX(10 * hour))
+        assertThat(spans.first().endInclusive).isWithin(TOLERANCE).of(dayX(10 * hour))
+        assertThat(spans.last().start).isWithin(TOLERANCE).of(dayX(60 * minute))
+        assertThat(spans.last().endInclusive).isWithin(TOLERANCE).of(dayX(55 * minute))
     }
 
     @Test
     fun `a window that is charging throughout is shaded end to end`() {
-        val points = BatteryChartLogic.points(
-            listOf(sample(2 * hour, 40, charging = true), sample(0, 90, charging = true)),
-            BatteryChartRange.Day,
-            now,
-        )
+        val span = spansOf(
+            listOf(
+                sample(10 * minute, 40, charging = true),
+                sample(5 * minute, 80, charging = true),
+                sample(0, 90, charging = true),
+            )
+        ).single()
 
-        val span = BatteryChartLogic.chargingSpans(points).single()
-
-        assertThat(span.start).isWithin(TOLERANCE).of(22f / 24f)
+        assertThat(span.start).isWithin(TOLERANCE).of(dayX(10 * minute))
         assertThat(span.endInclusive).isWithin(TOLERANCE).of(1f)
     }
 
     @Test
     fun `a window without charging has nothing to shade`() {
-        val points = BatteryChartLogic.points(
-            listOf(sample(2 * hour, 60), sample(hour, 55)),
-            BatteryChartRange.Day,
-            now,
-        )
-
-        assertThat(BatteryChartLogic.chargingSpans(points)).isEmpty()
+        assertThat(spansOf(listOf(sample(60 * minute, 60), sample(55 * minute, 55)))).isEmpty()
     }
 
     @Test
@@ -191,7 +204,7 @@ class BatteryChartLogicTest {
         val points = BatteryChartLogic.points(emptyList(), BatteryChartRange.Day, now)
 
         assertThat(points).isEmpty()
-        assertThat(BatteryChartLogic.chargingSpans(points)).isEmpty()
+        assertThat(spansOf(emptyList())).isEmpty()
         assertThat(BatteryChartLogic.segmentStarts(emptyList(), BatteryChartRange.Day, now)).isEmpty()
     }
 

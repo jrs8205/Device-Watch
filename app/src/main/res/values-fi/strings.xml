@@ -67,7 +67,7 @@
     <string name="history_battery_section">Akku</string>
     <string name="history_battery_day">24 h</string>
     <string name="history_battery_week">Viikko</string>
-    <string name="history_battery_empty">Akkuhistoria ilmestyy tähän, kun sovellus on kerännyt sitä.</string>
+    <string name="history_battery_empty">Akkuhistoria ilmestyy tähän sen kertyessä.</string>
     <string name="onboarding_skip">Ohita</string>
     <string name="onboarding_next">Seuraava</string>
     <string name="onboarding_back">Takaisin</string>

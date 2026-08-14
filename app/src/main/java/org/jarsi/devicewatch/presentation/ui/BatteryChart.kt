@@ -59,9 +59,11 @@ internal fun BatteryChart(
     val points = remember(samples, range, nowMillis) {
         BatteryChartLogic.points(samples, range, nowMillis)
     }
-    val chargingSpans = remember(points) { BatteryChartLogic.chargingSpans(points) }
     val segmentStarts = remember(samples, range, nowMillis) {
         BatteryChartLogic.segmentStarts(samples, range, nowMillis)
+    }
+    val chargingSpans = remember(points, segmentStarts) {
+        BatteryChartLogic.chargingSpans(points, segmentStarts)
     }
 
     val lineColor = MaterialTheme.colorScheme.primary
@@ -101,20 +103,26 @@ internal fun BatteryChart(
                         .height(ChartHeight)
                 ) {
                     val strokeWidth = 2.dp.toPx()
-                    // Inset by half a stroke so the 0 % and 100 % lines stay whole.
+                    // Inset by half a stroke on both axes so the 0 % and 100 % lines,
+                    // the round caps and the lone-reading dots stay whole at the edges.
                     val inset = strokeWidth / 2f
+                    val plotWidth = size.width - strokeWidth
                     val plotHeight = size.height - strokeWidth
-                    fun xFor(fraction: Float) = fraction * size.width
+                    fun xFor(fraction: Float) = inset + fraction * plotWidth
                     fun yFor(fraction: Float) = inset + (1f - fraction) * plotHeight
 
                     chargingSpans.forEach { span ->
                         val left = xFor(span.start)
                         val right = xFor(span.endInclusive)
+                        // A momentary charge would otherwise be zero pixels wide. Widen
+                        // it around its own middle, so one at either edge stays on screen.
+                        val width = (right - left).coerceAtLeast(strokeWidth)
+                        val start = ((left + right - width) / 2f)
+                            .coerceIn(0f, (size.width - width).coerceAtLeast(0f))
                         drawRect(
                             color = chargingColor,
-                            topLeft = Offset(left, 0f),
-                            // A momentary charge would otherwise be zero pixels wide.
-                            size = Size((right - left).coerceAtLeast(strokeWidth), size.height),
+                            topLeft = Offset(start, 0f),
+                            size = Size(width, size.height),
                         )
                     }
 

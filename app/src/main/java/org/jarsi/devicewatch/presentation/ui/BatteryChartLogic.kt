@@ -53,14 +53,31 @@ internal object BatteryChartLogic {
 
     /**
      * Contiguous charging runs as x-fraction ranges, for shading behind the line.
-     * A run reaches to the first reading that is no longer charging, so the shaded
-     * band covers the whole rising leg of the line — and a single charging sample
-     * still gets a visible width instead of a zero-wide sliver.
+     * Runs are clamped to the polyline segments given by [segmentStarts] — which
+     * must be [BatteryChartLogic.segmentStarts]' answer for the same points — so a
+     * charging reading before a break in the history never shades the gap that
+     * follows it. Inside a segment a run reaches the first reading that is no
+     * longer charging; a run that lasts to the segment's end stops at its last
+     * reading, which makes a zero-wide span possible. Giving those a visible width
+     * is the canvas's job, not this contract's.
      */
-    fun chargingSpans(points: List<ChartPoint>): List<ClosedFloatingPointRange<Float>> {
+    fun chargingSpans(
+        points: List<ChartPoint>,
+        segmentStarts: List<Int>,
+    ): List<ClosedFloatingPointRange<Float>> {
+        val spans = mutableListOf<ClosedFloatingPointRange<Float>>()
+        segmentStarts.forEachIndexed { index, start ->
+            val end = segmentStarts.getOrNull(index + 1) ?: points.size
+            spans += segmentSpans(points.subList(start, end))
+        }
+        return spans
+    }
+
+    /** Charging runs inside one unbroken polyline segment. */
+    private fun segmentSpans(segment: List<ChartPoint>): List<ClosedFloatingPointRange<Float>> {
         val spans = mutableListOf<ClosedFloatingPointRange<Float>>()
         var runStart: Float? = null
-        for (point in points) {
+        for (point in segment) {
             if (point.charging) {
                 if (runStart == null) runStart = point.xFraction
             } else {
@@ -68,8 +85,8 @@ internal object BatteryChartLogic {
                 runStart = null
             }
         }
-        // A run still open at the end (still charging now) reaches the last point.
-        runStart?.let { spans += it..points.last().xFraction }
+        // A run still open at the end of the segment stops at its last reading.
+        runStart?.let { spans += it..segment.last().xFraction }
         return spans
     }
 
@@ -78,6 +95,9 @@ internal object BatteryChartLogic {
      * new polyline starts: the first point, plus every point more than [maxGapMs]
      * after its predecessor. A gap means the app was not running, so the line must
      * break there instead of inventing a straight drain across the hole.
+     *
+     * [samples], [range] and [nowMillis] must be the ones [points] was called with:
+     * the indices only line up with that result if both saw the same window.
      */
     fun segmentStarts(
         samples: List<BatterySample>,
