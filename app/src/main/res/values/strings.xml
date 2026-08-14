@@ -28,6 +28,10 @@
     <string name="data_counter_mode_cycle">Billing cycle</string>
     <string name="data_counter_cycle_start">Cycle starts on day %1$d</string>
     <string name="data_counter_description">Count data usage per calendar day or per one-month billing cycle starting on the selected day. Month lengths are handled automatically.</string>
+    <string name="data_quota_title">Data quota</string>
+    <string name="data_quota_description" formatted="false">Set your plan\'s data allowance per counting period; the counter and widget show usage against it and you get a warning at 80 % and at the limit.</string>
+    <string name="data_quota_value">%1$s GB</string>
+    <string name="data_quota_off">No quota</string>
     <string name="battery_section_title">BATTERY</string>
     <string name="charge_limit_title">Charge reminder</string>
     <string name="charge_limit_description">Notifies when charging reaches the chosen level, so you can unplug early to protect the battery.</string>
@@ -270,6 +274,10 @@
     <string name="battery_full_notification_text" formatted="false">Battery has reached 100% while the screensaver is active.</string>
     <string name="charge_limit_notification_title">Battery at %1$d %%</string>
     <string name="charge_limit_notification_text">Charging reached your reminder limit — you can unplug.</string>
+    <string name="data_quota_channel_name">Data usage alerts</string>
+    <string name="data_quota_channel_description">Warnings when mobile data usage approaches the quota you set.</string>
+    <string name="data_quota_warning_title">%1$d %% of data quota used</string>
+    <string name="data_quota_reached_title">Data quota reached</string>
 
     <string name="widget_tile_battery">BATTERY</string>
     <string name="widget_tile_memory">MEMORY</string>

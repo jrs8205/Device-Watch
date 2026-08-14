@@ -54,6 +54,37 @@ class AppSettingsRepositoryImpl @Inject constructor(
         return ((bounded + 2) / 5) * 5
     }
 
+    // Stored as a Float: SharedPreferences has no Double, and a plan size in GB needs
+    // nothing finer than Float can represent.
+    override fun dataQuotaGb(): Double =
+        coerceDataQuota(prefs.getFloat(KEY_DATA_QUOTA_GB, 0f).toDouble())
+
+    override fun setDataQuotaGb(value: Double) {
+        prefs.edit().putFloat(KEY_DATA_QUOTA_GB, coerceDataQuota(value).toFloat()).apply()
+    }
+
+    /** 0 means no quota; anything else is a plan size bounded to 1..500 GB. */
+    private fun coerceDataQuota(value: Double): Double =
+        if (value <= 0.0) 0.0 else value.coerceIn(DATA_QUOTA_MIN_GB, DATA_QUOTA_MAX_GB)
+
+    override fun dataQuotaNotified(periodStartEpochDay: Long, threshold: Int): Boolean =
+        prefs.getBoolean(quotaNotifiedKey(periodStartEpochDay, threshold), false)
+
+    override fun setDataQuotaNotified(periodStartEpochDay: Long, threshold: Int) {
+        // The keys are period-scoped, so every period would otherwise leave two
+        // booleans behind forever; older periods are pruned as the latch is written.
+        val currentPeriodPrefix = "$KEY_DATA_QUOTA_NOTIFIED_PREFIX:$periodStartEpochDay:"
+        val stale = prefs.all.keys.filter {
+            it.startsWith("$KEY_DATA_QUOTA_NOTIFIED_PREFIX:") && !it.startsWith(currentPeriodPrefix)
+        }
+        val editor = prefs.edit()
+        stale.forEach { editor.remove(it) }
+        editor.putBoolean(quotaNotifiedKey(periodStartEpochDay, threshold), true).apply()
+    }
+
+    private fun quotaNotifiedKey(periodStartEpochDay: Long, threshold: Int): String =
+        "$KEY_DATA_QUOTA_NOTIFIED_PREFIX:$periodStartEpochDay:$threshold"
+
     override fun appsOldestFirst(): Boolean =
         prefs.getBoolean(KEY_APPS_OLDEST_FIRST, true)
 
@@ -74,6 +105,9 @@ class AppSettingsRepositoryImpl @Inject constructor(
         const val KEY_CYCLE_START_DAY = "cycle_start_day"
         const val KEY_APPS_OLDEST_FIRST = "apps_oldest_first"
         const val KEY_CHARGE_LIMIT_PERCENT = "charge_limit_percent"
+        const val KEY_DATA_QUOTA_GB = "data_quota_gb"
+        /** Full key: "data_quota_notified:&lt;periodStartEpochDay&gt;:&lt;80|100&gt;". */
+        const val KEY_DATA_QUOTA_NOTIFIED_PREFIX = "data_quota_notified"
         const val KEY_ONBOARDING_SHOWN = "onboarding_shown"
         /** Written from the UI helpers in OnboardingPage.kt (permanent-denial detection). */
         const val KEY_RUNTIME_PERMISSIONS_REQUESTED = "runtime_permissions_requested"

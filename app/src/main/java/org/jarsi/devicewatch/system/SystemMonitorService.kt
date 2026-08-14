@@ -21,6 +21,9 @@ import org.jarsi.devicewatch.data.BatteryHistory
 import org.jarsi.devicewatch.data.BatterySample
 import org.jarsi.devicewatch.data.ChargeAnchorLogic
 import org.jarsi.devicewatch.data.ChargeAnchorStore
+import org.jarsi.devicewatch.data.DataPeriodCalculator
+import org.jarsi.devicewatch.data.DataQuotaLogic
+import org.jarsi.devicewatch.data.SystemStats
 import org.jarsi.devicewatch.data.SystemStatsRepository
 import org.jarsi.devicewatch.data.UsageHistory
 import org.jarsi.devicewatch.presentation.ui.durationText
@@ -138,22 +141,25 @@ class SystemMonitorService : Service() {
         
         updateJob = serviceScope.launch {
             while (isActive && isScreenOn) {
-                updateWidgetStats(this@SystemMonitorService)
-                maybeRefreshUsage()
+                val stats = updateWidgetStats(this@SystemMonitorService)
+                maybeRefreshUsage(stats)
                 delay(5000)
             }
         }
     }
 
     /**
-     * Computes today's screen time + unlock count and pushes the screen-time text
-     * to the widget. Throttled to about once a minute: it needs a usage-events
-     * pass, which must never run at the 5-second stats cadence.
+     * Computes today's screen time + unlock count, pushes the screen-time text to the
+     * widget and checks the data quota against [stats] (the reading the widget was just
+     * updated with; null when that read failed). Throttled to about once a minute: it
+     * needs a usage-events pass, which must never run at the 5-second stats cadence.
      */
-    private suspend fun maybeRefreshUsage() {
+    private suspend fun maybeRefreshUsage(stats: SystemStats?) {
         val now = SystemClock.elapsedRealtime()
         if (lastUsageRefreshMs != 0L && now - lastUsageRefreshMs < USAGE_REFRESH_INTERVAL_MS) return
         lastUsageRefreshMs = now
+        // Before the usage-events pass, which bails out without usage access.
+        if (stats != null) maybeNotifyDataQuota(stats)
         try {
             val totals = appUsageRepository.usageTotalsToday() ?: return
             val today = LocalDate.now()
@@ -304,12 +310,47 @@ class SystemMonitorService : Service() {
         registerReceiver(batteryReceiver, filter)
     }
 
-    private suspend fun updateWidgetStats(context: Context) {
-        try {
-            WidgetStateUpdater.updateAll(context.applicationContext, repository.getStats())
+    /** Pushes a fresh reading to the widgets and returns it; null when the read failed. */
+    private suspend fun updateWidgetStats(context: Context): SystemStats? {
+        return try {
+            val stats = repository.getStats()
+            WidgetStateUpdater.updateAll(context.applicationContext, stats)
+            stats
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+    /**
+     * Data-quota alerts: 80 % and the limit itself, each at most once per counting
+     * period. The latch lives in settings and is keyed by the period start, so a new
+     * day (or billing cycle) re-arms both — and a quota switched on mid-period only
+     * alerts for what the period has actually used.
+     */
+    private fun maybeNotifyDataQuota(stats: SystemStats) {
+        try {
+            val quotaGb = appSettings.dataQuotaGb()
+            if (quotaGb <= 0.0) return
+            val periodStartEpochDay = DataPeriodCalculator.periodStart(
+                appSettings.dataCounterMode(), appSettings.cycleStartDay(), LocalDate.now()
+            ).toEpochDay()
+            val pending = DataQuotaLogic.pendingThresholds(
+                quotaGb = quotaGb,
+                usedGb = stats.mobileDataUsedGb,
+                notified80 = appSettings.dataQuotaNotified(periodStartEpochDay, DataQuotaLogic.WARNING_PERCENT),
+                notified100 = appSettings.dataQuotaNotified(periodStartEpochDay, DataQuotaLogic.REACHED_PERCENT),
+            )
+            pending.forEach { threshold ->
+                DataQuotaNotifier.show(applicationContext, threshold, stats.mobileDataUsedGb, quotaGb)
+                appSettings.setDataQuotaNotified(periodStartEpochDay, threshold)
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            // A quota alert is never worth taking the monitor service down.
             e.printStackTrace()
         }
     }

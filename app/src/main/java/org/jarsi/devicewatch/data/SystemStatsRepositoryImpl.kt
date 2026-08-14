@@ -618,7 +618,9 @@ class SystemStatsRepositoryImpl @Inject constructor(
         val mobileDataTodayGb = readNetworkUsageGb(ConnectivityManager.TYPE_MOBILE, periodStartMillis)
         val mobileTrafficSinceBootGb = readMobileTrafficStatsGb()
         val mobileDataUsedGb = if (mobileDataTodayGb >= 0.0) mobileDataTodayGb else mobileTrafficSinceBootGb
-        val mobileDataTotalGb = UNAVAILABLE_DOUBLE
+        // The user's plan allowance, when set: the widget and the overview render
+        // "used / quota" off this pair, and 0 (no quota) stays unavailable.
+        val mobileDataTotalGb = settings.dataQuotaGb().takeIf { it > 0.0 } ?: UNAVAILABLE_DOUBLE
         // The TrafficStats fallback always counts since boot, so it keeps its own label
         // regardless of the selected counter mode.
         val mobileDataLabel = when {

@@ -6,6 +6,8 @@ import org.jarsi.devicewatch.data.AppSettingsRepository
 import org.jarsi.devicewatch.data.AppUsageRepository
 import org.jarsi.devicewatch.data.CHARGE_LIMIT_MAX
 import org.jarsi.devicewatch.data.CHARGE_LIMIT_MIN
+import org.jarsi.devicewatch.data.DATA_QUOTA_MAX_GB
+import org.jarsi.devicewatch.data.DATA_QUOTA_MIN_GB
 import org.jarsi.devicewatch.data.DataCounterMode
 import org.jarsi.devicewatch.data.LaunchableApp
 import org.jarsi.devicewatch.data.NotificationStats
@@ -21,9 +23,15 @@ internal class FakeAppSettingsRepository(
     var cycleDay: Int = 1,
     /** Short name like [cycleDay]: `chargeLimitPercent` would clash with the setter's JVM signature. */
     var chargeLimit: Int = 0,
+    /** Short name for the same reason as [chargeLimit]. */
+    var quotaGb: Double = 0.0,
     var oldestFirst: Boolean = true,
     var onboardingShown: Boolean = false,
 ) : AppSettingsRepository {
+
+    /** Fired quota alerts as "periodStartEpochDay:threshold", mirroring the real key scoping. */
+    val quotaNotified = mutableSetOf<String>()
+
     override fun dataCounterMode(): DataCounterMode = mode
 
     override fun setDataCounterMode(mode: DataCounterMode) {
@@ -46,6 +54,20 @@ internal class FakeAppSettingsRepository(
             val bounded = value.coerceIn(CHARGE_LIMIT_MIN, CHARGE_LIMIT_MAX)
             ((bounded + 2) / 5) * 5
         }
+    }
+
+    override fun dataQuotaGb(): Double = quotaGb
+
+    /** Mirrors the real store: 0 stays off, everything else is bounded to 1..500 GB. */
+    override fun setDataQuotaGb(value: Double) {
+        quotaGb = if (value <= 0.0) 0.0 else value.coerceIn(DATA_QUOTA_MIN_GB, DATA_QUOTA_MAX_GB)
+    }
+
+    override fun dataQuotaNotified(periodStartEpochDay: Long, threshold: Int): Boolean =
+        "$periodStartEpochDay:$threshold" in quotaNotified
+
+    override fun setDataQuotaNotified(periodStartEpochDay: Long, threshold: Int) {
+        quotaNotified += "$periodStartEpochDay:$threshold"
     }
 
     override fun appsOldestFirst(): Boolean = oldestFirst

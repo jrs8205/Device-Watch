@@ -27,6 +27,10 @@
     <string name="data_counter_mode_cycle">Kausi</string>
     <string name="data_counter_cycle_start">Kausi alkaa päivänä %1$d</string>
     <string name="data_counter_description">Laske datankäyttö kalenteripäivittäin tai kuukauden mittaisena laskutusjaksona, joka alkaa valittuna päivänä. Kuukausien pituudet huomioidaan automaattisesti.</string>
+    <string name="data_quota_title">Datakiintiö</string>
+    <string name="data_quota_description" formatted="false">Aseta liittymäsi datamäärä laskentakautta kohti; laskuri ja widget näyttävät käytön suhteessa siihen ja saat varoituksen 80 %:ssa ja rajalla.</string>
+    <string name="data_quota_value">%1$s GB</string>
+    <string name="data_quota_off">Ei kiintiötä</string>
     <string name="battery_section_title">AKKU</string>
     <string name="charge_limit_title">Latausmuistutus</string>
     <string name="charge_limit_description">Ilmoittaa kun lataus saavuttaa valitun tason, jotta voit irrottaa laturin ajoissa akun suojaksi.</string>
@@ -268,6 +272,10 @@
     <string name="battery_full_notification_text" formatted="false">Akku saavutti 100% varauksen näytönsäästäjän ollessa käytössä.</string>
     <string name="charge_limit_notification_title">Akku %1$d %%</string>
     <string name="charge_limit_notification_text">Lataus saavutti asettamasi rajan — voit irrottaa laturin.</string>
+    <string name="data_quota_channel_name">Datankäytön ilmoitukset</string>
+    <string name="data_quota_channel_description">Varoitukset, kun mobiilidatan käyttö lähestyy asettamaasi kiintiötä.</string>
+    <string name="data_quota_warning_title">%1$d %% datakiintiöstä käytetty</string>
+    <string name="data_quota_reached_title">Datakiintiö täynnä</string>
 
     <string name="widget_tile_battery">AKKU</string>
     <string name="widget_tile_memory">MUISTI</string>
