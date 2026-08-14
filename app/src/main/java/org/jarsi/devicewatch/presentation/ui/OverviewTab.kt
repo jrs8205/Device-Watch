@@ -44,8 +44,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.jarsi.devicewatch.R
 import org.jarsi.devicewatch.data.DataCounterMode
+import org.jarsi.devicewatch.data.DataQuotaLogic
 import org.jarsi.devicewatch.data.UNAVAILABLE_TEXT
 import org.jarsi.devicewatch.presentation.DashboardUiState
+import org.jarsi.devicewatch.widget.mobileDataText
 
 /**
  * Overview tab: widget status, live battery ring, usage counters for the selected
@@ -282,14 +284,35 @@ internal fun OverviewTab(
             DeviceInfoRow(wifiDataLabelRes(uiState.dataCounterMode), gbTodayText(currentStats.wifiBytesTodayGb))
             val mobileLabel = stringResource(simDataLabelRes(uiState.dataCounterMode))
             val simName = currentStats.dataSimName.takeIf { it != UNAVAILABLE_TEXT }
+            // With a quota set the row reads "used / quota" (same text the widget shows)
+            // and gets a usage bar; without one it stays a plain amount.
             DeviceInfoRow(
                 label = if (simName != null) {
                     stringResource(R.string.label_with_sim, mobileLabel, simName)
                 } else {
                     mobileLabel
                 },
-                value = gbTodayText(currentStats.mobileDataUsedGb)
+                value = mobileDataText(currentStats.mobileDataUsedGb, currentStats.mobileDataTotalGb)
             )
+            val quotaPercentUsed = DataQuotaLogic.percentUsed(
+                quotaGb = currentStats.mobileDataTotalGb,
+                usedGb = currentStats.mobileDataUsedGb,
+            )
+            if (quotaPercentUsed != null) {
+                LinearProgressIndicator(
+                    progress = { (quotaPercentUsed / 100f).coerceAtMost(1f) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(6.dp)
+                        .clip(RoundedCornerShape(3.dp)),
+                    color = if (quotaPercentUsed >= 100) {
+                        MaterialTheme.colorScheme.error
+                    } else {
+                        MaterialTheme.colorScheme.primary
+                    },
+                    trackColor = MaterialTheme.colorScheme.surfaceVariant
+                )
+            }
         }
 
         // Resources (RAM, CPU, storage) — widget parity for people without the widget

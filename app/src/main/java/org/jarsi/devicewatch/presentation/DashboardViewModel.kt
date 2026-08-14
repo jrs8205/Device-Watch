@@ -6,6 +6,8 @@ import org.jarsi.devicewatch.data.AppSettingsRepository
 import org.jarsi.devicewatch.data.AppUsageRepository
 import org.jarsi.devicewatch.data.CHARGE_LIMIT_MAX
 import org.jarsi.devicewatch.data.CHARGE_LIMIT_MIN
+import org.jarsi.devicewatch.data.DATA_QUOTA_MAX_GB
+import org.jarsi.devicewatch.data.DATA_QUOTA_MIN_GB
 import org.jarsi.devicewatch.data.DataCounterMode
 import org.jarsi.devicewatch.data.DataPeriodCalculator
 import org.jarsi.devicewatch.data.DeviceInfo
@@ -51,6 +53,8 @@ data class DashboardUiState(
     val cycleStartDay: Int = 1,
     /** Charge-reminder level in percent; 0 = reminder off. */
     val chargeLimitPercent: Int = 0,
+    /** Mobile-data allowance per counting period in GB; 0 = no quota. */
+    val dataQuotaGb: Double = 0.0,
     // Usage counters, scoped to the selected counting period (day or billing cycle).
     val screenTimeMillis: Long = -1L,
     val unlockCount: Int = UNAVAILABLE_INT,
@@ -195,13 +199,17 @@ class DashboardViewModel @Inject constructor(
         }
     }
 
-    /** Loads the saved counter mode, cycle start day and charge reminder into the state. */
+    /**
+     * Loads the saved counter mode, cycle start day, charge reminder and data quota
+     * into the state.
+     */
     fun loadDataCounterSettings() {
         _uiState.update {
             it.copy(
                 dataCounterMode = settings.dataCounterMode(),
                 cycleStartDay = settings.cycleStartDay(),
                 chargeLimitPercent = settings.chargeLimitPercent(),
+                dataQuotaGb = settings.dataQuotaGb(),
             )
         }
     }
@@ -233,6 +241,18 @@ class DashboardViewModel @Inject constructor(
     /** Persists the chosen charge-reminder level; the monitor service reads it live. */
     fun onCommitChargeLimit() {
         settings.setChargeLimitPercent(_uiState.value.chargeLimitPercent)
+    }
+
+    /** Live-updates the data-quota slider value without persisting; 0 switches it off. */
+    fun onDataQuotaChange(quotaGb: Double) {
+        val value = if (quotaGb <= 0.0) 0.0 else quotaGb.coerceIn(DATA_QUOTA_MIN_GB, DATA_QUOTA_MAX_GB)
+        _uiState.update { it.copy(dataQuotaGb = value) }
+    }
+
+    /** Persists the chosen quota and re-queries stats so the counters show it right away. */
+    fun onCommitDataQuota() {
+        settings.setDataQuotaGb(_uiState.value.dataQuotaGb)
+        refresh()
     }
 
     private fun currentTime(): String =

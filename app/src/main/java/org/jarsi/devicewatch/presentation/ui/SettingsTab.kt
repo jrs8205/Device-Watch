@@ -53,7 +53,10 @@ import org.jarsi.devicewatch.BuildConfig
 import org.jarsi.devicewatch.R
 import org.jarsi.devicewatch.data.CHARGE_LIMIT_MAX
 import org.jarsi.devicewatch.data.CHARGE_LIMIT_MIN
+import org.jarsi.devicewatch.data.DATA_QUOTA_MIN_GB
+import org.jarsi.devicewatch.data.DATA_QUOTA_SLIDER_MAX_GB
 import org.jarsi.devicewatch.data.DEFAULT_CHARGE_LIMIT_PERCENT
+import org.jarsi.devicewatch.data.DEFAULT_DATA_QUOTA_GB
 import org.jarsi.devicewatch.data.DataCounterMode
 import org.jarsi.devicewatch.presentation.DashboardUiState
 import org.jarsi.devicewatch.system.DreamPreferences
@@ -72,6 +75,8 @@ internal fun SettingsTab(
     onDataCounterModeSelected: (DataCounterMode) -> Unit,
     onCycleStartDayChange: (Int) -> Unit,
     onCommitCycleStartDay: () -> Unit,
+    onDataQuotaChange: (Double) -> Unit,
+    onCommitDataQuota: () -> Unit,
     onChargeLimitChange: (Int) -> Unit,
     onCommitChargeLimit: () -> Unit,
     onShowIntro: () -> Unit,
@@ -236,6 +241,57 @@ internal fun SettingsTab(
                 fontSize = 11.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.data_quota_title),
+                        fontWeight = FontWeight.Medium,
+                        fontSize = 14.sp
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = stringResource(R.string.data_quota_description),
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Switch(
+                    checked = uiState.dataQuotaGb > 0.0,
+                    onCheckedChange = withTapHaptic { checked ->
+                        onDataQuotaChange(if (checked) DEFAULT_DATA_QUOTA_GB else 0.0)
+                        onCommitDataQuota()
+                    }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = if (uiState.dataQuotaGb > 0.0) {
+                    stringResource(R.string.data_quota_value, uiState.dataQuotaGb.roundToInt().toString())
+                } else {
+                    stringResource(R.string.data_quota_off)
+                },
+                fontWeight = FontWeight.Medium,
+                fontSize = 14.sp
+            )
+
+            if (uiState.dataQuotaGb > 0.0) {
+                Slider(
+                    value = uiState.dataQuotaGb.toFloat(),
+                    onValueChange = { onDataQuotaChange(it.roundToInt().toDouble()) },
+                    onValueChangeFinished = withTapHaptic(onCommitDataQuota),
+                    valueRange = DATA_QUOTA_MIN_GB.toFloat()..DATA_QUOTA_SLIDER_MAX_GB.toFloat(),
+                    steps = 98,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
         }
 
         // Charge reminder

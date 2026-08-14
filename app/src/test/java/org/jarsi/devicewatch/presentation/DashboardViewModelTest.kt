@@ -2,6 +2,7 @@ package org.jarsi.devicewatch.presentation
 
 import org.jarsi.devicewatch.data.AppSettingsRepository
 import org.jarsi.devicewatch.data.AppUsageRepository
+import org.jarsi.devicewatch.data.DATA_QUOTA_MAX_GB
 import org.jarsi.devicewatch.data.DataCounterMode
 import org.jarsi.devicewatch.data.DataUsageSince
 import org.jarsi.devicewatch.data.DeviceInfo
@@ -239,6 +240,75 @@ class DashboardViewModelTest {
             // Then
             assertThat(viewModel.uiState.value.chargeLimitPercent).isEqualTo(0)
             assertThat(settings.chargeLimit).isEqualTo(0)
+        }
+
+    @Test
+    fun `given a saved data quota, when loading, then state adopts it`() = runTest(dispatcher) {
+        // Given
+        val settings = FakeAppSettingsRepository(quotaGb = 25.0)
+        val viewModel = buildViewModel(settings = settings)
+
+        // When
+        viewModel.loadDataCounterSettings()
+        advanceUntilIdle()
+
+        // Then
+        assertThat(viewModel.uiState.value.dataQuotaGb).isEqualTo(25.0)
+    }
+
+    @Test
+    fun `given a dragged data quota, when committing, then persisted and stats repushed`() =
+        runTest(dispatcher) {
+            // Given
+            val settings = FakeAppSettingsRepository()
+            val repository = FakeSystemStatsRepository(sampleStats())
+            val widget = FakeWidgetController(installed = true)
+            val viewModel = buildViewModel(repository = repository, widget = widget, settings = settings)
+
+            // When
+            viewModel.onDataQuotaChange(50.0)
+            viewModel.onCommitDataQuota()
+            advanceUntilIdle()
+
+            // Then
+            assertThat(viewModel.uiState.value.dataQuotaGb).isEqualTo(50.0)
+            assertThat(settings.quotaGb).isEqualTo(50.0)
+            assertThat(repository.callCount).isEqualTo(1)
+            assertThat(widget.pushedStats).hasSize(1)
+        }
+
+    @Test
+    fun `given an out-of-range data quota, when committing, then it is coerced to the maximum`() =
+        runTest(dispatcher) {
+            // Given
+            val settings = FakeAppSettingsRepository()
+            val viewModel = buildViewModel(settings = settings)
+
+            // When
+            viewModel.onDataQuotaChange(9000.0)
+            viewModel.onCommitDataQuota()
+            advanceUntilIdle()
+
+            // Then
+            assertThat(viewModel.uiState.value.dataQuotaGb).isEqualTo(DATA_QUOTA_MAX_GB)
+            assertThat(settings.quotaGb).isEqualTo(DATA_QUOTA_MAX_GB)
+        }
+
+    @Test
+    fun `given the quota switched off, when committing, then zero is persisted`() =
+        runTest(dispatcher) {
+            // Given
+            val settings = FakeAppSettingsRepository(quotaGb = 30.0)
+            val viewModel = buildViewModel(settings = settings)
+
+            // When
+            viewModel.onDataQuotaChange(0.0)
+            viewModel.onCommitDataQuota()
+            advanceUntilIdle()
+
+            // Then
+            assertThat(viewModel.uiState.value.dataQuotaGb).isEqualTo(0.0)
+            assertThat(settings.quotaGb).isEqualTo(0.0)
         }
 
     @Test
