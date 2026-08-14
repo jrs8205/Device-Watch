@@ -42,6 +42,13 @@ class HtmlReportBuilderTest {
         footer = "Everything in this report was read on the device.",
         hourUnit = "h",
         minuteUnit = "min",
+        searchDays = "Search a day",
+        searchLog = "Search notifications",
+        rangeWeek = "7 days",
+        rangeMonth = "30 days",
+        rangeAll = "All",
+        showingCount = "Showing %1\$s of %2\$s",
+        noMatches = "No matches",
     )
 
     private fun data(
@@ -93,10 +100,43 @@ class HtmlReportBuilderTest {
         )
 
         // No stylesheet, script, image or font may be fetched when the file is opened.
+        // The filtering script is inline; nothing may be loaded from a network.
         assertThat(html).doesNotContain("src=\"http")
         assertThat(html).doesNotContain("href=\"http")
-        assertThat(html).doesNotContain("<script")
+        assertThat(html).doesNotContain("<script src")
         assertThat(html).doesNotContain("@import")
+        assertThat(html).doesNotContain("fetch(")
+        assertThat(html).doesNotContain("XMLHttpRequest")
+    }
+
+    @Test
+    fun `long tables get a search box and row-count shortcuts`() {
+        val html = HtmlReportBuilder.build(
+            data(
+                days = listOf(day(LocalDate.of(2026, 8, 14), unlocks = 3)),
+                log = listOf(NotificationLogEntry(0L, "org.example", "Example", "Title", "Text")),
+            ),
+            labels,
+        )
+
+        assertThat(html).contains("data-tools=\"days\"")
+        assertThat(html).contains("data-table=\"days\"")
+        assertThat(html).contains("data-tools=\"log\"")
+        assertThat(html).contains("data-table=\"log\"")
+        assertThat(html).contains("Search a day")
+        assertThat(html).contains("7 days")
+        assertThat(html).contains("Showing {0} of {1}")
+        // Controls stay hidden until the script switches them on.
+        assertThat(html).contains(".tools { display: none; }")
+    }
+
+    @Test
+    fun `a section with no rows gets no controls`() {
+        val html = HtmlReportBuilder.build(data(), labels)
+
+        // The script always ships; the controls it drives do not.
+        assertThat(html).doesNotContain("data-tools=")
+        assertThat(html).doesNotContain("<input")
     }
 
     @Test

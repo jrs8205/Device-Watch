@@ -108,6 +108,13 @@
     <string name="report_footer">Everything in this report was read on the device itself. Nothing was sent anywhere.</string>
     <string name="report_hour_unit">h</string>
     <string name="report_minute_unit">min</string>
+    <string name="report_search_days">Search a day</string>
+    <string name="report_search_log">Search notifications</string>
+    <string name="report_range_week">7 days</string>
+    <string name="report_range_month">30 days</string>
+    <string name="report_range_all">All</string>
+    <string name="report_showing_count">Showing %1$s of %2$s</string>
+    <string name="report_no_matches">No matches</string>
     <string name="history_yesterday">Yesterday</string>
     <string name="history_monthly_data_section">Monthly data usage</string>
     <string name="history_monthly_mobile_column">Mobile</string>

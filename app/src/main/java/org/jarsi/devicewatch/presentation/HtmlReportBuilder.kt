@@ -56,6 +56,14 @@ data class HtmlReportLabels(
     val footer: String,
     val hourUnit: String,
     val minuteUnit: String,
+    val searchDays: String,
+    val searchLog: String,
+    val rangeWeek: String,
+    val rangeMonth: String,
+    val rangeAll: String,
+    /** Two placeholders: rows shown, rows in total. */
+    val showingCount: String,
+    val noMatches: String,
 )
 
 /**
@@ -79,6 +87,12 @@ object HtmlReportBuilder {
 
     /** Chart ends only need day + time, and the pattern must read the same in every locale. */
     private val CHART_STAMP = DateTimeFormatter.ofPattern("MM-dd HH:mm")
+
+    /** Two months of days is a long scroll on a phone; the rest is one tap away. */
+    private const val DEFAULT_DAY_ROWS = 30
+
+    /** The log can run to hundreds of rows over its 7-day retention. */
+    private const val DEFAULT_LOG_ROWS = 100
     private val DASH = "—"
 
     fun escape(value: String): String = buildString(value.length) {
@@ -113,6 +127,7 @@ object HtmlReportBuilder {
         appendLog(data, labels)
         append("</main>\n")
         append("<footer>").append(escape(labels.footer)).append("</footer>\n")
+        append("<script>\n").append(FILTER_SCRIPT).append("</script>\n")
         append("</body>\n")
         append("</html>")
     }
@@ -258,6 +273,13 @@ object HtmlReportBuilder {
             append("</section>\n")
             return
         }
+        appendTools(
+            name = "days",
+            placeholder = labels.searchDays,
+            initialRows = DEFAULT_DAY_ROWS,
+            ranges = listOf(7 to labels.rangeWeek, 30 to labels.rangeMonth, 0 to labels.rangeAll),
+            labels = labels,
+        )
         appendTableStart(
             listOf(
                 labels.columnDay,
@@ -268,6 +290,7 @@ object HtmlReportBuilder {
                 labels.columnCharges,
             ),
             tableClass = "days",
+            tableName = "days",
         )
         data.days.sortedByDescending { it.day }.forEach { day ->
             append("<tr>")
@@ -309,9 +332,18 @@ object HtmlReportBuilder {
             append("</section>\n")
             return
         }
+        appendTools(
+            name = "log",
+            placeholder = labels.searchLog,
+            initialRows = DEFAULT_LOG_ROWS,
+            // A row count, not a day count: the log's own range is the 7 days it retains.
+            ranges = listOf(DEFAULT_LOG_ROWS to DEFAULT_LOG_ROWS.toString(), 0 to labels.rangeAll),
+            labels = labels,
+        )
         appendTableStart(
             listOf(labels.columnTime, labels.columnApp, labels.columnTitle, labels.columnText),
             tableClass = "text",
+            tableName = "log",
         )
         data.logEntries.forEach { entry ->
             val time = LocalDateTime.ofInstant(Instant.ofEpochMilli(entry.timeMillis), data.zone)
@@ -334,9 +366,47 @@ object HtmlReportBuilder {
         append("<p class=\"empty\">").append(escape(labels.empty)).append("</p>\n")
     }
 
-    private fun StringBuilder.appendTableStart(columns: List<String>, tableClass: String = "") {
+    /**
+     * Search box and row-count shortcuts for a long table. The whole block is
+     * hidden until the script switches it on, so a viewer that blocks scripts
+     * sees the full table and no dead controls — the report degrades to what it
+     * was before: everything, in order.
+     */
+    private fun StringBuilder.appendTools(
+        name: String,
+        placeholder: String,
+        initialRows: Int,
+        ranges: List<Pair<Int, String>>,
+        labels: HtmlReportLabels,
+    ) {
+        append("<div class=\"tools\" data-tools=\"").append(name).append("\"")
+        append(" data-initial=\"").append(initialRows).append("\"")
+        append(" data-count=\"").append(escape(countTemplate(labels))).append("\"")
+        append(" data-empty=\"").append(escape(labels.noMatches)).append("\">\n")
+        append("<input type=\"search\" class=\"find\" placeholder=\"").append(escape(placeholder))
+        append("\" aria-label=\"").append(escape(placeholder)).append("\">\n")
+        append("<div class=\"chips\">")
+        ranges.forEach { (rows, label) ->
+            append("<button type=\"button\" data-rows=\"").append(rows).append("\">")
+            append(escape(label)).append("</button>")
+        }
+        append("</div>\n")
+        append("<p class=\"count\"></p>\n")
+        append("</div>\n")
+    }
+
+    /** "12 / 62" with the numbers left as script placeholders. */
+    private fun countTemplate(labels: HtmlReportLabels): String =
+        String.format(Locale.US, labels.showingCount, "{0}", "{1}")
+
+    private fun StringBuilder.appendTableStart(
+        columns: List<String>,
+        tableClass: String = "",
+        tableName: String = "",
+    ) {
         append("<div class=\"scroll\">\n<table")
         if (tableClass.isNotEmpty()) append(" class=\"").append(tableClass).append("\"")
+        if (tableName.isNotEmpty()) append(" data-table=\"").append(tableName).append("\"")
         append(">\n<thead>\n<tr>")
         columns.forEach { append("<th>").append(escape(it)).append("</th>") }
         append("</tr>\n</thead>\n<tbody>\n")
@@ -365,6 +435,62 @@ object HtmlReportBuilder {
 
     /** Two decimals keep the SVG readable; more only inflates the file. */
     private fun coord(value: Double): String = String.format(Locale.US, "%.2f", value)
+
+    /**
+     * Filtering is the one thing static HTML cannot do, and a 62-row table on a
+     * phone needs it. The script touches nothing outside this document: no fetch,
+     * no storage, no cookies — it only hides and shows rows that are already here.
+     */
+    private val FILTER_SCRIPT = """
+        (function () {
+          var panels = document.querySelectorAll('[data-tools]');
+          Array.prototype.forEach.call(panels, function (tools) {
+            var table = document.querySelector('table[data-table="' + tools.getAttribute('data-tools') + '"]');
+            if (!table || !table.tBodies.length) return;
+            var rows = Array.prototype.slice.call(table.tBodies[0].rows);
+            var input = tools.querySelector('.find');
+            var count = tools.querySelector('.count');
+            var buttons = Array.prototype.slice.call(tools.querySelectorAll('button[data-rows]'));
+            var template = tools.getAttribute('data-count');
+            var noMatches = tools.getAttribute('data-empty');
+            var limit = parseInt(tools.getAttribute('data-initial'), 10) || 0;
+
+            function apply() {
+              var needle = input ? input.value.trim().toLowerCase() : '';
+              var shown = 0;
+              rows.forEach(function (row) {
+                var hit = !needle || row.textContent.toLowerCase().indexOf(needle) !== -1;
+                var visible = hit && (limit === 0 || shown < limit);
+                if (visible) shown++;
+                row.hidden = !visible;
+              });
+              if (count) {
+                count.textContent = shown === 0
+                  ? noMatches
+                  : template.replace('{0}', shown).replace('{1}', rows.length);
+              }
+              buttons.forEach(function (button) {
+                var on = parseInt(button.getAttribute('data-rows'), 10) === limit;
+                button.className = on ? 'on' : '';
+              });
+            }
+
+            buttons.forEach(function (button) {
+              button.addEventListener('click', function () {
+                limit = parseInt(button.getAttribute('data-rows'), 10) || 0;
+                apply();
+              });
+            });
+            // A search should look at every row, not only the ones the limit kept.
+            if (input) input.addEventListener('input', function () {
+              if (input.value.trim()) limit = 0;
+              apply();
+            });
+            tools.classList.add('ready');
+            apply();
+          });
+        })();
+    """.trimIndent()
 
     private val STYLES = """
         :root {
@@ -433,6 +559,29 @@ object HtmlReportBuilder {
         .grid { stroke: var(--line); stroke-width: 1; }
         .charging { fill: var(--mobile); opacity: 0.14; }
         .level { fill: none; stroke: var(--accent); stroke-width: 3; stroke-linejoin: round; stroke-linecap: round; }
+        /* Hidden until the script enables it, so a script-free viewer sees no dead controls. */
+        .tools { display: none; }
+        .tools.ready {
+          display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 10px;
+        }
+        .find {
+          flex: 1 1 160px; min-width: 0; padding: 9px 12px; border-radius: 999px;
+          border: 1px solid var(--line); background: var(--bg); color: var(--ink);
+          font: inherit; font-size: 0.9rem; -webkit-appearance: none; appearance: none;
+        }
+        .find:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+        .chips { display: flex; gap: 6px; }
+        .chips button {
+          padding: 8px 12px; border-radius: 999px; border: 1px solid var(--line);
+          background: var(--bg); color: var(--muted); font: inherit; font-size: 0.8rem;
+          cursor: pointer; min-height: 36px;
+        }
+        .chips button.on { color: var(--ink); border-color: var(--accent); font-weight: 600; }
+        .count {
+          flex: 1 0 100%; margin: 0; color: var(--muted); font-size: 0.75rem;
+          font-variant-numeric: tabular-nums;
+        }
+        tr[hidden] { display: none; }
         .scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
         table { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
         th, td { text-align: right; padding: 8px 10px; white-space: nowrap; }
@@ -446,6 +595,9 @@ object HtmlReportBuilder {
           color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--line);
         }
         tbody tr:nth-child(even) { background: var(--bg); }
+        /* Keep the banding correct once rows are filtered out (ignored by older engines). */
+        tbody tr:nth-child(odd of :not([hidden])) { background: transparent; }
+        tbody tr:nth-child(even of :not([hidden])) { background: var(--bg); }
         td.day { font-variant-numeric: tabular-nums; color: var(--muted); }
         footer { color: var(--muted); font-size: 0.8rem; padding: 8px 4px 0; text-align: center; }
     """.trimIndent()

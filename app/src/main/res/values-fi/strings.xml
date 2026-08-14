@@ -105,6 +105,13 @@
     <string name="report_footer">Kaikki tämän raportin tiedot on luettu laitteesta itsestään. Mitään ei ole lähetetty minnekään.</string>
     <string name="report_hour_unit">t</string>
     <string name="report_minute_unit">min</string>
+    <string name="report_search_days">Hae päivää</string>
+    <string name="report_search_log">Hae ilmoituksista</string>
+    <string name="report_range_week">7 vrk</string>
+    <string name="report_range_month">30 vrk</string>
+    <string name="report_range_all">Kaikki</string>
+    <string name="report_showing_count">Näytetään %1$s / %2$s</string>
+    <string name="report_no_matches">Ei osumia</string>
     <string name="history_yesterday">Eilen</string>
     <string name="history_monthly_data_section">Datankäyttö kuukausittain</string>
     <string name="history_monthly_mobile_column">Mobiili</string>

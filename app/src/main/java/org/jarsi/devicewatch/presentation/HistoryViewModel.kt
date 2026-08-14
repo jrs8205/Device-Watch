@@ -305,6 +305,13 @@ class HistoryViewModel @Inject constructor(
         footer = context.getString(R.string.report_footer),
         hourUnit = context.getString(R.string.report_hour_unit),
         minuteUnit = context.getString(R.string.report_minute_unit),
+        searchDays = context.getString(R.string.report_search_days),
+        searchLog = context.getString(R.string.report_search_log),
+        rangeWeek = context.getString(R.string.report_range_week),
+        rangeMonth = context.getString(R.string.report_range_month),
+        rangeAll = context.getString(R.string.report_range_all),
+        showingCount = context.getString(R.string.report_showing_count),
+        noMatches = context.getString(R.string.report_no_matches),
     )
 
     private companion object {
