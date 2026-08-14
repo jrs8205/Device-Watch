@@ -40,6 +40,16 @@ class BatteryHistoryCodecTest {
     }
 
     @Test
+    fun `decode rejects levels outside the percentage range`() {
+        assertThat(BatteryHistoryCodec.decodeOrNull("v1\t1\t-1\t0")).isNull()
+        assertThat(BatteryHistoryCodec.decodeOrNull("v1\t1\t101\t0")).isNull()
+        assertThat(BatteryHistoryCodec.decodeOrNull(BatteryHistoryCodec.encode(sample(1L, level = 0))))
+            .isEqualTo(sample(1L, level = 0))
+        assertThat(BatteryHistoryCodec.decodeOrNull(BatteryHistoryCodec.encode(sample(1L, level = 100))))
+            .isEqualTo(sample(1L, level = 100))
+    }
+
+    @Test
     fun `file names are epoch days and retention keeps fourteen days`() {
         val today = LocalDate.of(2026, 8, 14)
         val name = BatteryHistoryCodec.fileNameFor(today)
@@ -64,9 +74,11 @@ class BatteryHistoryCodecTest {
     }
 
     @Test
-    fun `shouldSample stores a charging state change immediately`() {
+    fun `shouldSample stores a charging state change but not charger bounce`() {
         val previous = sample(0L, charging = false)
-        assertThat(BatteryHistoryCodec.shouldSample(previous, sample(1_000L, charging = true)))
+        assertThat(BatteryHistoryCodec.shouldSample(previous, sample(10_000L, charging = true)))
+            .isFalse()
+        assertThat(BatteryHistoryCodec.shouldSample(previous, sample(31_000L, charging = true)))
             .isTrue()
     }
 

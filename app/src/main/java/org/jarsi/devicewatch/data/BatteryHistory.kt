@@ -30,6 +30,12 @@ object BatteryHistoryCodec {
     /** A level change is only worth its own sample once this much time has passed. */
     private const val MIN_LEVEL_CHANGE_INTERVAL_MS = 60L * 1000
 
+    /** A charging-state flip jumps the queue, but not often enough for charger contact bounce to spam. */
+    private const val MIN_FLIP_INTERVAL_MS = 30L * 1000
+
+    /** Battery level is a percentage; anything else in a file is corruption. */
+    private val LEVEL_RANGE = 0..100
+
     fun encode(sample: BatterySample): String = listOf(
         "v1",
         sample.timeMillis.toString(),
@@ -41,7 +47,7 @@ object BatteryHistoryCodec {
         val parts = line.split('\t')
         if (parts.size != 4 || parts[0] != "v1") return null
         val millis = parts[1].toLongOrNull() ?: return null
-        val level = parts[2].toIntOrNull() ?: return null
+        val level = parts[2].toIntOrNull()?.takeIf { it in LEVEL_RANGE } ?: return null
         val charging = when (parts[3]) {
             "1" -> true
             "0" -> false
@@ -63,8 +69,8 @@ object BatteryHistoryCodec {
     fun shouldSample(previous: BatterySample?, candidate: BatterySample): Boolean {
         if (candidate.level < 0) return false
         if (previous == null) return true
-        if (previous.charging != candidate.charging) return true
         val elapsed = candidate.timeMillis - previous.timeMillis
+        if (previous.charging != candidate.charging) return elapsed >= MIN_FLIP_INTERVAL_MS
         if (elapsed >= MIN_SAMPLE_INTERVAL_MS) return true
         return abs(candidate.level - previous.level) >= MIN_LEVEL_DELTA &&
             elapsed >= MIN_LEVEL_CHANGE_INTERVAL_MS

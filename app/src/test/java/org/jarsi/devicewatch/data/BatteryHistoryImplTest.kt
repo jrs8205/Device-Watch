@@ -53,9 +53,10 @@ class BatteryHistoryImplTest {
     @Test
     fun `record throttles samples that arrive too soon`() {
         val history = history()
-        history.record(sample(1_000L, level = 50))
+        val first = sample(1_000L, level = 50)
+        history.record(first)
         history.record(sample(2_000L, level = 50))
-        assertThat(history.samplesSince(0L)).hasSize(1)
+        assertThat(history.samplesSince(0L)).containsExactly(first)
     }
 
     @Test

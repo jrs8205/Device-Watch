@@ -30,7 +30,7 @@ class BatteryHistoryImpl internal constructor(
         val today = clock()
         baseDir.mkdirs()
         purge(today)
-        val previous = lastSample ?: latestStored(today)
+        val previous = (lastSample ?: latestStored(today)).also { lastSample = it }
         if (!BatteryHistoryCodec.shouldSample(previous, sample)) return
         File(baseDir, BatteryHistoryCodec.fileNameFor(today))
             .appendText(BatteryHistoryCodec.encode(sample) + "\n")
