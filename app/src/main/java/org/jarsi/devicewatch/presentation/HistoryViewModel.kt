@@ -162,7 +162,11 @@ class HistoryViewModel @Inject constructor(
     }
 
     private companion object {
-        /** Everything the store keeps (14 d); the day/week chart ranges are cut from this. */
+        /**
+         * Wide enough to reach every sample the store still keeps — it retains whole
+         * day files, so the oldest one holds between 13 and 14 days of history
+         * depending on the time of day. The day/week chart ranges are cut from this.
+         */
         const val BATTERY_WINDOW_MILLIS = BatteryHistoryCodec.RETENTION_DAYS * 24 * 60 * 60 * 1000
     }
 }

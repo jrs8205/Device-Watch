@@ -97,9 +97,14 @@ class HistoryViewModelTest {
     /** In-memory store mirroring the real one: samplesSince filters and sorts ascending. */
     private class FakeBatteryHistory : BatteryHistory {
         private val base = System.currentTimeMillis() - 6L * 60 * 60 * 1000
+
+        /** Older than any window the VM may ask for; the store drops it, the VM must not see it. */
+        val staleMillis = base - 20L * 24 * 60 * 60 * 1000
+
         private val stored = mutableListOf(
             BatterySample(base + 2 * 60 * 60 * 1000, level = 61, charging = false),
             BatterySample(base, level = 80, charging = true),
+            BatterySample(staleMillis, level = 44, charging = false),
             BatterySample(base + 60 * 60 * 1000, level = 72, charging = false),
         )
 
@@ -149,6 +154,8 @@ class HistoryViewModelTest {
         assertThat(samples.map { it.timeMillis }).isInOrder()
         assertThat(samples.first().level).isEqualTo(80)
         assertThat(samples.first().charging).isTrue()
+        // The store already dropped the out-of-window sample; the VM adds no filtering.
+        assertThat(samples.map { it.timeMillis }).doesNotContain(batteryHistory.staleMillis)
     }
 
     @Test

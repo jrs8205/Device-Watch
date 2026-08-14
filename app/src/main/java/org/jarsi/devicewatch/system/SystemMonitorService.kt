@@ -235,18 +235,19 @@ class SystemMonitorService : Service() {
                                 nowMillis = System.currentTimeMillis(),
                             )
                         )
-                        // The store throttles the BATTERY_CHANGED stream itself, but it
-                        // writes to disk on every call, so it runs off the main thread.
-                        // The sample is timestamped here, at delivery. A quirky EXTRA_SCALE
-                        // can push the percentage past 100, which the store's read path
-                        // would later drop as corruption, so clamp it too.
+                        // The store decides itself which samples are worth appending, but
+                        // every call still hits the filesystem (mkdirs + a retention pass
+                        // over the day files), so it runs off the main thread. The sample
+                        // is timestamped here, at delivery. A quirky EXTRA_SCALE can push
+                        // the percentage past 100, which the store's read path would later
+                        // drop as corruption, so clamp it too.
                         if (level >= 0) {
                             val sample = BatterySample(
                                 timeMillis = System.currentTimeMillis(),
                                 level = level.coerceIn(0, 100),
                                 charging = plugged,
                             )
-                            serviceScope.launch { batteryHistory.record(sample) }
+                            serviceScope.launch { recordBatterySample(sample) }
                         }
                     }
                     Intent.ACTION_POWER_CONNECTED -> {
@@ -282,6 +283,20 @@ class SystemMonitorService : Service() {
     private suspend fun updateWidgetStats(context: Context) {
         try {
             WidgetStateUpdater.updateAll(context.applicationContext, repository.getStats())
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    /**
+     * A battery sample is never worth a crash: the store touches the filesystem, and
+     * a full disk would otherwise take the service down on every battery broadcast.
+     */
+    private fun recordBatterySample(sample: BatterySample) {
+        try {
+            batteryHistory.record(sample)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
