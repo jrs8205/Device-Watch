@@ -62,6 +62,8 @@ data class DashboardUiState(
     val bootCount: Int = 0,
     val chargeCount: Int = 0,
     val unlockCountingSupported: Boolean = true,
+    /** "Previous period vs now" totals for the usage card; null until computed. */
+    val periodComparison: PeriodComparisonData? = null,
     val usageAccessEnabled: Boolean = false,
     val notificationAccessEnabled: Boolean = false,
     /** null until read from settings; false shows the first-run intro. */
@@ -140,6 +142,21 @@ class DashboardViewModel @Inject constructor(
         usageHistory.purge(today)
 
         val notificationAccess = notificationStats.isListenerEnabled()
+        // "Previous period vs now", day-count-aligned; the stores return zeros for
+        // days they have nothing on, and the UI hides rows the device cannot count.
+        val comparison = PeriodComparison.windows(
+            settings.dataCounterMode(), settings.cycleStartDay(), today
+        )?.let { w ->
+            PeriodComparisonData(
+                screenTimeNowMillis = usageHistory.screenTimeBetween(w.currentStart, w.currentEnd),
+                screenTimePrevMillis = usageHistory.screenTimeBetween(w.previousStart, w.previousEnd),
+                unlocksNow = usageHistory.unlocksBetween(w.currentStart, w.currentEnd),
+                unlocksPrev = usageHistory.unlocksBetween(w.previousStart, w.previousEnd),
+                notificationsNow = notificationStats.totalBetween(w.currentStart, w.currentEnd),
+                notificationsPrev = notificationStats.totalBetween(w.previousStart, w.previousEnd),
+                daysCompared = w.daysCompared,
+            )
+        }
         _uiState.update {
             it.copy(
                 stats = stats,
@@ -159,6 +176,7 @@ class DashboardViewModel @Inject constructor(
                 },
                 bootCount = usageHistory.bootsBetween(periodStart, today),
                 chargeCount = usageHistory.chargesBetween(periodStart, today),
+                periodComparison = comparison,
                 notificationAccessEnabled = notificationAccess,
                 notificationCount = if (notificationAccess) {
                     notificationStats.totalBetween(periodStart, today)

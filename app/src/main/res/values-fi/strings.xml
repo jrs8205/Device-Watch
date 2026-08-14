@@ -55,6 +55,11 @@
     <string name="notification_count_label">Ilmoitukset</string>
     <string name="boot_count_label">Käynnistykset</string>
     <string name="charge_count_label">Latauskerrat</string>
+    <string name="comparison_section_label">VRT. EDELLINEN KAUSI</string>
+    <plurals name="comparison_days">
+        <item quantity="one">Verrattuna eiliseen</item>
+        <item quantity="other">Kummankin kauden %d ensimmäistä päivää</item>
+    </plurals>
     <string name="history_title">Historia</string>
     <string name="content_description_back">Takaisin</string>
     <string name="history_log_section">Ilmoitusloki</string>

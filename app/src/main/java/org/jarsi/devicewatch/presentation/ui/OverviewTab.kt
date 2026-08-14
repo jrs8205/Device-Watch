@@ -2,6 +2,7 @@ package org.jarsi.devicewatch.presentation.ui
 
 import android.content.Intent
 import android.provider.Settings
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -38,6 +39,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -47,6 +49,7 @@ import org.jarsi.devicewatch.data.DataCounterMode
 import org.jarsi.devicewatch.data.DataQuotaLogic
 import org.jarsi.devicewatch.data.UNAVAILABLE_TEXT
 import org.jarsi.devicewatch.presentation.DashboardUiState
+import org.jarsi.devicewatch.presentation.PeriodComparison
 import org.jarsi.devicewatch.widget.mobileDataText
 
 /**
@@ -275,6 +278,61 @@ internal fun OverviewTab(
                 }
                 DeviceInfoRow(R.string.boot_count_label, uiState.bootCount.toString())
                 DeviceInfoRow(R.string.charge_count_label, uiState.chargeCount.toString())
+                // "Previous period vs now": only metrics this device can actually
+                // count get a row, and the section hides when none can.
+                val hasComparisonRows = uiState.screenTimeMillis >= 0L ||
+                    (uiState.usageAccessEnabled && uiState.unlockCountingSupported) ||
+                    uiState.notificationAccessEnabled
+                uiState.periodComparison?.takeIf { hasComparisonRows }?.let { comparison ->
+                    HorizontalDivider(
+                        modifier = Modifier.padding(vertical = 8.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant
+                    )
+                    Text(
+                        text = stringResource(R.string.comparison_section_label),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    if (uiState.screenTimeMillis >= 0L) {
+                        ComparisonRow(
+                            labelRes = R.string.screen_time_total_label,
+                            previousText = durationText(context, comparison.screenTimePrevMillis),
+                            nowText = durationText(context, comparison.screenTimeNowMillis),
+                            changePercent = PeriodComparison.changePercent(
+                                comparison.screenTimeNowMillis, comparison.screenTimePrevMillis
+                            )
+                        )
+                    }
+                    if (uiState.usageAccessEnabled && uiState.unlockCountingSupported) {
+                        ComparisonRow(
+                            labelRes = R.string.unlock_count_label,
+                            previousText = comparison.unlocksPrev.toString(),
+                            nowText = comparison.unlocksNow.toString(),
+                            changePercent = PeriodComparison.changePercent(
+                                comparison.unlocksNow.toLong(), comparison.unlocksPrev.toLong()
+                            )
+                        )
+                    }
+                    if (uiState.notificationAccessEnabled) {
+                        ComparisonRow(
+                            labelRes = R.string.notification_count_label,
+                            previousText = comparison.notificationsPrev.toString(),
+                            nowText = comparison.notificationsNow.toString(),
+                            changePercent = PeriodComparison.changePercent(
+                                comparison.notificationsNow.toLong(),
+                                comparison.notificationsPrev.toLong()
+                            )
+                        )
+                    }
+                    Text(
+                        text = pluralStringResource(
+                            R.plurals.comparison_days, comparison.daysCompared, comparison.daysCompared
+                        ),
+                        fontSize = 10.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         }
 
@@ -484,6 +542,49 @@ internal fun OverviewTab(
             text = stringResource(R.string.last_updated, uiState.lastUpdated),
             fontSize = 11.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@Composable
+private fun ComparisonRow(
+    @StringRes labelRes: Int,
+    previousText: String,
+    nowText: String,
+    changePercent: Int?,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 3.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = stringResource(labelRes),
+            fontSize = 12.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.weight(1f)
+        )
+        Text(
+            text = stringResource(R.string.comparison_values, previousText, nowText),
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Medium
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            // Less is better for all three metrics: growth reads in the error
+            // color, a drop in the primary one, and no baseline stays neutral.
+            text = changePercent?.let {
+                stringResource(R.string.comparison_change, if (it > 0) "+" else "", it)
+            } ?: UNAVAILABLE_TEXT,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Bold,
+            color = when {
+                changePercent == null || changePercent == 0 ->
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                changePercent > 0 -> MaterialTheme.colorScheme.error
+                else -> MaterialTheme.colorScheme.primary
+            }
         )
     }
 }

@@ -75,6 +75,36 @@ class DashboardViewModelTest {
         }
 
     @Test
+    fun `given day mode, when refreshing, then the previous-period comparison is filled`() =
+        runTest(dispatcher) {
+            // Given
+            val today = LocalDate.now()
+            val history = FakeUsageHistory().apply {
+                recordScreenTime(today.minusDays(1), 90_000L)
+                recordUnlocks(today.minusDays(1), 12)
+            }
+            val notifications = FakeNotificationStats(
+                enabled = true,
+                totalsByDay = mapOf(today.minusDays(1) to 7, today to 3),
+            )
+            val viewModel = buildViewModel(history = history, notifications = notifications)
+
+            // When
+            viewModel.refresh()
+            advanceUntilIdle()
+
+            // Then
+            val comparison = viewModel.uiState.value.periodComparison
+            assertThat(comparison).isNotNull()
+            comparison!!
+            assertThat(comparison.daysCompared).isEqualTo(1)
+            assertThat(comparison.screenTimePrevMillis).isEqualTo(90_000L)
+            assertThat(comparison.unlocksPrev).isEqualTo(12)
+            assertThat(comparison.notificationsPrev).isEqualTo(7)
+            assertThat(comparison.notificationsNow).isEqualTo(3)
+        }
+
+    @Test
     fun `given a saved opacity, when loading, then state adopts it`() = runTest(dispatcher) {
         // Given
         val widget = FakeWidgetController(installed = true, savedOpacity = 0.42f)
