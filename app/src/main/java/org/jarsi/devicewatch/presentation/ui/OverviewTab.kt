@@ -326,9 +326,17 @@ internal fun OverviewTab(
                         )
                     }
                     Text(
-                        text = pluralStringResource(
-                            R.plurals.comparison_days, comparison.daysCompared, comparison.daysCompared
-                        ),
+                        // Day mode really is "yesterday"; in cycle mode a one-day
+                        // window is the previous cycle's first day, not yesterday.
+                        text = if (uiState.dataCounterMode == DataCounterMode.DAY) {
+                            stringResource(R.string.comparison_yesterday)
+                        } else {
+                            pluralStringResource(
+                                R.plurals.comparison_days,
+                                comparison.daysCompared,
+                                comparison.daysCompared
+                            )
+                        },
                         fontSize = 10.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

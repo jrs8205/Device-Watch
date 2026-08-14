@@ -30,12 +30,12 @@
     <string name="data_counter_cycle_start">Kausi alkaa päivänä %1$d</string>
     <string name="data_counter_description">Laske datankäyttö kalenteripäivittäin tai kuukauden mittaisena laskutusjaksona, joka alkaa valittuna päivänä. Kuukausien pituudet huomioidaan automaattisesti.</string>
     <string name="data_quota_title">Datakiintiö</string>
-    <string name="data_quota_description" formatted="false">Aseta liittymäsi datamäärä laskentakautta kohti; laskuri ja widget näyttävät käytön suhteessa siihen ja saat varoituksen 80 %:ssa ja rajalla.</string>
+    <string name="data_quota_description" formatted="false">Aseta liittymäsi datamäärä laskentakautta kohti; laskuri ja widget näyttävät käytön suhteessa siihen, ja saat varoituksen 80 %:ssa ja rajalla.</string>
     <string name="data_quota_value">%1$s GB</string>
     <string name="data_quota_off">Ei kiintiötä</string>
     <string name="battery_section_title">AKKU</string>
     <string name="charge_limit_title">Latausmuistutus</string>
-    <string name="charge_limit_description">Ilmoittaa kun lataus saavuttaa valitun tason, jotta voit irrottaa laturin ajoissa akun suojaksi.</string>
+    <string name="charge_limit_description">Ilmoittaa, kun lataus saavuttaa valitun tason, jotta voit irrottaa laturin ajoissa akun suojaksi.</string>
     <string name="charge_limit_value">Rajalla %1$d %%</string>
 
     <string name="screen_time_section">RUUTUAIKA TÄNÄÄN</string>
@@ -58,8 +58,9 @@
     <string name="boot_count_label">Käynnistykset</string>
     <string name="charge_count_label">Latauskerrat</string>
     <string name="comparison_section_label">VRT. EDELLINEN KAUSI</string>
+    <string name="comparison_yesterday">Verrattuna eiliseen</string>
     <plurals name="comparison_days">
-        <item quantity="one">Verrattuna eiliseen</item>
+        <item quantity="one">Kummankin kauden ensimmäinen päivä</item>
         <item quantity="other">Kummankin kauden %d ensimmäistä päivää</item>
     </plurals>
     <string name="history_title">Historia</string>

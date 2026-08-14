@@ -15,7 +15,7 @@ import androidx.core.content.ContextCompat
 import org.jarsi.devicewatch.MainActivity
 import org.jarsi.devicewatch.R
 import org.jarsi.devicewatch.data.DataQuotaLogic
-import org.jarsi.devicewatch.widget.dataAmountText
+import org.jarsi.devicewatch.widget.mobileDataText
 
 /**
  * Mobile-data quota alerts. Its own channel, so a user who wants these but not the
@@ -47,7 +47,8 @@ object DataQuotaNotifier {
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentTitle(title)
-            .setContentText("${dataAmountText(usedGb)} / ${dataAmountText(quotaGb)}")
+            // Same "used / quota" rendering the widget and the overview row use.
+            .setContentText(mobileDataText(usedGb, quotaGb))
             .setContentIntent(contentIntent)
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)

@@ -54,6 +54,11 @@ object ChargeLimitNotifier {
         }
     }
 
+    /** Clears the reminder once the charger is out — its advice no longer applies. */
+    fun cancel(context: Context) {
+        NotificationManagerCompat.from(context).cancel(NOTIFICATION_ID)
+    }
+
     private fun canPostNotifications(context: Context): Boolean {
         return Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
             ContextCompat.checkSelfPermission(

@@ -287,6 +287,9 @@ class SystemMonitorService : Service() {
                     }
                     Intent.ACTION_POWER_DISCONNECTED -> {
                         chargeLimitState = ChargeLimitLogic.onPowerDisconnected(chargeLimitState)
+                        // The reminder tells the user to unplug; once they have, it
+                        // is stale advice sitting in the shade.
+                        ChargeLimitNotifier.cancel(applicationContext)
                         chargeAnchorStore.save(
                             ChargeAnchorLogic.onPowerDisconnected(
                                 chargeAnchorStore.load(),

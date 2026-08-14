@@ -35,22 +35,26 @@ object PeriodComparison {
     /**
      * Day-count-aligned comparison windows: the elapsed part of the current period
      * against the first equally many days of the previous one. DAY mode is today
-     * vs yesterday. Null if the previous window would start before the 62-day
-     * store retention — unreachable for the current modes (two billing cycles
-     * never exceed it), kept as a guard for longer periods.
+     * vs yesterday. The compared length is capped at the previous period's own
+     * length, so a longer current month can never push the previous window past
+     * its end and double-count days that are already in "now". Null if the
+     * previous window would start before the 62-day store retention —
+     * unreachable for the current modes, kept as a guard for longer periods.
      */
     fun windows(mode: DataCounterMode, cycleStartDay: Int, today: LocalDate): Windows? {
         val currentStart = DataPeriodCalculator.periodStart(mode, cycleStartDay, today)
         val previousStart =
             DataPeriodCalculator.periodStart(mode, cycleStartDay, currentStart.minusDays(1))
         val elapsedDays = ChronoUnit.DAYS.between(currentStart, today) + 1
+        val previousLength = ChronoUnit.DAYS.between(previousStart, currentStart)
+        val comparedDays = minOf(elapsedDays, previousLength)
         val oldestRetained = today.minusDays(RETAINED_DAYS - 1)
         if (previousStart.isBefore(oldestRetained)) return null
         return Windows(
             currentStart = currentStart,
-            currentEnd = today,
+            currentEnd = currentStart.plusDays(comparedDays - 1),
             previousStart = previousStart,
-            previousEnd = previousStart.plusDays(elapsedDays - 1),
+            previousEnd = previousStart.plusDays(comparedDays - 1),
         )
     }
 

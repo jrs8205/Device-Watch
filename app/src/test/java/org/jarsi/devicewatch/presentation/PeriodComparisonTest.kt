@@ -54,6 +54,23 @@ class PeriodComparisonTest {
     }
 
     @Test
+    fun `a longer current month never reaches past the previous period`() {
+        // 31 elapsed days in March against a 28-day February: comparing the full
+        // elapsed length would run the previous window into March and count those
+        // days twice.
+        val today = LocalDate.of(2026, 3, 31)
+
+        val windows = PeriodComparison.windows(DataCounterMode.BILLING_CYCLE, 1, today)
+
+        assertThat(windows).isNotNull()
+        windows!!
+        assertThat(windows.previousStart).isEqualTo(LocalDate.of(2026, 2, 1))
+        assertThat(windows.previousEnd).isEqualTo(LocalDate.of(2026, 2, 28))
+        assertThat(windows.currentEnd).isEqualTo(LocalDate.of(2026, 3, 28))
+        assertThat(windows.daysCompared).isEqualTo(28)
+    }
+
+    @Test
     fun `previous window at the retention boundary is still returned`() {
         // Cycle day 1 on the last day of a 31-day month: the previous cycle start
         // lands exactly 61 days back, the oldest day the stores still retain.
