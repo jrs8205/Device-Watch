@@ -4,7 +4,6 @@ import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.datastore.preferences.core.Preferences
 import androidx.glance.ColorFilter
 import androidx.glance.GlanceId
@@ -286,7 +285,7 @@ fun WidgetContent() {
                         text = if (wifiBand != UNAVAILABLE_TEXT) "$wifiSsid · $wifiBand" else wifiSsid,
                         style = TextStyle(
                             color = colors.textPrimary,
-                            fontSize = 16.sp,
+                            fontSize = widgetSp(16f),
                             fontWeight = FontWeight.Bold
                         ),
                         maxLines = 1
@@ -296,13 +295,13 @@ fun WidgetContent() {
                             text = "↓ ",
                             style = TextStyle(
                                 color = colors.downloadAccent,
-                                fontSize = 13.sp,
+                                fontSize = widgetSp(13f),
                                 fontWeight = FontWeight.Bold
                             )
                         )
                         Text(
                             text = speedText(wifiSpeedDown),
-                            style = TextStyle(color = colors.textMuted, fontSize = 13.sp),
+                            style = TextStyle(color = colors.textMuted, fontSize = widgetSp(13f)),
                             maxLines = 1
                         )
                         Spacer(modifier = GlanceModifier.width(8.dp))
@@ -310,13 +309,13 @@ fun WidgetContent() {
                             text = "↑ ",
                             style = TextStyle(
                                 color = colors.uploadAccent,
-                                fontSize = 13.sp,
+                                fontSize = widgetSp(13f),
                                 fontWeight = FontWeight.Bold
                             )
                         )
                         Text(
                             text = speedText(wifiSpeedUp),
-                            style = TextStyle(color = colors.textMuted, fontSize = 13.sp),
+                            style = TextStyle(color = colors.textMuted, fontSize = widgetSp(13f)),
                             maxLines = 1
                         )
                     }
@@ -327,7 +326,7 @@ fun WidgetContent() {
                         text = dataAmountText(wifiBytesToday),
                         style = TextStyle(
                             color = colors.textPrimary,
-                            fontSize = 17.sp,
+                            fontSize = widgetSp(17f),
                             fontWeight = FontWeight.Bold
                         ),
                         maxLines = 1
@@ -344,7 +343,7 @@ fun WidgetContent() {
                             text = wifiDataLabel,
                             style = TextStyle(
                                 color = colors.textMuted,
-                                fontSize = 10.sp,
+                                fontSize = widgetSp(10f),
                                 fontWeight = FontWeight.Bold
                             ),
                             maxLines = 1
@@ -380,7 +379,7 @@ fun WidgetContent() {
                         text = "$operatorName · $mobileNetworkType",
                         style = TextStyle(
                             color = colors.textPrimary,
-                            fontSize = 16.sp,
+                            fontSize = widgetSp(16f),
                             fontWeight = FontWeight.Bold
                         ),
                         maxLines = 1
@@ -393,7 +392,7 @@ fun WidgetContent() {
                         ),
                         style = TextStyle(
                             color = colors.textMuted,
-                            fontSize = 13.sp
+                            fontSize = widgetSp(13f)
                         ),
                         maxLines = 1
                     )
@@ -404,7 +403,7 @@ fun WidgetContent() {
                         text = mobileDataText(mobileDataUsed, mobileDataTotal),
                         style = TextStyle(
                             color = colors.textPrimary,
-                            fontSize = 17.sp,
+                            fontSize = widgetSp(17f),
                             fontWeight = FontWeight.Bold
                         ),
                         maxLines = 1
@@ -421,7 +420,7 @@ fun WidgetContent() {
                             text = mobileDataLabel,
                             style = TextStyle(
                                 color = colors.textMuted,
-                                fontSize = 10.sp,
+                                fontSize = widgetSp(10f),
                                 fontWeight = FontWeight.Bold
                             ),
                             maxLines = 1
@@ -449,7 +448,7 @@ fun WidgetContent() {
                 text = context.getString(R.string.widget_uptime, uptime),
                 style = TextStyle(
                     color = colors.textMuted,
-                    fontSize = 13.sp
+                    fontSize = widgetSp(13f)
                 ),
                 maxLines = 1
             )
@@ -459,7 +458,7 @@ fun WidgetContent() {
                     text = context.getString(R.string.widget_screen_time, screenTimeText),
                     style = TextStyle(
                         color = colors.textMuted,
-                        fontSize = 13.sp
+                        fontSize = widgetSp(13f)
                     ),
                     maxLines = 1
                 )
@@ -469,7 +468,7 @@ fun WidgetContent() {
                 text = context.getString(R.string.widget_updated, lastUpdated),
                 style = TextStyle(
                     color = colors.textMuted,
-                    fontSize = 13.sp
+                    fontSize = widgetSp(13f)
                 ),
                 maxLines = 1
             )
@@ -539,7 +538,7 @@ fun MetricTile(
                 text = title,
                 style = TextStyle(
                     color = colors.labelText,
-                    fontSize = 12.sp,
+                    fontSize = widgetSp(12f),
                     fontWeight = FontWeight.Bold
                 ),
                 maxLines = 1
@@ -560,7 +559,7 @@ fun MetricTile(
                 text = value,
                 style = TextStyle(
                     color = colors.textPrimary,
-                    fontSize = 18.sp,
+                    fontSize = widgetSp(18f),
                     fontWeight = FontWeight.Bold
                 ),
                 maxLines = 1
@@ -578,7 +577,7 @@ fun MetricTile(
                         text = wifiBand,
                         style = TextStyle(
                             color = colors.bandText,
-                            fontSize = 12.sp,
+                            fontSize = widgetSp(12f),
                             fontWeight = FontWeight.Bold
                         ),
                         maxLines = 1
@@ -587,17 +586,17 @@ fun MetricTile(
             }
             Spacer(modifier = GlanceModifier.defaultWeight())
             Row(verticalAlignment = Alignment.Vertical.CenterVertically) {
-                Text("↓ ", style = TextStyle(color = colors.downloadAccent, fontSize = 16.sp, fontWeight = FontWeight.Bold))
+                Text("↓ ", style = TextStyle(color = colors.downloadAccent, fontSize = widgetSp(16f), fontWeight = FontWeight.Bold))
                 Text(
                     speedText(wifiDown),
-                    style = TextStyle(color = colors.textPrimary, fontSize = 14.sp, fontWeight = FontWeight.Bold),
+                    style = TextStyle(color = colors.textPrimary, fontSize = widgetSp(14f), fontWeight = FontWeight.Bold),
                     maxLines = 1
                 )
                 Spacer(modifier = GlanceModifier.width(8.dp))
-                Text("↑ ", style = TextStyle(color = colors.uploadAccent, fontSize = 16.sp, fontWeight = FontWeight.Bold))
+                Text("↑ ", style = TextStyle(color = colors.uploadAccent, fontSize = widgetSp(16f), fontWeight = FontWeight.Bold))
                 Text(
                     speedText(wifiUp),
-                    style = TextStyle(color = colors.textPrimary, fontSize = 14.sp, fontWeight = FontWeight.Bold),
+                    style = TextStyle(color = colors.textPrimary, fontSize = widgetSp(14f), fontWeight = FontWeight.Bold),
                     maxLines = 1
                 )
             }
@@ -606,7 +605,7 @@ fun MetricTile(
                 text = bottomText,
                 style = TextStyle(
                     color = colors.textMuted,
-                    fontSize = 13.sp
+                    fontSize = widgetSp(13f)
                 ),
                 maxLines = 1
             )
@@ -615,7 +614,7 @@ fun MetricTile(
                 text = value,
                 style = TextStyle(
                     color = colors.healthAccent,
-                    fontSize = 22.sp,
+                    fontSize = widgetSp(22f),
                     fontWeight = FontWeight.Bold
                 ),
                 maxLines = 1
@@ -626,7 +625,7 @@ fun MetricTile(
                     text = androidx.glance.LocalContext.current.getString(R.string.widget_capacity_label),
                     style = TextStyle(
                         color = colors.labelText,
-                        fontSize = 11.sp,
+                        fontSize = widgetSp(11f),
                         fontWeight = FontWeight.Bold
                     ),
                     maxLines = 1
@@ -635,7 +634,7 @@ fun MetricTile(
                     text = healthCapacityText(androidx.glance.LocalContext.current, healthCapacity),
                     style = TextStyle(
                         color = colors.capacityText,
-                        fontSize = 15.sp,
+                        fontSize = widgetSp(15f),
                         fontWeight = FontWeight.Medium
                     ),
                     maxLines = 1
@@ -646,7 +645,7 @@ fun MetricTile(
                 text = bottomText,
                 style = TextStyle(
                     color = colors.textMuted,
-                    fontSize = 13.sp
+                    fontSize = widgetSp(13f)
                 ),
                 maxLines = 1
             )
@@ -655,7 +654,7 @@ fun MetricTile(
                 text = value,
                 style = TextStyle(
                     color = colors.textPrimary,
-                    fontSize = 34.sp,
+                    fontSize = widgetSp(34f),
                     fontWeight = FontWeight.Bold
                 ),
                 maxLines = 2
@@ -665,7 +664,7 @@ fun MetricTile(
                 text = subtext,
                 style = TextStyle(
                     color = colors.textMuted,
-                    fontSize = 13.sp
+                    fontSize = widgetSp(13f)
                 ),
                 maxLines = 1
             )
@@ -678,7 +677,7 @@ fun MetricTile(
                 text = bottomText,
                 style = TextStyle(
                     color = colors.textMuted,
-                    fontSize = 13.sp
+                    fontSize = widgetSp(13f)
                 ),
                 maxLines = 1
             )
