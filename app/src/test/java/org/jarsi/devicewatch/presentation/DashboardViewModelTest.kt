@@ -177,6 +177,71 @@ class DashboardViewModelTest {
         }
 
     @Test
+    fun `given a saved charge limit, when loading, then state adopts it`() = runTest(dispatcher) {
+        // Given
+        val settings = FakeAppSettingsRepository(chargeLimit = 85)
+        val viewModel = buildViewModel(settings = settings)
+
+        // When
+        viewModel.loadDataCounterSettings()
+        advanceUntilIdle()
+
+        // Then
+        assertThat(viewModel.uiState.value.chargeLimitPercent).isEqualTo(85)
+    }
+
+    @Test
+    fun `given a dragged charge limit, when committing, then it is persisted`() =
+        runTest(dispatcher) {
+            // Given
+            val settings = FakeAppSettingsRepository()
+            val viewModel = buildViewModel(settings = settings)
+
+            // When
+            viewModel.onChargeLimitChange(80)
+            viewModel.onCommitChargeLimit()
+            advanceUntilIdle()
+
+            // Then
+            assertThat(viewModel.uiState.value.chargeLimitPercent).isEqualTo(80)
+            assertThat(settings.chargeLimit).isEqualTo(80)
+        }
+
+    @Test
+    fun `given an out-of-range charge limit, when committing, then it is coerced into 50 to 95`() =
+        runTest(dispatcher) {
+            // Given
+            val settings = FakeAppSettingsRepository()
+            val viewModel = buildViewModel(settings = settings)
+
+            // When
+            viewModel.onChargeLimitChange(140)
+            viewModel.onCommitChargeLimit()
+            advanceUntilIdle()
+
+            // Then
+            assertThat(viewModel.uiState.value.chargeLimitPercent).isEqualTo(95)
+            assertThat(settings.chargeLimit).isEqualTo(95)
+        }
+
+    @Test
+    fun `given the reminder switched off, when committing, then zero is persisted`() =
+        runTest(dispatcher) {
+            // Given
+            val settings = FakeAppSettingsRepository(chargeLimit = 80)
+            val viewModel = buildViewModel(settings = settings)
+
+            // When
+            viewModel.onChargeLimitChange(0)
+            viewModel.onCommitChargeLimit()
+            advanceUntilIdle()
+
+            // Then
+            assertThat(viewModel.uiState.value.chargeLimitPercent).isEqualTo(0)
+            assertThat(settings.chargeLimit).isEqualTo(0)
+        }
+
+    @Test
     fun `given day mode, when refreshing, then today's totals are recorded and shown`() =
         runTest(dispatcher) {
             // Given

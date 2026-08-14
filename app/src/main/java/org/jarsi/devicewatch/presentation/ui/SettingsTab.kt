@@ -51,12 +51,18 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import org.jarsi.devicewatch.BuildConfig
 import org.jarsi.devicewatch.R
+import org.jarsi.devicewatch.data.CHARGE_LIMIT_MAX
+import org.jarsi.devicewatch.data.CHARGE_LIMIT_MIN
+import org.jarsi.devicewatch.data.DEFAULT_CHARGE_LIMIT_PERCENT
 import org.jarsi.devicewatch.data.DataCounterMode
 import org.jarsi.devicewatch.presentation.DashboardUiState
 import org.jarsi.devicewatch.system.DreamPreferences
 import kotlin.math.roundToInt
 
-/** Settings tab: data counter period, widget opacity, screensaver and special access. */
+/**
+ * Settings tab: data counter period, charge reminder, widget opacity, screensaver
+ * and special access.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun SettingsTab(
@@ -66,6 +72,8 @@ internal fun SettingsTab(
     onDataCounterModeSelected: (DataCounterMode) -> Unit,
     onCycleStartDayChange: (Int) -> Unit,
     onCommitCycleStartDay: () -> Unit,
+    onChargeLimitChange: (Int) -> Unit,
+    onCommitChargeLimit: () -> Unit,
     onShowIntro: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -228,6 +236,55 @@ internal fun SettingsTab(
                 fontSize = 11.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+        }
+
+        // Charge reminder
+        SettingsSectionCard(titleRes = R.string.battery_section_title) {
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.charge_limit_title),
+                        fontWeight = FontWeight.Medium,
+                        fontSize = 14.sp
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = stringResource(R.string.charge_limit_description),
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Switch(
+                    checked = uiState.chargeLimitPercent > 0,
+                    onCheckedChange = withTapHaptic { checked ->
+                        onChargeLimitChange(if (checked) DEFAULT_CHARGE_LIMIT_PERCENT else 0)
+                        onCommitChargeLimit()
+                    }
+                )
+            }
+
+            if (uiState.chargeLimitPercent > 0) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = stringResource(R.string.charge_limit_value, uiState.chargeLimitPercent),
+                    fontWeight = FontWeight.Medium,
+                    fontSize = 14.sp
+                )
+                Slider(
+                    value = uiState.chargeLimitPercent.toFloat(),
+                    onValueChange = { onChargeLimitChange(it.roundToInt()) },
+                    onValueChangeFinished = withTapHaptic(onCommitChargeLimit),
+                    valueRange = CHARGE_LIMIT_MIN.toFloat()..CHARGE_LIMIT_MAX.toFloat(),
+                    steps = 8,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
         }
 
         // Widget settings

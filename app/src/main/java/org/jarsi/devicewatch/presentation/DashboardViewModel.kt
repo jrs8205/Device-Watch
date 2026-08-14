@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import org.jarsi.devicewatch.data.AppSettingsRepository
 import org.jarsi.devicewatch.data.AppUsageRepository
+import org.jarsi.devicewatch.data.CHARGE_LIMIT_MAX
+import org.jarsi.devicewatch.data.CHARGE_LIMIT_MIN
 import org.jarsi.devicewatch.data.DataCounterMode
 import org.jarsi.devicewatch.data.DataPeriodCalculator
 import org.jarsi.devicewatch.data.DeviceInfo
@@ -47,6 +49,8 @@ data class DashboardUiState(
     val widgetOpacity: Float = DEFAULT_WIDGET_OPACITY,
     val dataCounterMode: DataCounterMode = DataCounterMode.DAY,
     val cycleStartDay: Int = 1,
+    /** Charge-reminder level in percent; 0 = reminder off. */
+    val chargeLimitPercent: Int = 0,
     // Usage counters, scoped to the selected counting period (day or billing cycle).
     val screenTimeMillis: Long = -1L,
     val unlockCount: Int = UNAVAILABLE_INT,
@@ -191,12 +195,13 @@ class DashboardViewModel @Inject constructor(
         }
     }
 
-    /** Loads the saved data-counter mode and billing-cycle start day into the state. */
+    /** Loads the saved counter mode, cycle start day and charge reminder into the state. */
     fun loadDataCounterSettings() {
         _uiState.update {
             it.copy(
                 dataCounterMode = settings.dataCounterMode(),
                 cycleStartDay = settings.cycleStartDay(),
+                chargeLimitPercent = settings.chargeLimitPercent(),
             )
         }
     }
@@ -217,6 +222,17 @@ class DashboardViewModel @Inject constructor(
     fun commitCycleStartDay() {
         settings.setCycleStartDay(_uiState.value.cycleStartDay)
         refresh()
+    }
+
+    /** Live-updates the charge-reminder value without persisting; 0 switches it off. */
+    fun onChargeLimitChange(percent: Int) {
+        val value = if (percent <= 0) 0 else percent.coerceIn(CHARGE_LIMIT_MIN, CHARGE_LIMIT_MAX)
+        _uiState.update { it.copy(chargeLimitPercent = value) }
+    }
+
+    /** Persists the chosen charge-reminder level; the monitor service reads it live. */
+    fun onCommitChargeLimit() {
+        settings.setChargeLimitPercent(_uiState.value.chargeLimitPercent)
     }
 
     private fun currentTime(): String =

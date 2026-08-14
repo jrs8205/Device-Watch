@@ -255,6 +255,8 @@ fun SystemDashboardScreen(
                             onDataCounterModeSelected = viewModel::onDataCounterModeSelected,
                             onCycleStartDayChange = viewModel::onCycleStartDayChange,
                             onCommitCycleStartDay = viewModel::commitCycleStartDay,
+                            onChargeLimitChange = viewModel::onChargeLimitChange,
+                            onCommitChargeLimit = viewModel::onCommitChargeLimit,
                             onShowIntro = { replayOnboarding = true }
                         )
                     }
