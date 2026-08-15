@@ -162,61 +162,42 @@ fun HistoryPage(
         ) {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(start = BAND_INSET, end = BAND_INSET, bottom = 24.dp),
+                contentPadding = PaddingValues(bottom = 24.dp),
             ) {
                 // Held back until the first load finishes so the chart's empty text
                 // doesn't flash while the samples are still being read.
                 if (uiState.batterySamples.isNotEmpty() || !uiState.isLoading) {
-                    item(key = "battery_header") {
-                        Text(
-                            text = stringResource(R.string.history_battery_section),
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
                     item(key = "battery_chart") {
-                        Column(modifier = Modifier.fillMaxWidth()) {
+                        SettingsSectionCard(titleRes = R.string.history_battery_section) {
                             BatteryRangeChipRow(selected = batteryRange, onSelect = { batteryRange = it })
-                            Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(12.dp))
                             BatteryChart(samples = uiState.batterySamples, range = batteryRange)
                         }
                     }
                 }
 
-                item(key = "metric_chips") {
-                    MetricChipRow(selected = selectedMetric, onSelect = { selectedMetric = it })
-                }
-
                 val visibleDays = daysNewestFirstSinceFirstData(uiState.days, selectedMetric)
-                if (visibleDays.isEmpty()) {
-                    if (!uiState.isLoading) {
-                        item(key = "metric_empty") {
-                            Text(
-                                text = stringResource(R.string.history_metric_empty),
-                                fontSize = 13.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                item(key = "day_list") {
+                    SettingsSectionCard(titleRes = R.string.history_days_section) {
+                        MetricChipRow(selected = selectedMetric, onSelect = { selectedMetric = it })
+                        Spacer(modifier = Modifier.height(12.dp))
+                        if (visibleDays.isEmpty()) {
+                            if (!uiState.isLoading) {
+                                Text(
+                                    text = stringResource(R.string.history_metric_empty),
+                                    fontSize = 13.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        } else {
+                            HistoryDayList(days = visibleDays, metric = selectedMetric)
                         }
-                    }
-                } else {
-                    item(key = "day_list") {
-                        HistoryDayList(days = visibleDays, metric = selectedMetric)
                     }
                 }
 
                 if (uiState.monthlyUsage.isNotEmpty()) {
-                    item(key = "monthly_data_header") {
-                        Text(
-                            text = stringResource(R.string.history_monthly_data_section),
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
                     item(key = "monthly_data") {
+                        SettingsSectionCard(titleRes = R.string.history_monthly_data_section) {
                         MonthlyDataSection(
                             monthly = uiState.monthlyUsage,
                             onOpenUsageAccess = {
@@ -231,23 +212,27 @@ fun HistoryPage(
                                 }
                             },
                         )
+                        }
                     }
                 }
 
                 item(key = "log_header") {
                     Text(
                         text = stringResource(R.string.history_log_section),
-                        fontSize = 11.sp,
+                        fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
+                        letterSpacing = SECTION_TITLE_TRACKING,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = BAND_INSET, end = BAND_INSET, top = BAND_SPACING, bottom = 12.dp)
                     )
                 }
 
                 if (uiState.logEntries.isEmpty()) {
                     if (!uiState.isLoading) {
                         item(key = "log_empty") {
-                            Column(modifier = Modifier.fillMaxWidth()) {
+                            Column(modifier = Modifier.fillMaxWidth().padding(horizontal = BAND_INSET)) {
                                 Text(
                                     text = stringResource(R.string.history_log_empty),
                                     fontSize = 13.sp,
@@ -282,10 +267,12 @@ fun HistoryPage(
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(top = 4.dp)
+                                modifier = Modifier.padding(start = BAND_INSET, end = BAND_INSET, top = 8.dp)
                             )
                         }
-                        items(entries) { entry -> NotificationLogRow(entry) }
+                        items(entries) { entry ->
+                            NotificationLogRow(entry, modifier = Modifier.padding(horizontal = BAND_INSET))
+                        }
                     }
                 }
             }
@@ -508,7 +495,7 @@ private fun HistoryDayList(days: List<HistoryDay>, metric: HistoryMetric) {
 }
 
 @Composable
-private fun NotificationLogRow(entry: NotificationLogEntry) {
+private fun NotificationLogRow(entry: NotificationLogEntry, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     // The exact message can't be reopened later — a notification's content
     // PendingIntent is app-private and dies with the notification — so tapping
@@ -524,7 +511,7 @@ private fun NotificationLogRow(entry: NotificationLogEntry) {
         }
     }
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .clickable(enabled = launchIntent != null, onClick = openApp)
             .padding(vertical = 6.dp),

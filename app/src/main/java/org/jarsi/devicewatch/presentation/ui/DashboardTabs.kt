@@ -54,6 +54,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
@@ -184,12 +185,25 @@ fun SystemDashboardScreen(
 
     Scaffold(
         topBar = {
+            Column {
             TopAppBar(
                 title = {
-                    Text(
-                        stringResource(R.string.main_title),
-                        fontWeight = FontWeight.Bold
-                    )
+                    Column {
+                        // The app names itself once, quietly, above the page title —
+                        // the launcher icon is gone the moment the app is open.
+                        Text(
+                            stringResource(R.string.app_name).uppercase(),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = SECTION_TITLE_TRACKING,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            stringResource(R.string.main_title),
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 },
                 actions = {
                     IconButton(onClick = withTapHaptic {
@@ -211,6 +225,8 @@ fun SystemDashboardScreen(
                     containerColor = MaterialTheme.colorScheme.background
                 )
             )
+            HorizontalDivider(color = MaterialTheme.colorScheme.outline)
+            }
         },
         bottomBar = {
             val density = LocalDensity.current

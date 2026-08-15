@@ -113,30 +113,22 @@ internal fun OverviewTab(
         // Battery section — the whole card opens the "since charge" page.
         SettingsSectionCard(
             titleRes = R.string.battery_status_section,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .align(Alignment.End)
-                    .clip(RoundedCornerShape(8.dp))
-                    .clickable(onClick = withTapHaptic(onOpenSinceCharge))
-                    .padding(horizontal = 8.dp, vertical = 4.dp)
-            ) {
-                Text(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            trailing = {
+                SectionLink(
                     text = stringResource(R.string.since_charge_title),
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                     contentDescription = stringResource(R.string.since_charge_open),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    onClick = onOpenSinceCharge
                 )
             }
-            Spacer(modifier = Modifier.height(4.dp))
+        ) {
 
+            // One colour for the ring and the status dot: they say the same thing.
+            val batteryColor = if (currentStats.batteryLevel > 20) {
+                statusOkColor()
+            } else {
+                MaterialTheme.colorScheme.error
+            }
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier.size(160.dp)
@@ -145,11 +137,7 @@ internal fun OverviewTab(
                     progress = { currentStats.batteryLevel.toFloat() / 100f },
                     modifier = Modifier.fillMaxSize(),
                     strokeWidth = 10.dp,
-                    color = if (currentStats.batteryLevel > 20) {
-                        statusOkColor()
-                    } else {
-                        MaterialTheme.colorScheme.error
-                    },
+                    color = batteryColor,
                     trackColor = MaterialTheme.colorScheme.outlineVariant,
                 )
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -157,7 +145,16 @@ internal fun OverviewTab(
                         text = "${currentStats.batteryLevel}%",
                         fontSize = HERO_VALUE_SP
                     )
-                    MetricLabel(currentStats.batteryStatus, fontSize = 12.sp)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(10.dp)
+                                .clip(CircleShape)
+                                .background(batteryColor)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        MetricLabel(currentStats.batteryStatus, fontSize = 12.sp)
+                    }
                 }
             }
 
@@ -198,29 +195,16 @@ internal fun OverviewTab(
                 R.string.usage_counters_section
             } else {
                 R.string.usage_counters_section_period
+            },
+            trailing = {
+                SectionLink(
+                    text = stringResource(R.string.history_title),
+                    contentDescription = stringResource(R.string.history_open),
+                    onClick = onOpenHistory
+                )
             }
         ) {
             run {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .align(Alignment.End)
-                        .clip(RoundedCornerShape(8.dp))
-                        .clickable(onClick = withTapHaptic(onOpenHistory))
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                ) {
-                    Text(
-                        text = stringResource(R.string.history_title),
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                        contentDescription = stringResource(R.string.history_open),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
                 StackedMetricRow(
                     label = stringResource(R.string.screen_time_total_label),
                     value = if (uiState.screenTimeMillis >= 0L) {

@@ -175,10 +175,13 @@ private fun SinceChargeSummaryCard(uiState: SinceChargeUiState) {
         Spacer(modifier = Modifier.height(8.dp))
 
         val elapsedMillis = (uiState.nowMillis - anchor.timeMillis).coerceAtLeast(0L)
-        DeviceInfoRow(R.string.since_charge_elapsed, durationText(context, elapsedMillis))
-        DeviceInfoRow(
-            R.string.since_charge_battery_now,
-            uiState.currentLevel?.let { "$it %" } ?: UNAVAILABLE_TEXT
+        StackedMetricRow(
+            label = stringResource(R.string.since_charge_elapsed),
+            value = durationText(context, elapsedMillis)
+        )
+        StackedMetricRow(
+            label = stringResource(R.string.since_charge_battery_now),
+            value = uiState.currentLevel?.let { "$it %" } ?: UNAVAILABLE_TEXT
         )
         if (uiState.isCharging) {
             Spacer(modifier = Modifier.height(4.dp))
@@ -190,27 +193,38 @@ private fun SinceChargeSummaryCard(uiState: SinceChargeUiState) {
         } else {
             val drop = uiState.currentLevel?.let { anchor.batteryLevel - it }
             if (drop != null && drop >= 0) {
-                DeviceInfoRow(R.string.since_charge_used, "$drop %")
+                StackedMetricRow(
+                    label = stringResource(R.string.since_charge_used),
+                    value = "$drop %"
+                )
                 val hours = elapsedMillis / 3_600_000.0
                 if (drop >= 1 && hours >= 0.5) {
-                    DeviceInfoRow(
-                        R.string.since_charge_avg_drain,
-                        String.format(LocalLocale.current.platformLocale, "%.1f %%/h", drop / hours)
+                    StackedMetricRow(
+                        label = stringResource(R.string.since_charge_avg_drain),
+                        value = String.format(
+                            LocalLocale.current.platformLocale, "%.1f %%/h", drop / hours
+                        )
                     )
                 }
             }
         }
 
         Spacer(modifier = Modifier.height(8.dp))
-        DeviceInfoRow(R.string.unlock_count_label, countOrDashText(uiState.unlockCount))
-        DeviceInfoRow(R.string.notification_count_label, countOrDashText(uiState.notificationCount))
-        DeviceInfoRow(
-            R.string.since_charge_wifi,
-            if (uiState.wifiGb >= 0.0) gbTodayText(uiState.wifiGb) else UNAVAILABLE_TEXT
+        StackedMetricRow(
+            label = stringResource(R.string.unlock_count_label),
+            value = countOrDashText(uiState.unlockCount)
         )
-        DeviceInfoRow(
-            R.string.since_charge_mobile,
-            if (uiState.mobileGb >= 0.0) gbTodayText(uiState.mobileGb) else UNAVAILABLE_TEXT
+        StackedMetricRow(
+            label = stringResource(R.string.notification_count_label),
+            value = countOrDashText(uiState.notificationCount)
+        )
+        StackedMetricRow(
+            label = stringResource(R.string.since_charge_wifi),
+            value = if (uiState.wifiGb >= 0.0) gbTodayText(uiState.wifiGb) else UNAVAILABLE_TEXT
+        )
+        StackedMetricRow(
+            label = stringResource(R.string.since_charge_mobile),
+            value = if (uiState.mobileGb >= 0.0) gbTodayText(uiState.mobileGb) else UNAVAILABLE_TEXT
         )
     }
 }

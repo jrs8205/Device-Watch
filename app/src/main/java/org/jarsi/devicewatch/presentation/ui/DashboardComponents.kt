@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.annotation.StringRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,11 +17,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -31,6 +35,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.Layout
@@ -77,6 +82,7 @@ internal fun SettingsSectionCard(
     @StringRes titleRes: Int,
     modifier: Modifier = Modifier,
     horizontalAlignment: Alignment.Horizontal = Alignment.Start,
+    trailing: @Composable (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
@@ -86,18 +92,49 @@ internal fun SettingsSectionCard(
                 .padding(horizontal = BAND_INSET, vertical = BAND_SPACING),
             horizontalAlignment = horizontalAlignment
         ) {
-            Text(
-                stringResource(titleRes),
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = SECTION_TITLE_TRACKING,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.fillMaxWidth()
+            // A section's link belongs on its title line. Floated below the title
+            // on a right edge of its own, it read as a stray control rather than
+            // as this section's way in.
+            LabelValueRow(
+                label = {
+                    Text(
+                        stringResource(titleRes),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = SECTION_TITLE_TRACKING,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                },
+                value = { trailing?.invoke() }
             )
             Spacer(modifier = Modifier.height(12.dp))
             content()
         }
         HorizontalDivider(color = MaterialTheme.colorScheme.outline)
+    }
+}
+
+/** The "open the page behind this section" link that sits on a band's title line. */
+@Composable
+internal fun SectionLink(text: String, contentDescription: String, onClick: () -> Unit) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .clip(RoundedCornerShape(8.dp))
+            .clickable(onClick = withTapHaptic(onClick))
+            .padding(start = 8.dp, top = 4.dp, bottom = 4.dp)
+    ) {
+        Text(
+            text = text,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.primary
+        )
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = contentDescription,
+            tint = MaterialTheme.colorScheme.primary
+        )
     }
 }
 
@@ -141,7 +178,9 @@ internal fun LabelValueRow(
         modifier = modifier.fillMaxWidth()
     ) { (labelMeasurables, valueMeasurables), constraints ->
         val labelMeasurable = labelMeasurables.first()
-        val valueMeasurable = valueMeasurables.first()
+        // A caller may pass a value slot that emits nothing — a band with no link
+        // on its title line does exactly that. Then the label simply has the row.
+        val valueMeasurable = valueMeasurables.firstOrNull()
         val availableWidth = constraints.maxWidth
         val gap = horizontalGap.roundToPx()
 
@@ -151,6 +190,12 @@ internal fun LabelValueRow(
             minHeight = 0,
             maxHeight = constraints.maxHeight
         )
+
+        if (valueMeasurable == null) {
+            val labelPlaceable = labelMeasurable.measure(childConstraints(availableWidth))
+            val width = if (constraints.hasBoundedWidth) availableWidth else labelPlaceable.width
+            return@Layout layout(width, labelPlaceable.height) { labelPlaceable.place(0, 0) }
+        }
 
         val sideBySide = !constraints.hasBoundedWidth || labelAndValueFitOnOneLine(
             labelWidth = labelMeasurable.maxIntrinsicWidth(constraints.maxHeight),
@@ -222,32 +267,6 @@ internal fun SettingsToggleRow(
     }
 }
 
-@Composable
-internal fun DeviceInfoRow(@StringRes labelRes: Int, value: String) {
-    DeviceInfoRow(label = stringResource(labelRes), value = value)
-}
-
-@Composable
-internal fun DeviceInfoRow(label: String, value: String) {
-    LabelValueRow(
-        modifier = Modifier.padding(vertical = 5.dp),
-        label = {
-            Text(
-                text = label,
-                fontSize = 12.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        },
-        value = {
-            Text(
-                text = value,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Medium,
-                textAlign = TextAlign.End
-            )
-        }
-    )
-}
 
 /**
  * A device fact: its name, then the fact itself on the line below, separated

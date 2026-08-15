@@ -1,6 +1,7 @@
 package org.jarsi.devicewatch.presentation.ui
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -65,39 +66,40 @@ internal fun AppDetailSheet(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            DeviceInfoRow(
-                R.string.app_detail_screen_time,
-                durationText(context, detail.foregroundMillisToday)
+            StackedMetricRow(
+                label = stringResource(R.string.app_detail_screen_time),
+                value = durationText(context, detail.foregroundMillisToday)
             )
-            DeviceInfoRow(R.string.app_detail_launches, detail.launchCountToday.toString())
-            DeviceInfoRow(R.string.app_detail_last_opened, lastUsedText(detail.lastOpenedEpochMillis))
-            DeviceInfoRow(R.string.app_detail_data, bytesText(detail.dataBytesToday))
+            StackedMetricRow(
+                label = stringResource(R.string.app_detail_launches),
+                value = detail.launchCountToday.toString()
+            )
+            StackedMetricRow(
+                label = stringResource(R.string.app_detail_last_opened),
+                value = lastUsedText(detail.lastOpenedEpochMillis)
+            )
+            StackedMetricRow(
+                label = stringResource(R.string.app_detail_data),
+                value = bytesText(detail.dataBytesToday)
+            )
 
             if (detail.notificationsToday == UNAVAILABLE_INT) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = stringResource(R.string.app_detail_notifications),
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.weight(1f)
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    StackedMetricRow(
+                        label = stringResource(R.string.app_detail_notifications),
+                        value = UNAVAILABLE_TEXT
                     )
-                    Text(
-                        text = UNAVAILABLE_TEXT,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium,
-                        textAlign = TextAlign.End
-                    )
-                    TextButton(onClick = withTapHaptic(onEnableNotifications)) {
-                        Text(stringResource(R.string.notification_access_enable), fontSize = 12.sp)
+                    TextButton(
+                        onClick = withTapHaptic(onEnableNotifications),
+                        contentPadding = PaddingValues(0.dp)
+                    ) {
+                        Text(stringResource(R.string.notification_access_enable), fontSize = 13.sp)
                     }
                 }
             } else {
-                DeviceInfoRow(
-                    R.string.app_detail_notifications,
-                    detail.notificationsToday.toString()
+                StackedMetricRow(
+                    label = stringResource(R.string.app_detail_notifications),
+                    value = detail.notificationsToday.toString()
                 )
             }
         }
