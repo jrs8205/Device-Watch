@@ -41,6 +41,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -172,7 +173,8 @@ internal fun AppsTab(viewModel: AppsViewModel = hiltViewModel()) {
                         Text(
                             text = segment.label ?: stringResource(R.string.screen_time_others),
                             fontSize = 14.sp,
-                            maxLines = 1,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.weight(1f)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
@@ -210,7 +212,8 @@ internal fun AppsTab(viewModel: AppsViewModel = hiltViewModel()) {
                             Text(
                                 text = entry.label,
                                 fontSize = 14.sp,
-                                maxLines = 1,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
                                 modifier = Modifier.weight(1f)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
@@ -254,7 +257,8 @@ internal fun AppsTab(viewModel: AppsViewModel = hiltViewModel()) {
                         Text(
                             text = consumer.label,
                             fontSize = 14.sp,
-                            maxLines = 1,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.weight(1f)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
@@ -323,7 +327,13 @@ private fun AppListRow(
         AppIcon(app.packageName, modifier = Modifier.size(40.dp))
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(text = app.label, fontSize = 14.sp, fontWeight = FontWeight.Medium, maxLines = 1)
+            Text(
+                text = app.label,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
             val tier = UsageEventAggregator.lastUsedTier(daysSinceLastUse(app.lastUsedEpochMillis))
             Text(
                 text = lastUsedText(app.lastUsedEpochMillis),

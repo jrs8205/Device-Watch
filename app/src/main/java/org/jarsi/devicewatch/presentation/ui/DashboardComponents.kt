@@ -21,6 +21,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
@@ -31,11 +32,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.graphics.drawable.toBitmap
@@ -88,6 +92,120 @@ internal fun SettingsSectionCard(
     }
 }
 
+/**
+ * True when a label and its value still fit side by side on one line.
+ *
+ * A plain `Row` cannot decide this: it hands the label the full width first, so a
+ * label that grew with the system font leaves the value squeezed into whatever is
+ * left — no gap between the two, and the value broken across lines mid-value.
+ */
+internal fun labelAndValueFitOnOneLine(
+    labelWidth: Int,
+    valueWidth: Int,
+    gapWidth: Int,
+    availableWidth: Int,
+): Boolean = labelWidth + gapWidth + valueWidth <= availableWidth
+
+/**
+ * Label on the left, value on the right — until the two no longer fit on one line,
+ * at which point the value drops onto its own line, still right-aligned. Each part
+ * keeps its full intrinsic width whenever it can, so nothing is ever cut in half
+ * by the other.
+ */
+@Composable
+internal fun LabelValueRow(
+    modifier: Modifier = Modifier,
+    horizontalGap: Dp = 12.dp,
+    verticalGap: Dp = 2.dp,
+    label: @Composable () -> Unit,
+    value: @Composable () -> Unit,
+) {
+    Layout(
+        contents = listOf(label, value),
+        modifier = modifier.fillMaxWidth()
+    ) { (labelMeasurables, valueMeasurables), constraints ->
+        val labelMeasurable = labelMeasurables.first()
+        val valueMeasurable = valueMeasurables.first()
+        val availableWidth = constraints.maxWidth
+        val gap = horizontalGap.roundToPx()
+
+        fun childConstraints(width: Int) = Constraints(
+            minWidth = 0,
+            maxWidth = width.coerceAtLeast(0),
+            minHeight = 0,
+            maxHeight = constraints.maxHeight
+        )
+
+        val sideBySide = !constraints.hasBoundedWidth || labelAndValueFitOnOneLine(
+            labelWidth = labelMeasurable.maxIntrinsicWidth(constraints.maxHeight),
+            valueWidth = valueMeasurable.maxIntrinsicWidth(constraints.maxHeight),
+            gapWidth = gap,
+            availableWidth = availableWidth
+        )
+
+        if (sideBySide) {
+            val valuePlaceable = valueMeasurable.measure(childConstraints(availableWidth))
+            val labelPlaceable =
+                labelMeasurable.measure(childConstraints(availableWidth - gap - valuePlaceable.width))
+            val width = if (constraints.hasBoundedWidth) {
+                availableWidth
+            } else {
+                labelPlaceable.width + gap + valuePlaceable.width
+            }
+            layout(width, maxOf(labelPlaceable.height, valuePlaceable.height)) {
+                labelPlaceable.place(0, 0)
+                valuePlaceable.place(width - valuePlaceable.width, 0)
+            }
+        } else {
+            val labelPlaceable = labelMeasurable.measure(childConstraints(availableWidth))
+            val valuePlaceable = valueMeasurable.measure(childConstraints(availableWidth))
+            val stackGap = verticalGap.roundToPx()
+            layout(availableWidth, labelPlaceable.height + stackGap + valuePlaceable.height) {
+                labelPlaceable.place(0, 0)
+                valuePlaceable.place(
+                    availableWidth - valuePlaceable.width,
+                    labelPlaceable.height + stackGap
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Setting title, its explanation and the switch that turns it on. The switch is
+ * pinned beside the title rather than centred against the whole block: a long
+ * explanation at a large system font otherwise leaves it floating in the middle
+ * of a paragraph, far from the thing it controls.
+ */
+@Composable
+internal fun SettingsToggleRow(
+    @StringRes titleRes: Int,
+    @StringRes descriptionRes: Int,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.Top
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = stringResource(titleRes),
+                fontWeight = FontWeight.Medium,
+                fontSize = 14.sp
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = stringResource(descriptionRes),
+                fontSize = 11.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Spacer(modifier = Modifier.width(12.dp))
+        Switch(checked = checked, onCheckedChange = withTapHaptic(onCheckedChange))
+    }
+}
+
 @Composable
 internal fun DeviceInfoRow(@StringRes labelRes: Int, value: String) {
     DeviceInfoRow(label = stringResource(labelRes), value = value)
@@ -95,27 +213,24 @@ internal fun DeviceInfoRow(@StringRes labelRes: Int, value: String) {
 
 @Composable
 internal fun DeviceInfoRow(label: String, value: String) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 5.dp),
-        verticalAlignment = Alignment.Top
-    ) {
-        Text(
-            text = label,
-            fontSize = 12.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.weight(1f)
-        )
-        Spacer(modifier = Modifier.width(12.dp))
-        Text(
-            text = value,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Medium,
-            textAlign = TextAlign.End,
-            modifier = Modifier.weight(1f)
-        )
-    }
+    LabelValueRow(
+        modifier = Modifier.padding(vertical = 5.dp),
+        label = {
+            Text(
+                text = label,
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        },
+        value = {
+            Text(
+                text = value,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium,
+                textAlign = TextAlign.End
+            )
+        }
+    )
 }
 
 /**

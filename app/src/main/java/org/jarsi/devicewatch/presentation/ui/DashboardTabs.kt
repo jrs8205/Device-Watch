@@ -30,6 +30,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -41,9 +42,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Density
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
@@ -200,16 +204,28 @@ fun SystemDashboardScreen(
             )
         },
         bottomBar = {
-            NavigationBar {
-                DashboardTab.entries.forEachIndexed { index, tab ->
-                    NavigationBarItem(
-                        selected = index == pagerState.currentPage,
-                        onClick = withTapHaptic {
-                            scope.launch { pagerState.animateScrollToPage(index) }
-                        },
-                        icon = { Icon(tab.icon, contentDescription = null) },
-                        label = { Text(stringResource(tab.labelRes)) }
-                    )
+            val density = LocalDensity.current
+            val barDensity = remember(density) {
+                Density(density.density, clampedNavBarFontScale(density.fontScale))
+            }
+            CompositionLocalProvider(LocalDensity provides barDensity) {
+                NavigationBar {
+                    DashboardTab.entries.forEachIndexed { index, tab ->
+                        NavigationBarItem(
+                            selected = index == pagerState.currentPage,
+                            onClick = withTapHaptic {
+                                scope.launch { pagerState.animateScrollToPage(index) }
+                            },
+                            icon = { Icon(tab.icon, contentDescription = null) },
+                            label = {
+                                Text(
+                                    stringResource(tab.labelRes),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        )
+                    }
                 }
             }
         }

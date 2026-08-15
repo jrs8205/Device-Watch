@@ -244,32 +244,15 @@ internal fun SettingsTab(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = stringResource(R.string.data_quota_title),
-                        fontWeight = FontWeight.Medium,
-                        fontSize = 14.sp
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = stringResource(R.string.data_quota_description),
-                        fontSize = 11.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+            SettingsToggleRow(
+                titleRes = R.string.data_quota_title,
+                descriptionRes = R.string.data_quota_description,
+                checked = uiState.dataQuotaGb > 0.0,
+                onCheckedChange = { checked ->
+                    onDataQuotaChange(if (checked) DEFAULT_DATA_QUOTA_GB else 0.0)
+                    onCommitDataQuota()
                 }
-                Spacer(modifier = Modifier.width(12.dp))
-                Switch(
-                    checked = uiState.dataQuotaGb > 0.0,
-                    onCheckedChange = withTapHaptic { checked ->
-                        onDataQuotaChange(if (checked) DEFAULT_DATA_QUOTA_GB else 0.0)
-                        onCommitDataQuota()
-                    }
-                )
-            }
+            )
 
             Spacer(modifier = Modifier.height(8.dp))
             Text(
@@ -298,32 +281,15 @@ internal fun SettingsTab(
         SettingsSectionCard(titleRes = R.string.battery_section_title) {
             Spacer(modifier = Modifier.height(4.dp))
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = stringResource(R.string.charge_limit_title),
-                        fontWeight = FontWeight.Medium,
-                        fontSize = 14.sp
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = stringResource(R.string.charge_limit_description),
-                        fontSize = 11.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+            SettingsToggleRow(
+                titleRes = R.string.charge_limit_title,
+                descriptionRes = R.string.charge_limit_description,
+                checked = uiState.chargeLimitPercent > 0,
+                onCheckedChange = { checked ->
+                    onChargeLimitChange(if (checked) DEFAULT_CHARGE_LIMIT_PERCENT else 0)
+                    onCommitChargeLimit()
                 }
-                Spacer(modifier = Modifier.width(12.dp))
-                Switch(
-                    checked = uiState.chargeLimitPercent > 0,
-                    onCheckedChange = withTapHaptic { checked ->
-                        onChargeLimitChange(if (checked) DEFAULT_CHARGE_LIMIT_PERCENT else 0)
-                        onCommitChargeLimit()
-                    }
-                )
-            }
+            )
 
             if (uiState.chargeLimitPercent > 0) {
                 Spacer(modifier = Modifier.height(12.dp))
@@ -388,96 +354,45 @@ internal fun SettingsTab(
         SettingsSectionCard(titleRes = R.string.screensaver_settings_section) {
             Spacer(modifier = Modifier.height(4.dp))
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = stringResource(R.string.force_portrait_title),
-                        fontWeight = FontWeight.Medium,
-                        fontSize = 14.sp
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = stringResource(R.string.force_portrait_description),
-                        fontSize = 11.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+            SettingsToggleRow(
+                titleRes = R.string.force_portrait_title,
+                descriptionRes = R.string.force_portrait_description,
+                checked = forcePortraitScreensaver,
+                onCheckedChange = { checked ->
+                    forcePortraitScreensaver = checked
+                    dreamPrefs.edit()
+                        .putBoolean(DreamPreferences.KEY_FORCE_PORTRAIT, checked)
+                        .apply()
                 }
-                Spacer(modifier = Modifier.width(12.dp))
-                Switch(
-                    checked = forcePortraitScreensaver,
-                    onCheckedChange = withTapHaptic { checked ->
-                        forcePortraitScreensaver = checked
-                        dreamPrefs.edit()
-                            .putBoolean(DreamPreferences.KEY_FORCE_PORTRAIT, checked)
-                            .apply()
-                    }
-                )
-            }
+            )
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = stringResource(R.string.dim_screensaver_title),
-                        fontWeight = FontWeight.Medium,
-                        fontSize = 14.sp
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = stringResource(R.string.dim_screensaver_description),
-                        fontSize = 11.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+            SettingsToggleRow(
+                titleRes = R.string.dim_screensaver_title,
+                descriptionRes = R.string.dim_screensaver_description,
+                checked = dimScreensaver,
+                onCheckedChange = { checked ->
+                    dimScreensaver = checked
+                    dreamPrefs.edit()
+                        .putBoolean(DreamPreferences.KEY_DIM_SCREENSAVER, checked)
+                        .apply()
                 }
-                Spacer(modifier = Modifier.width(12.dp))
-                Switch(
-                    checked = dimScreensaver,
-                    onCheckedChange = withTapHaptic { checked ->
-                        dimScreensaver = checked
-                        dreamPrefs.edit()
-                            .putBoolean(DreamPreferences.KEY_DIM_SCREENSAVER, checked)
-                            .apply()
-                    }
-                )
-            }
+            )
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = stringResource(R.string.night_dim_title),
-                        fontWeight = FontWeight.Medium,
-                        fontSize = 14.sp
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = stringResource(R.string.night_dim_description),
-                        fontSize = 11.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+            SettingsToggleRow(
+                titleRes = R.string.night_dim_title,
+                descriptionRes = R.string.night_dim_description,
+                checked = nightDimScreensaver,
+                onCheckedChange = { checked ->
+                    nightDimScreensaver = checked
+                    dreamPrefs.edit()
+                        .putBoolean(DreamPreferences.KEY_NIGHT_DIM, checked)
+                        .apply()
                 }
-                Spacer(modifier = Modifier.width(12.dp))
-                Switch(
-                    checked = nightDimScreensaver,
-                    onCheckedChange = withTapHaptic { checked ->
-                        nightDimScreensaver = checked
-                        dreamPrefs.edit()
-                            .putBoolean(DreamPreferences.KEY_NIGHT_DIM, checked)
-                            .apply()
-                    }
-                )
-            }
+            )
 
             if (nightDimScreensaver) {
                 Spacer(modifier = Modifier.height(10.dp))
