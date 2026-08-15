@@ -19,3 +19,6 @@ widget-screen.png
 Widget-näytön parantaminen/
 
 screenshot/
+
+# Design handoff packages live outside the repo until a direction is adopted.
+UI-tyylin rekonstruktio/
