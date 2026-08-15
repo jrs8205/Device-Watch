@@ -20,6 +20,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -41,6 +42,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import androidx.core.graphics.drawable.toBitmap
 import org.jarsi.devicewatch.R
@@ -49,6 +51,8 @@ import org.jarsi.devicewatch.data.LastUsedTier
 import org.jarsi.devicewatch.data.UNAVAILABLE_INT
 import org.jarsi.devicewatch.data.UNAVAILABLE_TEXT
 import org.jarsi.devicewatch.data.UsageEventAggregator
+import org.jarsi.devicewatch.ui.theme.DarkAccentGraphic
+import org.jarsi.devicewatch.ui.theme.LightAccent
 import org.jarsi.devicewatch.ui.theme.DarkStatusOk
 import org.jarsi.devicewatch.ui.theme.DarkStatusWarn
 import org.jarsi.devicewatch.ui.theme.LightStatusOk
@@ -60,8 +64,13 @@ import java.util.Date
 import java.util.Locale
 
 /**
- * Shared section card used by every dashboard tab: rounded card, muted 11sp
- * uppercase-style title, then the section [content].
+ * Shared section band used by every dashboard tab: a muted tracked-out title,
+ * the section [content], and a hairline rule closing it off.
+ *
+ * The signature is unchanged from the card this replaces, so all twenty call
+ * sites inherit the new shape without being touched. With no fill of its own a
+ * band is not a surface — text on it is read against the page, which is what
+ * lets the palette get away with two checked surfaces instead of four.
  */
 @Composable
 internal fun SettingsSectionCard(
@@ -70,31 +79,34 @@ internal fun SettingsSectionCard(
     horizontalAlignment: Alignment.Horizontal = Alignment.Start,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
-        )
-    ) {
+    Column(modifier = modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(20.dp),
+                .padding(horizontal = BAND_INSET, vertical = BAND_SPACING),
             horizontalAlignment = horizontalAlignment
         ) {
             Text(
                 stringResource(titleRes),
-                fontSize = 11.sp,
+                fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
+                letterSpacing = SECTION_TITLE_TRACKING,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.fillMaxWidth()
             )
             Spacer(modifier = Modifier.height(12.dp))
             content()
         }
+        HorizontalDivider(color = MaterialTheme.colorScheme.outline)
     }
 }
+
+/** Section inset and rhythm, in dp so they do not grow with the font. */
+internal val BAND_INSET = 20.dp
+internal val BAND_SPACING = 18.dp
+
+/** Tracked-out section titles, the one place this design widens letters. */
+internal val SECTION_TITLE_TRACKING = 0.14.em
 
 /**
  * True when a label and its value still fit side by side on one line.
@@ -357,6 +369,15 @@ internal fun lastUsedText(lastUsedEpochMillis: Long?): String {
         else -> pluralStringResource(R.plurals.last_used_days, days, days)
     }
 }
+
+/**
+ * Meter fills. Not `primary`: on the dark theme a fill can be brighter than
+ * text is allowed to be, and the brighter blue is what makes a 12 dp bar read
+ * as a measurement rather than a smudge.
+ */
+@Composable
+internal fun meterColor(): Color =
+    if (isSystemInDarkTheme()) DarkAccentGraphic else LightAccent
 
 /**
  * "Everything is fine" green. Material's scheme has no slot for it, so it lives

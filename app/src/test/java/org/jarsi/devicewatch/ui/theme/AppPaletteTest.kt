@@ -13,13 +13,14 @@ private fun Color.over(background: Color, alpha: Float) = Color(
 )
 
 /**
- * The app's palette is fixed (no Material You), which is what makes stating a
- * contrast ratio possible at all — a wallpaper-derived scheme would differ on
- * every device. These tests are what the fixed palette buys: every pair is held
- * to WCAG AAA for text and 3:1 for meaningful graphics.
+ * The palette is fixed (no Material You), which is what makes stating a contrast
+ * ratio possible at all — a wallpaper-derived scheme would differ on every
+ * device. These tests are what the fixed palette buys.
  *
- * Both surfaces are checked, because the app puts text on both: the page
- * background, and the section card — `surfaceVariant` at 40 % over it.
+ * Every text color is checked against all three surfaces the app writes on: the
+ * page, the navigation bar and bottom sheet, and dialogs. The bands carry no
+ * fill of their own, so there is no fourth surface — the notice band's status
+ * tint is the one exception and gets its own test.
  */
 class AppPaletteTest {
 
@@ -47,31 +48,28 @@ class AppPaletteTest {
     private class Theme(
         val name: String,
         val background: Color,
-        val surfaceVariant: Color,
         val surfaceContainer: Color,
+        val surfaceContainerHigh: Color,
         val onSurface: Color,
         val onSurfaceVariant: Color,
         val accent: Color,
+        val accentGraphic: Color,
         val onAccent: Color,
+        val accentContainer: Color,
+        val onAccentContainer: Color,
         val outline: Color,
+        val outlineVariant: Color,
         val statusOk: Color,
         val statusWarn: Color,
         val error: Color,
     ) {
-        /** What `Card(containerColor = surfaceVariant.copy(alpha = .4f))` paints. */
-        val card: Color = surfaceVariant.over(background, CARD_SURFACE_ALPHA)
-
-        /** Where the palette's text colors are actually used. */
         val surfaces
             get() = listOf(
                 "background" to background,
                 "surfaceContainer" to surfaceContainer,
+                "surfaceContainerHigh" to surfaceContainerHigh,
             )
 
-        /**
-         * The notice card's fill. Only [onSurface] and the status dot land here,
-         * so it is checked separately rather than against the whole palette.
-         */
         fun tint(status: Color) = status.over(background, STATUS_TINT_ALPHA)
     }
 
@@ -79,13 +77,17 @@ class AppPaletteTest {
         Theme(
             name = "dark",
             background = DarkBackground,
-            surfaceVariant = DarkSurfaceVariant,
             surfaceContainer = DarkSurfaceContainer,
+            surfaceContainerHigh = DarkSurfaceContainerHigh,
             onSurface = DarkOnSurface,
             onSurfaceVariant = DarkOnSurfaceVariant,
             accent = DarkAccent,
-            onAccent = DarkBackground,
+            accentGraphic = DarkAccentGraphic,
+            onAccent = DarkOnAccent,
+            accentContainer = DarkAccentContainer,
+            onAccentContainer = DarkOnAccentContainer,
             outline = DarkOutline,
+            outlineVariant = DarkOutlineVariant,
             statusOk = DarkStatusOk,
             statusWarn = DarkStatusWarn,
             error = DarkError,
@@ -93,91 +95,91 @@ class AppPaletteTest {
         Theme(
             name = "light",
             background = LightBackground,
-            surfaceVariant = LightSurfaceVariant,
             surfaceContainer = LightSurfaceContainer,
+            surfaceContainerHigh = LightSurfaceContainerHigh,
             onSurface = LightOnSurface,
             onSurfaceVariant = LightOnSurfaceVariant,
             accent = LightAccent,
-            onAccent = LightBackground,
+            accentGraphic = LightAccent,
+            onAccent = LightOnAccent,
+            accentContainer = LightAccentContainer,
+            onAccentContainer = LightOnAccentContainer,
             outline = LightOutline,
+            outlineVariant = LightOutlineVariant,
             statusOk = LightStatusOk,
             statusWarn = LightStatusWarn,
             error = LightError,
         ),
     )
 
-    private fun Theme.assertOnBothSurfaces(label: String, color: Color, minimum: Double) {
+    private fun Theme.assertOnEverySurface(label: String, color: Color, minimum: Double) {
         surfaces.forEach { (surfaceName, surface) ->
-            val ratio = contrast(color, surface)
-            assertWithMessage(ratio, "$name/$surfaceName $label", minimum)
+            assertRatio(contrast(color, surface), "$name/$surfaceName $label", minimum)
         }
     }
 
-    private fun assertWithMessage(ratio: Double, what: String, minimum: Double) {
+    private fun assertRatio(ratio: Double, what: String, minimum: Double) {
         assertThat(ratio).isAtLeast(minimum)
-        // Truth prints the ratio on failure; the name tells you which pair broke.
         check(ratio >= minimum) { "$what is ${"%.2f".format(ratio)}:1, needs $minimum:1" }
     }
 
     @Test
-    fun `every text color clears AAA on both surfaces it appears on`() {
+    fun `every text color clears AAA on every surface it lands on`() {
         themes.forEach { theme ->
-            theme.assertOnBothSurfaces("onSurface", theme.onSurface, AAA_TEXT)
-            theme.assertOnBothSurfaces("onSurfaceVariant", theme.onSurfaceVariant, AAA_TEXT)
-            theme.assertOnBothSurfaces("accent", theme.accent, AAA_TEXT)
-            theme.assertOnBothSurfaces("error", theme.error, AAA_TEXT)
+            theme.assertOnEverySurface("onSurface", theme.onSurface, AAA_TEXT)
+            theme.assertOnEverySurface("onSurfaceVariant", theme.onSurfaceVariant, AAA_TEXT)
+            theme.assertOnEverySurface("accent", theme.accent, AAA_TEXT)
+            theme.assertOnEverySurface("error", theme.error, AAA_TEXT)
+            theme.assertOnEverySurface("statusOk", theme.statusOk, AAA_TEXT)
+            theme.assertOnEverySurface("statusWarn", theme.statusWarn, AAA_TEXT)
         }
     }
 
     @Test
-    fun `the status colors clear AAA - they label state, not decorate it`() {
+    fun `the band rules clear the non-text minimum`() {
+        // With the cards gone these hairlines are the only thing separating one
+        // section from the next, and the navigation bar's top rule is the only
+        // thing separating it from the page.
         themes.forEach { theme ->
-            theme.assertOnBothSurfaces("statusOk", theme.statusOk, AAA_TEXT)
-            theme.assertOnBothSurfaces("statusWarn", theme.statusWarn, AAA_TEXT)
+            theme.assertOnEverySurface("outline", theme.outline, GRAPHIC)
         }
     }
 
     @Test
-    fun `the tinted notice card carries its message and its dot`() {
-        // The card holds onSurface text and a status dot — the dot is a graphic,
-        // and it is never the only cue: the message says the same thing.
+    fun `a meter reads against the page and against its own track`() {
         themes.forEach { theme ->
-            listOf("ok" to theme.statusOk, "warn" to theme.statusWarn).forEach { (name, status) ->
-                val tint = theme.tint(status)
-                assertWithMessage(
-                    contrast(theme.onSurface, tint), "${theme.name}/${name}Tint message", AAA_TEXT
-                )
-                assertWithMessage(
-                    contrast(status, tint), "${theme.name}/${name}Tint dot", GRAPHIC
-                )
-            }
-        }
-    }
-
-    @Test
-    fun `outlines and meters clear the non-text minimum`() {
-        themes.forEach { theme ->
-            theme.assertOnBothSurfaces("outline", theme.outline, GRAPHIC)
-        }
-    }
-
-    @Test
-    fun `button labels clear AAA against the button itself`() {
-        // primary is a container as well as a text color: Button paints it and
-        // writes onPrimary on top.
-        themes.forEach { theme ->
-            assertWithMessage(
-                contrast(theme.onAccent, theme.accent), "${theme.name} onAccent/accent", AAA_TEXT
+            assertRatio(
+                contrast(theme.accentGraphic, theme.background),
+                "${theme.name} meter fill", GRAPHIC
+            )
+            assertRatio(
+                contrast(theme.accentGraphic, theme.outlineVariant),
+                "${theme.name} meter fill vs track", GRAPHIC
             )
         }
     }
 
     @Test
-    fun `the selected tab, chip and segment are marked strongly enough`() {
-        // secondaryContainer marks selection. Material's faint default tint sat
-        // at 1.5:1 against the bar it lives on, which cannot carry a state.
+    fun `text on a filled accent clears AAA`() {
+        // Buttons, the selection pill, selected chips and the segmented button
+        // all put onAccent text on a solid accent. The handoff's bright #2196F3
+        // cannot do this at any text color — black on it reaches only 6.7:1 —
+        // which is why the pill uses the lighter accent instead.
         themes.forEach { theme ->
-            assertWithMessage(
+            assertRatio(
+                contrast(theme.onAccent, theme.accent), "${theme.name} onAccent/accent", AAA_TEXT
+            )
+            assertRatio(
+                contrast(theme.onAccentContainer, theme.accentContainer),
+                "${theme.name} onAccentContainer/accentContainer", AAA_TEXT
+            )
+        }
+    }
+
+    @Test
+    fun `the selection pill is visible against the bar it sits in`() {
+        themes.forEach { theme ->
+            assertRatio(
                 contrast(theme.accent, theme.surfaceContainer),
                 "${theme.name} selection pill", GRAPHIC
             )
@@ -185,21 +187,15 @@ class AppPaletteTest {
     }
 
     @Test
-    fun `the elevated surface is exactly the card the sections paint`() {
-        // The navigation bar uses surfaceContainer while section cards blend
-        // surfaceVariant over the page; if the two drifted apart, one of them
-        // would carry text this test never checked.
+    fun `the tinted notice band carries its message and its dot`() {
         themes.forEach { theme ->
-            assertThat(contrast(theme.surfaceContainer, theme.card)).isLessThan(1.02)
-        }
-    }
-
-    @Test
-    fun `the card stays a distinct surface from the page`() {
-        // Not a WCAG rule — the card would simply be pointless if it matched the
-        // page exactly, and a future palette edit could make it do so silently.
-        themes.forEach { theme ->
-            assertThat(contrast(theme.card, theme.background)).isGreaterThan(1.05)
+            listOf("ok" to theme.statusOk, "warn" to theme.statusWarn).forEach { (name, status) ->
+                val tint = theme.tint(status)
+                assertRatio(
+                    contrast(theme.onSurface, tint), "${theme.name}/${name}Tint message", AAA_TEXT
+                )
+                assertRatio(contrast(status, tint), "${theme.name}/${name}Tint dot", GRAPHIC)
+            }
         }
     }
 

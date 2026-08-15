@@ -21,9 +21,7 @@ internal fun DeviceTab(uiState: DashboardUiState) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
             .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         uiState.deviceInfo?.let { info ->

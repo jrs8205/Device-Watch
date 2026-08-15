@@ -7,6 +7,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
@@ -18,6 +19,7 @@ import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -40,7 +42,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
@@ -48,6 +52,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
@@ -55,6 +60,9 @@ import org.jarsi.devicewatch.R
 import org.jarsi.devicewatch.presentation.AppsViewModel
 import org.jarsi.devicewatch.presentation.DashboardViewModel
 import org.jarsi.devicewatch.system.SystemMonitorService
+
+/** Doubles the selection pill so colour is never the only cue. */
+private val SELECTED_TAB_RULE = 3.dp
 
 /** The dashboard's flat bottom-navigation destinations, in display order. */
 internal enum class DashboardTab(
@@ -209,22 +217,39 @@ fun SystemDashboardScreen(
                 Density(density.density, clampedNavBarFontScale(density.fontScale))
             }
             CompositionLocalProvider(LocalDensity provides barDensity) {
-                NavigationBar {
-                    DashboardTab.entries.forEachIndexed { index, tab ->
-                        NavigationBarItem(
-                            selected = index == pagerState.currentPage,
-                            onClick = withTapHaptic {
-                                scope.launch { pagerState.animateScrollToPage(index) }
-                            },
-                            icon = { Icon(tab.icon, contentDescription = null) },
-                            label = {
-                                Text(
-                                    stringResource(tab.labelRes),
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                            }
-                        )
+                Column {
+                    // On the light theme the bar is white on a near-white page:
+                    // this rule is the only thing that separates the two.
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outline)
+                    NavigationBar {
+                        val indicator = MaterialTheme.colorScheme.primary
+                        DashboardTab.entries.forEachIndexed { index, tab ->
+                            val selected = index == pagerState.currentPage
+                            NavigationBarItem(
+                                selected = selected,
+                                onClick = withTapHaptic {
+                                    scope.launch { pagerState.animateScrollToPage(index) }
+                                },
+                                // Selection is never colour alone: the pill is
+                                // doubled by a rule across the top of the item.
+                                modifier = Modifier.drawBehind {
+                                    if (selected) {
+                                        drawRect(
+                                            color = indicator,
+                                            size = Size(size.width, SELECTED_TAB_RULE.toPx())
+                                        )
+                                    }
+                                },
+                                icon = { Icon(tab.icon, contentDescription = null) },
+                                label = {
+                                    Text(
+                                        stringResource(tab.labelRes),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                            )
+                        }
                     }
                 }
             }

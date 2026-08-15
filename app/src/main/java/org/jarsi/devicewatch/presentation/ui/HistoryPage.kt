@@ -162,8 +162,7 @@ fun HistoryPage(
         ) {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+                contentPadding = PaddingValues(bottom = 24.dp),
             ) {
                 // Held back until the first load finishes so the chart's empty text
                 // doesn't flash while the samples are still being read.

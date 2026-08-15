@@ -8,9 +8,9 @@ import androidx.compose.runtime.Composable
 
 /**
  * Every role is set, including the ones this app never names directly: any left
- * at its Material default would fall back to the baseline purple and quietly
- * escape the palette — the navigation bar's own container and selection pill
- * did exactly that.
+ * at its Material default falls back to the baseline purple and quietly escapes
+ * the palette — the navigation bar's own container and selection pill did
+ * exactly that.
  *
  * `secondaryContainer` is the accent at full strength rather than a faint tint,
  * because it marks selection (tab, chip, segmented button) and a tint at 1.5:1
@@ -18,18 +18,18 @@ import androidx.compose.runtime.Composable
  */
 private val DarkColorScheme = darkColorScheme(
     primary = DarkAccent,
-    onPrimary = DarkBackground,
+    onPrimary = DarkOnAccent,
     primaryContainer = DarkAccentContainer,
-    onPrimaryContainer = DarkOnSurface,
+    onPrimaryContainer = DarkOnAccentContainer,
     inversePrimary = DarkAccentContainer,
     secondary = DarkAccent,
-    onSecondary = DarkBackground,
+    onSecondary = DarkOnAccent,
     secondaryContainer = DarkAccent,
-    onSecondaryContainer = DarkBackground,
+    onSecondaryContainer = DarkOnAccent,
     tertiary = DarkAccent,
-    onTertiary = DarkBackground,
+    onTertiary = DarkOnAccent,
     tertiaryContainer = DarkAccentContainer,
-    onTertiaryContainer = DarkOnSurface,
+    onTertiaryContainer = DarkOnAccentContainer,
     background = DarkBackground,
     onBackground = DarkOnSurface,
     surface = DarkBackground,
@@ -40,34 +40,34 @@ private val DarkColorScheme = darkColorScheme(
     inverseSurface = DarkOnSurface,
     inverseOnSurface = DarkBackground,
     surfaceDim = DarkBackground,
-    surfaceBright = DarkSurfaceVariant,
+    surfaceBright = DarkSurfaceContainerHigh,
     surfaceContainerLowest = DarkBackground,
     surfaceContainerLow = DarkSurfaceContainer,
     surfaceContainer = DarkSurfaceContainer,
-    surfaceContainerHigh = DarkSurfaceContainer,
-    surfaceContainerHighest = DarkSurfaceVariant,
+    surfaceContainerHigh = DarkSurfaceContainerHigh,
+    surfaceContainerHighest = DarkSurfaceContainerHigh,
     outline = DarkOutline,
-    outlineVariant = DarkOutline,
+    outlineVariant = DarkOutlineVariant,
     error = DarkError,
     onError = DarkBackground,
-    errorContainer = DarkErrorContainer,
+    errorContainer = DarkAccentContainer,
     onErrorContainer = DarkError,
 )
 
 private val LightColorScheme = lightColorScheme(
     primary = LightAccent,
-    onPrimary = LightBackground,
+    onPrimary = LightOnAccent,
     primaryContainer = LightAccentContainer,
-    onPrimaryContainer = LightOnSurface,
+    onPrimaryContainer = LightOnAccentContainer,
     inversePrimary = LightAccentContainer,
     secondary = LightAccent,
-    onSecondary = LightBackground,
+    onSecondary = LightOnAccent,
     secondaryContainer = LightAccent,
-    onSecondaryContainer = LightBackground,
+    onSecondaryContainer = LightOnAccent,
     tertiary = LightAccent,
-    onTertiary = LightBackground,
+    onTertiary = LightOnAccent,
     tertiaryContainer = LightAccentContainer,
-    onTertiaryContainer = LightOnSurface,
+    onTertiaryContainer = LightOnAccentContainer,
     background = LightBackground,
     onBackground = LightOnSurface,
     surface = LightBackground,
@@ -78,17 +78,17 @@ private val LightColorScheme = lightColorScheme(
     inverseSurface = LightOnSurface,
     inverseOnSurface = LightBackground,
     surfaceDim = LightSurfaceVariant,
-    surfaceBright = LightBackground,
+    surfaceBright = LightSurfaceContainer,
     surfaceContainerLowest = LightBackground,
     surfaceContainerLow = LightSurfaceContainer,
     surfaceContainer = LightSurfaceContainer,
-    surfaceContainerHigh = LightSurfaceContainer,
+    surfaceContainerHigh = LightSurfaceContainerHigh,
     surfaceContainerHighest = LightSurfaceVariant,
     outline = LightOutline,
-    outlineVariant = LightOutline,
+    outlineVariant = LightOutlineVariant,
     error = LightError,
-    onError = LightBackground,
-    errorContainer = LightErrorContainer,
+    onError = LightOnAccent,
+    errorContainer = LightAccentContainer,
     onErrorContainer = LightError,
 )
 

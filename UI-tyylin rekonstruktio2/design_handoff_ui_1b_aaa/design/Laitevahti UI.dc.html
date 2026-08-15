@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Material+Icons&family=Material+Icons+Outlined&display=swap" rel="stylesheet">
+<style>
+  body { margin: 0; background: #0b0a0d; }
+  a { color: #D0BCFF; }
+  a:hover { color: #E9DDFF; }
+  .mi { font-family: 'Material Icons'; font-weight: 400; font-style: normal; line-height: 1; letter-spacing: normal; text-transform: none; display: inline-block; white-space: nowrap; direction: ltr; -webkit-font-feature-settings: 'liga'; -webkit-font-smoothing: antialiased; }
+  .mio { font-family: 'Material Icons Outlined'; font-weight: 400; font-style: normal; line-height: 1; letter-spacing: normal; text-transform: none; display: inline-block; white-space: nowrap; direction: ltr; -webkit-font-feature-settings: 'liga'; -webkit-font-smoothing: antialiased; }
+</style>
+</helmet>
+<div style="font-family: Roboto, sans-serif; padding: 48px; display: flex; flex-direction: column; gap: 28px; background: #0b0a0d; color: #E6E0E9;">
+
+  <div style="display: flex; flex-direction: column; gap: 8px; max-width: 900px;">
+    <div style="font-size: 12px; font-weight: 700; letter-spacing: 0.12em; color: #CAC4D0;">LAITEVAHTI / DEVICE WATCH — NYKYINEN UI</div>
+    <div style="font-size: 28px; font-weight: 700; line-height: 1.2;">Material 3 -dashboard, neljä välilehteä</div>
+    <div style="font-size: 14px; line-height: 1.6; color: #CAC4D0; text-wrap: pretty;">Rekonstruktio repon Compose-lähteistä (SystemDashboardScreen, OverviewTab, AppsTab, DeviceTab, SettingsTab, DashboardComponents, ScreenTimeDonut, Color.kt). Väripaletti on Material 3:n tumma perusteema, koska dynaaminen väri korvaa sen laitteella; kortit ovat surfaceVariant 40&nbsp;% -täytteellä ja 20&nbsp;dp kulmilla, otsikot 11&nbsp;sp lihavoituna. Arvot ovat esimerkkidataa.</div>
+  </div>
+
+  <div style="display: flex; gap: 32px; flex-wrap: wrap;">
+
+    <div style="display: flex; flex-direction: column; gap: 10px;">
+      <div style="font-size: 12px; font-weight: 500; color: #CAC4D0;">Etusivu — OverviewTab.kt</div>
+      <div data-screen-label="Etusivu" style="width: 412px; min-height: 900px; background: #141218; border-radius: 24px; display: flex; flex-direction: column; box-shadow: 0 24px 60px rgba(0,0,0,0.55);">
+        <div style="height: 64px; display: flex; align-items: center; padding: 0 4px 0 16px; background: #141218; flex: none;">
+          <div style="flex: 1; font-size: 22px; font-weight: 700; letter-spacing: 0;">Järjestelmän tila</div>
+          <div style="width: 48px; height: 48px; display: flex; align-items: center; justify-content: center;"><span class="mi" style="font-size: 24px; color: #D0BCFF;">refresh</span></div>
+        </div>
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 16px; padding: 16px; align-items: center;">
+
+          <div style="width: 100%; background: rgba(79,55,139,0.2); border-radius: 12px; padding: 16px; display: flex; align-items: center; gap: 12px; box-sizing: border-box;">
+            <div style="width: 10px; height: 10px; border-radius: 50%; background: #4CAF50; flex: none;"></div>
+            <div style="font-size: 13px; line-height: 1.35; color: #E6E0E9;">{{ widgetMessage }}</div>
+          </div>
+
+          <div style="width: 100%; background: rgba(73,69,79,0.4); border-radius: 20px; padding: 20px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center;">
+            <div style="width: 100%; font-size: 11px; font-weight: 700; color: #CAC4D0;">AKUN TILA (REAALIAIKAINEN)</div>
+            <div style="height: 12px;"></div>
+            <div style="align-self: flex-end; display: flex; align-items: center;">
+              <span style="font-size: 12px; font-weight: 600; color: #CAC4D0;">Latauksesta lähtien</span>
+              <span class="mi" style="font-size: 24px; color: #CAC4D0;">keyboard_arrow_right</span>
+            </div>
+            <div style="height: 4px;"></div>
+            <div style="width: 160px; height: 160px; position: relative; display: flex; align-items: center; justify-content: center;">
+              <svg width="160" height="160" viewBox="0 0 160 160" style="position: absolute; inset: 0; transform: rotate(-90deg);">
+                <circle cx="80" cy="80" r="75" fill="none" stroke="#49454F" stroke-width="10"></circle>
+                <circle cx="80" cy="80" r="75" fill="none" stroke="#4CAF50" stroke-width="10" stroke-dasharray="367.6 471.2"></circle>
+              </svg>
+              <div style="display: flex; flex-direction: column; align-items: center;">
+                <div style="font-size: 38px; font-weight: 700; line-height: 1.1;">78%</div>
+                <div style="font-size: 12px; color: #CAC4D0;">Käyttö</div>
+              </div>
+            </div>
+            <div style="height: 16px;"></div>
+            <div style="width: 100%; height: 1px; background: #49454F;"></div>
+            <div style="height: 12px;"></div>
+            <div style="width: 100%; display: flex; justify-content: space-around;">
+              <div style="display: flex; flex-direction: column; align-items: center; gap: 2px;">
+                <div style="font-size: 11px; color: #CAC4D0;">Aika jäljellä</div>
+                <div style="font-size: 14px; font-weight: 700;">~5t 20m</div>
+              </div>
+              <div style="display: flex; flex-direction: column; align-items: center; gap: 2px;">
+                <div style="font-size: 11px; color: #CAC4D0;">Lämpötila</div>
+                <div style="font-size: 14px; font-weight: 700;">31 °C</div>
+              </div>
+              <div style="display: flex; flex-direction: column; align-items: center; gap: 2px;">
+                <div style="font-size: 11px; color: #CAC4D0;">Jännite</div>
+                <div style="font-size: 14px; font-weight: 700;">4.21 V</div>
+              </div>
+            </div>
+          </div>
+
+          <div style="width: 100%; background: rgba(73,69,79,0.4); border-radius: 20px; padding: 20px; box-sizing: border-box; display: flex; flex-direction: column;">
+            <div style="font-size: 11px; font-weight: 700; color: #CAC4D0;">{{ usageSectionTitle }}</div>
+            <div style="height: 12px;"></div>
+            <div style="align-self: flex-end; display: flex; align-items: center;">
+              <span style="font-size: 12px; font-weight: 600; color: #CAC4D0;">Historia</span>
+              <span class="mi" style="font-size: 24px; color: #CAC4D0;">keyboard_arrow_right</span>
+            </div>
+            <div style="display: flex; padding: 5px 0; gap: 12px;">
+              <div style="flex: 1; font-size: 12px; color: #CAC4D0;">Ruutuaika</div>
+              <div style="flex: 1; font-size: 12px; font-weight: 500; text-align: right;">4t 12m</div>
+            </div>
+            <div style="display: flex; padding: 5px 0; gap: 12px;">
+              <div style="flex: 1; font-size: 12px; color: #CAC4D0;">Lukituksen avaukset</div>
+              <div style="flex: 1; font-size: 12px; font-weight: 500; text-align: right;">63</div>
+            </div>
+            <div style="display: flex; padding: 5px 0; gap: 12px;">
+              <div style="flex: 1; font-size: 12px; color: #CAC4D0;">Ilmoitukset</div>
+              <div style="flex: 1; font-size: 12px; font-weight: 500; text-align: right;">128</div>
+            </div>
+            <div style="display: flex; padding: 5px 0; gap: 12px;">
+              <div style="flex: 1; font-size: 12px; color: #CAC4D0;">Käynnistykset</div>
+              <div style="flex: 1; font-size: 12px; font-weight: 500; text-align: right;">3</div>
+            </div>
+            <div style="display: flex; padding: 5px 0; gap: 12px;">
+              <div style="flex: 1; font-size: 12px; color: #CAC4D0;">Latauskerrat</div>
+              <div style="flex: 1; font-size: 12px; font-weight: 500; text-align: right;">41</div>
+            </div>
+          </div>
+
+          <div style="width: 100%; background: rgba(73,69,79,0.4); border-radius: 20px; padding: 20px; box-sizing: border-box; display: flex; flex-direction: column;">
+            <div style="font-size: 11px; font-weight: 700; color: #CAC4D0;">DATALASKURI</div>
+            <div style="height: 12px;"></div>
+            <div style="display: flex; padding: 5px 0; gap: 12px;">
+              <div style="flex: 1; font-size: 12px; color: #CAC4D0;">{{ wifiDataLabel }}</div>
+              <div style="flex: 1; font-size: 12px; font-weight: 500; text-align: right;">2.4 GB</div>
+            </div>
+            <div style="display: flex; padding: 5px 0; gap: 12px;">
+              <div style="flex: 1; font-size: 12px; color: #CAC4D0;">{{ mobileDataLabel }}</div>
+              <div style="flex: 1; font-size: 12px; font-weight: 500; text-align: right;">480 MB</div>
+            </div>
+          </div>
+
+          <div style="width: 100%; background: rgba(73,69,79,0.4); border-radius: 20px; padding: 20px; box-sizing: border-box; display: flex; flex-direction: column;">
+            <div style="font-size: 11px; font-weight: 700; color: #CAC4D0;">JÄRJESTELMÄN RESURSSIT</div>
+            <div style="height: 16px;"></div>
+            <div style="display: flex; justify-content: space-between; align-items: baseline;">
+              <div style="font-size: 14px; font-weight: 500;">Käyttömuisti (RAM)</div>
+              <div style="font-size: 14px; font-weight: 700; color: #D0BCFF;">5.4 / 7.6 GB (71%)</div>
+            </div>
+            <div style="height: 8px;"></div>
+            <div style="height: 8px; border-radius: 4px; background: #49454F; overflow: hidden;"><div style="width: 71%; height: 100%; background: #D0BCFF;"></div></div>
+            <div style="height: 20px;"></div>
+            <div style="height: 1px; background: #49454F;"></div>
+            <div style="height: 16px;"></div>
+            <div style="display: flex; justify-content: space-between; align-items: baseline;">
+              <div style="font-size: 14px; font-weight: 500;">Suoritinkuorma</div>
+              <div style="font-size: 14px; font-weight: 700; color: #D0BCFF;">23 % · 2.4 GHz</div>
+            </div>
+            <div style="height: 8px;"></div>
+            <div style="height: 8px; border-radius: 4px; background: #49454F; overflow: hidden;"><div style="width: 23%; height: 100%; background: #D0BCFF;"></div></div>
+            <div style="height: 20px;"></div>
+            <div style="height: 1px; background: #49454F;"></div>
+            <div style="height: 16px;"></div>
+            <div style="display: flex; justify-content: space-between; align-items: baseline;">
+              <div style="font-size: 14px; font-weight: 500;">Tallennustila</div>
+              <div style="font-size: 14px; font-weight: 700; color: #D0BCFF;">96 / 128 GB (75%)</div>
+            </div>
+            <div style="height: 8px;"></div>
+            <div style="height: 8px; border-radius: 4px; background: #49454F; overflow: hidden;"><div style="width: 75%; height: 100%; background: #D0BCFF;"></div></div>
+            <div style="height: 6px;"></div>
+            <div style="font-size: 11px; color: #CAC4D0;">32 GB vapaana</div>
+            <div style="height: 20px;"></div>
+            <div style="height: 1px; background: #49454F;"></div>
+            <div style="height: 16px;"></div>
+            <div style="display: flex; justify-content: space-between;">
+              <div style="display: flex; flex-direction: column;">
+                <div style="font-size: 11px; color: #CAC4D0;">Suoritinytimet</div>
+                <div style="font-size: 14px; font-weight: 700;">8 ydintä (arm64-v8a)</div>
+              </div>
+              <div style="display: flex; flex-direction: column; align-items: flex-end;">
+                <div style="font-size: 11px; color: #CAC4D0;">Käyntiaika (Uptime)</div>
+                <div style="font-size: 14px; font-weight: 700;">42t 18m</div>
+              </div>
+            </div>
+          </div>
+
+          <div style="height: 8px;"></div>
+
+          <div style="width: 100%; height: 50px; border-radius: 12px; background: #D0BCFF; display: flex; align-items: center; justify-content: center; gap: 8px;">
+            <span class="mi" style="font-size: 18px; color: #381E72;">refresh</span>
+            <span style="font-size: 14px; font-weight: 500; color: #381E72;">Päivitä tiedot</span>
+          </div>
+
+          <div style="font-size: 11px; color: #CAC4D0;">Viimeksi päivitetty: 15.44</div>
+
+        </div>
+        <div style="height: 80px; background: #211F26; display: flex; align-items: flex-start; padding-top: 12px; flex: none;">
+          <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;">
+            <div style="width: 64px; height: 32px; border-radius: 16px; background: #4A4458; display: flex; align-items: center; justify-content: center;"><span class="mi" style="font-size: 24px; color: #E8DEF8;">home</span></div>
+            <div style="font-size: 12px; font-weight: 500; color: #E6E0E9;">Etusivu</div>
+          </div>
+          <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;">
+            <div style="width: 64px; height: 32px; display: flex; align-items: center; justify-content: center;"><span class="mi" style="font-size: 24px; color: #CAC4D0;">apps</span></div>
+            <div style="font-size: 12px; font-weight: 500; color: #CAC4D0;">Sovellukset</div>
+          </div>
+          <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;">
+            <div style="width: 64px; height: 32px; display: flex; align-items: center; justify-content: center;"><span class="mi" style="font-size: 24px; color: #CAC4D0;">phone_android</span></div>
+            <div style="font-size: 12px; font-weight: 500; color: #CAC4D0;">Laite</div>
+          </div>
+          <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;">
+            <div style="width: 64px; height: 32px; display: flex; align-items: center; justify-content: center;"><span class="mi" style="font-size: 24px; color: #CAC4D0;">settings</span></div>
+            <div style="font-size: 12px; font-weight: 500; color: #CAC4D0;">Asetukset</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 10px;">
+      <div style="font-size: 12px; font-weight: 500; color: #CAC4D0;">Sovellukset — AppsTab.kt + ScreenTimeDonut.kt</div>
+      <div data-screen-label="Sovellukset" style="width: 412px; min-height: 900px; background: #141218; border-radius: 24px; display: flex; flex-direction: column; box-shadow: 0 24px 60px rgba(0,0,0,0.55);">
+        <div style="height: 64px; display: flex; align-items: center; padding: 0 4px 0 16px; background: #141218; flex: none;">
+          <div style="flex: 1; font-size: 22px; font-weight: 700;">Järjestelmän tila</div>
+          <div style="width: 48px; height: 48px; display: flex; align-items: center; justify-content: center;"><span class="mi" style="font-size: 24px; color: #D0BCFF;">refresh</span></div>
+        </div>
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 16px; padding: 16px;">
+
+          <div style="background: rgba(73,69,79,0.4); border-radius: 20px; padding: 20px; display: flex; flex-direction: column; align-items: center;">
+            <div style="width: 100%; font-size: 11px; font-weight: 700; color: #CAC4D0;">RUUTUAIKA TÄNÄÄN</div>
+            <div style="height: 16px;"></div>
+            <div style="width: 180px; height: 180px; position: relative; display: flex; align-items: center; justify-content: center;">
+              <svg width="180" height="180" viewBox="0 0 180 180" style="position: absolute; inset: 0;">
+                <g fill="none" stroke-width="12">
+                  <circle cx="90" cy="90" r="84" stroke="#3987E5" stroke-dasharray="139.6 527.8" transform="rotate(-89 90 90)"></circle>
+                  <circle cx="90" cy="90" r="84" stroke="#199E70" stroke-dasharray="92.1 527.8" transform="rotate(8.2 90 90)"></circle>
+                  <circle cx="90" cy="90" r="84" stroke="#C98500" stroke-dasharray="81.5 527.8" transform="rotate(73 90 90)"></circle>
+                  <circle cx="90" cy="90" r="84" stroke="#008300" stroke-dasharray="55.1 527.8" transform="rotate(130.6 90 90)"></circle>
+                  <circle cx="90" cy="90" r="84" stroke="#9085E9" stroke-dasharray="39.3 527.8" transform="rotate(170.2 90 90)"></circle>
+                  <circle cx="90" cy="90" r="84" stroke="#E66767" stroke-dasharray="28.7 527.8" transform="rotate(199 90 90)"></circle>
+                  <circle cx="90" cy="90" r="84" stroke="#898781" stroke-dasharray="71.0 527.8" transform="rotate(220.6 90 90)"></circle>
+                </g>
+              </svg>
+              <div style="font-size: 24px; font-weight: 700;">4t 12m</div>
+            </div>
+            <div style="height: 12px;"></div>
+            <div style="width: 100%; display: flex; flex-direction: column;">
+              <div style="display: flex; align-items: center; padding: 6px 4px; gap: 10px;">
+                <div style="width: 12px; height: 12px; border-radius: 50%; background: #3987E5; flex: none;"></div>
+                <div style="flex: 1; font-size: 14px; white-space: nowrap; overflow: hidden;">Selain</div>
+                <div style="font-size: 14px; font-weight: 700;">1t 8m</div>
+                <div style="font-size: 12px; color: #CAC4D0;">27%</div>
+              </div>
+              <div style="display: flex; align-items: center; padding: 6px 4px; gap: 10px;">
+                <div style="width: 12px; height: 12px; border-radius: 50%; background: #199E70; flex: none;"></div>
+                <div style="flex: 1; font-size: 14px;">Viestit</div>
+                <div style="font-size: 14px; font-weight: 700;">45 min</div>
+                <div style="font-size: 12px; color: #CAC4D0;">18%</div>
+              </div>
+              <div style="display: flex; align-items: center; padding: 6px 4px; gap: 10px;">
+                <div style="width: 12px; height: 12px; border-radius: 50%; background: #C98500; flex: none;"></div>
+                <div style="flex: 1; font-size: 14px;">Videosoitin</div>
+                <div style="font-size: 14px; font-weight: 700;">40 min</div>
+                <div style="font-size: 12px; color: #CAC4D0;">16%</div>
+              </div>
+              <div style="display: flex; align-items: center; padding: 6px 4px; gap: 10px;">
+                <div style="width: 12px; height: 12px; border-radius: 50%; background: #008300; flex: none;"></div>
+                <div style="flex: 1; font-size: 14px;">Sähköposti</div>
+                <div style="font-size: 14px; font-weight: 700;">28 min</div>
+                <div style="font-size: 12px; color: #CAC4D0;">11%</div>
+              </div>
+              <div style="display: flex; align-items: center; padding: 6px 4px; gap: 10px;">
+                <div style="width: 12px; height: 12px; border-radius: 50%; background: #9085E9; flex: none;"></div>
+                <div style="flex: 1; font-size: 14px;">Kartat</div>
+                <div style="font-size: 14px; font-weight: 700;">21 min</div>
+                <div style="font-size: 12px; color: #CAC4D0;">8%</div>
+              </div>
+              <div style="display: flex; align-items: center; padding: 6px 4px; gap: 10px;">
+                <div style="width: 12px; height: 12px; border-radius: 50%; background: #E66767; flex: none;"></div>
+                <div style="flex: 1; font-size: 14px;">Kamera</div>
+                <div style="font-size: 14px; font-weight: 700;">15 min</div>
+                <div style="font-size: 12px; color: #CAC4D0;">6%</div>
+              </div>
+              <div style="display: flex; align-items: center; padding: 6px 4px; gap: 10px;">
+                <div style="width: 12px; height: 12px; border-radius: 50%; background: #898781; flex: none;"></div>
+                <div style="flex: 1; font-size: 14px;">Muut</div>
+                <div style="font-size: 14px; font-weight: 700;">35 min</div>
+                <div style="font-size: 12px; color: #CAC4D0;">14%</div>
+              </div>
+            </div>
+          </div>
+
+          <div style="background: rgba(73,69,79,0.4); border-radius: 20px; padding: 20px; display: flex; flex-direction: column;">
+            <div style="font-size: 11px; font-weight: 700; color: #CAC4D0;">ENITEN AVAUKSIA TÄNÄÄN</div>
+            <div style="height: 12px;"></div>
+            <div style="display: flex; align-items: center; padding: 6px 4px; gap: 12px;">
+              <div style="width: 28px; height: 28px; border-radius: 50%; background: #49454F; flex: none;"></div>
+              <div style="flex: 1; font-size: 14px;">Viestit</div>
+              <div style="font-size: 14px; font-weight: 700;">24×</div>
+            </div>
+            <div style="display: flex; align-items: center; padding: 6px 4px; gap: 12px;">
+              <div style="width: 28px; height: 28px; border-radius: 50%; background: #49454F; flex: none;"></div>
+              <div style="flex: 1; font-size: 14px;">Selain</div>
+              <div style="font-size: 14px; font-weight: 700;">18×</div>
+            </div>
+            <div style="display: flex; align-items: center; padding: 6px 4px; gap: 12px;">
+              <div style="width: 28px; height: 28px; border-radius: 50%; background: #49454F; flex: none;"></div>
+              <div style="flex: 1; font-size: 14px;">Sähköposti</div>
+              <div style="font-size: 14px; font-weight: 700;">11×</div>
+            </div>
+          </div>
+
+          <div style="display: flex; align-items: center; padding-top: 4px;">
+            <div style="flex: 1; font-size: 11px; font-weight: 700; color: #CAC4D0;">VIIMEKSI AVATUT</div>
+            <div style="width: 48px; height: 48px; display: flex; align-items: center; justify-content: center;"><span class="mio" style="font-size: 24px; color: #D0BCFF;">swap_vert</span></div>
+          </div>
+
+          <div style="display: flex; flex-direction: column;">
+            <div style="display: flex; align-items: center; padding: 6px 4px; gap: 12px;">
+              <div style="width: 40px; height: 40px; border-radius: 50%; background: #49454F; flex: none;"></div>
+              <div style="flex: 1; display: flex; flex-direction: column;">
+                <div style="font-size: 14px; font-weight: 500;">Podcast-soitin</div>
+                <div style="font-size: 12px; color: #F2B8B5;">Ei koskaan käytetty</div>
+              </div>
+              <div style="width: 48px; height: 48px; display: flex; align-items: center; justify-content: center;"><span class="mio" style="font-size: 24px; color: #CAC4D0;">delete</span></div>
+            </div>
+            <div style="display: flex; align-items: center; padding: 6px 4px; gap: 12px;">
+              <div style="width: 40px; height: 40px; border-radius: 50%; background: #49454F; flex: none;"></div>
+              <div style="flex: 1; display: flex; flex-direction: column;">
+                <div style="font-size: 14px; font-weight: 500;">Skanneri</div>
+                <div style="font-size: 12px; color: #F2B8B5;">142 päivää sitten</div>
+              </div>
+              <div style="width: 48px; height: 48px; display: flex; align-items: center; justify-content: center;"><span class="mio" style="font-size: 24px; color: #CAC4D0;">delete</span></div>
+            </div>
+            <div style="display: flex; align-items: center; padding: 6px 4px; gap: 12px;">
+              <div style="width: 40px; height: 40px; border-radius: 50%; background: #49454F; flex: none;"></div>
+              <div style="flex: 1; display: flex; flex-direction: column;">
+                <div style="font-size: 14px; font-weight: 500;">Kuntosalisovellus</div>
+                <div style="font-size: 12px; color: #EDA100;">48 päivää sitten</div>
+              </div>
+              <div style="width: 48px; height: 48px; display: flex; align-items: center; justify-content: center;"><span class="mio" style="font-size: 24px; color: #CAC4D0;">delete</span></div>
+            </div>
+            <div style="display: flex; align-items: center; padding: 6px 4px; gap: 12px;">
+              <div style="width: 40px; height: 40px; border-radius: 50%; background: #49454F; flex: none;"></div>
+              <div style="flex: 1; display: flex; flex-direction: column;">
+                <div style="font-size: 14px; font-weight: 500;">Kartat</div>
+                <div style="font-size: 12px; color: #CAC4D0;">Tänään 12.08</div>
+              </div>
+              <div style="width: 48px; height: 48px; display: flex; align-items: center; justify-content: center;"><span class="mio" style="font-size: 24px; color: #CAC4D0;">delete</span></div>
+            </div>
+          </div>
+
+        </div>
+        <div style="height: 80px; background: #211F26; display: flex; align-items: flex-start; padding-top: 12px; flex: none;">
+          <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;">
+            <div style="width: 64px; height: 32px; display: flex; align-items: center; justify-content: center;"><span class="mi" style="font-size: 24px; color: #CAC4D0;">home</span></div>
+            <div style="font-size: 12px; font-weight: 500; color: #CAC4D0;">Etusivu</div>
+          </div>
+          <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;">
+            <div style="width: 64px; height: 32px; border-radius: 16px; background: #4A4458; display: flex; align-items: center; justify-content: center;"><span class="mi" style="font-size: 24px; color: #E8DEF8;">apps</span></div>
+            <div style="font-size: 12px; font-weight: 500; color: #E6E0E9;">Sovellukset</div>
+          </div>
+          <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;">
+            <div style="width: 64px; height: 32px; display: flex; align-items: center; justify-content: center;"><span class="mi" style="font-size: 24px; color: #CAC4D0;">phone_android</span></div>
+            <div style="font-size: 12px; font-weight: 500; color: #CAC4D0;">Laite</div>
+          </div>
+          <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;">
+            <div style="width: 64px; height: 32px; display: flex; align-items: center; justify-content: center;"><span class="mi" style="font-size: 24px; color: #CAC4D0;">settings</span></div>
+            <div style="font-size: 12px; font-weight: 500; color: #CAC4D0;">Asetukset</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 10px;">
+      <div style="font-size: 12px; font-weight: 500; color: #CAC4D0;">Laite — DeviceTab.kt</div>
+      <div data-screen-label="Laite" style="width: 412px; min-height: 900px; background: #141218; border-radius: 24px; display: flex; flex-direction: column; box-shadow: 0 24px 60px rgba(0,0,0,0.55);">
+        <div style="height: 64px; display: flex; align-items: center; padding: 0 4px 0 16px; background: #141218; flex: none;">
+          <div style="flex: 1; font-size: 22px; font-weight: 700;">Järjestelmän tila</div>
+          <div style="width: 48px; height: 48px; display: flex; align-items: center; justify-content: center;"><span class="mi" style="font-size: 24px; color: #D0BCFF;">refresh</span></div>
+        </div>
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 16px; padding: 16px;">
+          <div style="background: rgba(73,69,79,0.4); border-radius: 20px; padding: 20px; display: flex; flex-direction: column;">
+            <div style="font-size: 11px; font-weight: 700; color: #CAC4D0;">LAITETIEDOT</div>
+            <div style="height: 12px;"></div>
+            <sc-for list="{{ deviceRows }}" as="row" hint-placeholder-count="14">
+              <div style="display: flex; padding: 5px 0; gap: 12px;">
+                <div style="flex: 1; font-size: 12px; color: #CAC4D0;">{{ row.label }}</div>
+                <div style="flex: 1; font-size: 12px; font-weight: 500; text-align: right;">{{ row.value }}</div>
+              </div>
+            </sc-for>
+            <div style="display: flex; flex-direction: column; padding: 5px 0;">
+              <div style="font-size: 12px; color: #CAC4D0;">Ydin (kernel)</div>
+              <div style="font-size: 12px; font-weight: 500;">6.1.99-android14-11-g4c3a1b2d #1 SMP PREEMPT</div>
+            </div>
+          </div>
+          <div style="background: rgba(73,69,79,0.4); border-radius: 20px; padding: 20px; display: flex; flex-direction: column;">
+            <div style="font-size: 11px; font-weight: 700; color: #CAC4D0;">SIM JA MOBIILIVERKKO</div>
+            <div style="height: 12px;"></div>
+            <sc-for list="{{ simRows }}" as="row" hint-placeholder-count="7">
+              <div style="display: flex; padding: 5px 0; gap: 12px;">
+                <div style="flex: 1; font-size: 12px; color: #CAC4D0;">{{ row.label }}</div>
+                <div style="flex: 1; font-size: 12px; font-weight: 500; text-align: right;">{{ row.value }}</div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="background: rgba(73,69,79,0.4); border-radius: 20px; padding: 20px; display: flex; flex-direction: column;">
+            <div style="font-size: 11px; font-weight: 700; color: #CAC4D0;">WI-FI</div>
+            <div style="height: 12px;"></div>
+            <sc-for list="{{ wifiRows }}" as="row" hint-placeholder-count="6">
+              <div style="display: flex; padding: 5px 0; gap: 12px;">
+                <div style="flex: 1; font-size: 12px; color: #CAC4D0;">{{ row.label }}</div>
+                <div style="flex: 1; font-size: 12px; font-weight: 500; text-align: right;">{{ row.value }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="height: 80px; background: #211F26; display: flex; align-items: flex-start; padding-top: 12px; flex: none;">
+          <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;">
+            <div style="width: 64px; height: 32px; display: flex; align-items: center; justify-content: center;"><span class="mi" style="font-size: 24px; color: #CAC4D0;">home</span></div>
+            <div style="font-size: 12px; font-weight: 500; color: #CAC4D0;">Etusivu</div>
+          </div>
+          <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;">
+            <div style="width: 64px; height: 32px; display: flex; align-items: center; justify-content: center;"><span class="mi" style="font-size: 24px; color: #CAC4D0;">apps</span></div>
+            <div style="font-size: 12px; font-weight: 500; color: #CAC4D0;">Sovellukset</div>
+          </div>
+          <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;">
+            <div style="width: 64px; height: 32px; border-radius: 16px; background: #4A4458; display: flex; align-items: center; justify-content: center;"><span class="mi" style="font-size: 24px; color: #E8DEF8;">phone_android</span></div>
+            <div style="font-size: 12px; font-weight: 500; color: #E6E0E9;">Laite</div>
+          </div>
+          <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;">
+            <div style="width: 64px; height: 32px; display: flex; align-items: center; justify-content: center;"><span class="mi" style="font-size: 24px; color: #CAC4D0;">settings</span></div>
+            <div style="font-size: 12px; font-weight: 500; color: #CAC4D0;">Asetukset</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 10px;">
+      <div style="font-size: 12px; font-weight: 500; color: #CAC4D0;">Asetukset — SettingsTab.kt</div>
+      <div data-screen-label="Asetukset" style="width: 412px; min-height: 900px; background: #141218; border-radius: 24px; display: flex; flex-direction: column; box-shadow: 0 24px 60px rgba(0,0,0,0.55);">
+        <div style="height: 64px; display: flex; align-items: center; padding: 0 4px 0 16px; background: #141218; flex: none;">
+          <div style="flex: 1; font-size: 22px; font-weight: 700;">Järjestelmän tila</div>
+          <div style="width: 48px; height: 48px; display: flex; align-items: center; justify-content: center;"><span class="mi" style="font-size: 24px; color: #D0BCFF;">refresh</span></div>
+        </div>
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 16px; padding: 16px;">
+
+          <div style="background: rgba(73,69,79,0.4); border-radius: 20px; padding: 20px; display: flex; flex-direction: column;">
+            <div style="font-size: 11px; font-weight: 700; color: #CAC4D0;">DATALASKURI</div>
+            <div style="height: 16px;"></div>
+            <div style="display: flex; height: 40px;">
+              <div style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid #938F99; border-right: none; border-radius: 20px 0 0 20px; background: #4A4458;">
+                <span class="mi" style="font-size: 18px; color: #E8DEF8;">check</span>
+                <span style="font-size: 12px; font-weight: 500; color: #E8DEF8;">Päivä</span>
+              </div>
+              <div style="flex: 1; display: flex; align-items: center; justify-content: center; border: 1px solid #938F99; border-radius: 0 20px 20px 0;">
+                <span style="font-size: 12px; font-weight: 500; color: #D0BCFF;">Kausi</span>
+              </div>
+            </div>
+            <div style="height: 8px;"></div>
+            <div style="font-size: 11px; line-height: 1.4; color: #CAC4D0; text-wrap: pretty;">Laske datankäyttö kalenteripäivittäin tai kuukauden mittaisena laskutusjaksona, joka alkaa valittuna päivänä. Kuukausien pituudet huomioidaan automaattisesti.</div>
+          </div>
+
+          <div style="background: rgba(73,69,79,0.4); border-radius: 20px; padding: 20px; display: flex; flex-direction: column;">
+            <div style="font-size: 11px; font-weight: 700; color: #CAC4D0;">WIDGETIN ASETUKSET</div>
+            <div style="height: 16px;"></div>
+            <div style="font-size: 14px; font-weight: 500;">Widgetin taustan peittävyys</div>
+            <div style="height: 4px;"></div>
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div style="flex: 1; height: 20px; position: relative; display: flex; align-items: center;">
+                <div style="height: 4px; border-radius: 2px; background: #49454F; width: 100%;"></div>
+                <div style="position: absolute; left: 0; height: 4px; border-radius: 2px; background: #D0BCFF; width: 79%;"></div>
+                <div style="position: absolute; left: 79%; width: 20px; height: 20px; margin-left: -10px; border-radius: 50%; background: #D0BCFF;"></div>
+              </div>
+              <div style="width: 42px; font-size: 14px; font-weight: 700;">85%</div>
+            </div>
+            <div style="font-size: 11px; line-height: 1.4; color: #CAC4D0;">Säädä kotinäytön widgetin taustan läpinäkyvyyttä. 100% on täysin kiinteä tausta.</div>
+          </div>
+
+          <div style="background: rgba(73,69,79,0.4); border-radius: 20px; padding: 20px; display: flex; flex-direction: column;">
+            <div style="font-size: 11px; font-weight: 700; color: #CAC4D0;">NÄYTÖNSÄÄSTÄJÄ</div>
+            <div style="height: 16px;"></div>
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div style="flex: 1; display: flex; flex-direction: column; gap: 2px;">
+                <div style="font-size: 14px; font-weight: 500;">Pakota pystyasento</div>
+                <div style="font-size: 11px; line-height: 1.4; color: #CAC4D0;">Pidä näytönsäästäjä pystyssä, vaikka laite olisi vaaka-asennossa.</div>
+              </div>
+              <div style="width: 52px; height: 32px; border-radius: 16px; background: #D0BCFF; display: flex; align-items: center; justify-content: flex-end; padding: 0 4px; box-sizing: border-box; flex: none;">
+                <div style="width: 24px; height: 24px; border-radius: 50%; background: #381E72;"></div>
+              </div>
+            </div>
+            <div style="height: 16px;"></div>
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div style="flex: 1; display: flex; flex-direction: column; gap: 2px;">
+                <div style="font-size: 14px; font-weight: 500;">Himmennä yöllä</div>
+                <div style="font-size: 11px; line-height: 1.4; color: #CAC4D0;">Himmennä näytönsäästäjä automaattisesti valitulla aikavälillä.</div>
+              </div>
+              <div style="width: 52px; height: 32px; border-radius: 16px; background: #2b292f; border: 2px solid #938F99; display: flex; align-items: center; padding: 0 6px; box-sizing: border-box; flex: none;">
+                <div style="width: 16px; height: 16px; border-radius: 50%; background: #938F99;"></div>
+              </div>
+            </div>
+            <div style="height: 16px;"></div>
+            <div style="height: 40px; border: 1px solid #938F99; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+              <span style="font-size: 12px; font-weight: 500; color: #D0BCFF;">Avaa näytönsäästäjän asetukset</span>
+            </div>
+          </div>
+
+          <div style="background: rgba(73,69,79,0.4); border-radius: 20px; padding: 20px; display: flex; flex-direction: column;">
+            <div style="font-size: 11px; font-weight: 700; color: #CAC4D0;">ERIKOISOIKEUDET</div>
+            <div style="height: 12px;"></div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div style="width: 10px; height: 10px; border-radius: 50%; background: #4CAF50; flex: none;"></div>
+              <div style="flex: 1; height: 40px; border: 1px solid #938F99; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                <span style="font-size: 12px; font-weight: 500; color: #D0BCFF;">Perusluvat</span>
+              </div>
+            </div>
+            <div style="height: 10px;"></div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div style="width: 10px; height: 10px; border-radius: 50%; background: #4CAF50; flex: none;"></div>
+              <div style="flex: 1; height: 40px; border: 1px solid #938F99; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                <span style="font-size: 12px; font-weight: 500; color: #D0BCFF;">Käyttötietojen käyttöoikeus</span>
+              </div>
+            </div>
+            <div style="height: 10px;"></div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div style="width: 10px; height: 10px; border-radius: 50%; background: #F44336; flex: none;"></div>
+              <div style="flex: 1; height: 40px; border: 1px solid #938F99; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                <span style="font-size: 12px; font-weight: 500; color: #D0BCFF;">Ilmoitusten käyttöoikeus</span>
+              </div>
+            </div>
+            <div style="height: 6px;"></div>
+            <div style="font-size: 11px; line-height: 1.4; color: #CAC4D0; text-wrap: pretty;">Ilmoitusten laskenta alkaa, kun ilmoitusten käyttöoikeus on myönnetty. Pysyviä ilmoituksia, ryhmäkoosteita ja olemassa olevan ilmoituksen päivityksiä ei lasketa.</div>
+          </div>
+
+          <div style="font-size: 11px; color: #CAC4D0; text-align: center;">Versio 1.7.2 (172)</div>
+
+        </div>
+        <div style="height: 80px; background: #211F26; display: flex; align-items: flex-start; padding-top: 12px; flex: none;">
+          <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;">
+            <div style="width: 64px; height: 32px; display: flex; align-items: center; justify-content: center;"><span class="mi" style="font-size: 24px; color: #CAC4D0;">home</span></div>
+            <div style="font-size: 12px; font-weight: 500; color: #CAC4D0;">Etusivu</div>
+          </div>
+          <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;">
+            <div style="width: 64px; height: 32px; display: flex; align-items: center; justify-content: center;"><span class="mi" style="font-size: 24px; color: #CAC4D0;">apps</span></div>
+            <div style="font-size: 12px; font-weight: 500; color: #CAC4D0;">Sovellukset</div>
+          </div>
+          <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;">
+            <div style="width: 64px; height: 32px; display: flex; align-items: center; justify-content: center;"><span class="mi" style="font-size: 24px; color: #CAC4D0;">phone_android</span></div>
+            <div style="font-size: 12px; font-weight: 500; color: #CAC4D0;">Laite</div>
+          </div>
+          <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;">
+            <div style="width: 64px; height: 32px; border-radius: 16px; background: #4A4458; display: flex; align-items: center; justify-content: center;"><span class="mi" style="font-size: 24px; color: #E8DEF8;">settings</span></div>
+            <div style="font-size: 12px; font-weight: 500; color: #E6E0E9;">Asetukset</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div style="display: flex; gap: 40px; flex-wrap: wrap; max-width: 1200px; border-top: 1px solid #2b292f; padding-top: 24px;">
+    <div style="display: flex; flex-direction: column; gap: 10px;">
+      <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.1em; color: #CAC4D0;">VÄRIT</div>
+      <div style="display: flex; gap: 10px;">
+        <div style="display: flex; flex-direction: column; gap: 6px; width: 92px;"><div style="height: 44px; border-radius: 8px; background: #D0BCFF;"></div><div style="font-size: 10px; color: #CAC4D0;">primary<br>#D0BCFF</div></div>
+        <div style="display: flex; flex-direction: column; gap: 6px; width: 92px;"><div style="height: 44px; border-radius: 8px; background: #141218; border: 1px solid #49454F;"></div><div style="font-size: 10px; color: #CAC4D0;">background<br>#141218</div></div>
+        <div style="display: flex; flex-direction: column; gap: 6px; width: 92px;"><div style="height: 44px; border-radius: 8px; background: #49454F;"></div><div style="font-size: 10px; color: #CAC4D0;">surfaceVariant<br>#49454F</div></div>
+        <div style="display: flex; flex-direction: column; gap: 6px; width: 92px;"><div style="height: 44px; border-radius: 8px; background: #4CAF50;"></div><div style="font-size: 10px; color: #CAC4D0;">ok / akku<br>#4CAF50</div></div>
+        <div style="display: flex; flex-direction: column; gap: 6px; width: 92px;"><div style="height: 44px; border-radius: 8px; background: #F44336;"></div><div style="font-size: 10px; color: #CAC4D0;">virhe / puuttuu<br>#F44336</div></div>
+        <div style="display: flex; flex-direction: column; gap: 6px; width: 92px;"><div style="height: 44px; border-radius: 8px; background: #EDA100;"></div><div style="font-size: 10px; color: #CAC4D0;">vanhentuva<br>#EDA100</div></div>
+      </div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 10px;">
+      <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.1em; color: #CAC4D0;">DONUT-PALETTI (TUMMA)</div>
+      <div style="display: flex; gap: 8px;">
+        <div style="width: 44px; height: 44px; border-radius: 8px; background: #3987E5;"></div>
+        <div style="width: 44px; height: 44px; border-radius: 8px; background: #199E70;"></div>
+        <div style="width: 44px; height: 44px; border-radius: 8px; background: #C98500;"></div>
+        <div style="width: 44px; height: 44px; border-radius: 8px; background: #008300;"></div>
+        <div style="width: 44px; height: 44px; border-radius: 8px; background: #9085E9;"></div>
+        <div style="width: 44px; height: 44px; border-radius: 8px; background: #E66767;"></div>
+        <div style="width: 44px; height: 44px; border-radius: 8px; background: #898781;"></div>
+      </div>
+      <div style="font-size: 10px; color: #CAC4D0;">Kiinteä järjestys, harmaa = &bdquo;Muut&rdquo;</div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 8px; max-width: 320px;">
+      <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.1em; color: #CAC4D0;">TYPOGRAFIA & MITAT</div>
+      <div style="font-size: 12px; line-height: 1.7; color: #E6E0E9;">Roboto · yläpalkki 22&nbsp;sp bold · osion otsikko 11&nbsp;sp bold · rivin arvo 12&nbsp;sp medium · mittarin arvo 14&nbsp;sp bold · akkuprosentti 38&nbsp;sp bold<br>Kortti 20&nbsp;dp kulma, 20&nbsp;dp sisennys, 16&nbsp;dp väli · painikkeet 12&nbsp;dp kulma · palkit 8&nbsp;dp / 4&nbsp;dp kulma</div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;dataCounterMode&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Päivä&quot;,&quot;Kausi&quot;],&quot;default&quot;:&quot;Päivä&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Tila&quot;},&quot;widgetInstalled&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Tila&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const cycle = (this.props.dataCounterMode ?? 'Päivä') === 'Kausi';
+    return {
+      widgetMessage: (this.props.widgetInstalled ?? true)
+        ? 'Kotiruudun widget on aktiivinen ja synkronoitu taustapalvelulla.'
+        : 'Widgetiä ei ole vielä lisätty kotinäytölle. Paina pitkään kotinäyttöä lisätäksesi sen.',
+      usageSectionTitle: cycle ? 'KÄYTTÖ KAUDELLA' : 'KÄYTTÖ TÄNÄÄN',
+      wifiDataLabel: cycle ? 'Wi-Fi-data kaudella' : 'Wi-Fi-data tänään',
+      mobileDataLabel: (cycle ? 'Mobiilidata kaudella' : 'Mobiilidata tänään') + ' (Telia)',
+      deviceRows: [
+        { label: 'Valmistaja', value: 'Google' },
+        { label: 'Malli', value: 'Pixel 8' },
+        { label: 'Koodinimi', value: 'shiba' },
+        { label: 'Android-versio', value: '15 (API 35)' },
+        { label: 'Tietoturvapäivitys', value: '2026-07-05' },
+        { label: 'Piirisarja (SoC)', value: 'Tensor G3' },
+        { label: 'GPU', value: 'Mali-G715' },
+        { label: 'Näytön tarkkuus', value: '1080 × 2400' },
+        { label: 'Näytön tiheys', value: '420 dpi (2.63×)' },
+        { label: 'Virkistystaajuus', value: '120 Hz' },
+        { label: 'Muisti (RAM) yhteensä', value: '7.6 GB' },
+        { label: 'Tallennustila yhteensä', value: '128 GB' },
+        { label: 'Akkutyyppi', value: 'Li-ion' },
+        { label: 'Akun kapasiteetti', value: '4575 mAh' },
+      ],
+      simRows: [
+        { label: 'Operaattori', value: 'Telia' },
+        { label: 'Maa', value: 'FI' },
+        { label: 'Verkon tyyppi', value: '5G' },
+        { label: 'Signaali', value: '-84 dBm' },
+        { label: 'SIM-tila', value: 'Valmis' },
+        { label: 'SIM-paikat', value: '2' },
+        { label: cycle ? 'Mobiilidata kaudella' : 'Mobiilidata tänään', value: '480 MB' },
+      ],
+      wifiRows: [
+        { label: 'Verkko (SSID)', value: 'Kotiverkko-5G' },
+        { label: 'Taajuusalue', value: '5 GHz' },
+        { label: 'Wi-Fi-standardi', value: 'Wi-Fi 6 (ax)' },
+        { label: 'Signaali', value: '-52 dBm' },
+        { label: 'Linkkinopeus', value: '866 Mbps' },
+        { label: 'IP-osoite', value: '192.168.1.42' },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

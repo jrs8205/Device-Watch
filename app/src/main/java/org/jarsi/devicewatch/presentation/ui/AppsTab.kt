@@ -134,8 +134,7 @@ internal fun AppsTab(viewModel: AppsViewModel = hiltViewModel()) {
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        contentPadding = PaddingValues(bottom = 24.dp),
     ) {
         item(key = "screen_time") {
             SettingsSectionCard(

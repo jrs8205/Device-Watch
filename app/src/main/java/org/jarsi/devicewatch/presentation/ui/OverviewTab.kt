@@ -71,23 +71,20 @@ internal fun OverviewTab(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
             .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // Widget connection status. The card is tinted with the same status color
         // as its dot — a missing widget is a hint, not an error, and an error-red
         // card next to an amber dot said two different things.
         val statusColor = if (uiState.isWidgetInstalled) statusOkColor() else statusWarnColor()
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = statusColor.copy(alpha = STATUS_TINT_ALPHA)
-            ),
-            shape = RoundedCornerShape(12.dp)
-        ) {
-            Row(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(statusColor.copy(alpha = STATUS_TINT_ALPHA))
+                    .padding(horizontal = BAND_INSET, vertical = BAND_SPACING)
+            ) {
                 Box(
                     modifier = Modifier
                         .size(10.dp)
@@ -109,6 +106,7 @@ internal fun OverviewTab(
                     color = MaterialTheme.colorScheme.onSurface
                 )
             }
+            HorizontalDivider(color = MaterialTheme.colorScheme.outline)
         }
 
         // Battery section — the whole card opens the "since charge" page.
@@ -150,24 +148,19 @@ internal fun OverviewTab(
                     } else {
                         MaterialTheme.colorScheme.error
                     },
-                    trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                    trackColor = MaterialTheme.colorScheme.outlineVariant,
                 )
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
+                    MetricValue(
                         text = "${currentStats.batteryLevel}%",
-                        fontSize = 38.sp,
-                        fontWeight = FontWeight.Bold
+                        fontSize = HERO_VALUE_SP
                     )
-                    Text(
-                        text = currentStats.batteryStatus,
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    MetricLabel(currentStats.batteryStatus, fontSize = 12.sp)
                 }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
-            HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
+            HorizontalDivider(color = MaterialTheme.colorScheme.outline)
             Spacer(modifier = Modifier.height(12.dp))
 
             // Three stat columns that wrap onto further lines instead of being
@@ -177,31 +170,21 @@ internal fun OverviewTab(
                 horizontalArrangement = Arrangement.SpaceAround,
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        stringResource(R.string.time_remaining),
-                        fontSize = 11.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(currentStats.timeRemainingText, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                }
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        stringResource(R.string.temperature),
-                        fontSize = 11.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text("${currentStats.batteryTemp} °C", fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                }
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        stringResource(R.string.voltage),
-                        fontSize = 11.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    val voltStr = "%.2f".format(currentStats.batteryVoltage)
-                    Text("$voltStr V", fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                }
+                StackedMetricRow(
+                    label = stringResource(R.string.time_remaining),
+                    value = currentStats.timeRemainingText,
+                    valueSize = SECONDARY_VALUE_SP
+                )
+                StackedMetricRow(
+                    label = stringResource(R.string.temperature),
+                    value = "${currentStats.batteryTemp} °C",
+                    valueSize = SECONDARY_VALUE_SP
+                )
+                StackedMetricRow(
+                    label = stringResource(R.string.voltage),
+                    value = "%.2f V".format(currentStats.batteryVoltage),
+                    valueSize = SECONDARY_VALUE_SP
+                )
             }
         }
 
@@ -237,21 +220,24 @@ internal fun OverviewTab(
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                DeviceInfoRow(
-                    R.string.screen_time_total_label,
-                    if (uiState.screenTimeMillis >= 0L) {
+                StackedMetricRow(
+                    label = stringResource(R.string.screen_time_total_label),
+                    value = if (uiState.screenTimeMillis >= 0L) {
                         durationText(context, uiState.screenTimeMillis)
                     } else {
                         UNAVAILABLE_TEXT
                     }
                 )
                 if (uiState.unlockCountingSupported) {
-                    DeviceInfoRow(R.string.unlock_count_label, countOrDashText(uiState.unlockCount))
+                    StackedMetricRow(
+                        label = stringResource(R.string.unlock_count_label),
+                        value = countOrDashText(uiState.unlockCount)
+                    )
                 }
                 if (uiState.notificationAccessEnabled) {
-                    DeviceInfoRow(
-                        R.string.notification_count_label,
-                        countOrDashText(uiState.notificationCount)
+                    StackedMetricRow(
+                        label = stringResource(R.string.notification_count_label),
+                        value = countOrDashText(uiState.notificationCount)
                     )
                 } else {
                     LabelValueRow(
@@ -289,8 +275,14 @@ internal fun OverviewTab(
                         }
                     )
                 }
-                DeviceInfoRow(R.string.boot_count_label, uiState.bootCount.toString())
-                DeviceInfoRow(R.string.charge_count_label, uiState.chargeCount.toString())
+                StackedMetricRow(
+                    label = stringResource(R.string.boot_count_label),
+                    value = uiState.bootCount.toString()
+                )
+                StackedMetricRow(
+                    label = stringResource(R.string.charge_count_label),
+                    value = uiState.chargeCount.toString()
+                )
                 // "Previous period vs now": only metrics this device can actually
                 // count get a row, and the section hides when none can.
                 val hasComparisonRows = uiState.screenTimeMillis >= 0L ||
@@ -299,7 +291,7 @@ internal fun OverviewTab(
                 uiState.periodComparison?.takeIf { hasComparisonRows }?.let { comparison ->
                     HorizontalDivider(
                         modifier = Modifier.padding(vertical = 8.dp),
-                        color = MaterialTheme.colorScheme.surfaceVariant
+                        color = MaterialTheme.colorScheme.outline
                     )
                     Text(
                         text = stringResource(R.string.comparison_section_label),
@@ -360,12 +352,15 @@ internal fun OverviewTab(
         // Data counters for the selected period (day or billing cycle), right under the
         // usage card so both period counters sit together.
         SettingsSectionCard(titleRes = R.string.data_counter_section) {
-            DeviceInfoRow(wifiDataLabelRes(uiState.dataCounterMode), gbTodayText(currentStats.wifiBytesTodayGb))
+            StackedMetricRow(
+                label = stringResource(wifiDataLabelRes(uiState.dataCounterMode)),
+                value = gbTodayText(currentStats.wifiBytesTodayGb)
+            )
             val mobileLabel = stringResource(simDataLabelRes(uiState.dataCounterMode))
             val simName = currentStats.dataSimName.takeIf { it != UNAVAILABLE_TEXT }
             // With a quota set the row reads "used / quota" (same text the widget shows)
             // and gets a usage bar; without one it stays a plain amount.
-            DeviceInfoRow(
+            StackedMetricRow(
                 label = if (simName != null) {
                     stringResource(R.string.label_with_sim, mobileLabel, simName)
                 } else {
@@ -382,14 +377,14 @@ internal fun OverviewTab(
                     progress = { (quotaPercentUsed / 100f).coerceAtMost(1f) },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(6.dp)
-                        .clip(RoundedCornerShape(3.dp)),
+                        .height(METER_HEIGHT)
+                        .clip(RoundedCornerShape(METER_RADIUS)),
                     color = if (quotaPercentUsed >= 100) {
                         MaterialTheme.colorScheme.error
                     } else {
                         MaterialTheme.colorScheme.primary
                     },
-                    trackColor = MaterialTheme.colorScheme.surfaceVariant
+                    trackColor = MaterialTheme.colorScheme.outlineVariant
                 )
             }
         }
@@ -399,24 +394,12 @@ internal fun OverviewTab(
             Spacer(modifier = Modifier.height(4.dp))
 
             // RAM
-            LabelValueRow(
-                label = {
-                    Text(
-                        stringResource(R.string.ram_title),
-                        fontWeight = FontWeight.Medium,
-                        fontSize = 14.sp
-                    )
-                },
-                value = {
-                    val usedRamStr = "%.1f".format(currentStats.usedRamGb)
-                    val totalRamStr = "%.1f".format(currentStats.totalRamGb)
-                    Text(
-                        "$usedRamStr / $totalRamStr GB (${currentStats.ramPercent}%)",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
+            StackedMetricRow(
+                label = stringResource(R.string.ram_title),
+                value = "%.1f / %.1f GB (%d%%)".format(
+                    currentStats.usedRamGb, currentStats.totalRamGb, currentStats.ramPercent
+                ),
+                valueColor = meterColor()
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -425,43 +408,30 @@ internal fun OverviewTab(
                 progress = { currentStats.ramPercent.coerceAtLeast(0).toFloat() / 100f },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(8.dp)
-                    .clip(RoundedCornerShape(4.dp)),
-                color = MaterialTheme.colorScheme.primary,
-                trackColor = MaterialTheme.colorScheme.surfaceVariant
+                    .height(METER_HEIGHT)
+                    .clip(RoundedCornerShape(METER_RADIUS)),
+                color = meterColor(),
+                trackColor = MaterialTheme.colorScheme.outlineVariant
             )
 
             Spacer(modifier = Modifier.height(20.dp))
-            HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
+            HorizontalDivider(color = MaterialTheme.colorScheme.outline)
             Spacer(modifier = Modifier.height(16.dp))
 
             // CPU load (same data the widget's CPU tile shows)
-            LabelValueRow(
-                label = {
-                    Text(
-                        stringResource(R.string.cpu_load_row),
-                        fontWeight = FontWeight.Medium,
-                        fontSize = 14.sp
-                    )
-                },
-                value = {
-                    val cpuValue = buildString {
-                        if (currentStats.cpuLoadPercent >= 0) {
-                            append("${currentStats.cpuLoadPercent} %")
-                        } else {
-                            append(UNAVAILABLE_TEXT)
-                        }
-                        if (currentStats.cpuFreqGhz >= 0.0) {
-                            append(" · ${"%.1f".format(currentStats.cpuFreqGhz)} GHz")
-                        }
+            StackedMetricRow(
+                label = stringResource(R.string.cpu_load_row),
+                value = buildString {
+                    if (currentStats.cpuLoadPercent >= 0) {
+                        append("${currentStats.cpuLoadPercent} %")
+                    } else {
+                        append(UNAVAILABLE_TEXT)
                     }
-                    Text(
-                        cpuValue,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
+                    if (currentStats.cpuFreqGhz >= 0.0) {
+                        append(" · ${"%.1f".format(currentStats.cpuFreqGhz)} GHz")
+                    }
+                },
+                valueColor = meterColor()
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -470,35 +440,23 @@ internal fun OverviewTab(
                 progress = { currentStats.cpuLoadPercent.coerceAtLeast(0).toFloat() / 100f },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(8.dp)
-                    .clip(RoundedCornerShape(4.dp)),
-                color = MaterialTheme.colorScheme.primary,
-                trackColor = MaterialTheme.colorScheme.surfaceVariant
+                    .height(METER_HEIGHT)
+                    .clip(RoundedCornerShape(METER_RADIUS)),
+                color = meterColor(),
+                trackColor = MaterialTheme.colorScheme.outlineVariant
             )
 
             Spacer(modifier = Modifier.height(20.dp))
-            HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
+            HorizontalDivider(color = MaterialTheme.colorScheme.outline)
             Spacer(modifier = Modifier.height(16.dp))
 
             // Storage (same data the widget's storage tile shows)
-            LabelValueRow(
-                label = {
-                    Text(
-                        stringResource(R.string.storage_row),
-                        fontWeight = FontWeight.Medium,
-                        fontSize = 14.sp
-                    )
-                },
-                value = {
-                    val usedStr = "%.0f".format(currentStats.usedStorageGb)
-                    val totalStr = "%.0f".format(currentStats.totalStorageGb)
-                    Text(
-                        "$usedStr / $totalStr GB (${currentStats.storagePercent}%)",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
+            StackedMetricRow(
+                label = stringResource(R.string.storage_row),
+                value = "%.0f / %.0f GB (%d%%)".format(
+                    currentStats.usedStorageGb, currentStats.totalStorageGb, currentStats.storagePercent
+                ),
+                valueColor = meterColor()
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -507,13 +465,13 @@ internal fun OverviewTab(
                 progress = { currentStats.storagePercent.coerceAtLeast(0).toFloat() / 100f },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(8.dp)
-                    .clip(RoundedCornerShape(4.dp)),
-                color = MaterialTheme.colorScheme.primary,
-                trackColor = MaterialTheme.colorScheme.surfaceVariant
+                    .height(METER_HEIGHT)
+                    .clip(RoundedCornerShape(METER_RADIUS)),
+                color = meterColor(),
+                trackColor = MaterialTheme.colorScheme.outlineVariant
             )
 
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             val freeStorage = currentStats.totalStorageGb - currentStats.usedStorageGb
             Text(
@@ -524,7 +482,7 @@ internal fun OverviewTab(
             )
 
             Spacer(modifier = Modifier.height(20.dp))
-            HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
+            HorizontalDivider(color = MaterialTheme.colorScheme.outline)
             Spacer(modifier = Modifier.height(16.dp))
 
             // CPU info & Uptime — two caption-over-value blocks that stack when a

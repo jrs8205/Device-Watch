@@ -71,7 +71,7 @@ internal fun ScreenTimeDonut(
     totalText: String,
     modifier: Modifier = Modifier,
 ) {
-    val trackColor = MaterialTheme.colorScheme.surfaceVariant
+    val trackColor = MaterialTheme.colorScheme.outlineVariant
 
     Box(contentAlignment = Alignment.Center, modifier = modifier.size(180.dp)) {
         Canvas(modifier = Modifier.fillMaxSize()) {
