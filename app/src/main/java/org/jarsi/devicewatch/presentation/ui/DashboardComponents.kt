@@ -250,27 +250,33 @@ internal fun DeviceInfoRow(label: String, value: String) {
 }
 
 /**
- * Label-above/full-width-value layout for long list-like values (sensor lists,
- * driver strings): a half-width right-aligned column wraps them raggedly, with
- * trailing commas at the right edge and one-word orphan lines.
+ * A device fact: its name, then the fact itself on the line below, separated
+ * from the next by a hairline.
+ *
+ * The Device tab is fifty of these. Side by side, each one only ever gets half
+ * the width — which is what made the long values (kernel strings, sensor lists,
+ * ABI lists) wrap raggedly, and what left every value fighting its own label
+ * for room at a large font. Stacked, each line gets the whole width, and the
+ * page reads as a list of facts rather than a squeezed table.
  */
 @Composable
-internal fun DeviceInfoRowLong(@StringRes labelRes: Int, value: String) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 5.dp)
-    ) {
-        Text(
-            text = stringResource(labelRes),
-            fontSize = 12.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Text(
-            text = value,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Medium
-        )
+internal fun DeviceFact(@StringRes labelRes: Int, value: String) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(vertical = 10.dp)) {
+            Text(
+                text = stringResource(labelRes),
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = value,
+                fontSize = 15.sp,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
     }
 }
 

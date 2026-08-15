@@ -6,12 +6,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -26,6 +25,7 @@ import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -37,6 +37,9 @@ import java.time.format.DateTimeFormatter
 
 /** Tall enough for the drain shape to be readable without crowding the page. */
 private val ChartHeight = 160.dp
+
+/** Room for the percentage scale beside the plot. */
+private val LevelAxisWidth = 44.dp
 
 /** Battery-level gridlines, as fractions of a full battery. */
 private val GridFractions = listOf(0f, 0.5f, 1f)
@@ -66,41 +69,35 @@ internal fun BatteryChart(
         BatteryChartLogic.chargingSpans(points, segmentStarts)
     }
 
-    val lineColor = MaterialTheme.colorScheme.primary
-    val chargingColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
-    val gridColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.25f)
+    val lineColor = meterColor()
+    val chargingColor = meterColor().copy(alpha = 0.22f)
+    val gridColor = MaterialTheme.colorScheme.outline
 
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
-        )
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
-            if (points.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(ChartHeight),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = stringResource(R.string.history_battery_empty),
-                        fontSize = 13.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center
-                    )
-                }
-            } else {
+    Column(modifier = modifier.fillMaxWidth()) {
+        if (points.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(ChartHeight),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = stringResource(R.string.history_battery_empty),
+                    fontSize = 13.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center
+                )
+            }
+        } else {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(ChartHeight)
+            ) {
                 Canvas(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(ChartHeight)
+                        .fillMaxSize()
+                        .padding(end = LevelAxisWidth)
                 ) {
                     val strokeWidth = 2.dp.toPx()
                     // Inset by half a stroke on both axes so the 0 % and 100 % lines,
@@ -166,7 +163,27 @@ internal fun BatteryChart(
                         }
                     }
                 }
-                Spacer(modifier = Modifier.height(6.dp))
+                // The scale the grid lines stand for. Without it the chart showed
+                // a shape and three clock times and said nothing about the battery.
+                Column(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .align(Alignment.CenterEnd),
+                    verticalArrangement = Arrangement.SpaceBetween,
+                    horizontalAlignment = Alignment.End
+                ) {
+                    GridFractions.sortedDescending().forEach { fraction ->
+                        Text(
+                            text = "${(fraction * 100).toInt()} %",
+                            fontSize = 11.sp,
+                            fontFamily = FontFamily.Monospace,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(6.dp))
+            Box(modifier = Modifier.padding(end = LevelAxisWidth)) {
                 TimeAxisLabels(range = range, nowMillis = nowMillis)
             }
         }

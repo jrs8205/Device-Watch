@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -112,14 +113,15 @@ internal fun OverviewTab(
         // Battery section — the whole card opens the "since charge" page.
         SettingsSectionCard(
             titleRes = R.string.battery_status_section,
-            modifier = Modifier
-                .clip(RoundedCornerShape(20.dp))
-                .clickable(onClick = withTapHaptic(onOpenSinceCharge)),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.align(Alignment.End)
+                modifier = Modifier
+                    .align(Alignment.End)
+                    .clip(RoundedCornerShape(8.dp))
+                    .clickable(onClick = withTapHaptic(onOpenSinceCharge))
+                    .padding(horizontal = 8.dp, vertical = 4.dp)
             ) {
                 Text(
                     text = stringResource(R.string.since_charge_title),
@@ -191,22 +193,21 @@ internal fun OverviewTab(
         // Usage counters for the selected period, right under the battery so they
         // are visible without scrolling to the bottom. The whole card opens the
         // Historia page (daily history values + notification log).
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(20.dp))
-                .clickable(onClick = withTapHaptic(onOpenHistory))
+        SettingsSectionCard(
+            titleRes = if (uiState.dataCounterMode == DataCounterMode.DAY) {
+                R.string.usage_counters_section
+            } else {
+                R.string.usage_counters_section_period
+            }
         ) {
-            SettingsSectionCard(
-                titleRes = if (uiState.dataCounterMode == DataCounterMode.DAY) {
-                    R.string.usage_counters_section
-                } else {
-                    R.string.usage_counters_section_period
-                }
-            ) {
+            run {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.align(Alignment.End)
+                    modifier = Modifier
+                        .align(Alignment.End)
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable(onClick = withTapHaptic(onOpenHistory))
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
                 ) {
                     Text(
                         text = stringResource(R.string.history_title),
@@ -522,12 +523,13 @@ internal fun OverviewTab(
 
         Spacer(modifier = Modifier.height(8.dp))
 
+        // Sized to its label rather than to the screen: a full-bleed button in a
+        // page of full-bleed bands reads as another band, not as an action.
         Button(
             onClick = withTapHaptic(onRefresh),
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(50.dp),
-            shape = RoundedCornerShape(12.dp)
+            modifier = Modifier.padding(top = 28.dp),
+            shape = RoundedCornerShape(12.dp),
+            contentPadding = PaddingValues(horizontal = 28.dp, vertical = 14.dp)
         ) {
             Icon(Icons.Default.Refresh, contentDescription = null)
             Spacer(modifier = Modifier.width(8.dp))
@@ -536,6 +538,7 @@ internal fun OverviewTab(
 
         Text(
             text = stringResource(R.string.last_updated, uiState.lastUpdated),
+            modifier = Modifier.padding(top = 12.dp, bottom = 28.dp),
             fontSize = 11.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )

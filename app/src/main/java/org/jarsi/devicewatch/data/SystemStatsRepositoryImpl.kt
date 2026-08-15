@@ -72,8 +72,15 @@ class SystemStatsRepositoryImpl @Inject constructor(
 
     // CPU load needs to compare two samples over time. These snapshots persist across
     // calls; the mutex below guarantees only one computation touches them at a time.
+    // The timestamps and last readings beside them are what keep a second caller
+    // arriving moments later from measuring a near-zero window — see
+    // SystemStatsParser.MIN_CPU_WINDOW_MILLIS.
     private var previousCpuSnapshot: SystemStatsParser.CpuSnapshot? = null
+    private var previousCpuSampleMillis = 0L
+    private var lastCpuLoadPercent = UNAVAILABLE_INT
     private var previousResidencyByCore: Map<Int, Map<Long, Long>>? = null
+    private var previousResidencySampleMillis = 0L
+    private var lastResidencyLoadPercent = UNAVAILABLE_INT
     private val unavailableFilePaths = mutableSetOf<String>()
     private var skipThermalRead = false
 
@@ -849,21 +856,37 @@ class SystemStatsRepositoryImpl @Inject constructor(
     }
 
     private fun readProcStatCpuLoadPercent(): Int {
+        val now = SystemClock.elapsedRealtime()
+        val previous = previousCpuSnapshot
+        // Too soon to measure again: hand back the reading that was taken over a
+        // window wide enough to mean something, and let the baseline keep ageing.
+        if (previous != null && !SystemStatsParser.cpuWindowIsWideEnough(previousCpuSampleMillis, now)) {
+            return lastCpuLoadPercent
+        }
         val current = SystemStatsParser.parseCpuSnapshot(
             readFileTextOnce("/proc/stat")?.lineSequence()?.firstOrNull()
         ) ?: return UNAVAILABLE_INT
-        val previous = previousCpuSnapshot
         previousCpuSnapshot = current
+        previousCpuSampleMillis = now
         if (previous == null) return UNAVAILABLE_INT
         return SystemStatsParser.cpuLoadPercent(previous, current)
+            .also { lastCpuLoadPercent = it }
     }
 
     private fun readCpuFreqResidencyLoadPercent(cpuCores: Int): Int {
-        val current = readCpuFreqResidencyByCore(cpuCores) ?: return UNAVAILABLE_INT
+        val now = SystemClock.elapsedRealtime()
         val previous = previousResidencyByCore
+        if (previous != null &&
+            !SystemStatsParser.cpuWindowIsWideEnough(previousResidencySampleMillis, now)
+        ) {
+            return lastResidencyLoadPercent
+        }
+        val current = readCpuFreqResidencyByCore(cpuCores) ?: return UNAVAILABLE_INT
         previousResidencyByCore = current
+        previousResidencySampleMillis = now
         if (previous == null) return UNAVAILABLE_INT
         return SystemStatsParser.residencyLoadPercent(previous, current)
+            .also { lastResidencyLoadPercent = it }
     }
 
     private fun readCpuFreqResidencyByCore(cpuCores: Int): Map<Int, Map<Long, Long>>? {

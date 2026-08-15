@@ -55,6 +55,26 @@ internal object SystemStatsParser {
         return CpuSnapshot(idle = idle, total = total)
     }
 
+    /**
+     * The shortest interval a CPU reading may be measured over.
+     *
+     * A CPU load is a measurement across time, and the repository that takes it
+     * is a singleton shared by the app and the monitoring service. Both keep
+     * their own polling schedules, so whichever sampled second was measuring
+     * only the gap between the two calls — a fraction of a second, which on an
+     * idle device rounds to 0 %. That is why the widget's figure moved while
+     * the app's sat still: the service happened to sample first.
+     */
+    const val MIN_CPU_WINDOW_MILLIS = 3_000L
+
+    /**
+     * True when enough time has passed since [baselineMillis] for a new reading
+     * to mean anything. When it has not, the caller keeps the previous reading —
+     * a real measurement over a real window — rather than inventing a fresh one.
+     */
+    fun cpuWindowIsWideEnough(baselineMillis: Long, nowMillis: Long): Boolean =
+        nowMillis - baselineMillis >= MIN_CPU_WINDOW_MILLIS
+
     /** Busy percentage from the delta of two `/proc/stat` snapshots. */
     fun cpuLoadPercent(previous: CpuSnapshot, current: CpuSnapshot): Int {
         val totalDelta = current.total - previous.total

@@ -44,6 +44,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -231,12 +232,15 @@ fun SystemDashboardScreen(
                                     scope.launch { pagerState.animateScrollToPage(index) }
                                 },
                                 // Selection is never colour alone: the pill is
-                                // doubled by a rule across the top of the item.
+                                // doubled by a rule under the item, where the eye
+                                // is already travelling from icon to label.
                                 modifier = Modifier.drawBehind {
                                     if (selected) {
+                                        val rule = SELECTED_TAB_RULE.toPx()
                                         drawRect(
                                             color = indicator,
-                                            size = Size(size.width, SELECTED_TAB_RULE.toPx())
+                                            topLeft = Offset(0f, size.height - rule),
+                                            size = Size(size.width, rule)
                                         )
                                     }
                                 },
