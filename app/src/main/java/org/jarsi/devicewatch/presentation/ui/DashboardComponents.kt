@@ -92,21 +92,25 @@ internal fun SettingsSectionCard(
                 .padding(horizontal = BAND_INSET, vertical = BAND_SPACING),
             horizontalAlignment = horizontalAlignment
         ) {
-            // A section's link belongs on its title line. Floated below the title
-            // on a right edge of its own, it read as a stray control rather than
-            // as this section's way in.
-            LabelValueRow(
-                label = {
-                    Text(
-                        stringResource(titleRes),
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = SECTION_TITLE_TRACKING,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                },
-                value = { trailing?.invoke() }
+            Text(
+                stringResource(titleRes),
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = SECTION_TITLE_TRACKING,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.fillMaxWidth()
             )
+            // The link starts where every other line on the page starts. Pushed to
+            // a right edge of its own it read as a stray control rather than as
+            // this section's way in.
+            trailing?.let {
+                Spacer(modifier = Modifier.height(6.dp))
+                // Full width and start-aligned: the battery band centres its own
+                // content for the ring, and the link must not follow it there.
+                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterStart) {
+                    it()
+                }
+            }
             Spacer(modifier = Modifier.height(12.dp))
             content()
         }
@@ -122,7 +126,7 @@ internal fun SectionLink(text: String, contentDescription: String, onClick: () -
         modifier = Modifier
             .clip(RoundedCornerShape(8.dp))
             .clickable(onClick = withTapHaptic(onClick))
-            .padding(start = 8.dp, top = 4.dp, bottom = 4.dp)
+            .padding(end = 8.dp, top = 4.dp, bottom = 4.dp)
     ) {
         Text(
             text = text,
