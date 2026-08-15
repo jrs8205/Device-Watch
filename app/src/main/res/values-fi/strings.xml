@@ -107,9 +107,14 @@
     <string name="report_minute_unit">min</string>
     <string name="report_search_days">Hae päivää</string>
     <string name="report_search_log">Hae ilmoituksista</string>
+    <string name="report_search_hint_days">Haku osuu mihin tahansa sarakkeeseen. Kirjoita päivämäärä kuten 2026-08-14 yhdelle päivälle tai 2026-08 koko kuukaudelle, tai luku kuten 12 löytääksesi päivät joissa oli 12 avausta. Aikavälin saat päivämääräkentillä.</string>
+    <string name="report_search_hint_log">Haku osuu mihin tahansa sarakkeeseen. Kirjoita sovelluksen nimi kuten Gmail, sana ilmoituksen otsikosta tai tekstistä, tai päivämäärä kuten 2026-08-14. Aikavälin saat päivämääräkentillä.</string>
     <string name="report_range_week">7 vrk</string>
     <string name="report_range_month">30 vrk</string>
     <string name="report_range_all">Kaikki</string>
+    <string name="report_range_from">Alkaen</string>
+    <string name="report_range_to">Päättyen</string>
+    <string name="report_range_reset">Tyhjennä</string>
     <string name="report_showing_count">Näytetään %1$s / %2$s</string>
     <string name="report_no_matches">Ei osumia</string>
     <string name="history_yesterday">Eilen</string>

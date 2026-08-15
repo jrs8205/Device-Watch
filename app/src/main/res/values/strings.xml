@@ -110,9 +110,14 @@
     <string name="report_minute_unit">min</string>
     <string name="report_search_days">Search a day</string>
     <string name="report_search_log">Search notifications</string>
+    <string name="report_search_hint_days">The search matches any column. Type a date such as 2026-08-14 for one day or 2026-08 for a whole month, or a value such as 12 to find the days with 12 unlocks. Use the date fields for a period.</string>
+    <string name="report_search_hint_log">The search matches any column. Type an app name such as Gmail, a word from the notification title or text, or a date such as 2026-08-14. Use the date fields for a period.</string>
     <string name="report_range_week">7 days</string>
     <string name="report_range_month">30 days</string>
     <string name="report_range_all">All</string>
+    <string name="report_range_from">From</string>
+    <string name="report_range_to">To</string>
+    <string name="report_range_reset">Reset</string>
     <string name="report_showing_count">Showing %1$s of %2$s</string>
     <string name="report_no_matches">No matches</string>
     <string name="history_yesterday">Yesterday</string>

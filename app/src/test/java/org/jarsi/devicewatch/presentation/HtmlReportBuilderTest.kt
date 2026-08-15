@@ -12,44 +12,7 @@ import java.time.ZoneOffset
 
 class HtmlReportBuilderTest {
 
-    private val labels = HtmlReportLabels(
-        title = "Device Watch report",
-        generatedAt = "Created %1\$s",
-        summarySection = "Summary",
-        summaryScreenTime = "Screen time / day",
-        summaryUnlocks = "Unlocks / day",
-        summaryNotifications = "Notifications / day",
-        summaryData = "Data total",
-        batterySection = "Battery level",
-        batteryChargingNote = "Charging periods shaded",
-        daysSection = "Daily usage",
-        columnDay = "Day",
-        columnScreenTime = "Screen time",
-        columnUnlocks = "Unlocks",
-        columnNotifications = "Notifications",
-        columnBoots = "Restarts",
-        columnCharges = "Charges",
-        monthlySection = "Monthly data usage",
-        columnMonth = "Month",
-        columnMobile = "Mobile",
-        columnWifi = "Wi-Fi",
-        logSection = "Notification log",
-        columnTime = "Time",
-        columnApp = "App",
-        columnTitle = "Title",
-        columnText = "Text",
-        empty = "No data yet",
-        footer = "Everything in this report was read on the device.",
-        hourUnit = "h",
-        minuteUnit = "min",
-        searchDays = "Search a day",
-        searchLog = "Search notifications",
-        rangeWeek = "7 days",
-        rangeMonth = "30 days",
-        rangeAll = "All",
-        showingCount = "Showing %1\$s of %2\$s",
-        noMatches = "No matches",
-    )
+    private val labels = TEST_REPORT_LABELS
 
     private fun data(
         days: List<HistoryDay> = emptyList(),
@@ -128,6 +91,69 @@ class HtmlReportBuilderTest {
         assertThat(html).contains("Showing {0} of {1}")
         // Controls stay hidden until the script switches them on.
         assertThat(html).contains(".tools { display: none; }")
+    }
+
+    @Test
+    fun `the search says what it matches, with an example`() {
+        val html = HtmlReportBuilder.build(
+            data(
+                days = listOf(day(LocalDate.of(2026, 8, 14), unlocks = 3)),
+                log = listOf(NotificationLogEntry(0L, "org.example", "Example", "Title", "Text")),
+            ),
+            labels,
+        )
+
+        assertThat(html).contains("Try a date such as 2026-08-14")
+        assertThat(html).contains("Try an app name such as Gmail")
+    }
+
+    @Test
+    fun `a period can be picked, bounded by the days the report carries`() {
+        val html = HtmlReportBuilder.build(
+            data(
+                days = listOf(
+                    day(LocalDate.of(2026, 6, 30), unlocks = 1),
+                    day(LocalDate.of(2026, 8, 14), unlocks = 3),
+                ),
+            ),
+            labels,
+        )
+
+        assertThat(html).contains("<input type=\"date\" class=\"from\" min=\"2026-06-30\" max=\"2026-08-14\">")
+        assertThat(html).contains("<input type=\"date\" class=\"to\" min=\"2026-06-30\" max=\"2026-08-14\">")
+        assertThat(html).contains("From")
+        assertThat(html).contains("To")
+        assertThat(html).contains("Reset")
+    }
+
+    @Test
+    fun `every filterable row carries the ISO day the range filter compares`() {
+        val html = HtmlReportBuilder.build(
+            data(
+                days = listOf(day(LocalDate.of(2026, 8, 14), unlocks = 3)),
+                // 2026-08-14T18:30Z
+                log = listOf(NotificationLogEntry(1_786_732_200_000L, "org.example", "Example", "T", "X")),
+            ),
+            labels,
+        )
+
+        assertThat(Regex("<tr data-date=\"2026-08-14\">").findAll(html).count()).isEqualTo(2)
+    }
+
+    @Test
+    fun `the log range is bounded by the days the log itself covers`() {
+        val html = HtmlReportBuilder.build(
+            data(
+                log = listOf(
+                    // 2026-08-14T18:30Z and 2026-08-10T18:30Z
+                    NotificationLogEntry(1_786_732_200_000L, "org.example", "Example", "T", "X"),
+                    NotificationLogEntry(1_786_386_600_000L, "org.example", "Example", "T", "X"),
+                ),
+            ),
+            labels,
+        )
+
+        assertThat(html).contains("class=\"from\" min=\"2026-08-10\" max=\"2026-08-14\"")
     }
 
     @Test

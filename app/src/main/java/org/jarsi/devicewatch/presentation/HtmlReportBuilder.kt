@@ -58,12 +58,60 @@ data class HtmlReportLabels(
     val minuteUnit: String,
     val searchDays: String,
     val searchLog: String,
+    /** What the day search matches, with an example the reader can copy. */
+    val searchHintDays: String,
+    val searchHintLog: String,
     val rangeWeek: String,
     val rangeMonth: String,
     val rangeAll: String,
+    val rangeFrom: String,
+    val rangeTo: String,
+    val rangeReset: String,
     /** Two placeholders: rows shown, rows in total. */
     val showingCount: String,
     val noMatches: String,
+)
+
+/**
+ * One theme's colours. Both palettes are asserted against the WCAG AAA contrast
+ * ratios in the unit tests: the report is read outdoors on a phone, where a
+ * merely AA grey stops being legible.
+ */
+internal data class ReportPalette(
+    /** Page behind the cards, and the fill of nested boxes and table banding. */
+    val bg: String,
+    /** Card surface — the other background text is read against. */
+    val card: String,
+    val ink: String,
+    val muted: String,
+    /** Decorative card outline only; anything load-bearing uses [grid]. */
+    val line: String,
+    /** Chart grid, table rules and control borders: 3:1 against both surfaces. */
+    val grid: String,
+    val accent: String,
+    val mobile: String,
+)
+
+internal val LIGHT_PALETTE = ReportPalette(
+    bg = "#f4f5f7",
+    card = "#ffffff",
+    ink = "#1a1d21",
+    muted = "#44505e",
+    line = "#dfe3e8",
+    grid = "#848d99",
+    accent = "#0a7a44",
+    mobile = "#0369a1",
+)
+
+internal val DARK_PALETTE = ReportPalette(
+    bg = "#0d1014",
+    card = "#12151a",
+    ink = "#f3f4f6",
+    muted = "#a7afba",
+    line = "#252a31",
+    grid = "#6b7280",
+    accent = "#34d399",
+    mobile = "#38bdf8",
 )
 
 /**
@@ -82,6 +130,9 @@ object HtmlReportBuilder {
     private const val CHART_HEIGHT = 240
     private const val CHART_TOP = 8
     private const val CHART_BOTTOM = 216
+
+    /** The solid charging marker lives in the strip below the plot area. */
+    private const val CHARGING_BAR_HEIGHT = 12
 
     private val TIMESTAMP = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
 
@@ -220,6 +271,11 @@ object HtmlReportBuilder {
                 append("\" y=\"$CHART_TOP\" width=\"").append(coord(width))
                 append("\" height=\"").append(coord((CHART_BOTTOM - CHART_TOP).toDouble()))
                 append("\"/>\n")
+                // A 18 %-opacity tint is invisible in daylight; the solid bar below
+                // the plot is what still marks the run outdoors.
+                append("<rect class=\"charging-bar\" x=\"").append(coord(startX))
+                append("\" y=\"").append(CHART_BOTTOM + 8).append("\" width=\"").append(coord(width))
+                append("\" height=\"$CHARGING_BAR_HEIGHT\"/>\n")
                 runStart = null
             }
         }
@@ -276,8 +332,11 @@ object HtmlReportBuilder {
         appendTools(
             name = "days",
             placeholder = labels.searchDays,
+            hint = labels.searchHintDays,
             initialRows = DEFAULT_DAY_ROWS,
             ranges = listOf(7 to labels.rangeWeek, 30 to labels.rangeMonth, 0 to labels.rangeAll),
+            firstDate = data.days.minOf { it.day }.toString(),
+            lastDate = data.days.maxOf { it.day }.toString(),
             labels = labels,
         )
         appendTableStart(
@@ -293,7 +352,9 @@ object HtmlReportBuilder {
             tableName = "days",
         )
         data.days.sortedByDescending { it.day }.forEach { day ->
-            append("<tr>")
+            // The ISO date drives the from/to filter; ISO strings compare correctly
+            // as plain text, so the script needs no date parsing.
+            append("<tr data-date=\"").append(escape(day.day.toString())).append("\">")
             append("<td class=\"day\">").append(escape(day.day.toString())).append("</td>")
             append("<td>").append(escape(durationText(day.screenTimeMillis, labels))).append("</td>")
             append("<td>").append(day.unlocks).append("</td>")
@@ -332,12 +393,18 @@ object HtmlReportBuilder {
             append("</section>\n")
             return
         }
+        val logTimes = data.logEntries.map {
+            LocalDateTime.ofInstant(Instant.ofEpochMilli(it.timeMillis), data.zone)
+        }
         appendTools(
             name = "log",
             placeholder = labels.searchLog,
+            hint = labels.searchHintLog,
             initialRows = DEFAULT_LOG_ROWS,
             // A row count, not a day count: the log's own range is the 7 days it retains.
             ranges = listOf(DEFAULT_LOG_ROWS to DEFAULT_LOG_ROWS.toString(), 0 to labels.rangeAll),
+            firstDate = logTimes.min().toLocalDate().toString(),
+            lastDate = logTimes.max().toLocalDate().toString(),
             labels = labels,
         )
         appendTableStart(
@@ -347,7 +414,7 @@ object HtmlReportBuilder {
         )
         data.logEntries.forEach { entry ->
             val time = LocalDateTime.ofInstant(Instant.ofEpochMilli(entry.timeMillis), data.zone)
-            append("<tr>")
+            append("<tr data-date=\"").append(escape(time.toLocalDate().toString())).append("\">")
             append("<td class=\"day\">").append(escape(time.format(TIMESTAMP))).append("</td>")
             append("<td>").append(escape(entry.appLabel)).append("</td>")
             append("<td>").append(escape(entry.title)).append("</td>")
@@ -367,32 +434,60 @@ object HtmlReportBuilder {
     }
 
     /**
-     * Search box and row-count shortcuts for a long table. The whole block is
-     * hidden until the script switches it on, so a viewer that blocks scripts
-     * sees the full table and no dead controls — the report degrades to what it
-     * was before: everything, in order.
+     * Search box, row-count shortcuts and a from/to date range for a long table.
+     * The whole block is hidden until the script switches it on, so a viewer that
+     * blocks scripts sees the full table and no dead controls — the report
+     * degrades to what it was before: everything, in order.
      */
     private fun StringBuilder.appendTools(
         name: String,
         placeholder: String,
+        hint: String,
         initialRows: Int,
         ranges: List<Pair<Int, String>>,
+        firstDate: String,
+        lastDate: String,
         labels: HtmlReportLabels,
     ) {
         append("<div class=\"tools\" data-tools=\"").append(name).append("\"")
         append(" data-initial=\"").append(initialRows).append("\"")
         append(" data-count=\"").append(escape(countTemplate(labels))).append("\"")
         append(" data-empty=\"").append(escape(labels.noMatches)).append("\">\n")
+        val hintId = "hint-$name"
         append("<input type=\"search\" class=\"find\" placeholder=\"").append(escape(placeholder))
-        append("\" aria-label=\"").append(escape(placeholder)).append("\">\n")
+        append("\" aria-label=\"").append(escape(placeholder))
+        // The hint is the field's description, so a screen reader reads it too.
+        append("\" aria-describedby=\"").append(hintId).append("\">\n")
         append("<div class=\"chips\">")
         ranges.forEach { (rows, label) ->
             append("<button type=\"button\" data-rows=\"").append(rows).append("\">")
             append(escape(label)).append("</button>")
         }
         append("</div>\n")
+        // Bounded by the data the report actually carries, so the picker cannot
+        // offer a day this report knows nothing about.
+        append("<div class=\"dates\">")
+        appendDateField("from", labels.rangeFrom, firstDate, lastDate)
+        appendDateField("to", labels.rangeTo, firstDate, lastDate)
+        append("<button type=\"button\" class=\"reset\">").append(escape(labels.rangeReset))
+        append("</button>")
+        append("</div>\n")
+        append("<p class=\"hint\" id=\"").append(hintId).append("\">").append(escape(hint))
+        append("</p>\n")
         append("<p class=\"count\"></p>\n")
         append("</div>\n")
+    }
+
+    private fun StringBuilder.appendDateField(
+        cssClass: String,
+        label: String,
+        firstDate: String,
+        lastDate: String,
+    ) {
+        append("<label><span>").append(escape(label)).append("</span>")
+        append("<input type=\"date\" class=\"").append(cssClass)
+        append("\" min=\"").append(escape(firstDate))
+        append("\" max=\"").append(escape(lastDate)).append("\"></label>")
     }
 
     /** "12 / 62" with the numbers left as script placeholders. */
@@ -451,15 +546,29 @@ object HtmlReportBuilder {
             var input = tools.querySelector('.find');
             var count = tools.querySelector('.count');
             var buttons = Array.prototype.slice.call(tools.querySelectorAll('button[data-rows]'));
+            var from = tools.querySelector('.from');
+            var to = tools.querySelector('.to');
+            var reset = tools.querySelector('.reset');
             var template = tools.getAttribute('data-count');
             var noMatches = tools.getAttribute('data-empty');
-            var limit = parseInt(tools.getAttribute('data-initial'), 10) || 0;
+            var initial = parseInt(tools.getAttribute('data-initial'), 10) || 0;
+            var limit = initial;
+
+            // ISO dates compare correctly as plain strings, so no parsing is needed.
+            function inRange(row) {
+              var day = row.getAttribute('data-date');
+              if (!day) return true;
+              if (from && from.value && day < from.value) return false;
+              if (to && to.value && day > to.value) return false;
+              return true;
+            }
 
             function apply() {
               var needle = input ? input.value.trim().toLowerCase() : '';
               var shown = 0;
               rows.forEach(function (row) {
-                var hit = !needle || row.textContent.toLowerCase().indexOf(needle) !== -1;
+                var hit = inRange(row) &&
+                  (!needle || row.textContent.toLowerCase().indexOf(needle) !== -1);
                 var visible = hit && (limit === 0 || shown < limit);
                 if (visible) shown++;
                 row.hidden = !visible;
@@ -481,9 +590,24 @@ object HtmlReportBuilder {
                 apply();
               });
             });
-            // A search should look at every row, not only the ones the limit kept.
+            // A search or a chosen period should look at every row, not only the
+            // ones the row limit happened to keep.
             if (input) input.addEventListener('input', function () {
               if (input.value.trim()) limit = 0;
+              apply();
+            });
+            [from, to].forEach(function (field) {
+              if (!field) return;
+              field.addEventListener('change', function () {
+                if (from.value || to.value) limit = 0;
+                apply();
+              });
+            });
+            if (reset) reset.addEventListener('click', function () {
+              if (input) input.value = '';
+              if (from) from.value = '';
+              if (to) to.value = '';
+              limit = initial;
               apply();
             });
             tools.classList.add('ready');
@@ -492,28 +616,23 @@ object HtmlReportBuilder {
         })();
     """.trimIndent()
 
-    private val STYLES = """
-        :root {
-          color-scheme: light dark;
-          --bg: #f4f5f7;
-          --card: #ffffff;
-          --ink: #1a1d21;
-          --muted: #6b7280;
-          --line: rgba(0, 0, 0, 0.08);
-          --accent: #0f9d58;
-          --mobile: #0284c7;
-        }
-        @media (prefers-color-scheme: dark) {
-          :root {
-            --bg: #0d1014;
-            --card: #12151a;
-            --ink: #f3f4f6;
-            --muted: #8b929c;
-            --line: rgba(255, 255, 255, 0.09);
-            --accent: #34d399;
-            --mobile: #38bdf8;
-          }
-        }
+    private fun themeBlock(palette: ReportPalette): String = """
+        --bg: ${palette.bg};
+        --card: ${palette.card};
+        --ink: ${palette.ink};
+        --muted: ${palette.muted};
+        --line: ${palette.line};
+        --grid: ${palette.grid};
+        --accent: ${palette.accent};
+        --mobile: ${palette.mobile};
+    """.trimIndent()
+
+    /**
+     * Sizes and weights are deliberately generous: the report is read on a phone
+     * held outdoors, where the previous 11 px greys disappeared. Every colour pair
+     * here is one the palette test holds to a WCAG AAA ratio.
+     */
+    private val BASE_STYLES = """
         * { box-sizing: border-box; }
         body {
           margin: 0;
@@ -521,84 +640,115 @@ object HtmlReportBuilder {
           background: var(--bg);
           color: var(--ink);
           font-family: -apple-system, "Segoe UI", Roboto, system-ui, sans-serif;
-          font-size: 16px;
-          line-height: 1.45;
+          font-size: 17px;
+          line-height: 1.6;
           -webkit-text-size-adjust: 100%;
         }
         header { padding: 28px 4px 8px; max-width: 720px; margin: 0 auto; }
         main, footer { max-width: 720px; margin: 0 auto; }
         h1 { font-size: 1.5rem; margin: 0 0 4px; letter-spacing: -0.01em; }
         h2 {
-          font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em;
-          color: var(--muted); margin: 0 0 10px;
+          font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.08em;
+          color: var(--muted); margin: 0 0 10px; font-weight: 700;
         }
-        .sub { margin: 0; color: var(--muted); font-size: 0.9rem; }
+        .sub { margin: 0; color: var(--muted); font-size: 0.95rem; }
         section {
           background: var(--card); border-radius: 18px; padding: 18px 16px;
           margin: 14px 0; border: 1px solid var(--line);
         }
         .cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
         .card { background: var(--bg); border-radius: 14px; padding: 12px; }
-        .k { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
-        .v { font-size: 1.35rem; font-weight: 700; margin-top: 2px; }
+        .k {
+          font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em;
+          color: var(--muted); font-weight: 600;
+        }
+        .v { font-size: 1.4rem; font-weight: 700; margin-top: 2px; }
         .empty { color: var(--muted); margin: 0; }
-        .note { color: var(--muted); font-size: 0.8rem; margin: 8px 0 0; }
+        .note { color: var(--muted); font-size: 0.85rem; margin: 8px 0 0; }
         .plot { position: relative; }
-        .chart svg { width: 100%; height: 180px; display: block; }
+        .chart svg { width: 100%; height: 190px; display: block; }
         .ax {
-          position: absolute; right: 0; font-size: 0.68rem; color: var(--muted);
-          background: var(--card); padding: 0 0 0 6px; line-height: 1;
+          position: absolute; right: 0; font-size: 0.78rem; color: var(--muted);
+          background: var(--card); padding: 0 0 0 6px; line-height: 1; font-weight: 600;
         }
         .ax.top { top: 2%; }
-        .ax.mid { top: 47%; transform: translateY(-50%); }
-        .ax.bot { top: 90%; transform: translateY(-50%); }
+        .ax.mid { top: 44%; transform: translateY(-50%); }
+        .ax.bot { top: 84%; transform: translateY(-50%); }
         .range {
           display: flex; justify-content: space-between; color: var(--muted);
-          font-size: 0.72rem; font-variant-numeric: tabular-nums; margin-top: 4px;
+          font-size: 0.8rem; font-variant-numeric: tabular-nums; margin-top: 4px;
         }
-        .grid { stroke: var(--line); stroke-width: 1; }
-        .charging { fill: var(--mobile); opacity: 0.14; }
-        .level { fill: none; stroke: var(--accent); stroke-width: 3; stroke-linejoin: round; stroke-linecap: round; }
+        .grid { stroke: var(--grid); stroke-width: 1.5; }
+        /* The tint shows the shape of a charging run at a glance; the solid bar
+           under the plot is what still carries in daylight. */
+        .charging { fill: var(--mobile); opacity: 0.18; }
+        .charging-bar { fill: var(--mobile); }
+        .level {
+          fill: none; stroke: var(--accent); stroke-width: 3.5;
+          stroke-linejoin: round; stroke-linecap: round;
+        }
         /* Hidden until the script enables it, so a script-free viewer sees no dead controls. */
         .tools { display: none; }
         .tools.ready {
-          display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 10px;
+          display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px;
         }
         .find {
-          flex: 1 1 160px; min-width: 0; padding: 9px 12px; border-radius: 999px;
-          border: 1px solid var(--line); background: var(--bg); color: var(--ink);
-          font: inherit; font-size: 0.9rem; -webkit-appearance: none; appearance: none;
+          flex: 1 1 160px; min-width: 0; padding: 10px 14px; border-radius: 999px;
+          border: 1px solid var(--grid); background: var(--bg); color: var(--ink);
+          font: inherit; font-size: 0.95rem; -webkit-appearance: none; appearance: none;
         }
-        .find:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
-        .chips { display: flex; gap: 6px; }
-        .chips button {
-          padding: 8px 12px; border-radius: 999px; border: 1px solid var(--line);
-          background: var(--bg); color: var(--muted); font: inherit; font-size: 0.8rem;
-          cursor: pointer; min-height: 36px;
+        .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+        .chips button, .reset {
+          padding: 8px 14px; border-radius: 999px; border: 1px solid var(--grid);
+          background: var(--bg); color: var(--muted); font: inherit; font-size: 0.85rem;
+          cursor: pointer; min-height: 40px;
         }
-        .chips button.on { color: var(--ink); border-color: var(--accent); font-weight: 600; }
-        .count {
-          flex: 1 0 100%; margin: 0; color: var(--muted); font-size: 0.75rem;
-          font-variant-numeric: tabular-nums;
+        .chips button.on {
+          color: var(--ink); border-color: var(--accent); border-width: 2px; font-weight: 700;
         }
+        .dates {
+          display: flex; flex-wrap: wrap; align-items: center; gap: 8px; flex: 1 0 100%;
+        }
+        .dates label {
+          display: inline-flex; align-items: center; gap: 6px;
+          color: var(--muted); font-size: 0.85rem; font-weight: 600;
+        }
+        .dates input {
+          padding: 8px 10px; border-radius: 12px; border: 1px solid var(--grid);
+          background: var(--bg); color: var(--ink); font: inherit; font-size: 0.9rem;
+          min-height: 40px;
+        }
+        :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+        .hint, .count {
+          flex: 1 0 100%; margin: 0; color: var(--muted); font-size: 0.85rem;
+        }
+        .count { font-variant-numeric: tabular-nums; }
         tr[hidden] { display: none; }
         .scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-        table { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
-        th, td { text-align: right; padding: 8px 10px; white-space: nowrap; }
+        table { border-collapse: collapse; width: 100%; font-size: 0.95rem; }
+        th, td { text-align: right; padding: 9px 10px; white-space: nowrap; }
         th:first-child, td:first-child { text-align: left; }
         /* Daily table: the duration column reads as text, the tallies as numbers. */
         table.days th:nth-child(2), table.days td:nth-child(2) { text-align: left; }
         table.text th, table.text td { text-align: left; }
         table.text td:last-child { white-space: normal; max-width: 40ch; }
         thead th {
-          font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em;
-          color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--line);
+          font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em;
+          color: var(--muted); font-weight: 700; border-bottom: 2px solid var(--grid);
         }
         tbody tr:nth-child(even) { background: var(--bg); }
         /* Keep the banding correct once rows are filtered out (ignored by older engines). */
         tbody tr:nth-child(odd of :not([hidden])) { background: transparent; }
         tbody tr:nth-child(even of :not([hidden])) { background: var(--bg); }
-        td.day { font-variant-numeric: tabular-nums; color: var(--muted); }
-        footer { color: var(--muted); font-size: 0.8rem; padding: 8px 4px 0; text-align: center; }
+        td.day { font-variant-numeric: tabular-nums; color: var(--muted); font-weight: 600; }
+        footer { color: var(--muted); font-size: 0.85rem; padding: 8px 4px 0; text-align: center; }
     """.trimIndent()
+
+    private val STYLES: String = buildString {
+        append(":root {\ncolor-scheme: light dark;\n")
+        append(themeBlock(LIGHT_PALETTE)).append("\n}\n")
+        append("@media (prefers-color-scheme: dark) {\n:root {\n")
+        append(themeBlock(DARK_PALETTE)).append("\n}\n}\n")
+        append(BASE_STYLES)
+    }
 }
