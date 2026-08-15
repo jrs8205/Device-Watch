@@ -162,7 +162,7 @@ fun HistoryPage(
         ) {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = 24.dp),
+                contentPadding = PaddingValues(start = BAND_INSET, end = BAND_INSET, bottom = 24.dp),
             ) {
                 // Held back until the first load finishes so the chart's empty text
                 // doesn't flash while the samples are still being read.

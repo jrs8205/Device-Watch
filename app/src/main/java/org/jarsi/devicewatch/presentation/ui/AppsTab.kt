@@ -275,7 +275,7 @@ internal fun AppsTab(viewModel: AppsViewModel = hiltViewModel()) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 4.dp),
+                    .padding(start = BAND_INSET, end = BAND_INSET - 8.dp, top = 4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
@@ -318,9 +318,8 @@ private fun AppListRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
             .clickable(onClick = withTapHaptic(onClick))
-            .padding(vertical = 6.dp, horizontal = 4.dp),
+            .padding(vertical = 6.dp, horizontal = BAND_INSET),
         verticalAlignment = Alignment.CenterVertically
     ) {
         AppIcon(app.packageName, modifier = Modifier.size(40.dp))

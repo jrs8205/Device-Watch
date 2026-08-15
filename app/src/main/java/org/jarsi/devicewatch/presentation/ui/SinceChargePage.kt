@@ -117,6 +117,7 @@ fun SinceChargePage(
                         item(key = "empty") {
                             Text(
                                 text = stringResource(R.string.since_charge_empty),
+                                modifier = Modifier.padding(horizontal = BAND_INSET),
                                 fontSize = 13.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -129,7 +130,10 @@ fun SinceChargePage(
                     // no data to draw, the explanation must still be visible.
                     if (SinceChargeNotices.showUsageAccessNotice(hasAnchor = true, hasUsageAccess = uiState.hasUsageAccess)) {
                         item(key = "usage_access") {
-                            DataQualityNotice(R.string.since_charge_usage_access_missing)
+                            DataQualityNotice(
+                                R.string.since_charge_usage_access_missing,
+                                modifier = Modifier.padding(horizontal = BAND_INSET)
+                            )
                         }
                     }
 
@@ -139,7 +143,10 @@ fun SinceChargePage(
 
                     if (SinceChargeNotices.showStaleNotice(hasAnchor = true, nowMillis = uiState.nowMillis, anchorMillis = anchor.timeMillis)) {
                         item(key = "stale") {
-                            DataQualityNotice(R.string.since_charge_stale_note)
+                            DataQualityNotice(
+                                R.string.since_charge_stale_note,
+                                modifier = Modifier.padding(horizontal = BAND_INSET)
+                            )
                         }
                     }
                 }
@@ -262,9 +269,10 @@ private fun SinceChargeScreenTimeCard(uiState: SinceChargeUiState) {
 }
 
 @Composable
-private fun DataQualityNotice(@StringRes textRes: Int) {
+private fun DataQualityNotice(@StringRes textRes: Int, modifier: Modifier = Modifier) {
     Text(
         text = stringResource(textRes),
+        modifier = modifier,
         fontSize = 12.sp,
         color = MaterialTheme.colorScheme.onSurfaceVariant
     )
