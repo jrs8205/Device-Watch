@@ -40,7 +40,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -561,7 +560,7 @@ internal fun AccessStatusDot(granted: Boolean) {
         modifier = Modifier
             .size(10.dp)
             .clip(CircleShape)
-            .background(if (granted) Color(0xFF4CAF50) else Color(0xFFF44336))
+            .background(if (granted) statusOkColor() else MaterialTheme.colorScheme.error)
             .semantics { contentDescription = stateText }
     )
 }

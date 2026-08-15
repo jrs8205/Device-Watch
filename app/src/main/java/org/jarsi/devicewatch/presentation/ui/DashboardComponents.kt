@@ -49,6 +49,10 @@ import org.jarsi.devicewatch.data.LastUsedTier
 import org.jarsi.devicewatch.data.UNAVAILABLE_INT
 import org.jarsi.devicewatch.data.UNAVAILABLE_TEXT
 import org.jarsi.devicewatch.data.UsageEventAggregator
+import org.jarsi.devicewatch.ui.theme.DarkStatusOk
+import org.jarsi.devicewatch.ui.theme.DarkStatusWarn
+import org.jarsi.devicewatch.ui.theme.LightStatusOk
+import org.jarsi.devicewatch.ui.theme.LightStatusWarn
 import org.jarsi.devicewatch.widget.dataAmountText
 import java.time.LocalDate
 import java.time.ZoneId
@@ -355,6 +359,20 @@ internal fun lastUsedText(lastUsedEpochMillis: Long?): String {
 }
 
 /**
+ * "Everything is fine" green. Material's scheme has no slot for it, so it lives
+ * beside the theme like the tier colors below — and is held to the same ratios
+ * by `AppPaletteTest`.
+ */
+@Composable
+internal fun statusOkColor(): Color =
+    if (isSystemInDarkTheme()) DarkStatusOk else LightStatusOk
+
+/** The matching "needs attention" amber. */
+@Composable
+internal fun statusWarnColor(): Color =
+    if (isSystemInDarkTheme()) DarkStatusWarn else LightStatusWarn
+
+/**
  * Highlight color for the last-opened list: STALE (over Google's ~3-month app
  * hibernation threshold, or never used) in error red, AGING (1–3 months) amber,
  * recent in the normal muted ink.
@@ -362,7 +380,7 @@ internal fun lastUsedText(lastUsedEpochMillis: Long?): String {
 @Composable
 internal fun lastUsedTierColor(tier: LastUsedTier): Color = when (tier) {
     LastUsedTier.STALE -> MaterialTheme.colorScheme.error
-    LastUsedTier.AGING -> if (isSystemInDarkTheme()) Color(0xFFEDA100) else Color(0xFF9A6700)
+    LastUsedTier.AGING -> statusWarnColor()
     LastUsedTier.NORMAL -> MaterialTheme.colorScheme.onSurfaceVariant
 }
 

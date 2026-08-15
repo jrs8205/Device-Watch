@@ -38,7 +38,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -51,6 +50,7 @@ import org.jarsi.devicewatch.data.DataQuotaLogic
 import org.jarsi.devicewatch.data.UNAVAILABLE_TEXT
 import org.jarsi.devicewatch.presentation.DashboardUiState
 import org.jarsi.devicewatch.presentation.PeriodComparison
+import org.jarsi.devicewatch.ui.theme.STATUS_TINT_ALPHA
 import org.jarsi.devicewatch.widget.mobileDataText
 
 /**
@@ -76,15 +76,14 @@ internal fun OverviewTab(
         verticalArrangement = Arrangement.spacedBy(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Widget connection status
+        // Widget connection status. The card is tinted with the same status color
+        // as its dot — a missing widget is a hint, not an error, and an error-red
+        // card next to an amber dot said two different things.
+        val statusColor = if (uiState.isWidgetInstalled) statusOkColor() else statusWarnColor()
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(
-                containerColor = if (uiState.isWidgetInstalled) {
-                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)
-                } else {
-                    MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.15f)
-                }
+                containerColor = statusColor.copy(alpha = STATUS_TINT_ALPHA)
             ),
             shape = RoundedCornerShape(12.dp)
         ) {
@@ -96,7 +95,7 @@ internal fun OverviewTab(
                         // the middle of the message once the text wraps.
                         .alignBy { it.measuredHeight }
                         .clip(CircleShape)
-                        .background(if (uiState.isWidgetInstalled) Color(0xFF4CAF50) else Color(0xFFFF9800))
+                        .background(statusColor)
                 )
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(
@@ -146,7 +145,11 @@ internal fun OverviewTab(
                     progress = { currentStats.batteryLevel.toFloat() / 100f },
                     modifier = Modifier.fillMaxSize(),
                     strokeWidth = 10.dp,
-                    color = if (currentStats.batteryLevel > 20) Color(0xFF4CAF50) else Color(0xFFF44336),
+                    color = if (currentStats.batteryLevel > 20) {
+                        statusOkColor()
+                    } else {
+                        MaterialTheme.colorScheme.error
+                    },
                     trackColor = MaterialTheme.colorScheme.surfaceVariant,
                 )
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
