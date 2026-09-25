@@ -82,3 +82,37 @@ Muutokset:
 .../2026-09-25-hei-tarkistatko-sovelluksen-viimeisimman.md      | 39 +++++++++++++++++++++++++++++
  1 file changed, 39 insertions(+)
 ```
+
+## Vuoro 3 – 25.9.2026 10:29 – claude/fable
+
+Ohje: Tuossa vikassa versiossa pitäisi olla erilainen fontti ja väritys kuin aiemmissa versioissa, onko näin? Vai onko muutokset jääneet committamatta ja ovat vain omalla koneellani.
+
+Loppuviesti:
+
+Vastaus: muutokset on committattu ja pushattu, mutta ne ovat eri haarassa kuin main.
+
+**Mitä löysin**
+
+- Main-haara ja tämä työhaara ovat versiossa 1.5.0 (17). Niissä teema on edelleen vanha: Material You -dynaamiset värit taustakuvasta ja järjestelmän oletusfontti. Teematiedostoihin ei ole koskettu sitten paketin uudelleennimeämisen.
+- Etähaara origin/v1.6.0 sisältää 30 committia, joita main-haarassa ei ole. Viimeisin on 15.8.2026. Fontti- ja värimuutokset ovat siellä:
+  - Commit "Fix the palette instead of deriving it from the wallpaper" poistaa Material You -värit ja korvaa ne kiinteällä paletilla Mittaristo-suunnittelupaketista. Kontrastit testataan AppPaletteTest-luokassa WCAG AAA -tasolle.
+  - Commit "Replace the cards with bands and put the numbers on one grid" tekee kaikista numeroista monospace-fontilla ja korvaa kortit viivoilla erotetuilla vyöhykkeillä.
+  - Samassa haarassa on myös uusia ominaisuuksia: akkuhistorian kuvaaja, latausmuistutus, datakiintiö ja hälytykset, CSV- ja HTML-vienti sekä 2x2-pikkuwidget.
+- Haaraa v1.6.0 ei ole yhdistetty mainiin, eikä siellä ole nostettu versionumeroa. Sekin on siis edelleen 1.5.0 (17). Tästä palvelimelta en näe, onko omalla koneellasi vielä committaamattomia muutoksia 15.8. jälkeen.
+
+Tämä muuttaa myös edellisen vastaukseni. Kysymäsi "uusi ulkoasu" on v1.6.0-haaran kiinteä paletti ja monospace-numerot, ei 1.5.0:n sively ja pyyhkäisypäivitys. Teemavalinta "Material You vai kiinteä paletti" olisi selvästi helpompi kuin arvioimani asettelukytkin: se on yksi asetus ja yksi ehto Theme.kt-tiedostossa. Huomaa kuitenkin, että v1.6.0:n commit-viesti perustelee Material You:n poiston nimenomaan sillä, ettei kontrastia voi taata.
+
+**Mitä muutin**
+
+En mitään. Vain luin haarojen historiaa.
+
+**Mitä pitää tarkistaa kotona**
+
+Tarkista omalla koneellasi `git status` ja `git log origin/v1.6.0..HEAD` v1.6.0-haarassa, jotta näet, onko siellä pushaamattomia committeja tai tallentamattomia muutoksia. Päätä myös, yhdistetäänkö v1.6.0 mainiin ja nostetaanko versio 1.6.0:aan ennen julkaisua. Jos haluat teemavalinnan, kerro, toteutanko sen v1.6.0-haaraan päälle.
+
+Muutokset:
+
+```
+.../2026-09-25-hei-tarkistatko-sovelluksen-viimeisimman.md       | 28 ++++++++++++++++++++++++++++
+ 1 file changed, 28 insertions(+)
+```
