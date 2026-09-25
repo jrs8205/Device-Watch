@@ -37,3 +37,48 @@ Muutokset:
  gradlew                                                         |  0
  2 files changed, 32 insertions(+)
 ```
+
+## Vuoro 2 – 25.9.2026 10:25 – claude/fable
+
+Ohje: Miten nuo ui muutokset viimeisimmässä versiossa jota ei ole vielä julkaistu, saako sovellukseen jotenkin teema valinnan jolla voisi valita uuden ja alkuperäisen välillä?
+
+Loppuviesti:
+
+Kyllä, se onnistuu, mutta kannattaa täsmentää, mitä "teema" tässä tarkoittaa.
+
+**Mitä löysin**
+
+Repo ei sisällä yhtään julkaisutagia, joten päättelen julkaisemattoman version 1.5.0:n versiokoodista 17 ja changelogista. Sen UI-muutokset eivät ole teema värien mielessä. Väriteema on edelleen sama Material 3 -dynaaminen teema tiedostossa Theme.kt, eikä siihen koskettu. Muutokset ovat rakenteellisia ja toiminnallisia:
+
+- **Välilehdet ovat nyt HorizontalPager-sivuja**, joten niitä voi sivellä. Ennen välilehti vaihtui vain alapalkista.
+- **Vedä alas päivittääksesi** kääri kaikki neljä välilehteä yhteen PullToRefreshBox-kääreeseen.
+- **Värinäpalaute** lisättiin withTapHaptic-apurilla noin 30 napin ja rivin klikkaukseen.
+- **Yleiskuva muuttui Etusivuksi** ja kuvake vaihtui Dashboard-ikonista Home-ikoniin. Datalaskuri-kortti siirtyi Etusivulla ylemmäs, heti käyttölaskurien alle.
+- **Laite-välilehdellä pitkät arvot** (ytimen versio, ABI:t, sensorit, DNS) näytetään nyt otsikko yllä ja arvo koko leveydellä.
+- **Ominaisuuslisäykset** eli kuukausihistoria, data-SIM-nimike ja ensikäynnistyksen esittely eivät ole ulkoasuvalintoja, eikä niitä ole järkevää kytkeä pois.
+
+**Miten valinnan voisi tehdä**
+
+Kokonaisen "vanha vs. uusi teema" -kytkimen toteutus tarkoittaisi kahta rinnakkaista UI-koodipolkua, mikä on raskas ylläpitää. Kevyempi ja käytännössä sama lopputulos on Asetuksiin uusi Ulkoasu-osio, jossa on joko yksi "Klassinen asettelu" -kytkin tai erilliset kytkimet näille neljälle asialle:
+
+1. Välilehtien sively (pagerin userScrollEnabled pois).
+2. Vedä alas päivittääksesi (kääre ohitetaan).
+3. Värinäpalaute (apuri lukee asetuksen yhdestä paikasta).
+4. Etusivun korttijärjestys ja välilehden nimi/kuvake.
+
+Asetus tallentuisi olemassa olevaan AppSettingsRepository-rajapintaan samalla tavalla kuin onboardingShown, ja DashboardViewModel välittäisi sen UI-tilaan. Arvioni on noin viisi tiedostoa ja noin sata riviä, plus yksikkötesti ViewModeliin. Laite-välilehden pitkien arvojen asettelu kannattaa jättää uudeksi, koska vanha katkoi rivit rumasti.
+
+**Mitä muutin**
+
+En mitään. Tämä oli arvio, en aloittanut toteutusta ilman päätöstäsi.
+
+**Mitä pitää tarkistaa kotona**
+
+Päätä, haluatko yhden "Klassinen asettelu" -kytkimen vai erilliset kytkimet, ja kuuluuko datalaskurin sijainti Etusivulla mukaan. Vastauksen jälkeen voin toteuttaa sen tähän haaraan ja ajaa yksikkötestit. Todellinen tuntuma sivelyn ja värinän poiskytkennästä pitää kokeilla puhelimella, koska täällä ei ole laitetta.
+
+Muutokset:
+
+```
+.../2026-09-25-hei-tarkistatko-sovelluksen-viimeisimman.md      | 39 +++++++++++++++++++++++++++++
+ 1 file changed, 39 insertions(+)
+```
