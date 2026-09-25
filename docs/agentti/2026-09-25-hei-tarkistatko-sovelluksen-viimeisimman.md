@@ -116,3 +116,49 @@ Muutokset:
 .../2026-09-25-hei-tarkistatko-sovelluksen-viimeisimman.md       | 28 ++++++++++++++++++++++++++++
  1 file changed, 28 insertions(+)
 ```
+
+## Vuoro 4 – 25.9.2026 10:48 – claude/fable
+
+Ohje: Tee kytkin tuonne etähaaraan ja commitoi se sinne mutta älä pushaa sitä mainiin koska se on julkinen. Tarkistan sitten illalla tuloksen omalta koneeltani. Vai pystytkö luomaan minulle tuosta debug apkn tässä ladattavaksi?
+
+Loppuviesti:
+
+Kytkin on tehty, committattu v1.6.0-haaraan ja debug-APK käännetty. Yksi asia jäi kesken: commitin työntö GitHubiin epäonnistui, koska palvelimella ei ole GitHub-tunnuksia.
+
+**Mitä löysin**
+
+- Kytkimen luonteva paikka oli v1.6.0-haaran Theme.kt, jossa Material You oli poistettu, ja MetricText.kt, jossa numerot vaihdettiin monospace-fontiksi. Kummankin sai ehdolliseksi yhdellä asetuksella.
+- Palvelimen git-identiteetti puuttui, joten committasin samalla Agentti-tunnuksella, jota agenttidaemon käyttää.
+- Push ei onnistu tältä palvelimelta mihinkään haaraan, ei siis myöskään mainiin.
+
+**Mitä muutin**
+
+Tein v1.6.0-haaraan commitin "Add a classic-look switch for the pre-1.6 colours and digits" erillisessä työpuussa. Main-haaraan ja tähän agenttihaaraan en koskenut.
+
+- Asetukset-välilehdelle tuli uusi Ulkoasu-osio ja kytkin "Alkuperäinen ulkoasu". Oletus on pois päältä, eli uusi kiinteä paletti.
+- Päällä ollessaan kytkin palauttaa taustakuvan mukaiset Material You -värit ja tavallisen numerofontin. Android 11:ssä ja vanhemmissa dynaamista väriä ei ole, joten siellä vaihtuu vain numerofontti.
+- Asetus luetaan synkronisesti ViewModelin alustuksessa, joten ensimmäinen ruutu piirtyy heti oikealla ulkoasulla. MainActivity lukee saman ViewModelin ja teemoittaa koko puun, joten vaihto näkyy välittömästi ilman uudelleenkäynnistystä.
+- Kaksi uutta yksikkötestiä. Koko testisarja meni läpi työpuussa, myös AppPaletteTest-kontrastitestit.
+
+| Testiluokkia | Testejä | Epäonnistuneita |
+|---|---|---|
+| 32 | 297 | 0 |
+
+Ladattavat tiedostot ovat työhakemistossa `/var/lib/agentti/tyo/92b683940caa36d1765c3fd9f2a46f5d/`:
+
+- `Device-Watch-v1.6.0-classic-look-debug.apk` (noin 27 Mt, debug-allekirjoitus)
+- `0001-Add-a-classic-look-switch-for-the-pre-1.6-colours-an.patch`
+
+**Mitä pitää tarkistaa kotona**
+
+- Commit on vain palvelimen paikallisessa v1.6.0-haarassa, ei GitHubissa. Saat sen omalle koneellesi joko ottamalla patch-tiedoston käyttöön komennolla `git am 0001-*.patch` v1.6.0-haarassa, tai työntämällä sen itse palvelimelta. Työpuu on hakemistossa `/var/lib/agentti/tyo/92b683940caa36d1765c3fd9f2a46f5d/v1.6.0`.
+- Debug-APK ei asennu julkaistun version päälle, koska allekirjoitus on eri. Asenna se testiksi rinnalle tai poista vanha ensin.
+- Kokeile puhelimella, että kytkin vaihtaa värit ja numerot heti, ja että valinta säilyy sovelluksen uudelleenkäynnistyksen yli. Tarkista myös, että Material You -tilassa tilavärit (vihreä, keltainen) ja mittarit erottuvat oman taustakuvasi väreistä, koska niiden kontrastia ei ole testattu dynaamisessa tilassa.
+- Näytönsäästäjä ja widgetit käyttävät omia värejään, joten kytkin ei vaikuta niihin. Jos haluat sen kattavan nekin, kerro.
+
+Muutokset:
+
+```
+.../2026-09-25-hei-tarkistatko-sovelluksen-viimeisimman.md      | 40 +++++++++++++++++++++++++++++
+ 1 file changed, 40 insertions(+)
+```
