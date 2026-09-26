@@ -35,6 +35,7 @@ object DataQuotaNotifier {
     fun show(context: Context, threshold: Int, usedGb: Double, quotaGb: Double): Boolean {
         if (!canPostNotifications(context)) return false
         createChannel(context)
+        if (!canReachUser(context)) return false
 
         val contentIntent = PendingIntent.getActivity(
             context,
@@ -74,6 +75,17 @@ object DataQuotaNotifier {
                 context,
                 Manifest.permission.POST_NOTIFICATIONS
             ) == PackageManager.PERMISSION_GRANTED
+    }
+
+    /** The app-level switch and the channel block both make notify() a silent no-op. */
+    private fun canReachUser(context: Context): Boolean {
+        val manager = NotificationManagerCompat.from(context)
+        val channelImportance = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            manager.getNotificationChannel(CHANNEL_ID)?.importance
+        } else {
+            null
+        }
+        return NotificationDelivery.canReachUser(manager.areNotificationsEnabled(), channelImportance)
     }
 
     private fun createChannel(context: Context) {
