@@ -5,6 +5,52 @@ import org.junit.Test
 
 class DataQuotaLogicTest {
 
+    private val gb = 1024L * 1024 * 1024
+
+    @Test
+    fun `bytes to the next threshold points at the warning level while under it`() {
+        val bytes = DataQuotaLogic.bytesToNextThreshold(
+            quotaGb = 10.0, usedGb = 2.0, notified80 = false, notified100 = false
+        )
+
+        assertThat(bytes).isEqualTo(6 * gb)
+    }
+
+    @Test
+    fun `bytes to the next threshold skips a level already passed or already notified`() {
+        // 9 of 10 GB used: the 80 % alert is the caller's job right now, the
+        // callback must watch for the limit itself.
+        assertThat(
+            DataQuotaLogic.bytesToNextThreshold(
+                quotaGb = 10.0, usedGb = 9.0, notified80 = false, notified100 = false
+            )
+        ).isEqualTo(1 * gb)
+        assertThat(
+            DataQuotaLogic.bytesToNextThreshold(
+                quotaGb = 10.0, usedGb = 5.0, notified80 = true, notified100 = false
+            )
+        ).isEqualTo(5 * gb)
+    }
+
+    @Test
+    fun `bytes to the next threshold is null when nothing is left to watch`() {
+        assertThat(
+            DataQuotaLogic.bytesToNextThreshold(
+                quotaGb = 10.0, usedGb = 10.5, notified80 = true, notified100 = true
+            )
+        ).isNull()
+        assertThat(
+            DataQuotaLogic.bytesToNextThreshold(
+                quotaGb = 0.0, usedGb = 1.0, notified80 = false, notified100 = false
+            )
+        ).isNull()
+        assertThat(
+            DataQuotaLogic.bytesToNextThreshold(
+                quotaGb = 10.0, usedGb = UNAVAILABLE_DOUBLE, notified80 = false, notified100 = false
+            )
+        ).isNull()
+    }
+
     @Test
     fun `given no quota, when evaluating, then nothing is pending`() {
         val pending = DataQuotaLogic.pendingThresholds(

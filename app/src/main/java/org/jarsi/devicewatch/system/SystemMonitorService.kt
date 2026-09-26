@@ -4,12 +4,16 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
+import android.app.usage.NetworkStatsManager
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.net.ConnectivityManager
 import android.os.Build
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import android.os.PowerManager
 import android.os.SystemClock
 import androidx.core.app.NotificationCompat
@@ -61,6 +65,9 @@ class SystemMonitorService : Service() {
      * middle of a charge can lose it, and the worst case is one repeated reminder.
      */
     private var chargeLimitState = ChargeLimitLogic.State()
+
+    /** The data-usage watch armed for the next quota alert, if any (see [armUsageCallback]). */
+    @Volatile private var usageCallback: NetworkStatsManager.UsageCallback? = null
 
     private val serviceJob = SupervisorJob()
     private val serviceScope = CoroutineScope(serviceJob + Dispatchers.Default)
@@ -126,6 +133,7 @@ class SystemMonitorService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
+        disarmUsageCallback()
         batteryReceiver?.let {
             unregisterReceiver(it)
         }
@@ -371,7 +379,10 @@ class SystemMonitorService : Service() {
             // period figure is available (usage access granted) — the since-boot
             // fallback must never be compared against a period quota.
             val quotaGb = stats.mobileDataTotalGb
-            if (quotaGb <= 0.0) return
+            if (quotaGb <= 0.0) {
+                disarmUsageCallback()
+                return
+            }
             // The period comes with the reading. Computed here instead, a read that
             // started before midnight and landed after it would latch the new
             // period on the old period's usage.
@@ -389,11 +400,70 @@ class SystemMonitorService : Service() {
                 )
                 if (shown) appSettings.setDataQuotaNotified(periodStartEpochDay, threshold)
             }
+            armUsageCallback(
+                quotaGb = quotaGb,
+                usedGb = stats.mobileDataUsedGb,
+                notified80 = appSettings.dataQuotaNotified(periodStartEpochDay, DataQuotaLogic.WARNING_PERCENT),
+                notified100 = appSettings.dataQuotaNotified(periodStartEpochDay, DataQuotaLogic.REACHED_PERCENT),
+            )
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
             // A quota alert is never worth taking the monitor service down.
             e.printStackTrace()
+        }
+    }
+
+    /**
+     * Has the system watch the mobile counter for the next alert that is still due,
+     * so a crossing with the screen off — and no battery broadcast to ride on —
+     * alerts all the same. The system calls back once the registered number of
+     * bytes has passed since registration, so the threshold is "bytes left to the
+     * next alert" and is re-armed after every check. No polling is added: the
+     * screen-off loop stays stopped. Only called under [maybeNotifyDataQuota]'s lock.
+     */
+    private fun armUsageCallback(
+        quotaGb: Double,
+        usedGb: Double,
+        notified80: Boolean,
+        notified100: Boolean,
+    ) {
+        disarmUsageCallback()
+        val bytes = DataQuotaLogic.bytesToNextThreshold(quotaGb, usedGb, notified80, notified100)
+            ?: return
+        val manager = getSystemService(NetworkStatsManager::class.java) ?: return
+        val callback = object : NetworkStatsManager.UsageCallback() {
+            override fun onThresholdReached(networkType: Int, subscriberId: String?) {
+                serviceScope.launch {
+                    val fresh = updateWidgetStats(applicationContext)
+                    if (fresh != null) maybeNotifyDataQuota(fresh)
+                }
+            }
+        }
+        try {
+            @Suppress("DEPRECATION") // the network-type overload is the public one
+            manager.registerUsageCallback(
+                ConnectivityManager.TYPE_MOBILE,
+                null,
+                bytes,
+                callback,
+                Handler(Looper.getMainLooper()),
+            )
+            usageCallback = callback
+        } catch (e: Exception) {
+            // No usage access, or the system refused: the screen-on loop and the
+            // battery broadcasts still carry the check.
+            e.printStackTrace()
+        }
+    }
+
+    private fun disarmUsageCallback() {
+        val callback = usageCallback ?: return
+        usageCallback = null
+        try {
+            getSystemService(NetworkStatsManager::class.java)?.unregisterUsageCallback(callback)
+        } catch (_: Exception) {
+            // Already gone; nothing to release.
         }
     }
 

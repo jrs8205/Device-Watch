@@ -11,6 +11,30 @@ object DataQuotaLogic {
     const val WARNING_PERCENT = 80
     const val REACHED_PERCENT = 100
 
+    /** Bytes per gigabyte, the same factor the stats repository divides NetworkStats bytes by. */
+    private const val GB_BYTES = 1024L * 1024 * 1024
+
+    /**
+     * How many more bytes the mobile counter may grow before the next alert that has
+     * not been sent, or null when there is nothing left to watch: quota off, usage
+     * unavailable, or both alerts sent. A level already passed is the caller's job
+     * right now ([pendingThresholds]); this looks strictly ahead of the current usage.
+     */
+    fun bytesToNextThreshold(
+        quotaGb: Double,
+        usedGb: Double,
+        notified80: Boolean,
+        notified100: Boolean,
+    ): Long? {
+        if (quotaGb <= 0.0 || usedGb < 0.0) return null
+        val usedBytes = usedGb * GB_BYTES
+        return listOf(WARNING_PERCENT to notified80, REACHED_PERCENT to notified100)
+            .filterNot { (_, notified) -> notified }
+            .map { (percent, _) -> quotaGb * percent / 100.0 * GB_BYTES }
+            .firstOrNull { it > usedBytes }
+            ?.let { (it - usedBytes).toLong() }
+    }
+
     /** Thresholds crossed and not yet notified, ascending; empty when quota <= 0 or usedGb < 0. */
     fun pendingThresholds(
         quotaGb: Double,
