@@ -78,6 +78,7 @@ internal fun SettingsTab(
     onCommitDataQuota: () -> Unit,
     onChargeLimitChange: (Int) -> Unit,
     onCommitChargeLimit: () -> Unit,
+    onClassicLookChange: (Boolean) -> Unit,
     onShowIntro: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -344,6 +345,17 @@ internal fun SettingsTab(
                 text = stringResource(R.string.widget_opacity_description),
                 fontSize = 11.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        // Appearance
+        SettingsSectionCard(titleRes = R.string.appearance_section) {
+            Spacer(modifier = Modifier.height(4.dp))
+            SettingsToggleRow(
+                titleRes = R.string.classic_look_title,
+                descriptionRes = R.string.classic_look_description,
+                checked = uiState.classicLook,
+                onCheckedChange = onClassicLookChange,
             )
         }
 

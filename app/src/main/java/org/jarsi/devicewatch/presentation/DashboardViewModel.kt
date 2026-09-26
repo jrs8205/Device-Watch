@@ -69,6 +69,8 @@ data class DashboardUiState(
     val notificationAccessEnabled: Boolean = false,
     /** null until read from settings; false shows the first-run intro. */
     val onboardingCompleted: Boolean? = null,
+    /** The pre-1.6 look: wallpaper colours and the regular number font. */
+    val classicLook: Boolean = false,
 )
 
 @HiltViewModel
@@ -86,15 +88,26 @@ class DashboardViewModel @Inject constructor(
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
 
     init {
-        // Synchronous prefs read so the first composition already knows whether
-        // to show the intro — no main-UI flash before it.
-        _uiState.update { it.copy(onboardingCompleted = settings.onboardingShown()) }
+        // Synchronous prefs reads so the first composition already knows whether
+        // to show the intro and which look to draw — no flash of the other one.
+        _uiState.update {
+            it.copy(
+                onboardingCompleted = settings.onboardingShown(),
+                classicLook = settings.classicLook(),
+            )
+        }
     }
 
     /** Marks the first-run intro completed (or skipped). */
     fun completeOnboarding() {
         settings.setOnboardingShown()
         _uiState.update { it.copy(onboardingCompleted = true) }
+    }
+
+    /** Persists the look switch; the activity themes the whole tree from this state. */
+    fun onClassicLookChange(enabled: Boolean) {
+        settings.setClassicLook(enabled)
+        _uiState.update { it.copy(classicLook = enabled) }
     }
 
     /** Reads fresh stats, pushes them to every installed widget, and updates the screen. */

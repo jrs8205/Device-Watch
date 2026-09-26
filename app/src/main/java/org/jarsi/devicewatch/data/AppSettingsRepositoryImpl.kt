@@ -108,6 +108,13 @@ class AppSettingsRepositoryImpl @Inject constructor(
         prefs.edit().putBoolean(KEY_ONBOARDING_SHOWN, true).apply()
     }
 
+    override fun classicLook(): Boolean =
+        prefs.getBoolean(KEY_CLASSIC_LOOK, false)
+
+    override fun setClassicLook(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_CLASSIC_LOOK, enabled).apply()
+    }
+
     companion object {
         const val PREFS_NAME = "app_settings"
         const val KEY_DATA_COUNTER_MODE = "data_counter_mode"
@@ -120,6 +127,7 @@ class AppSettingsRepositoryImpl @Inject constructor(
         const val KEY_ONBOARDING_SHOWN = "onboarding_shown"
         /** Written from the UI helpers in OnboardingPage.kt (permanent-denial detection). */
         const val KEY_RUNTIME_PERMISSIONS_REQUESTED = "runtime_permissions_requested"
+        const val KEY_CLASSIC_LOOK = "classic_look"
         const val DEFAULT_CYCLE_START_DAY = 1
     }
 }

@@ -320,6 +320,7 @@ fun SystemDashboardScreen(
                             onCommitDataQuota = viewModel::onCommitDataQuota,
                             onChargeLimitChange = viewModel::onChargeLimitChange,
                             onCommitChargeLimit = viewModel::onCommitChargeLimit,
+                            onClassicLookChange = viewModel::onClassicLookChange,
                             onShowIntro = { replayOnboarding = true }
                         )
                     }

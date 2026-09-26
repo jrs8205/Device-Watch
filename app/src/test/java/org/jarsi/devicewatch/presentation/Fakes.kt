@@ -36,6 +36,8 @@ internal class FakeAppSettingsRepository(
     var quotaGb: Double = 0.0,
     var oldestFirst: Boolean = true,
     var onboardingShown: Boolean = false,
+    /** Short name for the same reason as [chargeLimit]. */
+    var classic: Boolean = false,
 ) : AppSettingsRepository {
 
     /** Fired quota alerts as "periodStartEpochDay:threshold", mirroring the real key scoping. */
@@ -89,6 +91,12 @@ internal class FakeAppSettingsRepository(
 
     override fun setOnboardingShown() {
         onboardingShown = true
+    }
+
+    override fun classicLook(): Boolean = classic
+
+    override fun setClassicLook(enabled: Boolean) {
+        classic = enabled
     }
 }
 

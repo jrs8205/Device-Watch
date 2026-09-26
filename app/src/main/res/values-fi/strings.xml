@@ -151,6 +151,9 @@
     <string name="onboarding_done_title">Valmista!</string>
     <string name="onboarding_done_body">Voit avata tämän esittelyn uudelleen milloin vain Asetukset-välilehdeltä.</string>
     <string name="settings_show_intro">Näytä esittely uudelleen</string>
+    <string name="appearance_section">ULKOASU</string>
+    <string name="classic_look_title">Alkuperäinen ulkoasu</string>
+    <string name="classic_look_description">Versiota 1.6 edeltävät värit ja numerofontti: Android 12:sta alkaen värit tulevat taustakuvasta.</string>
     <string name="since_charge_title">Latauksesta lähtien</string>
     <string name="since_charge_open">Avaa latausjakson näkymä</string>
     <string name="since_charge_summary_section">LATAUSJAKSO</string>

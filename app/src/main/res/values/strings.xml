@@ -155,6 +155,9 @@
     <string name="onboarding_done_title">All set!</string>
     <string name="onboarding_done_body">You can reopen this intro any time from the Settings tab.</string>
     <string name="settings_show_intro">Show intro again</string>
+    <string name="appearance_section">APPEARANCE</string>
+    <string name="classic_look_title">Original look</string>
+    <string name="classic_look_description">The colours and number font from before version 1.6: on Android 12 and newer the colours follow your wallpaper.</string>
     <string name="since_charge_title">Since charge</string>
     <string name="since_charge_open">Open the since-charge view</string>
     <string name="since_charge_summary_section">CHARGE PERIOD</string>

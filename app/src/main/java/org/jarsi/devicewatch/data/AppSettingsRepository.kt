@@ -59,4 +59,9 @@ interface AppSettingsRepository {
     fun onboardingShown(): Boolean
 
     fun setOnboardingShown()
+
+    /** True for the pre-1.6 look: wallpaper-based colours and the regular number font. */
+    fun classicLook(): Boolean
+
+    fun setClassicLook(enabled: Boolean)
 }

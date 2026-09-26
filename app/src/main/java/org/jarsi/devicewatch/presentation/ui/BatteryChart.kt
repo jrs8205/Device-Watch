@@ -25,12 +25,12 @@ import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.jarsi.devicewatch.R
 import org.jarsi.devicewatch.data.BatterySample
+import org.jarsi.devicewatch.ui.theme.LocalMetricFontFamily
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -176,7 +176,7 @@ internal fun BatteryChart(
                         Text(
                             text = "${(fraction * 100).toInt()} %",
                             fontSize = 11.sp,
-                            fontFamily = FontFamily.Monospace,
+                            fontFamily = LocalMetricFontFamily.current,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }

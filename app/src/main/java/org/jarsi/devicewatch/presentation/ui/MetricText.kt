@@ -12,6 +12,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import org.jarsi.devicewatch.ui.theme.LocalMetricFontFamily
 
 /**
  * The readout scale. Nothing here goes below 12 sp, and every step is a job
@@ -35,7 +36,9 @@ internal val METER_RADIUS = 2.dp
  * digits a 1 replacing a 4 shifts everything after it, and a column of figures
  * never lines up. [FontFamily.Monospace] resolves to whatever mono the device
  * ships rather than bundling Roboto Mono — the widths are what matter here, and
- * a bundled face would cost more than it buys in an app this size.
+ * a bundled face would cost more than it buys in an app this size. The face
+ * comes from [LocalMetricFontFamily] so the classic-look switch can restore the
+ * regular one in a single place.
  */
 @Composable
 internal fun MetricValue(
@@ -48,7 +51,7 @@ internal fun MetricValue(
     Text(
         text = text,
         modifier = modifier,
-        fontFamily = FontFamily.Monospace,
+        fontFamily = LocalMetricFontFamily.current,
         fontSize = fontSize,
         fontWeight = fontWeight,
         color = color,

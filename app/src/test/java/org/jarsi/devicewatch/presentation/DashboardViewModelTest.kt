@@ -178,6 +178,35 @@ class DashboardViewModelTest {
         }
 
     @Test
+    fun `given the classic look stored, when created, then the first state already carries it`() =
+        runTest(dispatcher) {
+            // Given: read synchronously in init, so the first frame is themed right
+            // and the app never flashes the new look before switching.
+            val settings = FakeAppSettingsRepository(classic = true)
+
+            // When
+            val viewModel = buildViewModel(settings = settings)
+
+            // Then
+            assertThat(viewModel.uiState.value.classicLook).isTrue()
+        }
+
+    @Test
+    fun `given the look switched, then it is persisted and the state follows`() =
+        runTest(dispatcher) {
+            // Given
+            val settings = FakeAppSettingsRepository()
+            val viewModel = buildViewModel(settings = settings)
+
+            // When
+            viewModel.onClassicLookChange(true)
+
+            // Then
+            assertThat(settings.classic).isTrue()
+            assertThat(viewModel.uiState.value.classicLook).isTrue()
+        }
+
+    @Test
     fun `given a saved opacity, when loading, then state adopts it`() = runTest(dispatcher) {
         // Given
         val widget = FakeWidgetController(installed = true, savedOpacity = 0.42f)

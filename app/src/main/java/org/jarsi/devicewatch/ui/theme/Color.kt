@@ -61,3 +61,15 @@ val LightError = Color(0xFF8C1D24)
 
 /** How strongly a status colour tints the notice band behind it. */
 const val STATUS_TINT_ALPHA = 0.12f
+
+/**
+ * The classic look's fallback scheme for Android 11 and older, where there is no
+ * wallpaper-derived colour: the Material baseline purple every version up to 1.5
+ * shipped with. Kept verbatim so "original look" means what it says there too.
+ */
+val ClassicPurple80 = Color(0xFFD0BCFF)
+val ClassicPurpleGrey80 = Color(0xFFCCC2DC)
+val ClassicPink80 = Color(0xFFEFB8C8)
+val ClassicPurple40 = Color(0xFF6650A4)
+val ClassicPurpleGrey40 = Color(0xFF625B71)
+val ClassicPink40 = Color(0xFF7D5260)
