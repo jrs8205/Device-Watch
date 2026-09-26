@@ -246,6 +246,26 @@ class HtmlReportBuilderTest {
     }
 
     @Test
+    fun `battery chart marks a lone reading with a dot`() {
+        val hour = 3_600_000L
+        val start = 1_786_700_000_000L
+        val html = HtmlReportBuilder.build(
+            data(
+                battery = listOf(
+                    BatterySample(start, 80, false),
+                    // Two hours apart: each reading stands alone, and both must still show.
+                    BatterySample(start + 2 * hour, 60, false),
+                ),
+            ),
+            labels,
+        )
+
+        assertThat(html).contains("<svg")
+        assertThat(Regex("<circle class=\"level-dot\"").findAll(html).count()).isEqualTo(2)
+        assertThat(html).doesNotContain("<polyline")
+    }
+
+    @Test
     fun `battery chart draws one polyline per uninterrupted run`() {
         val hour = 3_600_000L
         val start = 1_786_700_000_000L

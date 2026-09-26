@@ -126,6 +126,9 @@ object HtmlReportBuilder {
     /** Samples further apart than this are a collection gap, not a discharge line. */
     private const val CHART_GAP_MILLIS = 90L * 60 * 1000
 
+    /** Radius of the dot that stands in for a reading with no neighbour to draw a line to. */
+    private const val LONE_READING_RADIUS = 5
+
     private const val CHART_WIDTH = 720
     private const val CHART_HEIGHT = 240
     private const val CHART_TOP = 8
@@ -308,12 +311,19 @@ object HtmlReportBuilder {
         }
 
         // A collection gap must break the line instead of drawing a straight lie across it.
+        // A run of one reading has no line to draw, so it is marked with a dot — the
+        // same as the in-app chart — rather than dropped.
         var run = mutableListOf<BatterySample>()
         fun flush() {
             if (run.size >= 2) {
                 append("<polyline class=\"level\" points=\"")
                 run.joinTo(this, separator = " ") { "${coord(x(it.timeMillis))},${coord(y(it.level))}" }
                 append("\"/>\n")
+            } else if (run.size == 1) {
+                val lone = run.single()
+                append("<circle class=\"level-dot\" cx=\"").append(coord(x(lone.timeMillis)))
+                append("\" cy=\"").append(coord(y(lone.level)))
+                append("\" r=\"$LONE_READING_RADIUS\"/>\n")
             }
             run = mutableListOf()
         }
@@ -709,6 +719,7 @@ object HtmlReportBuilder {
           fill: none; stroke: var(--accent); stroke-width: 3.5;
           stroke-linejoin: round; stroke-linecap: round;
         }
+        .level-dot { fill: var(--accent); }
         /* Hidden until the script enables it, so a script-free viewer sees no dead controls. */
         .tools { display: none; }
         .tools.ready {
