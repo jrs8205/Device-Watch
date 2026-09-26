@@ -269,6 +269,28 @@ class HtmlReportBuilderTest {
     }
 
     @Test
+    fun `charging shading breaks at a collection gap like the line does`() {
+        val hour = 3_600_000L
+        val start = 1_786_700_000_000L
+        val html = HtmlReportBuilder.build(
+            data(
+                battery = listOf(
+                    BatterySample(start, 40, true),
+                    BatterySample(start + hour, 60, true),
+                    // Ten hours with no samples: the phone was off, not charging.
+                    BatterySample(start + 11 * hour, 30, true),
+                    BatterySample(start + 12 * hour, 50, true),
+                ),
+            ),
+            labels,
+        )
+
+        // Two shaded runs, one on each side of the gap — never one across it.
+        assertThat(Regex("<rect class=\"charging\"").findAll(html).count()).isEqualTo(2)
+        assertThat(Regex("<polyline").findAll(html).count()).isEqualTo(2)
+    }
+
+    @Test
     fun `battery chart is readable - it carries a scale and its time range`() {
         val hour = 3_600_000L
         val start = 1_786_700_000_000L // 2026-08-14T09:33:20Z

@@ -258,25 +258,47 @@ object HtmlReportBuilder {
         append(escape(labels.batterySection)).append("\">\n")
 
         // Charging runs are shaded behind the line so the discharge slopes read cleanly.
+        // A run ends at a collection gap exactly as the line does: charging on both
+        // sides of a gap says nothing about the hours in between.
         var runStart: Int? = null
+        fun closeRun(endIndex: Int) {
+            val startIndex = runStart ?: return
+            runStart = null
+            // The charger went in somewhere between the last discharging sample and
+            // the first charging one, so the shading starts at the former — unless
+            // that sample sits on the far side of a gap.
+            val anchor = startIndex - 1
+            val startMillis = if (
+                anchor >= 0 &&
+                samples[startIndex].timeMillis - samples[anchor].timeMillis <= CHART_GAP_MILLIS
+            ) {
+                samples[anchor].timeMillis
+            } else {
+                samples[startIndex].timeMillis
+            }
+            val startX = x(startMillis)
+            val endX = x(samples[endIndex].timeMillis)
+            val width = (endX - startX).coerceAtLeast(3.0)
+            append("<rect class=\"charging\" x=\"").append(coord(startX))
+            append("\" y=\"$CHART_TOP\" width=\"").append(coord(width))
+            append("\" height=\"").append(coord((CHART_BOTTOM - CHART_TOP).toDouble()))
+            append("\"/>\n")
+            // A 18 %-opacity tint is invisible in daylight; the solid bar below
+            // the plot is what still marks the run outdoors.
+            append("<rect class=\"charging-bar\" x=\"").append(coord(startX))
+            append("\" y=\"").append(CHART_BOTTOM + 8).append("\" width=\"").append(coord(width))
+            append("\" height=\"$CHARGING_BAR_HEIGHT\"/>\n")
+        }
         samples.forEachIndexed { index, sample ->
-            if (sample.charging && runStart == null) runStart = index
-            val startIndex = runStart
-            if (startIndex != null && (!sample.charging || index == samples.lastIndex)) {
-                val endIndex = if (sample.charging) index else index - 1
-                val startX = x(samples[(startIndex - 1).coerceAtLeast(0)].timeMillis)
-                val endX = x(samples[endIndex].timeMillis)
-                val width = (endX - startX).coerceAtLeast(3.0)
-                append("<rect class=\"charging\" x=\"").append(coord(startX))
-                append("\" y=\"$CHART_TOP\" width=\"").append(coord(width))
-                append("\" height=\"").append(coord((CHART_BOTTOM - CHART_TOP).toDouble()))
-                append("\"/>\n")
-                // A 18 %-opacity tint is invisible in daylight; the solid bar below
-                // the plot is what still marks the run outdoors.
-                append("<rect class=\"charging-bar\" x=\"").append(coord(startX))
-                append("\" y=\"").append(CHART_BOTTOM + 8).append("\" width=\"").append(coord(width))
-                append("\" height=\"$CHARGING_BAR_HEIGHT\"/>\n")
-                runStart = null
+            val previous = samples.getOrNull(index - 1)
+            if (previous != null && sample.timeMillis - previous.timeMillis > CHART_GAP_MILLIS) {
+                closeRun(index - 1)
+            }
+            if (!sample.charging) {
+                closeRun(index - 1)
+            } else {
+                if (runStart == null) runStart = index
+                if (index == samples.lastIndex) closeRun(index)
             }
         }
 
