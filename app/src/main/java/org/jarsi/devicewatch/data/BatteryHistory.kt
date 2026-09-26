@@ -74,6 +74,10 @@ object BatteryHistoryCodec {
         if (candidate.level < 0) return false
         if (previous == null) return true
         val elapsed = candidate.timeMillis - previous.timeMillis
+        // The wall clock moved backwards (a time correction). Judged against the
+        // stored sample every candidate would be "too soon" until the clock catches
+        // up, so the first one after the jump is stored and becomes the baseline.
+        if (elapsed < 0) return true
         if (previous.charging != candidate.charging) return elapsed >= MIN_FLIP_INTERVAL_MS
         if (elapsed >= MIN_SAMPLE_INTERVAL_MS) return true
         return abs(candidate.level - previous.level) >= MIN_LEVEL_DELTA &&

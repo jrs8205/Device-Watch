@@ -119,6 +119,16 @@ class BatteryHistoryCodecTest {
     }
 
     @Test
+    fun `shouldSample stores a sample dated before the previous one`() {
+        // The wall clock was corrected backwards. Every later sample would otherwise
+        // be "too soon" until the clock catches up with the stored one — hours or
+        // days of nothing — so the first sample after the jump becomes the baseline.
+        val previous = sample(10 * 3_600_000L, level = 50)
+        assertThat(BatteryHistoryCodec.shouldSample(previous, sample(9 * 3_600_000L, level = 50)))
+            .isTrue()
+    }
+
+    @Test
     fun `shouldSample never stores a negative level`() {
         assertThat(BatteryHistoryCodec.shouldSample(null, sample(0L, level = -1))).isFalse()
         assertThat(
