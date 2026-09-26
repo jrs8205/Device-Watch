@@ -78,12 +78,10 @@ object ChargeLimitNotifier {
     /** The app-level switch and the channel block both make notify() a silent no-op. */
     private fun canReachUser(context: Context): Boolean {
         val manager = NotificationManagerCompat.from(context)
-        val channelImportance = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            manager.getNotificationChannel(CHANNEL_ID)?.importance
-        } else {
-            null
-        }
-        return NotificationDelivery.canReachUser(manager.areNotificationsEnabled(), channelImportance)
+        return NotificationDelivery.canReachUser(
+            appNotificationsEnabled = manager.areNotificationsEnabled(),
+            channelImportance = manager.getNotificationChannel(CHANNEL_ID)?.importance,
+        )
     }
 
     private fun createChannel(context: Context) {
