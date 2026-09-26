@@ -58,11 +58,15 @@ object BatteryHistoryCodec {
 
     fun fileNameFor(day: LocalDate): String = "${day.toEpochDay()}.log"
 
+    /**
+     * A file dated after [today] is kept: a timezone change can move the date
+     * backwards, and purging "tomorrow" would throw away the hours just written.
+     */
     fun isRetainedFileName(name: String, today: LocalDate): Boolean {
         val epochDay = name.removeSuffix(".log").toLongOrNull() ?: return false
         if (!name.endsWith(".log")) return false
         val age = today.toEpochDay() - epochDay
-        return age in 0 until RETENTION_DAYS
+        return age < RETENTION_DAYS
     }
 
     /** True when [candidate] should be stored given the [previous] stored sample (null = always). */

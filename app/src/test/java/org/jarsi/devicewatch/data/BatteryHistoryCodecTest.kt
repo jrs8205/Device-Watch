@@ -69,6 +69,18 @@ class BatteryHistoryCodecTest {
     }
 
     @Test
+    fun `a day file dated after today is kept`() {
+        // A timezone change can move "today" backwards, so the file written a few
+        // hours ago may now be dated tomorrow. That is yesterday's data, not junk.
+        val today = LocalDate.of(2026, 8, 14)
+        assertThat(
+            BatteryHistoryCodec.isRetainedFileName(
+                BatteryHistoryCodec.fileNameFor(today.plusDays(1)), today
+            )
+        ).isTrue()
+    }
+
+    @Test
     fun `shouldSample stores the very first sample`() {
         assertThat(BatteryHistoryCodec.shouldSample(null, sample(0L))).isTrue()
     }
