@@ -32,4 +32,7 @@ object ChargeLimitLogic {
 
     /** Resets the once-per-plug-session latch. */
     fun onPowerDisconnected(state: State): State = state.copy(notifiedThisPlug = false)
+
+    /** A new limit is a new reminder: the latch from the old one no longer applies. */
+    fun onLimitChanged(state: State): State = state.copy(notifiedThisPlug = false)
 }

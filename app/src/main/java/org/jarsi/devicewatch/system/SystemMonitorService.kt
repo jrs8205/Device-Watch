@@ -19,6 +19,7 @@ import org.jarsi.devicewatch.data.AppSettingsRepository
 import org.jarsi.devicewatch.data.AppUsageRepository
 import org.jarsi.devicewatch.data.BatteryHistory
 import org.jarsi.devicewatch.data.BatterySample
+import org.jarsi.devicewatch.data.BatteryStatusReader
 import org.jarsi.devicewatch.data.ChargeAnchorLogic
 import org.jarsi.devicewatch.data.ChargeAnchorStore
 import org.jarsi.devicewatch.data.DataPeriodCalculator
@@ -49,6 +50,7 @@ class SystemMonitorService : Service() {
     @Inject lateinit var chargeAnchorStore: ChargeAnchorStore
     @Inject lateinit var batteryHistory: BatteryHistory
     @Inject lateinit var appSettings: AppSettingsRepository
+    @Inject lateinit var batteryStatus: BatteryStatusReader
 
     private var lastUsageRefreshMs = 0L
 
@@ -83,7 +85,22 @@ class SystemMonitorService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (intent?.action == ACTION_CHARGE_LIMIT_CHANGED) onChargeLimitChanged()
         return START_STICKY
+    }
+
+    /**
+     * Settings just changed the charge limit. The latch belongs to the old limit,
+     * so it is cleared, the reminder on screen (if any) advised on the old limit,
+     * so it is withdrawn, and the new limit is checked against the sticky battery
+     * state right away rather than at the next broadcast — a phone sitting full on
+     * the charger may not send one for hours.
+     */
+    private fun onChargeLimitChanged() {
+        chargeLimitState = ChargeLimitLogic.onLimitChanged(chargeLimitState)
+        ChargeLimitNotifier.cancel(applicationContext)
+        val level = batteryStatus.currentLevel() ?: return
+        evaluateChargeLimit(level, plugged = batteryStatus.isCharging())
     }
 
     /**
@@ -404,5 +421,8 @@ class SystemMonitorService : Service() {
     companion object {
         private const val NOTIFICATION_ID = 1001
         private const val USAGE_REFRESH_INTERVAL_MS = 60_000L
+
+        /** Start-command action from [ServiceChargeLimitReminder]: re-check the limit now. */
+        const val ACTION_CHARGE_LIMIT_CHANGED = "org.jarsi.devicewatch.action.CHARGE_LIMIT_CHANGED"
     }
 }

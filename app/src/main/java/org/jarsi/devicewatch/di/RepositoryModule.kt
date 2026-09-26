@@ -18,6 +18,8 @@ import org.jarsi.devicewatch.data.SystemStatsRepository
 import org.jarsi.devicewatch.data.SystemStatsRepositoryImpl
 import org.jarsi.devicewatch.data.UsageHistory
 import org.jarsi.devicewatch.data.UsageHistoryImpl
+import org.jarsi.devicewatch.system.ChargeLimitReminder
+import org.jarsi.devicewatch.system.ServiceChargeLimitReminder
 import org.jarsi.devicewatch.widget.GlanceWidgetController
 import org.jarsi.devicewatch.widget.WidgetController
 import dagger.Binds
@@ -69,4 +71,8 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindBatteryHistory(impl: BatteryHistoryImpl): BatteryHistory
+
+    @Binds
+    @Singleton
+    abstract fun bindChargeLimitReminder(impl: ServiceChargeLimitReminder): ChargeLimitReminder
 }

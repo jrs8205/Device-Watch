@@ -66,6 +66,21 @@ class ChargeLimitLogicTest {
     }
 
     @Test
+    fun `changing the limit re-arms the reminder within the same plug session`() {
+        val notified = ChargeLimitLogic.onBatteryChanged(
+            ChargeLimitLogic.State(), limitPercent = 80, level = 82, isPlugged = true
+        )
+
+        val rearmed = ChargeLimitLogic.onLimitChanged(notified.state)
+        assertThat(rearmed.notifiedThisPlug).isFalse()
+
+        val atNewLimit = ChargeLimitLogic.onBatteryChanged(
+            rearmed, limitPercent = 90, level = 90, isPlugged = true
+        )
+        assertThat(atNewLimit.notify).isTrue()
+    }
+
+    @Test
     fun `a limit of 100 never notifies because the battery-full alert covers it`() {
         val decision = ChargeLimitLogic.onBatteryChanged(
             ChargeLimitLogic.State(), limitPercent = 100, level = 100, isPlugged = true

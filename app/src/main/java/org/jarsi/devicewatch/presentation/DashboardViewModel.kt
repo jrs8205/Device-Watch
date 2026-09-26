@@ -16,6 +16,7 @@ import org.jarsi.devicewatch.data.SystemStats
 import org.jarsi.devicewatch.data.SystemStatsRepository
 import org.jarsi.devicewatch.data.UNAVAILABLE_INT
 import org.jarsi.devicewatch.data.UsageHistory
+import org.jarsi.devicewatch.system.ChargeLimitReminder
 import java.time.LocalDate
 import org.jarsi.devicewatch.widget.WidgetController
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -78,6 +79,7 @@ class DashboardViewModel @Inject constructor(
     private val appUsageRepository: AppUsageRepository,
     private val notificationStats: NotificationStats,
     private val usageHistory: UsageHistory,
+    private val chargeLimitReminder: ChargeLimitReminder,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DashboardUiState())
@@ -274,9 +276,15 @@ class DashboardViewModel @Inject constructor(
         _uiState.update { it.copy(chargeLimitPercent = value) }
     }
 
-    /** Persists the chosen charge-reminder level; the monitor service reads it live. */
+    /**
+     * Persists the chosen charge-reminder level and has the monitor apply it now:
+     * a phone already sitting full on the charger may not send another battery
+     * broadcast for a long time, and switching the reminder off must also take
+     * down a reminder that is already showing.
+     */
     fun onCommitChargeLimit() {
         settings.setChargeLimitPercent(_uiState.value.chargeLimitPercent)
+        chargeLimitReminder.limitChanged()
     }
 
     /** Live-updates the data-quota slider value without persisting; 0 switches it off. */

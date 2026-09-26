@@ -50,7 +50,8 @@ class DashboardViewModelTest {
         appUsage: AppUsageRepository = FakeAppUsageRepository(),
         notifications: NotificationStats = FakeNotificationStats(),
         history: UsageHistory = FakeUsageHistory(),
-    ) = DashboardViewModel(repository, widget, settings, appUsage, notifications, history)
+        reminder: FakeChargeLimitReminder = FakeChargeLimitReminder(),
+    ) = DashboardViewModel(repository, widget, settings, appUsage, notifications, history, reminder)
 
     @Test
     fun `given fresh stats, when refreshing, then state reflects repository and widget flag`() =
@@ -158,6 +159,22 @@ class DashboardViewModelTest {
             assertThat(comparison.screenTimePrevMillis).isEqualTo(0L)
             assertThat(comparison.unlocksPrev).isEqualTo(0)
             assertThat(comparison.notificationsPrev).isEqualTo(0)
+        }
+
+    @Test
+    fun `given a committed charge limit, then the monitor is told to apply it at once`() =
+        runTest(dispatcher) {
+            // Given
+            val reminder = FakeChargeLimitReminder()
+            val viewModel = buildViewModel(reminder = reminder)
+
+            // When
+            viewModel.onChargeLimitChange(80)
+            viewModel.onCommitChargeLimit()
+            advanceUntilIdle()
+
+            // Then
+            assertThat(reminder.limitChangedCount).isEqualTo(1)
         }
 
     @Test
