@@ -105,6 +105,62 @@ class DashboardViewModelTest {
         }
 
     @Test
+    fun `given nothing recorded before the previous window, when refreshing, then the previous values are unknown`() =
+        runTest(dispatcher) {
+            // Given: the stores only have today, so yesterday was never observed —
+            // it must not be reported as a zero to compare against.
+            val today = LocalDate.now()
+            val history = FakeUsageHistory().apply {
+                recordScreenTime(today, 120_000L)
+                recordUnlocks(today, 4)
+            }
+            val notifications = FakeNotificationStats(enabled = true, totalsByDay = mapOf(today to 3))
+            val viewModel = buildViewModel(history = history, notifications = notifications)
+
+            // When
+            viewModel.refresh()
+            advanceUntilIdle()
+
+            // Then
+            val comparison = viewModel.uiState.value.periodComparison
+            assertThat(comparison).isNotNull()
+            comparison!!
+            assertThat(comparison.screenTimeNowMillis).isEqualTo(120_000L)
+            assertThat(comparison.screenTimePrevMillis).isNull()
+            assertThat(comparison.unlocksPrev).isNull()
+            assertThat(comparison.notificationsPrev).isNull()
+        }
+
+    @Test
+    fun `given data older than the previous window, when refreshing, then a quiet previous day is a real zero`() =
+        runTest(dispatcher) {
+            // Given: recording started three days ago, so yesterday's empty tally
+            // is an observed zero rather than a gap.
+            val today = LocalDate.now()
+            val history = FakeUsageHistory().apply {
+                recordScreenTime(today.minusDays(3), 60_000L)
+                recordUnlocks(today.minusDays(3), 2)
+            }
+            val notifications = FakeNotificationStats(
+                enabled = true,
+                totalsByDay = mapOf(today.minusDays(3) to 5),
+            )
+            val viewModel = buildViewModel(history = history, notifications = notifications)
+
+            // When
+            viewModel.refresh()
+            advanceUntilIdle()
+
+            // Then
+            val comparison = viewModel.uiState.value.periodComparison
+            assertThat(comparison).isNotNull()
+            comparison!!
+            assertThat(comparison.screenTimePrevMillis).isEqualTo(0L)
+            assertThat(comparison.unlocksPrev).isEqualTo(0)
+            assertThat(comparison.notificationsPrev).isEqualTo(0)
+        }
+
+    @Test
     fun `given a saved opacity, when loading, then state adopts it`() = runTest(dispatcher) {
         // Given
         val widget = FakeWidgetController(installed = true, savedOpacity = 0.42f)

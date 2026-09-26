@@ -268,12 +268,19 @@ internal fun OverviewTab(
                     label = stringResource(R.string.charge_count_label),
                     value = uiState.chargeCount.toString()
                 )
-                // "Previous period vs now": only metrics this device can actually
-                // count get a row, and the section hides when none can.
-                val hasComparisonRows = uiState.screenTimeMillis >= 0L ||
-                    (uiState.usageAccessEnabled && uiState.unlockCountingSupported) ||
-                    uiState.notificationAccessEnabled
-                uiState.periodComparison?.takeIf { hasComparisonRows }?.let { comparison ->
+                // "Previous period vs now": a row needs a metric this device can
+                // count and a previous window the store actually observed (null
+                // otherwise); the section hides when no row is left.
+                uiState.periodComparison?.let { comparison ->
+                    val screenPrev = comparison.screenTimePrevMillis
+                        ?.takeIf { uiState.screenTimeMillis >= 0L }
+                    val unlocksPrev = comparison.unlocksPrev
+                        ?.takeIf { uiState.usageAccessEnabled && uiState.unlockCountingSupported }
+                    val notificationsPrev = comparison.notificationsPrev
+                        ?.takeIf { uiState.notificationAccessEnabled }
+                    if (screenPrev == null && unlocksPrev == null && notificationsPrev == null) {
+                        return@let
+                    }
                     HorizontalDivider(
                         modifier = Modifier.padding(vertical = 8.dp),
                         color = MaterialTheme.colorScheme.outline
@@ -284,34 +291,34 @@ internal fun OverviewTab(
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    if (uiState.screenTimeMillis >= 0L) {
+                    if (screenPrev != null) {
                         ComparisonRow(
                             labelRes = R.string.screen_time_total_label,
-                            previousText = durationText(context, comparison.screenTimePrevMillis),
+                            previousText = durationText(context, screenPrev),
                             nowText = durationText(context, comparison.screenTimeNowMillis),
                             changePercent = PeriodComparison.changePercent(
-                                comparison.screenTimeNowMillis, comparison.screenTimePrevMillis
+                                comparison.screenTimeNowMillis, screenPrev
                             )
                         )
                     }
-                    if (uiState.usageAccessEnabled && uiState.unlockCountingSupported) {
+                    if (unlocksPrev != null) {
                         ComparisonRow(
                             labelRes = R.string.unlock_count_label,
-                            previousText = comparison.unlocksPrev.toString(),
+                            previousText = unlocksPrev.toString(),
                             nowText = comparison.unlocksNow.toString(),
                             changePercent = PeriodComparison.changePercent(
-                                comparison.unlocksNow.toLong(), comparison.unlocksPrev.toLong()
+                                comparison.unlocksNow.toLong(), unlocksPrev.toLong()
                             )
                         )
                     }
-                    if (uiState.notificationAccessEnabled) {
+                    if (notificationsPrev != null) {
                         ComparisonRow(
                             labelRes = R.string.notification_count_label,
-                            previousText = comparison.notificationsPrev.toString(),
+                            previousText = notificationsPrev.toString(),
                             nowText = comparison.notificationsNow.toString(),
                             changePercent = PeriodComparison.changePercent(
                                 comparison.notificationsNow.toLong(),
-                                comparison.notificationsPrev.toLong()
+                                notificationsPrev.toLong()
                             )
                         )
                     }

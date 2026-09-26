@@ -6,14 +6,19 @@ import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 import kotlin.math.roundToInt
 
-/** Usage totals for the elapsed part of this period and the same-length slice of the previous one. */
+/**
+ * Usage totals for the elapsed part of this period and the same-length slice of
+ * the previous one. A previous value is null when the store has nothing from
+ * before the previous window: the tallies only reach back to when the app (or a
+ * permission) started collecting, and a day before that is a gap, not a zero.
+ */
 data class PeriodComparisonData(
     val screenTimeNowMillis: Long,
-    val screenTimePrevMillis: Long,
+    val screenTimePrevMillis: Long?,
     val unlocksNow: Int,
-    val unlocksPrev: Int,
+    val unlocksPrev: Int?,
     val notificationsNow: Int,
-    val notificationsPrev: Int,
+    val notificationsPrev: Int?,
     val daysCompared: Int,
 )
 
@@ -21,6 +26,9 @@ object PeriodComparison {
 
     /** Both tally stores retain 62 days; a window reaching past that would read zeros. */
     private const val RETAINED_DAYS = 62L
+
+    /** The oldest day either tally store can still hold on [today]. */
+    fun oldestRetainedDay(today: LocalDate): LocalDate = today.minusDays(RETAINED_DAYS - 1)
 
     data class Windows(
         val currentStart: LocalDate,
@@ -48,8 +56,7 @@ object PeriodComparison {
         val elapsedDays = ChronoUnit.DAYS.between(currentStart, today) + 1
         val previousLength = ChronoUnit.DAYS.between(previousStart, currentStart)
         val comparedDays = minOf(elapsedDays, previousLength)
-        val oldestRetained = today.minusDays(RETAINED_DAYS - 1)
-        if (previousStart.isBefore(oldestRetained)) return null
+        if (previousStart.isBefore(oldestRetainedDay(today))) return null
         return Windows(
             currentStart = currentStart,
             currentEnd = currentStart.plusDays(comparedDays - 1),

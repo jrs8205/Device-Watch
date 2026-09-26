@@ -142,18 +142,36 @@ class DashboardViewModel @Inject constructor(
         usageHistory.purge(today)
 
         val notificationAccess = notificationStats.isListenerEnabled()
-        // "Previous period vs now", day-count-aligned; the stores return zeros for
-        // days they have nothing on, and the UI hides rows the device cannot count.
+        // "Previous period vs now", day-count-aligned. The stores return zeros for
+        // days they have nothing on, so a metric's previous value is only trusted
+        // once something was recorded on or before the previous window's first
+        // day — the same "collected since" rule the history list applies.
         val comparison = PeriodComparison.windows(
             settings.dataCounterMode(), settings.cycleStartDay(), today
         )?.let { w ->
+            val oldest = PeriodComparison.oldestRetainedDay(today)
+            val screenObserved = usageHistory.screenTimeBetween(oldest, w.previousStart) > 0L
+            val unlocksObserved = usageHistory.unlocksBetween(oldest, w.previousStart) > 0
+            val notificationsObserved = notificationStats.totalBetween(oldest, w.previousStart) > 0
             PeriodComparisonData(
                 screenTimeNowMillis = usageHistory.screenTimeBetween(w.currentStart, w.currentEnd),
-                screenTimePrevMillis = usageHistory.screenTimeBetween(w.previousStart, w.previousEnd),
+                screenTimePrevMillis = if (screenObserved) {
+                    usageHistory.screenTimeBetween(w.previousStart, w.previousEnd)
+                } else {
+                    null
+                },
                 unlocksNow = usageHistory.unlocksBetween(w.currentStart, w.currentEnd),
-                unlocksPrev = usageHistory.unlocksBetween(w.previousStart, w.previousEnd),
+                unlocksPrev = if (unlocksObserved) {
+                    usageHistory.unlocksBetween(w.previousStart, w.previousEnd)
+                } else {
+                    null
+                },
                 notificationsNow = notificationStats.totalBetween(w.currentStart, w.currentEnd),
-                notificationsPrev = notificationStats.totalBetween(w.previousStart, w.previousEnd),
+                notificationsPrev = if (notificationsObserved) {
+                    notificationStats.totalBetween(w.previousStart, w.previousEnd)
+                } else {
+                    null
+                },
                 daysCompared = w.daysCompared,
             )
         }
