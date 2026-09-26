@@ -572,8 +572,9 @@ class SystemStatsRepositoryImpl @Inject constructor(
         // Data counters cover the user-selected period: the current calendar day (default)
         // or a one-month billing cycle starting on the chosen day of month.
         val counterMode = settings.dataCounterMode()
-        val periodStartMillis = DataPeriodCalculator
+        val periodStartDay = DataPeriodCalculator
             .periodStart(counterMode, settings.cycleStartDay(), LocalDate.now())
+        val periodStartMillis = periodStartDay
             .atStartOfDay(ZoneId.systemDefault())
             .toInstant()
             .toEpochMilli()
@@ -702,7 +703,8 @@ class SystemStatsRepositoryImpl @Inject constructor(
             wifiStandard = wifiStandard,
             ipAddress = ipAddress,
             uptimeText = uptimeText,
-            uptimeMillis = uptimeMs
+            uptimeMillis = uptimeMs,
+            dataPeriodStartEpochDay = periodStartDay.toEpochDay(),
         )
     }
 

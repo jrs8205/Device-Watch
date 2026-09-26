@@ -67,5 +67,12 @@ data class SystemStats(
     val ipAddress: String,
     val uptimeText: String,
     /** Raw uptime so a caller too narrow for [uptimeText] can format its own. */
-    val uptimeMillis: Long = 0L
+    val uptimeMillis: Long = 0L,
+    /**
+     * First day (epoch day) of the counting period the data figures cover. Carried
+     * with the reading so a consumer keys its per-period state to the period the
+     * figures were actually taken in, not to whatever period it is by the time the
+     * reading arrives.
+     */
+    val dataPeriodStartEpochDay: Long = 0L,
 )

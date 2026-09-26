@@ -22,7 +22,6 @@ import org.jarsi.devicewatch.data.BatterySample
 import org.jarsi.devicewatch.data.BatteryStatusReader
 import org.jarsi.devicewatch.data.ChargeAnchorLogic
 import org.jarsi.devicewatch.data.ChargeAnchorStore
-import org.jarsi.devicewatch.data.DataPeriodCalculator
 import org.jarsi.devicewatch.data.DataQuotaLogic
 import org.jarsi.devicewatch.data.SystemStats
 import org.jarsi.devicewatch.data.SystemStatsRepository
@@ -373,9 +372,10 @@ class SystemMonitorService : Service() {
             // fallback must never be compared against a period quota.
             val quotaGb = stats.mobileDataTotalGb
             if (quotaGb <= 0.0) return
-            val periodStartEpochDay = DataPeriodCalculator.periodStart(
-                appSettings.dataCounterMode(), appSettings.cycleStartDay(), LocalDate.now()
-            ).toEpochDay()
+            // The period comes with the reading. Computed here instead, a read that
+            // started before midnight and landed after it would latch the new
+            // period on the old period's usage.
+            val periodStartEpochDay = stats.dataPeriodStartEpochDay
             val pending = DataQuotaLogic.pendingThresholds(
                 quotaGb = quotaGb,
                 usedGb = stats.mobileDataUsedGb,
