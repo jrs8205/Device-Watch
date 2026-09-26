@@ -22,7 +22,9 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.YearMonth
@@ -124,6 +126,24 @@ class HistoryViewModelTest {
         statsRepository: FakeStatsRepository = FakeStatsRepository(),
         batteryHistory: FakeBatteryHistory = FakeBatteryHistory(),
     ) = HistoryViewModel(FakeHistory(), stats, FakeLog(), statsRepository, batteryHistory, dispatcher)
+
+    @get:Rule
+    val tmp = TemporaryFolder()
+
+    @Test
+    fun `an export never overwrites a file that already exists`() {
+        // Two exports finishing within the same second must still get two files:
+        // the second is numbered rather than written over the first.
+        val now = LocalDateTime.of(2026, 9, 26, 15, 0, 0)
+
+        val first = createExportFile(tmp.root, "device-watch-report", "html", now)
+        val second = createExportFile(tmp.root, "device-watch-report", "html", now)
+
+        assertThat(first.name).isEqualTo("device-watch-report-2026-09-26-150000.html")
+        assertThat(second.name).isEqualTo("device-watch-report-2026-09-26-150000-2.html")
+        assertThat(first.exists()).isTrue()
+        assertThat(second.exists()).isTrue()
+    }
 
     @Test
     fun `every export gets a file name of its own`() {

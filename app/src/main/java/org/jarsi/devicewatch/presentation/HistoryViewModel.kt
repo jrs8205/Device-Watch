@@ -234,7 +234,7 @@ class HistoryViewModel @Inject constructor(
                     val dir = File(context.cacheDir, "exports").apply { mkdirs() }
                     purgeStaleExports(dir)
                     val body = content()
-                    File(dir, exportFileName(fileStem, extension, LocalDateTime.now()))
+                    createExportFile(dir, fileStem, extension, LocalDateTime.now())
                         .apply { writeText(body) }
                 }
                 val uri = FileProvider.getUriForFile(context, FILE_PROVIDER_AUTHORITY, file)
@@ -346,3 +346,25 @@ private val EXPORT_STAMP: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-
  */
 internal fun exportFileName(fileStem: String, extension: String, now: LocalDateTime): String =
     "$fileStem-${now.format(EXPORT_STAMP)}.$extension"
+
+/**
+ * Creates the export's file under [dir] and returns it. The stamp is to the
+ * second, so two exports finishing inside one second would collide; the name is
+ * claimed with an atomic create and numbered (-2, -3, …) until one succeeds, so
+ * no export is ever written over another.
+ */
+internal fun createExportFile(
+    dir: File,
+    fileStem: String,
+    extension: String,
+    now: LocalDateTime,
+): File {
+    val base = exportFileName(fileStem, extension, now).removeSuffix(".$extension")
+    var attempt = 1
+    while (true) {
+        val name = if (attempt == 1) "$base.$extension" else "$base-$attempt.$extension"
+        val file = File(dir, name)
+        if (file.createNewFile()) return file
+        attempt++
+    }
+}
