@@ -16,7 +16,7 @@ import org.jarsi.devicewatch.data.SystemStats
 import org.jarsi.devicewatch.data.SystemStatsRepository
 import org.jarsi.devicewatch.data.UNAVAILABLE_INT
 import org.jarsi.devicewatch.data.UsageHistory
-import org.jarsi.devicewatch.system.ChargeLimitReminder
+import org.jarsi.devicewatch.system.MonitorServiceRelay
 import java.time.LocalDate
 import org.jarsi.devicewatch.widget.WidgetController
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -81,7 +81,7 @@ class DashboardViewModel @Inject constructor(
     private val appUsageRepository: AppUsageRepository,
     private val notificationStats: NotificationStats,
     private val usageHistory: UsageHistory,
-    private val chargeLimitReminder: ChargeLimitReminder,
+    private val monitorRelay: MonitorServiceRelay,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DashboardUiState())
@@ -297,7 +297,7 @@ class DashboardViewModel @Inject constructor(
      */
     fun onCommitChargeLimit() {
         settings.setChargeLimitPercent(_uiState.value.chargeLimitPercent)
-        chargeLimitReminder.limitChanged()
+        monitorRelay.chargeLimitChanged()
     }
 
     /** Live-updates the data-quota slider value without persisting; 0 switches it off. */
@@ -306,9 +306,14 @@ class DashboardViewModel @Inject constructor(
         _uiState.update { it.copy(dataQuotaGb = value) }
     }
 
-    /** Persists the chosen quota and re-queries stats so the counters show it right away. */
+    /**
+     * Persists the chosen quota, has the monitor re-check it now (so its usage
+     * watch is re-armed for the new thresholds) and re-queries stats so the
+     * counters show it right away.
+     */
     fun onCommitDataQuota() {
         settings.setDataQuotaGb(_uiState.value.dataQuotaGb)
+        monitorRelay.dataQuotaChanged()
         refresh()
     }
 

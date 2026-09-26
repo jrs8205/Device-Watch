@@ -50,8 +50,8 @@ class DashboardViewModelTest {
         appUsage: AppUsageRepository = FakeAppUsageRepository(),
         notifications: NotificationStats = FakeNotificationStats(),
         history: UsageHistory = FakeUsageHistory(),
-        reminder: FakeChargeLimitReminder = FakeChargeLimitReminder(),
-    ) = DashboardViewModel(repository, widget, settings, appUsage, notifications, history, reminder)
+        relay: FakeMonitorServiceRelay = FakeMonitorServiceRelay(),
+    ) = DashboardViewModel(repository, widget, settings, appUsage, notifications, history, relay)
 
     @Test
     fun `given fresh stats, when refreshing, then state reflects repository and widget flag`() =
@@ -165,8 +165,8 @@ class DashboardViewModelTest {
     fun `given a committed charge limit, then the monitor is told to apply it at once`() =
         runTest(dispatcher) {
             // Given
-            val reminder = FakeChargeLimitReminder()
-            val viewModel = buildViewModel(reminder = reminder)
+            val relay = FakeMonitorServiceRelay()
+            val viewModel = buildViewModel(relay = relay)
 
             // When
             viewModel.onChargeLimitChange(80)
@@ -174,7 +174,24 @@ class DashboardViewModelTest {
             advanceUntilIdle()
 
             // Then
-            assertThat(reminder.limitChangedCount).isEqualTo(1)
+            assertThat(relay.chargeLimitChangedCount).isEqualTo(1)
+        }
+
+    @Test
+    fun `given a committed data quota, then the monitor is told to re-check it at once`() =
+        runTest(dispatcher) {
+            // Given: without this the usage watch keeps the old quota's threshold
+            // until the next screen-on check, which may be hours away.
+            val relay = FakeMonitorServiceRelay()
+            val viewModel = buildViewModel(relay = relay)
+
+            // When
+            viewModel.onDataQuotaChange(20.0)
+            viewModel.onCommitDataQuota()
+            advanceUntilIdle()
+
+            // Then
+            assertThat(relay.dataQuotaChangedCount).isEqualTo(1)
         }
 
     @Test

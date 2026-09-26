@@ -14,16 +14,21 @@ import org.jarsi.devicewatch.data.NotificationStats
 import org.jarsi.devicewatch.data.UsageHistory
 import org.jarsi.devicewatch.data.UsageDayTally
 import org.jarsi.devicewatch.data.UsageTotals
-import org.jarsi.devicewatch.system.ChargeLimitReminder
+import org.jarsi.devicewatch.system.MonitorServiceRelay
 import java.time.LocalDate
 
 /** Hand-written fakes shared by the presentation-layer ViewModel tests. */
 
-internal class FakeChargeLimitReminder : ChargeLimitReminder {
-    var limitChangedCount = 0
+internal class FakeMonitorServiceRelay : MonitorServiceRelay {
+    var chargeLimitChangedCount = 0
+    var dataQuotaChangedCount = 0
 
-    override fun limitChanged() {
-        limitChangedCount++
+    override fun chargeLimitChanged() {
+        chargeLimitChangedCount++
+    }
+
+    override fun dataQuotaChanged() {
+        dataQuotaChangedCount++
     }
 }
 

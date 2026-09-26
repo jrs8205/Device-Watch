@@ -91,8 +91,24 @@ class SystemMonitorService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (intent?.action == ACTION_CHARGE_LIMIT_CHANGED) onChargeLimitChanged()
+        when (intent?.action) {
+            ACTION_CHARGE_LIMIT_CHANGED -> onChargeLimitChanged()
+            ACTION_DATA_QUOTA_CHANGED -> onDataQuotaChanged()
+        }
         return START_STICKY
+    }
+
+    /**
+     * Settings just changed the data quota. A fresh reading under the new quota
+     * re-runs the check at once, which re-arms (or releases) the usage watch for
+     * the new thresholds instead of leaving it on the old quota's until the next
+     * screen-on check — possibly hours away with the screen off.
+     */
+    private fun onDataQuotaChanged() {
+        serviceScope.launch {
+            val stats = updateWidgetStats(applicationContext)
+            if (stats != null) maybeNotifyDataQuota(stats)
+        }
     }
 
     /**
@@ -496,7 +512,8 @@ class SystemMonitorService : Service() {
         private const val NOTIFICATION_ID = 1001
         private const val USAGE_REFRESH_INTERVAL_MS = 60_000L
 
-        /** Start-command action from [ServiceChargeLimitReminder]: re-check the limit now. */
+        /** Start-command actions from [IntentMonitorServiceRelay]: re-check a changed setting now. */
         const val ACTION_CHARGE_LIMIT_CHANGED = "org.jarsi.devicewatch.action.CHARGE_LIMIT_CHANGED"
+        const val ACTION_DATA_QUOTA_CHANGED = "org.jarsi.devicewatch.action.DATA_QUOTA_CHANGED"
     }
 }
