@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.style.TextOverflow
 import org.jarsi.devicewatch.data.DonutSegment
 
 /**
@@ -114,6 +115,8 @@ internal fun ScreenTimeDonut(
 
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
                 text = totalText,
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,

@@ -95,6 +95,8 @@ internal fun SettingsSectionCard(
         ) {
             Text(
                 stringResource(titleRes),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
                 letterSpacing = SECTION_TITLE_TRACKING,
@@ -135,6 +137,8 @@ internal fun SectionLink(text: String, contentDescription: String, onClick: () -
             .padding(end = 8.dp)
     ) {
         Text(
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
             text = text,
             fontSize = 13.sp,
             fontWeight = FontWeight.SemiBold,
@@ -264,6 +268,8 @@ internal fun SettingsToggleRow(
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
                 text = stringResource(titleRes),
                 fontWeight = FontWeight.Medium,
                 fontSize = 14.sp
@@ -296,6 +302,8 @@ internal fun DeviceFact(@StringRes labelRes: Int, value: String) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(vertical = 10.dp)) {
             Text(
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
                 text = stringResource(labelRes),
                 fontSize = 13.sp,
                 fontWeight = FontWeight.SemiBold,

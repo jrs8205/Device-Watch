@@ -12,6 +12,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.style.TextOverflow
 import org.jarsi.devicewatch.ui.theme.LocalMetricFontFamily
 
 /**
@@ -49,6 +50,8 @@ internal fun MetricValue(
     fontWeight: FontWeight = FontWeight.Medium,
 ) {
     Text(
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
         text = text,
         modifier = modifier,
         fontFamily = LocalMetricFontFamily.current,
@@ -66,6 +69,8 @@ internal fun MetricLabel(
     fontSize: TextUnit = ROW_LABEL_SP,
 ) {
     Text(
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
         text = text,
         modifier = modifier,
         fontSize = fontSize,

@@ -47,6 +47,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import org.jarsi.devicewatch.BuildConfig
 import org.jarsi.devicewatch.R
@@ -203,6 +204,8 @@ internal fun SettingsTab(
                         )
                     ) {
                         Text(
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                             text = stringResource(
                                 if (mode == DataCounterMode.DAY) {
                                     R.string.data_counter_mode_day
@@ -219,6 +222,8 @@ internal fun SettingsTab(
             if (uiState.dataCounterMode == DataCounterMode.BILLING_CYCLE) {
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                     text = stringResource(R.string.data_counter_cycle_start, uiState.cycleStartDay),
                     fontWeight = FontWeight.Medium,
                     fontSize = 14.sp
@@ -254,6 +259,8 @@ internal fun SettingsTab(
 
             Spacer(modifier = Modifier.height(8.dp))
             Text(
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
                 text = if (uiState.dataQuotaGb > 0.0) {
                     stringResource(R.string.data_quota_value, uiState.dataQuotaGb.roundToInt().toString())
                 } else {
@@ -292,6 +299,8 @@ internal fun SettingsTab(
             if (uiState.chargeLimitPercent > 0) {
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                     text = stringResource(R.string.charge_limit_value, uiState.chargeLimitPercent),
                     fontWeight = FontWeight.Medium,
                     fontSize = 14.sp
@@ -312,6 +321,8 @@ internal fun SettingsTab(
             Spacer(modifier = Modifier.height(4.dp))
 
             Text(
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
                 text = stringResource(R.string.widget_opacity_title),
                 fontWeight = FontWeight.Medium,
                 fontSize = 14.sp
@@ -334,6 +345,8 @@ internal fun SettingsTab(
                 Spacer(modifier = Modifier.width(12.dp))
 
                 Text(
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                     text = "${(uiState.widgetOpacity * 100).toInt()}%",
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
@@ -412,6 +425,8 @@ internal fun SettingsTab(
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Text(
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                             text = stringResource(
                                 R.string.night_dim_start_label,
                                 minutesText(nightDimStartMinutes)
@@ -426,6 +441,8 @@ internal fun SettingsTab(
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Text(
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                             text = stringResource(
                                 R.string.night_dim_end_label,
                                 minutesText(nightDimEndMinutes)
@@ -549,6 +566,8 @@ internal fun SettingsTab(
         }
 
         Text(
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
             text = stringResource(
                 R.string.app_version_line,
                 BuildConfig.VERSION_NAME,

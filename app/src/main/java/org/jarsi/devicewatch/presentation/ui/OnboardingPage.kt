@@ -55,6 +55,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import kotlinx.coroutines.launch
@@ -319,6 +320,8 @@ private fun WelcomePage() {
     )
     Spacer(modifier = Modifier.height(16.dp))
     Text(
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
         text = stringResource(R.string.onboarding_welcome_title),
         fontSize = 24.sp,
         fontWeight = FontWeight.Bold,
@@ -343,6 +346,8 @@ private fun PermissionsPage(
 ) {
     Spacer(modifier = Modifier.height(16.dp))
     Text(
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
         text = stringResource(R.string.onboarding_permissions_title),
         fontSize = 22.sp,
         fontWeight = FontWeight.Bold,
@@ -398,6 +403,8 @@ private fun PermissionRow(
             AccessStatusDot(granted = granted)
             Spacer(modifier = Modifier.width(10.dp))
             Text(
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
                 text = stringResource(labelRes),
                 fontSize = 14.sp,
                 fontWeight = FontWeight.SemiBold,
@@ -429,6 +436,8 @@ private fun FeaturePage(
 ) {
     Spacer(modifier = Modifier.height(8.dp))
     Text(
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
         text = stringResource(titleRes),
         fontSize = 22.sp,
         fontWeight = FontWeight.Bold,
@@ -461,6 +470,8 @@ private fun FeaturePage(
 private fun DonePage() {
     Spacer(modifier = Modifier.height(96.dp))
     Text(
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
         text = stringResource(R.string.onboarding_done_title),
         fontSize = 24.sp,
         fontWeight = FontWeight.Bold,

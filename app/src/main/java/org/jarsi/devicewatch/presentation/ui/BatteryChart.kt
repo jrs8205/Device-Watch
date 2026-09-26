@@ -28,6 +28,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.style.TextOverflow
 import org.jarsi.devicewatch.R
 import org.jarsi.devicewatch.data.BatterySample
 import org.jarsi.devicewatch.ui.theme.LocalMetricFontFamily
@@ -174,6 +175,8 @@ internal fun BatteryChart(
                 ) {
                     GridFractions.sortedDescending().forEach { fraction ->
                         Text(
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                             text = "${(fraction * 100).toInt()} %",
                             fontSize = 11.sp,
                             fontFamily = LocalMetricFontFamily.current,
@@ -208,6 +211,8 @@ private fun TimeAxisLabels(range: BatteryChartRange, nowMillis: Long) {
     ) {
         listOf(nowMillis - windowMillis, nowMillis - windowMillis / 2, nowMillis).forEach { millis ->
             Text(
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
                 text = formatter.format(Instant.ofEpochMilli(millis)),
                 fontSize = 11.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant

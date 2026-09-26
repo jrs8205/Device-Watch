@@ -40,6 +40,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.annotation.StringRes
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.jarsi.devicewatch.R
@@ -163,6 +164,8 @@ private fun SinceChargeSummaryCard(uiState: SinceChargeUiState) {
     SettingsSectionCard(titleRes = R.string.since_charge_summary_section) {
         val stamp = anchorTimeText(anchor.timeMillis)
         Text(
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
             text = when (anchor.type) {
                 ChargeAnchorType.FULL_CHARGE ->
                     stringResource(R.string.since_charge_full_anchor, stamp)
@@ -186,6 +189,8 @@ private fun SinceChargeSummaryCard(uiState: SinceChargeUiState) {
         if (uiState.isCharging) {
             Spacer(modifier = Modifier.height(4.dp))
             Text(
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
                 text = stringResource(R.string.since_charge_charging_now),
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -267,12 +272,16 @@ private fun SinceChargeScreenTimeCard(uiState: SinceChargeUiState) {
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                     text = durationText(context, segment.millis),
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                     text = "${(segment.fraction * 100).toInt()}%",
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -285,6 +294,8 @@ private fun SinceChargeScreenTimeCard(uiState: SinceChargeUiState) {
 @Composable
 private fun DataQualityNotice(@StringRes textRes: Int, modifier: Modifier = Modifier) {
     Text(
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
         text = stringResource(textRes),
         modifier = modifier,
         fontSize = 12.sp,

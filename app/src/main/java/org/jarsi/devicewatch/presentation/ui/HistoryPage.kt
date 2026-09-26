@@ -52,6 +52,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.jarsi.devicewatch.R
@@ -263,6 +264,8 @@ fun HistoryPage(
                     grouped.forEach { (day, entries) ->
                         item(key = "day_header_$day") {
                             Text(
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
                                 text = dayHeaderText(day),
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
@@ -350,6 +353,8 @@ private fun MonthlyDataSection(
             Row(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
                 Spacer(modifier = Modifier.weight(1.1f))
                 Text(
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                     text = stringResource(R.string.history_monthly_mobile_column),
                     fontSize = 11.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -357,6 +362,8 @@ private fun MonthlyDataSection(
                     modifier = Modifier.weight(1.1f)
                 )
                 Text(
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                     text = stringResource(R.string.history_monthly_wifi_column),
                     fontSize = 11.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -373,6 +380,8 @@ private fun MonthlyDataSection(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                         text = month.month.format(monthFormatter)
                             .replaceFirstChar { it.uppercaseChar() },
                         fontSize = 13.sp,
@@ -381,6 +390,8 @@ private fun MonthlyDataSection(
                         modifier = Modifier.weight(1.1f)
                     )
                     Text(
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                         text = gbTodayText(month.mobileGb),
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
@@ -388,6 +399,8 @@ private fun MonthlyDataSection(
                         modifier = Modifier.weight(1.1f)
                     )
                     Text(
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                         text = gbTodayText(month.wifiGb),
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
@@ -456,6 +469,8 @@ private fun HistoryDayList(days: List<HistoryDay>, metric: HistoryMetric) {
 
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
             text = stringResource(R.string.history_collected_since, collectedSince),
             fontSize = 11.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -470,6 +485,8 @@ private fun HistoryDayList(days: List<HistoryDay>, metric: HistoryMetric) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                     text = when (day.day) {
                         today -> stringResource(R.string.history_today)
                         today.minusDays(1) -> stringResource(R.string.history_yesterday)
@@ -481,6 +498,8 @@ private fun HistoryDayList(days: List<HistoryDay>, metric: HistoryMetric) {
                     modifier = Modifier.weight(1f)
                 )
                 Text(
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                     text = if (metric == HistoryMetric.ScreenTime) {
                         durationText(context, day.screenTimeMillis)
                     } else {
@@ -530,6 +549,8 @@ private fun NotificationLogRow(entry: NotificationLogEntry, modifier: Modifier =
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                     text = remember(entry.timeMillis) {
                         android.text.format.DateFormat.getTimeFormat(context).format(Date(entry.timeMillis))
                     },

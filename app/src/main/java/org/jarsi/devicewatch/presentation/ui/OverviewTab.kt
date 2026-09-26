@@ -45,6 +45,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.style.TextOverflow
 import org.jarsi.devicewatch.R
 import org.jarsi.devicewatch.data.DataCounterMode
 import org.jarsi.devicewatch.data.DataQuotaLogic
@@ -228,6 +229,8 @@ internal fun OverviewTab(
                     LabelValueRow(
                         label = {
                             Text(
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
                                 text = stringResource(R.string.notification_count_label),
                                 fontSize = 12.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -286,6 +289,8 @@ internal fun OverviewTab(
                         color = MaterialTheme.colorScheme.outline
                     )
                     Text(
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                         text = stringResource(R.string.comparison_section_label),
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
@@ -323,6 +328,8 @@ internal fun OverviewTab(
                         )
                     }
                     Text(
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                         // Day mode really is "yesterday"; in cycle mode a one-day
                         // window is the previous cycle's first day, not yesterday.
                         text = if (uiState.dataCounterMode == DataCounterMode.DAY) {
@@ -467,6 +474,8 @@ internal fun OverviewTab(
 
             val freeStorage = currentStats.totalStorageGb - currentStats.usedStorageGb
             Text(
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
                 text = stringResource(R.string.widget_free_value, "%.0f GB".format(freeStorage)),
                 fontSize = 11.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -485,7 +494,9 @@ internal fun OverviewTab(
                         Text(
                             stringResource(R.string.cpu_cores_label),
                             fontSize = 11.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                         )
                         Text(
                             context.resources.getQuantityString(
@@ -494,6 +505,8 @@ internal fun OverviewTab(
                                 currentStats.cpuCores,
                                 currentStats.cpuAbi
                             ),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold
                         )
@@ -504,9 +517,17 @@ internal fun OverviewTab(
                         Text(
                             stringResource(R.string.uptime_label),
                             fontSize = 11.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                         )
-                        Text(currentStats.uptimeText, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                        Text(
+                            currentStats.uptimeText,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
                     }
                 }
             )
@@ -528,6 +549,8 @@ internal fun OverviewTab(
         }
 
         Text(
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
             text = stringResource(R.string.last_updated, uiState.lastUpdated),
             modifier = Modifier.padding(top = 12.dp, bottom = 28.dp),
             fontSize = 11.sp,
@@ -547,6 +570,8 @@ private fun ComparisonRow(
         modifier = Modifier.padding(vertical = 3.dp),
         label = {
             Text(
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
                 text = stringResource(labelRes),
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -557,12 +582,16 @@ private fun ComparisonRow(
             // next line as one block rather than breaking apart.
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                     text = stringResource(R.string.comparison_values, previousText, nowText),
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Medium
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                     // Less is better for all three metrics: growth reads in the error
                     // color, a drop in the primary one, and no baseline stays neutral.
                     text = changePercent?.let {

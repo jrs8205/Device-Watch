@@ -172,7 +172,7 @@ internal fun AppsTab(viewModel: AppsViewModel = hiltViewModel()) {
                         Text(
                             text = segment.label ?: stringResource(R.string.screen_time_others),
                             fontSize = 14.sp,
-                            maxLines = 2,
+                            maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.weight(1f)
                         )
@@ -211,12 +211,14 @@ internal fun AppsTab(viewModel: AppsViewModel = hiltViewModel()) {
                             Text(
                                 text = entry.label,
                                 fontSize = 14.sp,
-                                maxLines = 2,
+                                maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                                 modifier = Modifier.weight(1f)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
                                 text = "${entry.launchCount}×",
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold
@@ -256,12 +258,14 @@ internal fun AppsTab(viewModel: AppsViewModel = hiltViewModel()) {
                         Text(
                             text = consumer.label,
                             fontSize = 14.sp,
-                            maxLines = 2,
+                            maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.weight(1f)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                             text = bytesText(consumer.bytes),
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold
@@ -329,11 +333,13 @@ private fun AppListRow(
                 text = app.label,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Medium,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
             val tier = UsageEventAggregator.lastUsedTier(daysSinceLastUse(app.lastUsedEpochMillis))
             Text(
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
                 text = lastUsedText(app.lastUsedEpochMillis),
                 fontSize = 12.sp,
                 color = lastUsedTierColor(tier)
