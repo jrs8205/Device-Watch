@@ -195,12 +195,20 @@ object HtmlReportBuilder {
         append("</header>\n")
     }
 
+    /**
+     * Each average runs from the day its own metric was first collected
+     * ([HistoryCoverage]): a zero from before the notification listener was granted
+     * is a gap, and folding it in would halve the figure. Quiet days after that
+     * count. A metric never collected shows a dash.
+     */
     private fun StringBuilder.appendSummary(data: HtmlReportData, labels: HtmlReportLabels) {
         appendSectionStart(labels.summarySection)
-        val active = data.days.filter {
-            it.screenTimeMillis > 0L || it.unlocks > 0 || it.notifications > 0
-        }
-        if (active.isEmpty() && data.monthly.isEmpty()) {
+        val coverage = HistoryCoverage.of(data.days)
+        val screenDays = data.days.filter { coverage.screenTimeKnown(it.day) }
+        val unlockDays = data.days.filter { coverage.unlocksKnown(it.day) }
+        val notificationDays = data.days.filter { coverage.notificationsKnown(it.day) }
+        val nothingCollected = screenDays.isEmpty() && unlockDays.isEmpty() && notificationDays.isEmpty()
+        if (nothingCollected && data.monthly.isEmpty()) {
             appendEmpty(labels)
             append("</section>\n")
             return
@@ -208,29 +216,33 @@ object HtmlReportBuilder {
         append("<div class=\"cards\">\n")
         appendCard(
             labels.summaryScreenTime,
-            if (active.isEmpty()) DASH
-            else durationText(active.sumOf { it.screenTimeMillis } / active.size, labels),
+            if (screenDays.isEmpty()) DASH
+            else durationText(screenDays.sumOf { it.screenTimeMillis } / screenDays.size, labels),
         )
         appendCard(
             labels.summaryUnlocks,
-            if (active.isEmpty()) DASH else (active.sumOf { it.unlocks } / active.size).toString(),
+            if (unlockDays.isEmpty()) DASH
+            else (unlockDays.sumOf { it.unlocks } / unlockDays.size).toString(),
         )
         appendCard(
             labels.summaryNotifications,
-            if (active.isEmpty()) DASH
-            else (active.sumOf { it.notifications } / active.size).toString(),
+            if (notificationDays.isEmpty()) DASH
+            else (notificationDays.sumOf { it.notifications } / notificationDays.size).toString(),
         )
         appendCard(labels.summaryData, currentMonthDataText(data))
         append("</div>\n")
         append("</section>\n")
     }
 
-    /** Mobile + Wi-Fi of the most recent month the table carries. */
+    /**
+     * Mobile + Wi-Fi of the most recent month the table carries. Unknown when either
+     * part is: a Wi-Fi-only figure would pass as the month's total while the table
+     * below shows the mobile column as a dash.
+     */
     private fun currentMonthDataText(data: HtmlReportData): String {
         val newest = data.monthly.maxByOrNull { it.month } ?: return DASH
-        val parts = listOf(newest.mobileGb, newest.wifiGb).filter { it >= 0.0 }
-        if (parts.isEmpty()) return DASH
-        return gbText(parts.sum(), data.locale)
+        if (newest.mobileGb < 0.0 || newest.wifiGb < 0.0) return DASH
+        return gbText(newest.mobileGb + newest.wifiGb, data.locale)
     }
 
     private fun StringBuilder.appendCard(label: String, value: String) {
@@ -383,16 +395,24 @@ object HtmlReportBuilder {
             tableClass = "days",
             tableName = "days",
         )
+        // A cell before its metric was first collected is a dash, not a zero.
+        val coverage = HistoryCoverage.of(data.days)
         data.days.sortedByDescending { it.day }.forEach { day ->
             // The ISO date drives the from/to filter; ISO strings compare correctly
             // as plain text, so the script needs no date parsing.
             append("<tr data-date=\"").append(escape(day.day.toString())).append("\">")
             append("<td class=\"day\">").append(escape(day.day.toString())).append("</td>")
-            append("<td>").append(escape(durationText(day.screenTimeMillis, labels))).append("</td>")
-            append("<td>").append(day.unlocks).append("</td>")
-            append("<td>").append(day.notifications).append("</td>")
-            append("<td>").append(day.boots).append("</td>")
-            append("<td>").append(day.charges).append("</td>")
+            append("<td>")
+            append(
+                if (coverage.screenTimeKnown(day.day)) escape(durationText(day.screenTimeMillis, labels)) else DASH
+            )
+            append("</td>")
+            append("<td>").append(if (coverage.unlocksKnown(day.day)) day.unlocks.toString() else DASH).append("</td>")
+            append("<td>")
+            append(if (coverage.notificationsKnown(day.day)) day.notifications.toString() else DASH)
+            append("</td>")
+            append("<td>").append(if (coverage.bootsKnown(day.day)) day.boots.toString() else DASH).append("</td>")
+            append("<td>").append(if (coverage.chargesKnown(day.day)) day.charges.toString() else DASH).append("</td>")
             append("</tr>\n")
         }
         appendTableEnd()

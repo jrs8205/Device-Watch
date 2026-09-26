@@ -246,6 +246,62 @@ class HtmlReportBuilderTest {
     }
 
     @Test
+    fun `a metric averages only from the day it was first collected`() {
+        // Notification access was granted on the 14th: the 13th's zero is a gap,
+        // not a quiet day, so the average is 20 over one day — not 10 over two.
+        val html = HtmlReportBuilder.build(
+            data(
+                days = listOf(
+                    day(LocalDate.of(2026, 8, 13), screenTimeMillis = 3_600_000L, unlocks = 10),
+                    day(LocalDate.of(2026, 8, 14), screenTimeMillis = 7_200_000L, unlocks = 20, notifications = 20),
+                ),
+            ),
+            labels,
+        )
+
+        assertThat(html).contains("<div class=\"k\">Notifications / day</div><div class=\"v\">20</div>")
+        assertThat(html).contains("<div class=\"k\">Unlocks / day</div><div class=\"v\">15</div>")
+        // The day before collection shows a dash in that column, not a zero.
+        assertThat(html).containsMatch(
+            "<td class=\"day\">2026-08-13</td><td>[^<]*</td><td>10</td><td>—</td>"
+        )
+        assertThat(html).containsMatch(
+            "<td class=\"day\">2026-08-14</td><td>[^<]*</td><td>20</td><td>20</td>"
+        )
+    }
+
+    @Test
+    fun `a metric never collected shows a dash, not a zero average`() {
+        val html = HtmlReportBuilder.build(
+            data(
+                days = listOf(
+                    day(LocalDate.of(2026, 8, 13), screenTimeMillis = 3_600_000L, unlocks = 10),
+                    day(LocalDate.of(2026, 8, 14), screenTimeMillis = 7_200_000L, unlocks = 20),
+                ),
+            ),
+            labels,
+        )
+
+        assertThat(html).contains("<div class=\"k\">Notifications / day</div><div class=\"v\">—</div>")
+        assertThat(html).containsMatch(
+            "<td class=\"day\">2026-08-14</td><td>[^<]*</td><td>20</td><td>—</td>"
+        )
+    }
+
+    @Test
+    fun `the month's data total is unknown when one part of it is`() {
+        // Mobile failed to read (-1) while Wi-Fi read 5 GB: "5.00 GB" would pass a
+        // partial figure off as the month's total.
+        val html = HtmlReportBuilder.build(
+            data(monthly = listOf(MonthlyDataUsage(YearMonth.of(2026, 8), mobileGb = -1.0, wifiGb = 5.0))),
+            labels,
+        )
+
+        assertThat(html).contains("<div class=\"k\">Data total</div><div class=\"v\">—</div>")
+        assertThat(html).doesNotContain("5.00 GB</div>")
+    }
+
+    @Test
     fun `battery chart marks a lone reading with a dot`() {
         val hour = 3_600_000L
         val start = 1_786_700_000_000L

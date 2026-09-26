@@ -33,14 +33,25 @@ object CsvExporter {
         return "\"${guarded.replace("\"", "\"\"")}\""
     }
 
-    /** ISO dates in the given order (the caller passes days ascending). */
+    /**
+     * ISO dates in the given order (the caller passes days ascending). A cell is
+     * empty — not 0 — for days before that metric was first collected
+     * ([HistoryCoverage]); a spreadsheet then averages over the measured days only.
+     */
     fun usageHistoryCsv(days: List<HistoryDay>): String = buildString {
         appendLine(USAGE_HEADER)
+        val coverage = HistoryCoverage.of(days)
         days.forEach { day ->
             val minutes = (day.screenTimeMillis + 30_000L) / 60_000L
-            appendLine(
-                "${day.day},$minutes,${day.unlocks},${day.notifications},${day.boots},${day.charges}"
+            val cells = listOf(
+                day.day.toString(),
+                minutes.takeIf { coverage.screenTimeKnown(day.day) }?.toString().orEmpty(),
+                day.unlocks.takeIf { coverage.unlocksKnown(day.day) }?.toString().orEmpty(),
+                day.notifications.takeIf { coverage.notificationsKnown(day.day) }?.toString().orEmpty(),
+                day.boots.takeIf { coverage.bootsKnown(day.day) }?.toString().orEmpty(),
+                day.charges.takeIf { coverage.chargesKnown(day.day) }?.toString().orEmpty(),
             )
+            appendLine(cells.joinToString(","))
         }
     }
 

@@ -53,6 +53,35 @@ class CsvExporterTest {
     }
 
     @Test
+    fun `usage history csv leaves a cell empty before that metric was first collected`() {
+        val days = listOf(
+            HistoryDay(
+                day = LocalDate.of(2026, 8, 13),
+                screenTimeMillis = 90_000L,
+                unlocks = 12,
+                notifications = 0,
+                boots = 0,
+                charges = 0,
+            ),
+            HistoryDay(
+                day = LocalDate.of(2026, 8, 14),
+                screenTimeMillis = 3_600_000L,
+                unlocks = 3,
+                notifications = 7,
+                boots = 1,
+                charges = 1,
+            ),
+        )
+
+        val lines = CsvExporter.usageHistoryCsv(days).trimEnd().lines()
+
+        // Notifications, boots and charges were first recorded on the 14th; the
+        // 13th's zeros are "not collected yet" and stay empty rather than 0.
+        assertThat(lines[1]).isEqualTo("2026-08-13,2,12,,,")
+        assertThat(lines[2]).isEqualTo("2026-08-14,60,3,7,1,1")
+    }
+
+    @Test
     fun `notification log csv keeps log order and escapes free text`() {
         val entries = listOf(
             NotificationLogEntry(
