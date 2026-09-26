@@ -308,7 +308,12 @@ class SystemMonitorService : Service() {
                     }
                 }
                 serviceScope.launch {
-                    updateWidgetStats(context)
+                    val stats = updateWidgetStats(context)
+                    // The 5 s loop stops with the screen (a measured battery saving),
+                    // so a quota crossed overnight would otherwise wait for the
+                    // morning. Battery broadcasts keep arriving with the screen off
+                    // and already pay for this stats read, so the check rides along.
+                    if (stats != null) maybeNotifyDataQuota(stats)
                 }
             }
         }
@@ -339,8 +344,11 @@ class SystemMonitorService : Service() {
      * Data-quota alerts: 80 % and the limit itself, each at most once per counting
      * period. The latch lives in settings and is keyed by the period start, so a new
      * day (or billing cycle) re-arms both — and a quota switched on mid-period only
-     * alerts for what the period has actually used.
+     * alerts for what the period has actually used. Synchronized because the
+     * screen-on loop and the battery receiver both call it from the service scope,
+     * and the latch is read before it is written.
      */
+    @Synchronized
     private fun maybeNotifyDataQuota(stats: SystemStats) {
         try {
             // mobileDataTotalGb carries the quota only when one is set AND the
