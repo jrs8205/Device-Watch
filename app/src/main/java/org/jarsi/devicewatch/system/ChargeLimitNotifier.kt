@@ -24,9 +24,14 @@ object ChargeLimitNotifier {
     private const val CHANNEL_ID = "battery_full_channel"
     private const val NOTIFICATION_ID = 1003
 
+    /**
+     * Posts the reminder and reports whether it was actually handed to the system.
+     * The caller latches "notified this plug session" only on true: a reminder
+     * refused for a missing permission must be retried on the next broadcast.
+     */
     @SuppressLint("MissingPermission")
-    fun show(context: Context, levelPercent: Int) {
-        if (!canPostNotifications(context)) return
+    fun show(context: Context, levelPercent: Int): Boolean {
+        if (!canPostNotifications(context)) return false
         createChannel(context)
 
         val contentIntent = PendingIntent.getActivity(
@@ -47,10 +52,12 @@ object ChargeLimitNotifier {
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .build()
 
-        try {
+        return try {
             NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, notification)
+            true
         } catch (_: SecurityException) {
             // Permission can still be revoked between the check and notify().
+            false
         }
     }
 

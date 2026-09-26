@@ -86,6 +86,28 @@ class SystemMonitorService : Service() {
         return START_STICKY
     }
 
+    /**
+     * Runs the reminder rule against one battery reading. The once-per-plug latch is
+     * set only after the notification was actually posted: a reminder the system
+     * refused (notifications not permitted) must be tried again next time.
+     */
+    private fun evaluateChargeLimit(level: Int, plugged: Boolean) {
+        // The limit is re-read on every call because settings can change while the
+        // service runs; SharedPreferences is memory-cached, so this stays cheap.
+        val decision = ChargeLimitLogic.onBatteryChanged(
+            chargeLimitState,
+            limitPercent = appSettings.chargeLimitPercent(),
+            level = level,
+            isPlugged = plugged,
+        )
+        if (!decision.notify) return
+        // Same quirky-EXTRA_SCALE clamp as the battery sample, so the notification
+        // can never claim more than 100 %.
+        if (ChargeLimitNotifier.show(applicationContext, level.coerceIn(0, 100))) {
+            chargeLimitState = decision.state
+        }
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         batteryReceiver?.let {
@@ -263,21 +285,7 @@ class SystemMonitorService : Service() {
                             )
                             serviceScope.launch { recordBatterySample(sample) }
                         }
-                        // Charge reminder. The limit is re-read here because settings
-                        // can change while the service runs; SharedPreferences is
-                        // memory-cached, so this stays cheap on the receiver thread.
-                        val decision = ChargeLimitLogic.onBatteryChanged(
-                            chargeLimitState,
-                            limitPercent = appSettings.chargeLimitPercent(),
-                            level = level,
-                            isPlugged = plugged,
-                        )
-                        chargeLimitState = decision.state
-                        if (decision.notify) {
-                            // Same quirky-EXTRA_SCALE clamp as the sample above, so the
-                            // notification can never claim more than 100 %.
-                            ChargeLimitNotifier.show(applicationContext, level.coerceIn(0, 100))
-                        }
+                        evaluateChargeLimit(level, plugged)
                     }
                     Intent.ACTION_POWER_CONNECTED -> {
                         usageHistory.incrementCharge(LocalDate.now())
@@ -304,7 +312,7 @@ class SystemMonitorService : Service() {
                 }
             }
         }
-        
+
         val filter = IntentFilter().apply {
             addAction(Intent.ACTION_BATTERY_CHANGED)
             addAction(Intent.ACTION_POWER_CONNECTED)
@@ -350,8 +358,11 @@ class SystemMonitorService : Service() {
                 notified100 = appSettings.dataQuotaNotified(periodStartEpochDay, DataQuotaLogic.REACHED_PERCENT),
             )
             pending.forEach { threshold ->
-                DataQuotaNotifier.show(applicationContext, threshold, stats.mobileDataUsedGb, quotaGb)
-                appSettings.setDataQuotaNotified(periodStartEpochDay, threshold)
+                // Latched only once the alert was really posted; a refused one is retried.
+                val shown = DataQuotaNotifier.show(
+                    applicationContext, threshold, stats.mobileDataUsedGb, quotaGb
+                )
+                if (shown) appSettings.setDataQuotaNotified(periodStartEpochDay, threshold)
             }
         } catch (e: CancellationException) {
             throw e

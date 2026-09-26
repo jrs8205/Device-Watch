@@ -26,9 +26,14 @@ object DataQuotaNotifier {
     private const val CHANNEL_ID = "data_quota_channel"
     private const val NOTIFICATION_ID = 1004
 
+    /**
+     * Posts the alert and reports whether it was actually handed to the system. The
+     * caller writes the per-period latch only on true, so an alert refused for a
+     * missing permission is retried instead of being marked as delivered.
+     */
     @SuppressLint("MissingPermission")
-    fun show(context: Context, threshold: Int, usedGb: Double, quotaGb: Double) {
-        if (!canPostNotifications(context)) return
+    fun show(context: Context, threshold: Int, usedGb: Double, quotaGb: Double): Boolean {
+        if (!canPostNotifications(context)) return false
         createChannel(context)
 
         val contentIntent = PendingIntent.getActivity(
@@ -54,10 +59,12 @@ object DataQuotaNotifier {
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .build()
 
-        try {
+        return try {
             NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, notification)
+            true
         } catch (_: SecurityException) {
             // Permission can still be revoked between the check and notify().
+            false
         }
     }
 
