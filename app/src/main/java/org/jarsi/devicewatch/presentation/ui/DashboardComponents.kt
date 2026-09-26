@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
@@ -118,7 +119,11 @@ internal fun SettingsSectionCard(
     }
 }
 
-/** The "open the page behind this section" link that sits on a band's title line. */
+/**
+ * The "open the page behind this section" link that sits on a band's title line.
+ * Its text is 13 sp, so the tappable row is held to the 48 dp minimum touch target
+ * rather than the ~32 dp the text and chevron alone would give.
+ */
 @Composable
 internal fun SectionLink(text: String, contentDescription: String, onClick: () -> Unit) {
     Row(
@@ -126,7 +131,8 @@ internal fun SectionLink(text: String, contentDescription: String, onClick: () -
         modifier = Modifier
             .clip(RoundedCornerShape(8.dp))
             .clickable(onClick = withTapHaptic(onClick))
-            .padding(end = 8.dp, top = 4.dp, bottom = 4.dp)
+            .heightIn(min = MIN_TOUCH_TARGET)
+            .padding(end = 8.dp)
     ) {
         Text(
             text = text,
@@ -145,6 +151,9 @@ internal fun SectionLink(text: String, contentDescription: String, onClick: () -
 /** Section inset and rhythm, in dp so they do not grow with the font. */
 internal val BAND_INSET = 20.dp
 internal val BAND_SPACING = 18.dp
+
+/** Material's minimum touch target; a control smaller than this is easy to miss. */
+internal val MIN_TOUCH_TARGET = 48.dp
 
 /** Tracked-out section titles, the one place this design widens letters. */
 internal val SECTION_TITLE_TRACKING = 0.14.em
