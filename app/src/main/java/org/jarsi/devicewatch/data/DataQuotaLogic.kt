@@ -35,6 +35,14 @@ object DataQuotaLogic {
             ?.let { (it - usedBytes).toLong() }
     }
 
+    /**
+     * A reading carries the quota it was taken under. If the user changed the quota
+     * while the read was in flight, the reading is stale: acting on it would latch
+     * an alert for the new quota on the old quota's figures.
+     */
+    fun readingIsCurrent(readingQuotaGb: Double, currentQuotaGb: Double): Boolean =
+        readingQuotaGb == currentQuotaGb
+
     /** Thresholds crossed and not yet notified, ascending; empty when quota <= 0 or usedGb < 0. */
     fun pendingThresholds(
         quotaGb: Double,

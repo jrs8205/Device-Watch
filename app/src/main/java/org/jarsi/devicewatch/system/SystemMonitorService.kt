@@ -383,6 +383,10 @@ class SystemMonitorService : Service() {
                 disarmUsageCallback()
                 return
             }
+            // The quota changed under this reading (settings are written from the
+            // UI, outside this lock): a fresh reading under the new quota follows
+            // from onDataQuotaChanged, so this one must not latch anything.
+            if (!DataQuotaLogic.readingIsCurrent(quotaGb, appSettings.dataQuotaGb())) return
             // The period comes with the reading. Computed here instead, a read that
             // started before midnight and landed after it would latch the new
             // period on the old period's usage.

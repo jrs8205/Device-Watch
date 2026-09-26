@@ -8,6 +8,14 @@ class DataQuotaLogicTest {
     private val gb = 1024L * 1024 * 1024
 
     @Test
+    fun `a reading taken under another quota is stale`() {
+        // The quota was raised while the stats were being read: the old reading
+        // must not latch alerts for the new quota.
+        assertThat(DataQuotaLogic.readingIsCurrent(readingQuotaGb = 10.0, currentQuotaGb = 20.0)).isFalse()
+        assertThat(DataQuotaLogic.readingIsCurrent(readingQuotaGb = 10.0, currentQuotaGb = 10.0)).isTrue()
+    }
+
+    @Test
     fun `bytes to the next threshold points at the warning level while under it`() {
         val bytes = DataQuotaLogic.bytesToNextThreshold(
             quotaGb = 10.0, usedGb = 2.0, notified80 = false, notified100 = false
