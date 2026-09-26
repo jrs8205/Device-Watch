@@ -33,6 +33,7 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.YearMonth
 import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.Locale
 import javax.inject.Inject
 
@@ -233,7 +234,8 @@ class HistoryViewModel @Inject constructor(
                     val dir = File(context.cacheDir, "exports").apply { mkdirs() }
                     purgeStaleExports(dir)
                     val body = content()
-                    File(dir, "$fileStem-${LocalDate.now()}.$extension").apply { writeText(body) }
+                    File(dir, exportFileName(fileStem, extension, LocalDateTime.now()))
+                        .apply { writeText(body) }
                 }
                 val uri = FileProvider.getUriForFile(context, FILE_PROVIDER_AUTHORITY, file)
                 val send = Intent(Intent.ACTION_SEND).apply {
@@ -334,3 +336,13 @@ class HistoryViewModel @Inject constructor(
         const val EXPORT_RETENTION_MILLIS = 24L * 60 * 60 * 1000
     }
 }
+
+private val EXPORT_STAMP: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd-HHmmss")
+
+/**
+ * One file per export, stamped to the second. Two exports sharing a name would
+ * also share their FileProvider URI, and an earlier recipient still holding that
+ * URI would then read the later content without being handed it.
+ */
+internal fun exportFileName(fileStem: String, extension: String, now: LocalDateTime): String =
+    "$fileStem-${now.format(EXPORT_STAMP)}.$extension"

@@ -24,6 +24,7 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.YearMonth
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -123,6 +124,17 @@ class HistoryViewModelTest {
         statsRepository: FakeStatsRepository = FakeStatsRepository(),
         batteryHistory: FakeBatteryHistory = FakeBatteryHistory(),
     ) = HistoryViewModel(FakeHistory(), stats, FakeLog(), statsRepository, batteryHistory, dispatcher)
+
+    @Test
+    fun `every export gets a file name of its own`() {
+        // Two exports on the same day must not share a file, or a FileProvider URI:
+        // an earlier recipient that still holds the URI would read the later content.
+        val first = exportFileName("device-watch-report", "html", LocalDateTime.of(2026, 9, 26, 18, 30, 5))
+        val second = exportFileName("device-watch-report", "html", LocalDateTime.of(2026, 9, 26, 18, 31, 0))
+
+        assertThat(first).isEqualTo("device-watch-report-2026-09-26-183005.html")
+        assertThat(first).isNotEqualTo(second)
+    }
 
     @Test
     fun `load exposes 62 ascending days with notification counts and the log`() = runTest {
