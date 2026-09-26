@@ -1,6 +1,7 @@
 package org.jarsi.devicewatch.ui.theme
 
 import android.os.Build
+import android.util.DisplayMetrics
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
@@ -9,9 +10,16 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.unit.Density
+import org.jarsi.devicewatch.presentation.ui.clampedDensity
+import org.jarsi.devicewatch.presentation.ui.clampedFontScale
+import kotlin.math.roundToInt
 
 /**
  * Every role is set, including the ones this app never names directly: any left
@@ -124,7 +132,26 @@ fun ModernWidgetTheme(
         else -> ClassicLightColorScheme
     }
     val metricFont = if (classicLook) FontFamily.Default else FontFamily.Monospace
-    CompositionLocalProvider(LocalMetricFontFamily provides metricFont) {
+    // The whole tree is measured under the app's own bounds on font size and
+    // display size (see AppScale.kt): every label and readout stays on one
+    // line whatever the system settings are. Dialogs and sheets compose under
+    // this same provider.
+    val systemDensity = LocalDensity.current
+    val configuration = LocalConfiguration.current
+    val defaultDensity = DisplayMetrics.DENSITY_DEVICE_STABLE / DisplayMetrics.DENSITY_DEFAULT.toFloat()
+    // The smallest width, not the current one: the bound is a property of the
+    // device, and turning the phone sideways must not let the bars grow.
+    val boundedDensity = remember(systemDensity, configuration.smallestScreenWidthDp) {
+        val widthPx = (configuration.smallestScreenWidthDp * systemDensity.density).roundToInt()
+        Density(
+            density = clampedDensity(systemDensity.density, defaultDensity, widthPx),
+            fontScale = clampedFontScale(systemDensity.fontScale),
+        )
+    }
+    CompositionLocalProvider(
+        LocalMetricFontFamily provides metricFont,
+        LocalDensity provides boundedDensity,
+    ) {
         MaterialTheme(colorScheme = colorScheme, content = content)
     }
 }

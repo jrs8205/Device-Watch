@@ -32,7 +32,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -47,12 +46,10 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -229,47 +226,43 @@ fun SystemDashboardScreen(
             }
         },
         bottomBar = {
-            val density = LocalDensity.current
-            val barDensity = remember(density) {
-                Density(density.density, clampedNavBarFontScale(density.fontScale))
-            }
-            CompositionLocalProvider(LocalDensity provides barDensity) {
-                Column {
-                    // On the light theme the bar is white on a near-white page:
-                    // this rule is the only thing that separates the two.
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outline)
-                    NavigationBar {
-                        val indicator = MaterialTheme.colorScheme.primary
-                        DashboardTab.entries.forEachIndexed { index, tab ->
-                            val selected = index == pagerState.currentPage
-                            NavigationBarItem(
-                                selected = selected,
-                                onClick = withTapHaptic {
-                                    scope.launch { pagerState.animateScrollToPage(index) }
-                                },
-                                // Selection is never colour alone: the pill is
-                                // doubled by a rule under the item, where the eye
-                                // is already travelling from icon to label.
-                                modifier = Modifier.drawBehind {
-                                    if (selected) {
-                                        val rule = SELECTED_TAB_RULE.toPx()
-                                        drawRect(
-                                            color = indicator,
-                                            topLeft = Offset(0f, size.height - rule),
-                                            size = Size(size.width, rule)
-                                        )
-                                    }
-                                },
-                                icon = { Icon(tab.icon, contentDescription = null) },
-                                label = {
-                                    Text(
-                                        stringResource(tab.labelRes),
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
+            // The theme root already bounds the font scale for the whole tree
+            // (AppScale.kt), which is what keeps these labels on one line.
+            Column {
+                // On the light theme the bar is white on a near-white page:
+                // this rule is the only thing that separates the two.
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline)
+                NavigationBar {
+                    val indicator = MaterialTheme.colorScheme.primary
+                    DashboardTab.entries.forEachIndexed { index, tab ->
+                        val selected = index == pagerState.currentPage
+                        NavigationBarItem(
+                            selected = selected,
+                            onClick = withTapHaptic {
+                                scope.launch { pagerState.animateScrollToPage(index) }
+                            },
+                            // Selection is never colour alone: the pill is
+                            // doubled by a rule under the item, where the eye
+                            // is already travelling from icon to label.
+                            modifier = Modifier.drawBehind {
+                                if (selected) {
+                                    val rule = SELECTED_TAB_RULE.toPx()
+                                    drawRect(
+                                        color = indicator,
+                                        topLeft = Offset(0f, size.height - rule),
+                                        size = Size(size.width, rule)
                                     )
                                 }
-                            )
-                        }
+                            },
+                            icon = { Icon(tab.icon, contentDescription = null) },
+                            label = {
+                                Text(
+                                    stringResource(tab.labelRes),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        )
                     }
                 }
             }
