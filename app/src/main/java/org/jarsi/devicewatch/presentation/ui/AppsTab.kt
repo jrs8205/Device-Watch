@@ -41,6 +41,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -174,6 +175,7 @@ internal fun AppsTab(viewModel: AppsViewModel = hiltViewModel()) {
                             fontSize = 14.sp,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
+                            textDecoration = detailLinkDecoration(segment.packageName != null),
                             modifier = Modifier.weight(1f)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
@@ -213,6 +215,7 @@ internal fun AppsTab(viewModel: AppsViewModel = hiltViewModel()) {
                                 fontSize = 14.sp,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
+                                textDecoration = detailLinkDecoration(true),
                                 modifier = Modifier.weight(1f)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
@@ -260,6 +263,7 @@ internal fun AppsTab(viewModel: AppsViewModel = hiltViewModel()) {
                             fontSize = 14.sp,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
+                            textDecoration = detailLinkDecoration(consumer.packageName != null),
                             modifier = Modifier.weight(1f)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
@@ -335,6 +339,7 @@ private fun AppListRow(
                 fontWeight = FontWeight.Medium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
+                textDecoration = detailLinkDecoration(true),
             )
             val tier = UsageEventAggregator.lastUsedTier(daysSinceLastUse(app.lastUsedEpochMillis))
             Text(

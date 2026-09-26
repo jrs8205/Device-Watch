@@ -45,11 +45,13 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.core.graphics.drawable.toBitmap
 import org.jarsi.devicewatch.R
 import org.jarsi.devicewatch.data.DataCounterMode
@@ -151,6 +153,14 @@ internal fun SectionLink(text: String, contentDescription: String, onClick: () -
         )
     }
 }
+
+/**
+ * Underline for the name of an item that opens a detail view. A row of plain
+ * text gives no sign that it does anything; the underline says "link" without
+ * taking any room from the figures beside it.
+ */
+internal fun detailLinkDecoration(opensDetail: Boolean): TextDecoration? =
+    if (opensDetail) TextDecoration.Underline else null
 
 /** Section inset and rhythm, in dp so they do not grow with the font. */
 internal val BAND_INSET = 20.dp

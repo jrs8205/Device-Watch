@@ -563,24 +563,28 @@ private fun NotificationLogRow(entry: NotificationLogEntry, modifier: Modifier =
                 text = entry.title,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.SemiBold,
-                maxLines = 1
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
             Text(
                 text = entry.text,
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 2
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
         }
         if (launchIntent != null) {
             Spacer(modifier = Modifier.width(8.dp))
+            // In the link colour, like every "open the page behind this" control
+            // in the app: a muted 16 dp glyph did not read as tappable.
             Icon(
                 painter = painterResource(R.drawable.ic_open_in_new),
                 contentDescription = stringResource(R.string.history_log_open_app),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier
                     .align(Alignment.CenterVertically)
-                    .size(16.dp)
+                    .size(20.dp)
             )
         }
     }
