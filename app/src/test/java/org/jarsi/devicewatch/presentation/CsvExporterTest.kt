@@ -74,6 +74,41 @@ class CsvExporterTest {
     }
 
     @Test
+    fun `fields a spreadsheet would run as a formula are neutralised with a leading apostrophe`() {
+        assertThat(CsvExporter.escapeField("=1+1")).isEqualTo("\"'=1+1\"")
+        assertThat(CsvExporter.escapeField("+5")).isEqualTo("\"'+5\"")
+        assertThat(CsvExporter.escapeField("-5")).isEqualTo("\"'-5\"")
+        assertThat(CsvExporter.escapeField("@SUM(A1)")).isEqualTo("\"'@SUM(A1)\"")
+        assertThat(CsvExporter.escapeField("\tx")).isEqualTo("\"'\tx\"")
+        assertThat(CsvExporter.escapeField("\rx")).isEqualTo("\"'\rx\"")
+    }
+
+    @Test
+    fun `a formula-looking field that also needs quoting keeps its doubled quotes`() {
+        assertThat(CsvExporter.escapeField("=HYPERLINK(\"x\")"))
+            .isEqualTo("\"'=HYPERLINK(\"\"x\"\")\"")
+    }
+
+    @Test
+    fun `notification log csv neutralises formula-looking free text`() {
+        val entries = listOf(
+            NotificationLogEntry(
+                timeMillis = 1_786_692_600_000L,
+                packageName = "org.example.app",
+                appLabel = "Example",
+                title = "=cmd|' /C calc'!A0",
+                text = "-1",
+            ),
+        )
+
+        val csv = CsvExporter.notificationLogCsv(entries, ZoneOffset.UTC)
+
+        assertThat(csv.trimEnd().lines()[1]).isEqualTo(
+            "2026-08-14T07:30:00,org.example.app,Example,\"'=cmd|' /C calc'!A0\",\"'-1\""
+        )
+    }
+
+    @Test
     fun `empty inputs produce a header-only file`() {
         assertThat(CsvExporter.usageHistoryCsv(emptyList()).trimEnd().lines()).hasSize(1)
         assertThat(

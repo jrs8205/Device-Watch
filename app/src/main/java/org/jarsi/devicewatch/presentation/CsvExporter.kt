@@ -12,11 +12,25 @@ object CsvExporter {
     private const val USAGE_HEADER = "day,screen_time_minutes,unlocks,notifications,boots,charges"
     private const val LOG_HEADER = "time,package,app,title,text"
 
-    /** Quotes a field only when it needs it; embedded quotes are doubled. */
+    /**
+     * Characters a spreadsheet takes as the start of a formula. Notification text
+     * is written by other apps, so a title like `=HYPERLINK(...)` would otherwise
+     * run the moment the export is opened in Excel or LibreOffice.
+     */
+    private val FORMULA_TRIGGERS = setOf('=', '+', '-', '@', '\t', '\r')
+
+    /**
+     * Quotes a field only when it needs it; embedded quotes are doubled. A field
+     * that starts like a formula gets a leading apostrophe (the OWASP CSV-injection
+     * mitigation) and is always quoted.
+     */
     fun escapeField(value: String): String {
-        val needsQuoting = value.any { it == ',' || it == '"' || it == '\n' || it == '\r' }
-        if (!needsQuoting) return value
-        return "\"${value.replace("\"", "\"\"")}\""
+        val startsLikeFormula = value.firstOrNull() in FORMULA_TRIGGERS
+        val guarded = if (startsLikeFormula) "'$value" else value
+        val needsQuoting = startsLikeFormula ||
+            guarded.any { it == ',' || it == '"' || it == '\n' || it == '\r' }
+        if (!needsQuoting) return guarded
+        return "\"${guarded.replace("\"", "\"\"")}\""
     }
 
     /** ISO dates in the given order (the caller passes days ascending). */
