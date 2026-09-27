@@ -364,6 +364,14 @@ object ExtraStatsLogic {
     }
 
     /**
+     * The Class 3 state behind a `canAuthenticate(BIOMETRIC_STRONG)` [code], or null
+     * before Android 11: there only the argument-less, weak-biometric check exists,
+     * and its success does not mean a strong biometric is enrolled.
+     */
+    fun strongBiometricState(sdkInt: Int, code: Int): BiometricState? =
+        if (sdkInt >= 30) biometricState(code) else null
+
+    /**
      * The apps skipping battery optimisation: the ones with a launcher icon by
      * name — preinstalled or not, as a person sees apps — sorted as the user's
      * language sorts them, and the background services only counted (a phone

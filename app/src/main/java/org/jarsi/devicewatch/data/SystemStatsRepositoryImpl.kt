@@ -396,22 +396,22 @@ class SystemStatsRepositoryImpl @Inject constructor(
         }
     }
 
-    /** Strong biometrics enrolled or not; USE_BIOMETRIC is a normal permission, granted on install. */
+    /**
+     * Strong (Class 3) biometrics enrolled or not; USE_BIOMETRIC is a normal
+     * permission, granted on install. Android 11+ only: Android 10's check is a
+     * weak-biometric one and cannot say this.
+     */
     private fun readBiometricEnrollment(): String {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return UNAVAILABLE_TEXT
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return UNAVAILABLE_TEXT
         val manager = context.getSystemService(BiometricManager::class.java) ?: return UNAVAILABLE_TEXT
         val code = try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                manager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG)
-            } else {
-                @Suppress("DEPRECATION") // the no-argument form is Android 10's only one
-                manager.canAuthenticate()
-            }
+            manager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG)
         } catch (_: Exception) {
             return UNAVAILABLE_TEXT
         }
+        val state = ExtraStatsLogic.strongBiometricState(Build.VERSION.SDK_INT, code) ?: return UNAVAILABLE_TEXT
         return context.getString(
-            when (ExtraStatsLogic.biometricState(code)) {
+            when (state) {
                 BiometricState.ENROLLED -> R.string.biometrics_enrolled
                 BiometricState.NOT_ENROLLED -> R.string.biometrics_not_enrolled
                 BiometricState.NO_HARDWARE -> R.string.biometrics_no_sensor

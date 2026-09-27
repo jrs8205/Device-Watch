@@ -732,4 +732,13 @@ class ExtraStatsLogicTest {
         assertThat(ExtraStatsLogic.developerFlagsReadable(sdkInt = 36)).isTrue()
         assertThat(ExtraStatsLogic.developerFlagsReadable(sdkInt = 37)).isFalse()
     }
+
+    @Test
+    fun `strong biometrics are known only where Android can ask for Class 3`() {
+        // Codex round 7: Android 10's argument-less canAuthenticate() is a weak
+        // check; its success says nothing about Class 3 biometrics.
+        assertThat(ExtraStatsLogic.strongBiometricState(sdkInt = 29, code = 0)).isNull()
+        assertThat(ExtraStatsLogic.strongBiometricState(sdkInt = 30, code = 0)).isEqualTo(BiometricState.ENROLLED)
+        assertThat(ExtraStatsLogic.strongBiometricState(sdkInt = 34, code = 11)).isEqualTo(BiometricState.NOT_ENROLLED)
+    }
 }

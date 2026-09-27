@@ -28,7 +28,7 @@ data class DeviceState(
     // Security
     val screenLock: String = UNAVAILABLE_TEXT,
     val biometrics: String = UNAVAILABLE_TEXT,
-    /** Whether strong biometrics are enrolled (needs USE_BIOMETRIC, Android 10+). */
+    /** Whether strong (Class 3) biometrics are enrolled (needs USE_BIOMETRIC, Android 11+). */
     val biometricEnrollment: String = UNAVAILABLE_TEXT,
     val strongBox: String = UNAVAILABLE_TEXT,
     val nfc: String = UNAVAILABLE_TEXT,
