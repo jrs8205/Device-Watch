@@ -624,4 +624,13 @@ class ExtraStatsLogicTest {
         assertThat(ExtraStatsLogic.nfcState(present = true, enabled = false)).isEqualTo(NfcState.OFF)
         assertThat(ExtraStatsLogic.nfcState(present = true, enabled = true)).isEqualTo(NfcState.ON)
     }
+
+    @Test
+    fun `Android 10 reports LTE RSSNR in tenths of a decibel`() {
+        // AOSP converts to whole dB only from Android 11 (Codex round 6).
+        assertThat(ExtraStatsLogic.lteRssnrDb(raw = 120, sdkInt = 29)).isEqualTo(12)
+        assertThat(ExtraStatsLogic.lteRssnrDb(raw = -36, sdkInt = 29)).isEqualTo(-4)
+        assertThat(ExtraStatsLogic.lteRssnrDb(raw = 12, sdkInt = 30)).isEqualTo(12)
+        assertThat(ExtraStatsLogic.lteRssnrDb(raw = null, sdkInt = 29)).isNull()
+    }
 }

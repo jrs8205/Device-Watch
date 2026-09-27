@@ -214,6 +214,15 @@ object ExtraStatsLogic {
         sinr?.let { "SINR $it dB" },
     ).takeIf { it.isNotEmpty() }?.joinToString(" · ")
 
+    /**
+     * LTE RSSNR in whole dB. Android 10 hands the modem's tenths of a dB through
+     * unchanged; AOSP converts them only from Android 11.
+     */
+    fun lteRssnrDb(raw: Int?, sdkInt: Int): Int? {
+        if (raw == null) return null
+        return if (sdkInt == 29) Math.round(raw / 10.0).toInt() else raw
+    }
+
     /** Bands as 3GPP writes them: "n78" for 5G NR, "B20" for LTE. */
     fun bandsText(nr: Boolean, bands: IntArray): String? =
         bands.takeIf { it.isNotEmpty() }?.joinToString(", ") { if (nr) "n$it" else "B$it" }

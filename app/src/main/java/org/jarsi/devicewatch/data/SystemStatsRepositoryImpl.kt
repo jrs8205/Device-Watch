@@ -492,7 +492,7 @@ class SystemStatsRepositoryImpl @Inject constructor(
             is CellSignalStrengthLte -> ExtraStatsLogic.signalDetails(
                 ExtraStatsLogic.cellValue(serving.rsrp),
                 ExtraStatsLogic.cellValue(serving.rsrq),
-                ExtraStatsLogic.cellValue(serving.rssnr),
+                ExtraStatsLogic.lteRssnrDb(ExtraStatsLogic.cellValue(serving.rssnr), Build.VERSION.SDK_INT),
             )
             else -> null
         }
