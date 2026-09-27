@@ -27,6 +27,7 @@ import org.jarsi.devicewatch.data.BatteryStatusReader
 import org.jarsi.devicewatch.data.ChargeAnchorLogic
 import org.jarsi.devicewatch.data.ChargeAnchorStore
 import org.jarsi.devicewatch.data.DataQuotaLogic
+import org.jarsi.devicewatch.data.QuotaReadingAction
 import org.jarsi.devicewatch.data.SystemStats
 import org.jarsi.devicewatch.data.SystemStatsRepository
 import org.jarsi.devicewatch.data.UsageHistory
@@ -396,14 +397,16 @@ class SystemMonitorService : Service() {
             // period figure is available (usage access granted) — the since-boot
             // fallback must never be compared against a period quota.
             val quotaGb = stats.mobileDataTotalGb
-            if (quotaGb <= 0.0) {
-                disarmUsageCallback()
-                return
+            when (DataQuotaLogic.classifyReading(quotaGb, appSettings.dataQuotaGb())) {
+                QuotaReadingAction.RELEASE_WATCH -> {
+                    disarmUsageCallback()
+                    return
+                }
+                // The quota changed under this reading: a fresh reading under the
+                // new quota follows from onDataQuotaChanged.
+                QuotaReadingAction.IGNORE -> return
+                QuotaReadingAction.CHECK -> Unit
             }
-            // The quota changed under this reading (settings are written from the
-            // UI, outside this lock): a fresh reading under the new quota follows
-            // from onDataQuotaChanged, so this one must not latch anything.
-            if (!DataQuotaLogic.readingIsCurrent(quotaGb, appSettings.dataQuotaGb())) return
             // The period comes with the reading. Computed here instead, a read that
             // started before midnight and landed after it would latch the new
             // period on the old period's usage.

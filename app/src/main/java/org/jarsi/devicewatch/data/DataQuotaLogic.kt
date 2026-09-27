@@ -36,12 +36,19 @@ object DataQuotaLogic {
     }
 
     /**
-     * A reading carries the quota it was taken under. If the user changed the quota
-     * while the read was in flight, the reading is stale: acting on it would latch
-     * an alert for the new quota on the old quota's figures.
+     * What a reading may do, given the quota it was taken under (none when
+     * [readingQuotaGb] <= 0) and the quota the settings hold now. The settings are
+     * written from the UI outside the service's lock, so a reading can arrive
+     * after a change: acting on it would latch the new quota's alerts on the old
+     * quota's figures, or take down the usage watch a newer reading under a newly
+     * switched-on quota has armed. A stale reading does nothing; the change itself
+     * triggers a fresh one.
      */
-    fun readingIsCurrent(readingQuotaGb: Double, currentQuotaGb: Double): Boolean =
-        readingQuotaGb == currentQuotaGb
+    fun classifyReading(readingQuotaGb: Double, currentQuotaGb: Double): QuotaReadingAction = when {
+        readingQuotaGb <= 0.0 && currentQuotaGb <= 0.0 -> QuotaReadingAction.RELEASE_WATCH
+        readingQuotaGb > 0.0 && readingQuotaGb == currentQuotaGb -> QuotaReadingAction.CHECK
+        else -> QuotaReadingAction.IGNORE
+    }
 
     /** Thresholds crossed and not yet notified, ascending; empty when quota <= 0 or usedGb < 0. */
     fun pendingThresholds(
@@ -66,4 +73,15 @@ object DataQuotaLogic {
         if (quotaGb <= 0.0 || usedGb < 0.0) return null
         return ((usedGb / quotaGb) * 100).toInt()
     }
+}
+
+enum class QuotaReadingAction {
+    /** Evaluate the thresholds and re-arm the usage watch. */
+    CHECK,
+
+    /** No quota is set: nothing is left to watch. */
+    RELEASE_WATCH,
+
+    /** The reading predates a quota change and must not touch alerts or the watch. */
+    IGNORE,
 }
