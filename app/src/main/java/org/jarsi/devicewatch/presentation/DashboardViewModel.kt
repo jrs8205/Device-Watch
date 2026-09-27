@@ -64,6 +64,8 @@ data class DashboardUiState(
     val screenTimeMillis: Long = -1L,
     /** Time the display was on in the counting period; -1 without usage access. */
     val screenOnMillis: Long = -1L,
+    /** False before Android 9, which logs no screen events: the row is hidden. */
+    val screenOnTrackingSupported: Boolean = true,
     val unlockCount: Int = UNAVAILABLE_INT,
     val notificationCount: Int = UNAVAILABLE_INT,
     val bootCount: Int = 0,
@@ -165,6 +167,7 @@ class DashboardViewModel @Inject constructor(
         )
         val hasUsageAccess = appUsageRepository.hasUsageAccess()
         val supportsUnlocks = appUsageRepository.supportsUnlockCounting()
+        val supportsScreenOn = appUsageRepository.supportsScreenOnTracking()
         if (hasUsageAccess) {
             appUsageRepository.screenTimeByDay(HISTORY_BACKFILL_DAYS)
                 .forEach { (day, millis) -> usageHistory.recordScreenTime(day, millis) }
@@ -227,11 +230,12 @@ class DashboardViewModel @Inject constructor(
                 } else {
                     -1L
                 },
-                screenOnMillis = if (hasUsageAccess) {
+                screenOnMillis = if (hasUsageAccess && supportsScreenOn) {
                     usageHistory.screenOnBetween(periodStart, today)
                 } else {
                     -1L
                 },
+                screenOnTrackingSupported = supportsScreenOn,
                 unlockCount = if (hasUsageAccess && supportsUnlocks) {
                     usageHistory.unlocksBetween(periodStart, today)
                 } else {

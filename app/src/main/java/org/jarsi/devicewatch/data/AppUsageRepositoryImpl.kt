@@ -250,6 +250,8 @@ class AppUsageRepositoryImpl @Inject constructor(
         totals
     }
 
+    override fun supportsScreenOnTracking(): Boolean = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
+
     override suspend fun storageConsumers(): List<AppStorageUsage> = withContext(dispatcher) {
         if (!hasUsageAccess()) return@withContext emptyList()
         val manager = context.getSystemService(StorageStatsManager::class.java) ?: return@withContext emptyList()
@@ -276,7 +278,7 @@ class AppUsageRepositoryImpl @Inject constructor(
     }
 
     override suspend fun screenOnByDay(days: Int): Map<LocalDate, Long> = withContext(dispatcher) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P || !hasUsageAccess()) return@withContext emptyMap()
+        if (!supportsScreenOnTracking() || !hasUsageAccess()) return@withContext emptyMap()
         val usageStatsManager = usageStatsManager() ?: return@withContext emptyMap()
         val zone = ZoneId.systemDefault()
         val startMillis = LocalDate.now()

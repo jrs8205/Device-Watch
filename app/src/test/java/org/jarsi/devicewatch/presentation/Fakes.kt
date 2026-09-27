@@ -124,6 +124,7 @@ internal class FakeAppUsageRepository(
     var screenByDay: Map<LocalDate, Long> = emptyMap(),
     var screenOn: Map<LocalDate, Long> = emptyMap(),
     var storage: List<AppStorageUsage> = emptyList(),
+    var supportsScreenOn: Boolean = true,
     var totalsToday: UsageTotals? = null,
     var launchers: Set<String> = emptySet(),
     var unlocksSince: Int? = 0,
@@ -152,6 +153,8 @@ internal class FakeAppUsageRepository(
 
     override suspend fun unlockCountsByDay(days: Int): Map<LocalDate, Int> =
         if (hasAccess && supportsUnlocks) unlocksByDay else emptyMap()
+
+    override fun supportsScreenOnTracking(): Boolean = supportsScreenOn
 
     override suspend fun storageConsumers(): List<AppStorageUsage> =
         if (hasAccess) storage else emptyList()

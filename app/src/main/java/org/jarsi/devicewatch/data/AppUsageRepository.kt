@@ -56,6 +56,9 @@ interface AppUsageRepository {
      */
     suspend fun screenOnByDay(days: Int): Map<LocalDate, Long>
 
+    /** Whether the platform logs the screen events [screenOnByDay] needs (Android 9+). */
+    fun supportsScreenOnTracking(): Boolean
+
     /**
      * Every installed app's size (StorageStatsManager.queryStatsForPackage), in no
      * particular order; empty without usage access. One query per app, so the Apps

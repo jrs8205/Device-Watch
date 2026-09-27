@@ -264,6 +264,21 @@ class DashboardViewModelTest {
         }
 
     @Test
+    fun `given a platform without screen events, then screen-on time is unavailable, not zero`() =
+        runTest(dispatcher) {
+            // Codex round 6: Android 8 has no SCREEN_INTERACTIVE events; the empty
+            // history summed to "0 min" as if measured.
+            val appUsage = FakeAppUsageRepository(supportsScreenOn = false)
+            val viewModel = buildViewModel(appUsage = appUsage)
+
+            viewModel.refresh()
+            advanceUntilIdle()
+
+            assertThat(viewModel.uiState.value.screenOnMillis).isEqualTo(-1L)
+            assertThat(viewModel.uiState.value.screenOnTrackingSupported).isFalse()
+        }
+
+    @Test
     fun `given a committed charge limit, then the monitor is told to apply it at once`() =
         runTest(dispatcher) {
             // Given

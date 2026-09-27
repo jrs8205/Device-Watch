@@ -264,14 +264,16 @@ internal fun OverviewTab(
                 )
                 // The display itself, not app use: time on the lock screen or
                 // the home screen counts here but not in screen time.
-                StackedMetricRow(
-                    label = stringResource(R.string.screen_on_label),
-                    value = if (uiState.screenOnMillis >= 0L) {
-                        durationText(context, uiState.screenOnMillis)
-                    } else {
-                        UNAVAILABLE_TEXT
-                    }
-                )
+                if (uiState.screenOnTrackingSupported) {
+                    StackedMetricRow(
+                        label = stringResource(R.string.screen_on_label),
+                        value = if (uiState.screenOnMillis >= 0L) {
+                            durationText(context, uiState.screenOnMillis)
+                        } else {
+                            UNAVAILABLE_TEXT
+                        }
+                    )
+                }
                 if (uiState.unlockCountingSupported) {
                     StackedMetricRow(
                         label = stringResource(R.string.unlock_count_label),
