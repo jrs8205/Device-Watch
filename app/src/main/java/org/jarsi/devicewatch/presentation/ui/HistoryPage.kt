@@ -500,10 +500,9 @@ private fun HistoryDayList(days: List<HistoryDay>, metric: HistoryMetric) {
                 Text(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    text = if (metric == HistoryMetric.ScreenTime || metric == HistoryMetric.ScreenOn) {
-                        durationText(context, day.screenTimeMillis)
-                    } else {
-                        metric.valueOf(day).toString()
+                    text = when (val value = metric.rowValue(day)) {
+                        is HistoryRowValue.Duration -> durationText(context, value.millis)
+                        is HistoryRowValue.Count -> value.value.toString()
                     },
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold

@@ -43,4 +43,22 @@ class HistoryListLogicTest {
 
         assertThat(visible).isEmpty()
     }
+
+    @Test
+    fun `each metric's row shows its own value, durations as durations`() {
+        // Codex round 6: the screen-on list showed the screen-time field.
+        val day = HistoryDay(
+            day = LocalDate.of(2026, 7, 1),
+            screenTimeMillis = 3_600_000L,
+            unlocks = 5,
+            notifications = 0,
+            boots = 0,
+            charges = 0,
+            screenOnMillis = 7_200_000L,
+        )
+
+        assertThat(HistoryMetric.ScreenOn.rowValue(day)).isEqualTo(HistoryRowValue.Duration(7_200_000L))
+        assertThat(HistoryMetric.ScreenTime.rowValue(day)).isEqualTo(HistoryRowValue.Duration(3_600_000L))
+        assertThat(HistoryMetric.Unlocks.rowValue(day)).isEqualTo(HistoryRowValue.Count(5L))
+    }
 }

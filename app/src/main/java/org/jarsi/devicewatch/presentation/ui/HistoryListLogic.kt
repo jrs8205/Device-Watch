@@ -21,6 +21,17 @@ internal enum class HistoryMetric(@StringRes val labelRes: Int) {
         Boots -> day.boots.toLong()
         Charges -> day.charges.toLong()
     }
+
+    /** The value a history row shows for [day]: a duration for the time metrics, else a count. */
+    fun rowValue(day: HistoryDay): HistoryRowValue = when (this) {
+        ScreenTime, ScreenOn -> HistoryRowValue.Duration(valueOf(day))
+        else -> HistoryRowValue.Count(valueOf(day))
+    }
+}
+
+internal sealed interface HistoryRowValue {
+    data class Duration(val millis: Long) : HistoryRowValue
+    data class Count(val value: Long) : HistoryRowValue
 }
 
 /**
