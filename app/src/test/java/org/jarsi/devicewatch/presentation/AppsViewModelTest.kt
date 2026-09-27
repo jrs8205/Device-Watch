@@ -259,6 +259,28 @@ class AppsViewModelTest {
         }
 
     @Test
+    fun `coming back from the app's settings re-reads the open sheet's permissions`() =
+        runTest(dispatcher) {
+            // Codex round 8: camera revoked in the system settings, back in the app,
+            // and the open sheet still listed the camera as allowed.
+            val repository = FakeAppUsageRepository(
+                apps = listOf(app("a", 5_000L)),
+                facts = mapOf("a" to facts("1.5.0")),
+            )
+            val viewModel = AppsViewModel(repository, FakeAppSettingsRepository(), FakeNotificationStats())
+            viewModel.refresh()
+            advanceUntilIdle()
+            viewModel.onAppSelected("a")
+            advanceUntilIdle()
+
+            repository.facts = mapOf("a" to facts("1.5.0").copy(grantedCategories = emptyList()))
+            viewModel.refresh()
+            advanceUntilIdle()
+
+            assertThat(viewModel.uiState.value.selectedDetail!!.facts!!.grantedCategories).isEmpty()
+        }
+
+    @Test
     fun `facts arriving after the sheet closed do not reopen it`() =
         runTest(dispatcher) {
             val gate = CompletableDeferred<Unit>()

@@ -119,6 +119,9 @@ class AppsViewModel @Inject constructor(
                 notificationAccessEnabled = notificationStats.isListenerEnabled(),
             )
         }
+        // Every resume lands here, also the one back from the app's own settings,
+        // where the user may just have taken a permission away.
+        _uiState.value.selectedDetail?.let { loadFacts(it.packageName) }
         // One storage query per installed app: the lists above are on screen first.
         val storage = appUsageRepository.storageConsumers()
             .filter { it.bytes > 0L }
@@ -153,6 +156,10 @@ class AppsViewModel @Inject constructor(
             notificationsToday = notifications,
         )
         _uiState.update { it.copy(selectedDetail = detail) }
+        loadFacts(packageName)
+    }
+
+    private fun loadFacts(packageName: String) {
         factsJob?.cancel()
         factsJob = viewModelScope.launch {
             val facts = appUsageRepository.packageFacts(packageName) ?: return@launch
