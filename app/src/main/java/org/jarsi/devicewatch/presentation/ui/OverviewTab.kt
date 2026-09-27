@@ -181,7 +181,7 @@ internal fun OverviewTab(
                 )
                 StackedMetricRow(
                     label = stringResource(R.string.temperature),
-                    value = "${currentStats.batteryTemp} °C",
+                    value = "%.1f °C".format(currentStats.batteryTemp),
                     valueSize = SECONDARY_VALUE_SP,
                     modifier = Modifier.weight(1f)
                 )
