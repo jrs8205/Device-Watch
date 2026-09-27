@@ -288,6 +288,8 @@
     <string name="system_timezone">Aikavyöhyke</string>
     <string name="system_webview">WebView</string>
     <string name="system_play_services">Play-palvelut</string>
+    <string name="system_play_update">Google Play -järjestelmäpäivitys</string>
+    <string name="system_mainline_modules">Mainline-moduulit</string>
     <string name="system_features">Ominaisuudet</string>
     <string name="feature_nfc">NFC</string>
     <string name="feature_fingerprint">Sormenjälki</string>

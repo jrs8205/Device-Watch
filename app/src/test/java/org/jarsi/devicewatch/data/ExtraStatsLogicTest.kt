@@ -2,6 +2,7 @@ package org.jarsi.devicewatch.data
 
 import com.google.common.truth.Truth.assertThat
 import org.junit.Test
+import java.time.YearMonth
 
 class ExtraStatsLogicTest {
 
@@ -125,5 +126,34 @@ class ExtraStatsLogicTest {
     fun `an unknown MTU reads as none`() {
         assertThat(ExtraStatsLogic.mtu(networkMtu = 0, interfaceMtu = null)).isNull()
         assertThat(ExtraStatsLogic.mtu(networkMtu = -1, interfaceMtu = 0)).isNull()
+    }
+
+    @Test
+    fun `the module metadata version names the Play system update's day`() {
+        // Settings reads this package's versionName, e.g. "2025-09-01".
+        assertThat(ExtraStatsLogic.moduleUpdate("2025-09-01"))
+            .isEqualTo(ModuleUpdate(YearMonth.of(2025, 9), day = 1))
+    }
+
+    @Test
+    fun `a suffix after the date is ignored, as Settings does`() {
+        // The API 35 emulator image reports "2024-07-01S+".
+        assertThat(ExtraStatsLogic.moduleUpdate("2024-07-01S+"))
+            .isEqualTo(ModuleUpdate(YearMonth.of(2024, 7), day = 1))
+    }
+
+    @Test
+    fun `a month-only version names the month`() {
+        assertThat(ExtraStatsLogic.moduleUpdate("2025-09"))
+            .isEqualTo(ModuleUpdate(YearMonth.of(2025, 9), day = null))
+    }
+
+    @Test
+    fun `a version that is not a date names no update`() {
+        assertThat(ExtraStatsLogic.moduleUpdate("350902000")).isNull()
+        assertThat(ExtraStatsLogic.moduleUpdate("2025-13-01")).isNull()
+        assertThat(ExtraStatsLogic.moduleUpdate("2025-02-30")).isNull()
+        assertThat(ExtraStatsLogic.moduleUpdate("")).isNull()
+        assertThat(ExtraStatsLogic.moduleUpdate(null)).isNull()
     }
 }

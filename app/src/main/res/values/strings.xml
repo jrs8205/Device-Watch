@@ -292,6 +292,8 @@
     <string name="system_timezone">Time zone</string>
     <string name="system_webview">WebView</string>
     <string name="system_play_services">Play services</string>
+    <string name="system_play_update">Google Play system update</string>
+    <string name="system_mainline_modules">Mainline modules</string>
     <string name="system_features">Features</string>
     <string name="feature_nfc">NFC</string>
     <string name="feature_fingerprint">Fingerprint</string>

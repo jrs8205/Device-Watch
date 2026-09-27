@@ -1,5 +1,8 @@
 package org.jarsi.devicewatch.data
 
+import java.time.DateTimeException
+import java.time.YearMonth
+
 /** Where the charge comes from, as `BatteryManager.EXTRA_PLUGGED` reports it. */
 enum class ChargeSource { NONE, AC, USB, WIRELESS, DOCK }
 
@@ -10,6 +13,9 @@ enum class ThermalLevel { UNKNOWN, NONE, LIGHT, MODERATE, SEVERE, CRITICAL, EMER
 enum class PrivateDnsMode { OFF, AUTOMATIC, HOSTNAME }
 
 data class PrivateDns(val mode: PrivateDnsMode, val serverName: String?)
+
+/** The Google Play system update, to the day when the version carries one. */
+data class ModuleUpdate(val month: YearMonth, val day: Int?)
 
 /**
  * Pure rules behind the readings added in 1.6.0 on top of the original stats:
@@ -98,6 +104,28 @@ object ExtraStatsLogic {
             ?: return PrivateDns(PrivateDnsMode.AUTOMATIC, null)
         return PrivateDns(PrivateDnsMode.HOSTNAME, name)
     }
+
+    /**
+     * The Google Play system update as Settings shows it: the module-metadata
+     * package's versionName, starting "yyyy-MM-dd" or "yyyy-MM". Anything else,
+     * including an impossible date, is no date.
+     */
+    fun moduleUpdate(versionName: String?): ModuleUpdate? {
+        val match = MODULE_VERSION.matchAt(versionName?.trim() ?: return null, 0) ?: return null
+        val (year, month, day) = match.destructured
+        return try {
+            val yearMonth = YearMonth.of(year.toInt(), month.toInt())
+            val dayOfMonth = day.takeIf { it.isNotEmpty() }?.toInt()
+            if (dayOfMonth != null && !yearMonth.isValidDay(dayOfMonth)) return null
+            ModuleUpdate(yearMonth, dayOfMonth)
+        } catch (_: DateTimeException) {
+            null
+        }
+    }
+
+    // Anchored at the start only, like Settings' date parse: a build suffix such as
+    // "2024-07-01S+" follows the date on some images.
+    private val MODULE_VERSION = Regex("""(\d{4})-(\d{2})(?:-(\d{2}))?(?!\d)""")
 
     /**
      * The network's MTU (`LinkProperties.getMtu()`, API 29), which is 0 unless the

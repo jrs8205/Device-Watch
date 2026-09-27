@@ -46,6 +46,10 @@ data class DeviceInfo(
     val timezone: String,
     val webViewVersion: String,
     val playServicesVersion: String,
+    /** Google Play system update date (Mainline), localised; the raw version when not a date. */
+    val playSystemUpdate: String = UNAVAILABLE_TEXT,
+    /** Number of Mainline modules installed (Android 10+). */
+    val mainlineModules: String = UNAVAILABLE_TEXT,
     val deviceFeatures: String,
     /** Total boots since factory reset (Settings.Global.BOOT_COUNT, API 24+). */
     val bootCountTotal: String,

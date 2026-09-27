@@ -68,6 +68,8 @@ internal fun DeviceTab(uiState: DashboardUiState) {
                 DeviceFact(R.string.system_timezone, info.timezone)
                 DeviceFact(R.string.system_webview, info.webViewVersion)
                 DeviceFact(R.string.system_play_services, info.playServicesVersion)
+                DeviceFact(R.string.system_play_update, info.playSystemUpdate)
+                DeviceFact(R.string.system_mainline_modules, info.mainlineModules)
                 DeviceFact(R.string.system_features, info.deviceFeatures)
                 DeviceFact(R.string.device_info_boot_count, info.bootCountTotal)
             }

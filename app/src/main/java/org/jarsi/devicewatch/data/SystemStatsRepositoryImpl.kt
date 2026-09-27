@@ -188,6 +188,16 @@ class SystemStatsRepositoryImpl @Inject constructor(
         val timezone = TimeZone.getDefault().id
         val webViewVersion = readWebViewVersion()
         val playServicesVersion = readPackageVersion("com.google.android.gms")
+        val playSystemUpdate = readPlaySystemUpdate()
+        val mainlineModules = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            try {
+                context.packageManager.getInstalledModules(0).size.takeIf { it > 0 }?.toString()
+            } catch (_: Exception) {
+                null
+            } ?: UNAVAILABLE_TEXT
+        } else {
+            UNAVAILABLE_TEXT
+        }
         val deviceFeatures = readDeviceFeatures()
         val bootCountTotal = try {
             Settings.Global.getInt(context.contentResolver, Settings.Global.BOOT_COUNT).toString()
@@ -259,6 +269,8 @@ class SystemStatsRepositoryImpl @Inject constructor(
             timezone = timezone,
             webViewVersion = webViewVersion,
             playServicesVersion = playServicesVersion,
+            playSystemUpdate = playSystemUpdate,
+            mainlineModules = mainlineModules,
             deviceFeatures = deviceFeatures,
             bootCountTotal = bootCountTotal,
             vpnActive = vpnActive,
@@ -373,6 +385,26 @@ class SystemStatsRepositoryImpl @Inject constructor(
                 ?.takeIf { it.isNotBlank() } ?: UNAVAILABLE_TEXT
         } catch (_: Exception) {
             UNAVAILABLE_TEXT
+        }
+    }
+
+    /**
+     * The date Settings shows as "Google Play system update": the versionName of the
+     * module-metadata package (Google's on GMS devices, AOSP's otherwise).
+     */
+    private fun readPlaySystemUpdate(): String {
+        val version = listOf("com.google.android.modulemetadata", "com.android.modulemetadata")
+            .map(::readPackageVersion)
+            .firstOrNull { it != UNAVAILABLE_TEXT }
+            ?: return UNAVAILABLE_TEXT
+        val update = ExtraStatsLogic.moduleUpdate(version) ?: return version
+        val locale = context.resources.configuration.locales[0]
+        return if (update.day != null) {
+            update.month.atDay(update.day).format(
+                java.time.format.DateTimeFormatter.ofLocalizedDate(java.time.format.FormatStyle.LONG).withLocale(locale)
+            )
+        } else {
+            update.month.format(java.time.format.DateTimeFormatter.ofPattern("LLLL yyyy", locale))
         }
     }
 
