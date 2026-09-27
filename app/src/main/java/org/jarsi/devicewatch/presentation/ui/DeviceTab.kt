@@ -41,6 +41,8 @@ internal fun DeviceTab(uiState: DashboardUiState) {
                 DeviceFact(R.string.device_info_kernel, info.kernelVersion)
                 DeviceFact(R.string.device_info_cpu_clusters, info.cpuClusters)
                 DeviceFact(R.string.device_info_cpu_governor, info.cpuGovernor)
+                DeviceFact(R.string.device_info_gnss, info.gnssHardware)
+                DeviceFact(R.string.device_info_gnss_capabilities, info.gnssCapabilities)
                 DeviceFact(R.string.device_info_gpu, info.gpuRenderer)
                 DeviceFact(R.string.device_info_gl, info.glVersion)
                 DeviceFact(R.string.device_info_resolution, info.screenResolution)

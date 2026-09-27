@@ -301,6 +301,14 @@
     <string name="external_section">MUISTIKORTIT JA USB</string>
     <string name="settings_state_section">NÄYTTÖ JA ASETUKSET</string>
     <string name="device_info_cpu_clusters">Suoritinklusterit</string>
+    <string name="device_info_gnss">Satelliittipaikannuspiiri (GNSS)</string>
+    <string name="device_info_gnss_capabilities">GNSS-kyvyt</string>
+    <string name="gnss_measurements">raakamittaukset</string>
+    <string name="gnss_navigation_messages">navigointiviestit</string>
+    <string name="gnss_corrections">mittauskorjaukset</string>
+    <string name="gnss_antenna_info">antennitiedot</string>
+    <string name="gnss_multiband">kaksitaajuus</string>
+    <string name="gnss_capabilities_none">Vain sijainti</string>
     <string name="device_info_cpu_governor">Taajuuden säätäjä</string>
     <string name="memory_swap">Swap (ZRAM) käytössä</string>
     <string name="swap_used_of">%1$s / %2$s</string>

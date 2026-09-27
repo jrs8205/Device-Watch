@@ -19,6 +19,7 @@ import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraManager
 import android.hardware.display.DisplayManager
 import android.hardware.usb.UsbManager
+import android.location.LocationManager
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
@@ -235,6 +236,40 @@ class SystemStatsRepositoryImpl @Inject constructor(
         File(path).readText()
     } catch (_: Exception) {
         null
+    }
+
+    private fun readGnssHardware(): String {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) return UNAVAILABLE_TEXT
+        val location = context.getSystemService(LocationManager::class.java) ?: return UNAVAILABLE_TEXT
+        return ExtraStatsLogic.gnssHardwareText(location.gnssHardwareModelName, location.gnssYearOfHardware)
+            ?: UNAVAILABLE_TEXT
+    }
+
+    /**
+     * Raw measurements and navigation messages (the inputs precise-positioning
+     * apps use), measurement corrections, antenna info and dual-frequency
+     * (multiband) tracking, as far as the running Android reports them.
+     */
+    private fun readGnssCapabilities(): String {
+        // The capability getters became public in Android 12, the correction and
+        // multiband ones in Android 14.
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return UNAVAILABLE_TEXT
+        val capabilities = context.getSystemService(LocationManager::class.java)?.gnssCapabilities
+            ?: return UNAVAILABLE_TEXT
+        val names = buildList {
+            if (capabilities.hasMeasurements()) add(R.string.gnss_measurements)
+            if (capabilities.hasNavigationMessages()) add(R.string.gnss_navigation_messages)
+            if (capabilities.hasAntennaInfo()) add(R.string.gnss_antenna_info)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                if (capabilities.hasMeasurementCorrections()) add(R.string.gnss_corrections)
+                if (capabilities.hasPowerMultibandTracking()) add(R.string.gnss_multiband)
+            }
+        }
+        return if (names.isEmpty()) {
+            context.getString(R.string.gnss_capabilities_none)
+        } else {
+            names.joinToString(", ") { context.getString(it) }
+        }
     }
 
     private fun readCpuClusters(): String {
@@ -654,6 +689,8 @@ class SystemStatsRepositoryImpl @Inject constructor(
             dnsServers = dnsServers,
             wifiCapabilities = readWifiCapabilities(),
             cpuClusters = readCpuClusters(),
+            gnssHardware = readGnssHardware(),
+            gnssCapabilities = readGnssCapabilities(),
             cpuGovernor = readSysFile("/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor")
                 ?.trim()?.takeIf { it.isNotEmpty() } ?: UNAVAILABLE_TEXT,
             privateDns = privateDns,

@@ -25,6 +25,10 @@ data class DeviceInfo(
     val cpuGovernor: String = UNAVAILABLE_TEXT,
     val gpuRenderer: String,
     val glVersion: String,
+    /** The GNSS (satellite positioning) chip, e.g. "Broadcom BCM4776 (2023)". */
+    val gnssHardware: String = UNAVAILABLE_TEXT,
+    /** What the GNSS chip can do beyond a position fix (Android 12+). */
+    val gnssCapabilities: String = UNAVAILABLE_TEXT,
     // Display
     val screenResolution: String,
     val screenDensity: String,

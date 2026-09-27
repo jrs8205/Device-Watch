@@ -258,6 +258,21 @@ object ExtraStatsLogic {
 
     private const val MIN_PLAUSIBLE_MAX_KHZ = 100_000L
 
+    /**
+     * The GNSS chip as "model (year)". The platform reports 0 for hardware from
+     * before 2016, so only 2016 onwards is a year; a blank model is no model.
+     */
+    fun gnssHardwareText(model: String?, year: Int): String? {
+        val name = model?.trim()?.takeIf { it.isNotEmpty() }
+        val knownYear = year.takeIf { it >= 2016 }
+        return when {
+            name != null && knownYear != null -> "$name ($knownYear)"
+            name != null -> name
+            knownYear != null -> knownYear.toString()
+            else -> null
+        }
+    }
+
     /** SD cards and USB storage; the primary (internal) volume has its own row. */
     fun removableVolumes(volumes: List<VolumeInfo>): List<VolumeInfo> =
         volumes.filter { it.removable && !it.primary }

@@ -305,6 +305,14 @@
     <string name="external_section">MEMORY CARDS AND USB</string>
     <string name="settings_state_section">DISPLAY AND SETTINGS</string>
     <string name="device_info_cpu_clusters">CPU clusters</string>
+    <string name="device_info_gnss">GNSS chip</string>
+    <string name="device_info_gnss_capabilities">GNSS capabilities</string>
+    <string name="gnss_measurements">raw measurements</string>
+    <string name="gnss_navigation_messages">navigation messages</string>
+    <string name="gnss_corrections">measurement corrections</string>
+    <string name="gnss_antenna_info">antenna info</string>
+    <string name="gnss_multiband">dual-frequency</string>
+    <string name="gnss_capabilities_none">Position only</string>
     <string name="device_info_cpu_governor">CPU governor</string>
     <string name="memory_swap">Swap (ZRAM) in use</string>
     <string name="swap_used_of">%1$s of %2$s</string>

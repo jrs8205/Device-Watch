@@ -531,4 +531,14 @@ class ExtraStatsLogicTest {
     fun `no readable cores give no clusters`() {
         assertThat(ExtraStatsLogic.cpuClustersText(emptyList(), Locale.US)).isNull()
     }
+
+    @Test
+    fun `the GNSS chip reads by model and hardware year`() {
+        // LocationManager.getGnssHardwareModelName / getGnssYearOfHardware (API 28).
+        assertThat(ExtraStatsLogic.gnssHardwareText("Broadcom BCM4776", 2023)).isEqualTo("Broadcom BCM4776 (2023)")
+        assertThat(ExtraStatsLogic.gnssHardwareText(null, 2019)).isEqualTo("2019")
+        assertThat(ExtraStatsLogic.gnssHardwareText(" ", 0)).isNull()
+        // Years before 2016 are the platform's "unknown" placeholder, not a real chip year.
+        assertThat(ExtraStatsLogic.gnssHardwareText("Qualcomm", 2015)).isEqualTo("Qualcomm")
+    }
 }
