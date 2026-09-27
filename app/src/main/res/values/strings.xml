@@ -305,6 +305,13 @@
     <string name="external_section">MEMORY CARDS AND USB</string>
     <string name="sim_signal_details">Signal quality</string>
     <string name="wifi_security">Security</string>
+    <string name="network_internet">Internet connection</string>
+    <string name="internet_validated">Checked, works</string>
+    <string name="internet_captive_portal">Waiting at a sign-in page</string>
+    <string name="internet_not_validated">No verified connection</string>
+    <string name="internet_no_network">No network</string>
+    <string name="network_bandwidth">Bandwidth estimate</string>
+    <string name="network_metered">Metered network</string>
     <string name="wifi_security_open">Open (no password)</string>
     <string name="wifi_mlo">Multi-link (Wi-Fi 7) links</string>
     <string name="wifi_mlo_none">Not in use</string>

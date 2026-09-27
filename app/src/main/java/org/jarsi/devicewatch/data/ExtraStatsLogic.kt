@@ -5,9 +5,13 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId
+import java.util.Locale
 
 /** Where the charge comes from, as `BatteryManager.EXTRA_PLUGGED` reports it. */
 enum class ChargeSource { NONE, AC, USB, WIRELESS, DOCK }
+
+/** Whether the active network reaches the internet, per its `NetworkCapabilities`. */
+enum class InternetState { VALIDATED, CAPTIVE_PORTAL, NOT_VALIDATED }
 
 /** One `StorageVolume`, with its size where the platform exposes its directory (API 30). */
 data class VolumeInfo(
@@ -156,6 +160,29 @@ object ExtraStatsLogic {
         12 -> "Passpoint R3"
         13 -> "Easy Connect (DPP)"
         else -> null
+    }
+
+    /**
+     * A captive portal (a sign-in page before the internet) wins over the
+     * validation flag; otherwise validated or not.
+     */
+    fun internetState(validated: Boolean, captivePortal: Boolean): InternetState = when {
+        captivePortal -> InternetState.CAPTIVE_PORTAL
+        validated -> InternetState.VALIDATED
+        else -> InternetState.NOT_VALIDATED
+    }
+
+    /**
+     * The network's own bandwidth estimate (`linkDown/UpstreamBandwidthKbps`) in
+     * megabits, one decimal under 10 Mb/s so a slow link does not read as zero.
+     */
+    fun bandwidthText(downKbps: Int, upKbps: Int, locale: Locale = Locale.getDefault()): String? {
+        if (downKbps <= 0 && upKbps <= 0) return null
+        fun mbps(kbps: Int): String {
+            val value = kbps.coerceAtLeast(0) / 1000.0
+            return if (value < 10.0) String.format(locale, "%.1f", value) else String.format(locale, "%.0f", value)
+        }
+        return "\u2193 ${mbps(downKbps)} Mb/s \u00b7 \u2191 ${mbps(upKbps)} Mb/s"
     }
 
     /** `CellInfo.UNAVAILABLE` (Integer.MAX_VALUE) is no value. */

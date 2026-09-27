@@ -301,6 +301,13 @@
     <string name="external_section">MUISTIKORTIT JA USB</string>
     <string name="sim_signal_details">Signaalin laatu</string>
     <string name="wifi_security">Suojaus</string>
+    <string name="network_internet">Internet-yhteys</string>
+    <string name="internet_validated">Tarkistettu, toimii</string>
+    <string name="internet_captive_portal">Odottaa kirjautumissivulla</string>
+    <string name="internet_not_validated">Ei varmistettua yhteyttä</string>
+    <string name="internet_no_network">Ei verkkoa</string>
+    <string name="network_bandwidth">Kaistanleveysarvio</string>
+    <string name="network_metered">Maksullinen verkko</string>
     <string name="wifi_security_open">Avoin (ei salasanaa)</string>
     <string name="wifi_mlo">Monilinkki (Wi-Fi 7) -linkit</string>
     <string name="wifi_mlo_none">Ei käytössä</string>

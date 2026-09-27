@@ -122,6 +122,11 @@ internal fun DeviceTab(uiState: DashboardUiState) {
             DeviceFact(R.string.wifi_link_speed, mbpsText(currentStats.wifiLinkSpeedMbps))
             DeviceFact(R.string.wifi_ip, currentStats.ipAddress)
             DeviceFact(wifiDataLabelRes(uiState.dataCounterMode), gbTodayText(currentStats.wifiBytesTodayGb))
+            uiState.deviceState?.let { state ->
+                DeviceFact(R.string.network_internet, state.internetAccess)
+                DeviceFact(R.string.network_bandwidth, state.bandwidthEstimate)
+                DeviceFact(R.string.network_metered, state.networkMetered)
+            }
             uiState.deviceInfo?.let { info ->
                 DeviceFact(R.string.wifi_vpn, info.vpnActive)
                 DeviceFact(R.string.wifi_dns, info.dnsServers)

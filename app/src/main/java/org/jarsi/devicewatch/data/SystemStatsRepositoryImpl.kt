@@ -184,12 +184,16 @@ class SystemStatsRepositoryImpl @Inject constructor(
         val powerManager = context.getSystemService(PowerManager::class.java)
         val cellDetails = readCellDetails()
         val wifiConnection = readWifiConnection()
+        val network = readActiveNetwork()
         DeviceState(
             powerSaveMode = powerManager?.let { boolText(it.isPowerSaveMode) } ?: UNAVAILABLE_TEXT,
             deviceIdle = powerManager?.let { boolText(it.isDeviceIdleMode) } ?: UNAVAILABLE_TEXT,
             batteryOptimizationExempt = powerManager
                 ?.let { boolText(it.isIgnoringBatteryOptimizations(context.packageName)) }
                 ?: UNAVAILABLE_TEXT,
+            internetAccess = network.first,
+            bandwidthEstimate = network.second,
+            networkMetered = network.third,
             wifiSecurity = wifiConnection.first,
             wifiMloLinks = wifiConnection.second,
             cellSignalDetails = cellDetails.first,
@@ -198,6 +202,28 @@ class SystemStatsRepositoryImpl @Inject constructor(
             removableVolumes = readRemovableVolumes(),
             usbDevices = readUsbDevices(),
         )
+    }
+
+    /** Internet reachability, bandwidth estimate and metering of the active network. */
+    private fun readActiveNetwork(): Triple<String, String, String> {
+        val connectivity = context.getSystemService(ConnectivityManager::class.java)
+        val caps = connectivity?.getNetworkCapabilities(connectivity.activeNetwork)
+            ?: return Triple(context.getString(R.string.internet_no_network), UNAVAILABLE_TEXT, UNAVAILABLE_TEXT)
+        val state = ExtraStatsLogic.internetState(
+            validated = caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED),
+            captivePortal = caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_CAPTIVE_PORTAL),
+        )
+        val access = context.getString(
+            when (state) {
+                InternetState.VALIDATED -> R.string.internet_validated
+                InternetState.CAPTIVE_PORTAL -> R.string.internet_captive_portal
+                InternetState.NOT_VALIDATED -> R.string.internet_not_validated
+            }
+        )
+        val bandwidth = ExtraStatsLogic.bandwidthText(caps.linkDownstreamBandwidthKbps, caps.linkUpstreamBandwidthKbps)
+            ?: UNAVAILABLE_TEXT
+        val metered = boolText(!caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED))
+        return Triple(access, bandwidth, metered)
     }
 
     /** Security type and multi-link count of the Wi-Fi connection; dashes when not on Wi-Fi. */

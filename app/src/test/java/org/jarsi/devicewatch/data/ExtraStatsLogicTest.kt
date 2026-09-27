@@ -6,6 +6,7 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.YearMonth
 import java.time.ZoneOffset
+import java.util.Locale
 
 class ExtraStatsLogicTest {
 
@@ -446,5 +447,25 @@ class ExtraStatsLogicTest {
         assertThat(ExtraStatsLogic.wifiSecurityName(0)).isNull()
         assertThat(ExtraStatsLogic.wifiSecurityName(-1)).isNull()
         assertThat(ExtraStatsLogic.wifiSecurityName(99)).isNull()
+    }
+
+    @Test
+    fun `a captive portal outranks the validation flag`() {
+        assertThat(ExtraStatsLogic.internetState(validated = true, captivePortal = false))
+            .isEqualTo(InternetState.VALIDATED)
+        assertThat(ExtraStatsLogic.internetState(validated = false, captivePortal = true))
+            .isEqualTo(InternetState.CAPTIVE_PORTAL)
+        assertThat(ExtraStatsLogic.internetState(validated = true, captivePortal = true))
+            .isEqualTo(InternetState.CAPTIVE_PORTAL)
+        assertThat(ExtraStatsLogic.internetState(validated = false, captivePortal = false))
+            .isEqualTo(InternetState.NOT_VALIDATED)
+    }
+
+    @Test
+    fun `the bandwidth estimate reads in megabits`() {
+        assertThat(ExtraStatsLogic.bandwidthText(downKbps = 30_000, upKbps = 12_000, locale = Locale.US)).isEqualTo("↓ 30 Mb/s · ↑ 12 Mb/s")
+        // Under 10 Mb/s one decimal keeps a slow link from reading as zero.
+        assertThat(ExtraStatsLogic.bandwidthText(downKbps = 1_500, upKbps = 400, locale = Locale.US)).isEqualTo("↓ 1.5 Mb/s · ↑ 0.4 Mb/s")
+        assertThat(ExtraStatsLogic.bandwidthText(downKbps = 0, upKbps = 0, locale = Locale.US)).isNull()
     }
 }

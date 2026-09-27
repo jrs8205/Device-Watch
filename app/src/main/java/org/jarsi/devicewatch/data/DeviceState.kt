@@ -11,6 +11,13 @@ data class DeviceState(
     val powerSaveMode: String = UNAVAILABLE_TEXT,
     val deviceIdle: String = UNAVAILABLE_TEXT,
     val batteryOptimizationExempt: String = UNAVAILABLE_TEXT,
+    // Active network
+    /** Whether the active network reaches the internet, or waits at a sign-in page. */
+    val internetAccess: String = UNAVAILABLE_TEXT,
+    /** The network's own bandwidth estimate, down and up. */
+    val bandwidthEstimate: String = UNAVAILABLE_TEXT,
+    /** Whether the active network is metered (billed by use). */
+    val networkMetered: String = UNAVAILABLE_TEXT,
     // Wi-Fi connection
     /** The connected network's security, e.g. "WPA3-Personal" (Android 12+). */
     val wifiSecurity: String = UNAVAILABLE_TEXT,
