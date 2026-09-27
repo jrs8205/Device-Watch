@@ -15,12 +15,17 @@ object DataQuotaLogic {
     private const val GB_BYTES = 1024L * 1024 * 1024
 
     /**
-     * How many more bytes the mobile counter may grow before the next alert that has
-     * not been sent, or null when there is nothing left to watch: quota off, usage
-     * unavailable, or both alerts sent. A level already passed is the caller's job
-     * right now ([pendingThresholds]); this looks strictly ahead of the current usage.
+     * How many more bytes the mobile counter may grow before the service must look
+     * again, or null when there is nothing to watch: quota off or usage unavailable.
+     * That is the distance to the next alert not yet sent — a level already passed
+     * is the caller's job right now ([pendingThresholds]) — but never more than the
+     * warning level's share of the quota. A new day or billing cycle starts from
+     * zero and cannot reach its own warning before that many bytes have passed,
+     * and the watch counts from registration, so it fires no later than the new
+     * period's first crossing even when every alert of this period has been sent
+     * and the period turns with the screen off.
      */
-    fun bytesToNextThreshold(
+    fun bytesToNextCheck(
         quotaGb: Double,
         usedGb: Double,
         notified80: Boolean,
@@ -28,11 +33,13 @@ object DataQuotaLogic {
     ): Long? {
         if (quotaGb <= 0.0 || usedGb < 0.0) return null
         val usedBytes = usedGb * GB_BYTES
-        return listOf(WARNING_PERCENT to notified80, REACHED_PERCENT to notified100)
+        val newPeriodBytes = quotaGb * WARNING_PERCENT / 100.0 * GB_BYTES
+        val nextAlertBytes = listOf(WARNING_PERCENT to notified80, REACHED_PERCENT to notified100)
             .filterNot { (_, notified) -> notified }
             .map { (percent, _) -> quotaGb * percent / 100.0 * GB_BYTES }
             .firstOrNull { it > usedBytes }
-            ?.let { (it - usedBytes).toLong() }
+            ?.let { it - usedBytes }
+        return minOf(nextAlertBytes ?: newPeriodBytes, newPeriodBytes).toLong()
     }
 
     /**

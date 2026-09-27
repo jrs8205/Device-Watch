@@ -16,7 +16,10 @@ interface MonitorServiceRelay {
     /** The charge limit was changed or switched off; apply it now, not at the next battery broadcast. */
     fun chargeLimitChanged()
 
-    /** The data quota was changed or switched off; re-check it and re-arm the usage watch now. */
+    /**
+     * The data quota, or the period it counts against (counter mode, cycle start
+     * day), was changed; re-check it and re-arm the usage watch now.
+     */
     fun dataQuotaChanged()
 }
 

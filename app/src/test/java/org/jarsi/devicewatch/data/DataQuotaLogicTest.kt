@@ -38,8 +38,8 @@ class DataQuotaLogicTest {
     }
 
     @Test
-    fun `bytes to the next threshold points at the warning level while under it`() {
-        val bytes = DataQuotaLogic.bytesToNextThreshold(
+    fun `the watch points at the warning level while under it`() {
+        val bytes = DataQuotaLogic.bytesToNextCheck(
             quotaGb = 10.0, usedGb = 2.0, notified80 = false, notified100 = false
         )
 
@@ -47,35 +47,53 @@ class DataQuotaLogicTest {
     }
 
     @Test
-    fun `bytes to the next threshold skips a level already passed or already notified`() {
+    fun `the watch skips a level already passed or already notified`() {
         // 9 of 10 GB used: the 80 % alert is the caller's job right now, the
         // callback must watch for the limit itself.
         assertThat(
-            DataQuotaLogic.bytesToNextThreshold(
+            DataQuotaLogic.bytesToNextCheck(
                 quotaGb = 10.0, usedGb = 9.0, notified80 = false, notified100 = false
             )
         ).isEqualTo(1 * gb)
         assertThat(
-            DataQuotaLogic.bytesToNextThreshold(
+            DataQuotaLogic.bytesToNextCheck(
                 quotaGb = 10.0, usedGb = 5.0, notified80 = true, notified100 = false
             )
         ).isEqualTo(5 * gb)
     }
 
     @Test
-    fun `bytes to the next threshold is null when nothing is left to watch`() {
+    fun `after both alerts the watch stays on for the next period`() {
+        // The next period's first alert needs 80 % of the quota counted from its
+        // start, and the watch counts from now, so it cannot fire any later than
+        // that crossing — whether the period turns with the screen on or off.
         assertThat(
-            DataQuotaLogic.bytesToNextThreshold(
+            DataQuotaLogic.bytesToNextCheck(
                 quotaGb = 10.0, usedGb = 10.5, notified80 = true, notified100 = true
             )
-        ).isNull()
+        ).isEqualTo(8 * gb)
+    }
+
+    @Test
+    fun `the watch never waits longer than a new period's first alert`() {
+        // Only the warning was sent, far below the limit (the counting period was
+        // just moved): the limit is 9.5 GB away, a fresh period's warning only 8.
         assertThat(
-            DataQuotaLogic.bytesToNextThreshold(
+            DataQuotaLogic.bytesToNextCheck(
+                quotaGb = 10.0, usedGb = 0.5, notified80 = true, notified100 = false
+            )
+        ).isEqualTo(8 * gb)
+    }
+
+    @Test
+    fun `there is nothing to watch without a quota or a usage figure`() {
+        assertThat(
+            DataQuotaLogic.bytesToNextCheck(
                 quotaGb = 0.0, usedGb = 1.0, notified80 = false, notified100 = false
             )
         ).isNull()
         assertThat(
-            DataQuotaLogic.bytesToNextThreshold(
+            DataQuotaLogic.bytesToNextCheck(
                 quotaGb = 10.0, usedGb = UNAVAILABLE_DOUBLE, notified80 = false, notified100 = false
             )
         ).isNull()

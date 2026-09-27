@@ -443,8 +443,10 @@ class SystemMonitorService : Service() {
      * so a crossing with the screen off — and no battery broadcast to ride on —
      * alerts all the same. The system calls back once the registered number of
      * bytes has passed since registration, so the threshold is "bytes left to the
-     * next alert" and is re-armed after every check. No polling is added: the
-     * screen-off loop stays stopped. Only called under [maybeNotifyDataQuota]'s lock.
+     * next check" ([DataQuotaLogic.bytesToNextCheck]) and is re-armed after every
+     * check; it stays armed after the period's last alert, so the next period's
+     * first crossing is caught too. No polling is added: the screen-off loop stays
+     * stopped. Only called under [maybeNotifyDataQuota]'s lock.
      */
     private fun armUsageCallback(
         quotaGb: Double,
@@ -453,7 +455,7 @@ class SystemMonitorService : Service() {
         notified100: Boolean,
     ) {
         disarmUsageCallback()
-        val bytes = DataQuotaLogic.bytesToNextThreshold(quotaGb, usedGb, notified80, notified100)
+        val bytes = DataQuotaLogic.bytesToNextCheck(quotaGb, usedGb, notified80, notified100)
             ?: return
         val manager = getSystemService(NetworkStatsManager::class.java) ?: return
         val callback = object : NetworkStatsManager.UsageCallback() {

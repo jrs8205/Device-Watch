@@ -265,10 +265,14 @@ class DashboardViewModel @Inject constructor(
         }
     }
 
-    /** Persists the counter mode and re-queries stats so the widget shows the new period. */
+    /**
+     * Persists the counter mode, has the monitor re-check the quota against the new
+     * period at once, and re-queries stats so the widget shows the new period.
+     */
     fun onDataCounterModeSelected(mode: DataCounterMode) {
         settings.setDataCounterMode(mode)
         _uiState.update { it.copy(dataCounterMode = mode) }
+        monitorRelay.dataQuotaChanged()
         refresh()
     }
 
@@ -277,9 +281,10 @@ class DashboardViewModel @Inject constructor(
         _uiState.update { it.copy(cycleStartDay = day.coerceIn(1, 31)) }
     }
 
-    /** Persists the dragged cycle start day and re-queries stats for the new period. */
+    /** Persists the dragged cycle start day, has the monitor re-check the quota, and re-queries stats. */
     fun commitCycleStartDay() {
         settings.setCycleStartDay(_uiState.value.cycleStartDay)
+        monitorRelay.dataQuotaChanged()
         refresh()
     }
 

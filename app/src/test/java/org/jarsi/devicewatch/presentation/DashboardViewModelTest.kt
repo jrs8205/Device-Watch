@@ -195,6 +195,35 @@ class DashboardViewModelTest {
         }
 
     @Test
+    fun `given a new counting mode, then the monitor is told to re-check the quota at once`() =
+        runTest(dispatcher) {
+            // Given: the mode decides the period the quota counts against, and a
+            // period switched with the screen off would otherwise go unchecked.
+            val relay = FakeMonitorServiceRelay()
+            val viewModel = buildViewModel(relay = relay)
+
+            // When
+            viewModel.onDataCounterModeSelected(DataCounterMode.BILLING_CYCLE)
+            advanceUntilIdle()
+
+            // Then
+            assertThat(relay.dataQuotaChangedCount).isEqualTo(1)
+        }
+
+    @Test
+    fun `given a new cycle start day, then the monitor is told to re-check the quota at once`() =
+        runTest(dispatcher) {
+            val relay = FakeMonitorServiceRelay()
+            val viewModel = buildViewModel(relay = relay)
+
+            viewModel.onCycleStartDayChange(15)
+            viewModel.commitCycleStartDay()
+            advanceUntilIdle()
+
+            assertThat(relay.dataQuotaChangedCount).isEqualTo(1)
+        }
+
+    @Test
     fun `given the classic look stored, when created, then the first state already carries it`() =
         runTest(dispatcher) {
             // Given: read synchronously in init, so the first frame is themed right
