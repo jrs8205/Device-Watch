@@ -200,6 +200,19 @@ class HistoryViewModelTest {
     }
 
     @Test
+    fun `load reads the charges out of the same battery samples`() = runTest {
+        val vm = buildViewModel()
+        vm.load()
+        dispatcher.scheduler.advanceUntilIdle()
+
+        // The fake's 80 % charging sample is followed an hour later by an unplugged one.
+        val charge = vm.uiState.value.chargeSessions.single()
+        assertThat(charge.startLevel).isEqualTo(80)
+        assertThat(charge.endLevel).isEqualTo(72)
+        assertThat(charge.ongoing).isFalse()
+    }
+
+    @Test
     fun `load asks for the full retained window and leaves day-week filtering to the UI`() = runTest {
         val batteryHistory = FakeBatteryHistory()
         val vm = buildViewModel(batteryHistory = batteryHistory)

@@ -56,6 +56,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.jarsi.devicewatch.R
+import org.jarsi.devicewatch.data.ChargeSession
 import org.jarsi.devicewatch.data.MonthlyDataUsage
 import org.jarsi.devicewatch.data.NotificationLogEntry
 import org.jarsi.devicewatch.presentation.HistoryDay
@@ -173,6 +174,14 @@ fun HistoryPage(
                             BatteryRangeChipRow(selected = batteryRange, onSelect = { batteryRange = it })
                             Spacer(modifier = Modifier.height(12.dp))
                             BatteryChart(samples = uiState.batterySamples, range = batteryRange)
+                        }
+                    }
+                }
+
+                if (!uiState.isLoading) {
+                    item(key = "charges") {
+                        SettingsSectionCard(titleRes = R.string.history_charges_section) {
+                            ChargeSessionList(uiState.chargeSessions)
                         }
                     }
                 }
@@ -511,6 +520,94 @@ private fun HistoryDayList(days: List<HistoryDay>, metric: HistoryMetric) {
         }
     }
 }
+
+/**
+ * The charges of the retained battery history, newest first: when, from and to
+ * which level, how long, how fast and how warm. The newest few show by default.
+ */
+@Composable
+private fun ChargeSessionList(charges: List<ChargeSession>) {
+    if (charges.isEmpty()) {
+        Text(
+            text = stringResource(R.string.history_charges_empty),
+            fontSize = 13.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        return
+    }
+    var showAll by rememberSaveable { mutableStateOf(false) }
+    val visible = if (showAll) charges else charges.take(CHARGES_SHOWN_FIRST)
+    Column(modifier = Modifier.fillMaxWidth()) {
+        visible.forEach { charge -> ChargeSessionRow(charge) }
+        if (charges.size > CHARGES_SHOWN_FIRST) {
+            TextButton(onClick = withTapHaptic { showAll = !showAll }) {
+                Text(
+                    text = if (showAll) {
+                        stringResource(R.string.history_charges_show_fewer)
+                    } else {
+                        stringResource(R.string.history_charges_show_all, charges.size)
+                    },
+                    fontSize = 12.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ChargeSessionRow(charge: ChargeSession) {
+    val context = LocalContext.current
+    val zone = ZoneId.systemDefault()
+    val today = LocalDate.now()
+    val startDay = Instant.ofEpochMilli(charge.startMillis).atZone(zone).toLocalDate()
+    val dayText = when (startDay) {
+        today -> stringResource(R.string.history_today)
+        today.minusDays(1) -> stringResource(R.string.history_yesterday)
+        else -> startDay.format(weekdayDateFormatter())
+    }
+    val timeFormat = remember(context) { android.text.format.DateFormat.getTimeFormat(context) }
+    val start = timeFormat.format(Date(charge.startMillis))
+    val range = if (charge.ongoing) "$start–" else "$start–${timeFormat.format(Date(charge.endMillis))}"
+    val details = buildList {
+        if (charge.ongoing) add(stringResource(R.string.history_charge_ongoing))
+        add(durationText(context, charge.durationMillis))
+        charge.percentPerHour?.let { add(stringResource(R.string.history_charge_rate, it)) }
+        charge.peakTemperatureDeciC?.let {
+            add(stringResource(R.string.history_charge_peak, "%.1f °C".format(it / 10.0)))
+        }
+    }.joinToString(" · ")
+
+    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp)) {
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = "$dayText $range",
+                fontSize = 13.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = stringResource(R.string.history_charge_levels, charge.startLevel, charge.endLevel),
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1
+            )
+        }
+        Text(
+            text = details,
+            fontSize = 11.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
+}
+
+private const val CHARGES_SHOWN_FIRST = 5
 
 @Composable
 private fun NotificationLogRow(entry: NotificationLogEntry, modifier: Modifier = Modifier) {

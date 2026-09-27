@@ -9,6 +9,8 @@ import org.jarsi.devicewatch.R
 import org.jarsi.devicewatch.data.BatteryHistory
 import org.jarsi.devicewatch.data.BatteryHistoryCodec
 import org.jarsi.devicewatch.data.BatterySample
+import org.jarsi.devicewatch.data.ChargeSession
+import org.jarsi.devicewatch.data.ChargeSessions
 import org.jarsi.devicewatch.data.DeviceInfo
 import org.jarsi.devicewatch.data.MonthlyDataUsage
 import org.jarsi.devicewatch.data.NotificationLog
@@ -58,6 +60,8 @@ data class HistoryUiState(
     val listenerEnabled: Boolean = false,
     /** The store's whole retained window, ascending; the chart picks its own range out of it. */
     val batterySamples: List<BatterySample> = emptyList(),
+    /** Charges read from [batterySamples], newest first. */
+    val chargeSessions: List<ChargeSession> = emptyList(),
 )
 
 /**
@@ -130,15 +134,16 @@ class HistoryViewModel @Inject constructor(
                             charges = tally.charges,
                         )
                     }
+                    val nowMillis = System.currentTimeMillis()
+                    val samples = batteryHistory.samplesSince(nowMillis - BATTERY_WINDOW_MILLIS)
                     HistoryUiState(
                         isLoading = false,
                         days = days,
                         monthlyUsage = resolveMonthlyUsage(forceMonthly, previousMonthly),
                         logEntries = notificationLog.entriesNewestFirst(),
                         listenerEnabled = notificationStats.isListenerEnabled(),
-                        batterySamples = batteryHistory.samplesSince(
-                            System.currentTimeMillis() - BATTERY_WINDOW_MILLIS
-                        ),
+                        batterySamples = samples,
+                        chargeSessions = ChargeSessions.from(samples, nowMillis),
                     )
                 }
                 // Preserve the pull flag across the whole-state write; the finally

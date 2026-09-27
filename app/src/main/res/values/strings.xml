@@ -132,6 +132,14 @@
     <string name="history_monthly_metered_note">Android counts only metered mobile data. Usage on connections marked as unmetered (e.g. unlimited plans) is not included.</string>
     <string name="history_monthly_usage_access_missing">Usage access is required to show data usage.</string>
     <string name="history_battery_section">Battery</string>
+    <string name="history_charges_section">Charges</string>
+    <string name="history_charges_empty">No charges in the last 14 days</string>
+    <string name="history_charge_levels">%1$d %% → %2$d %%</string>
+    <string name="history_charge_ongoing">Charging now</string>
+    <string name="history_charge_rate">%1$d %%/h</string>
+    <string name="history_charge_peak">peak %1$s</string>
+    <string name="history_charges_show_all">Show all %1$d</string>
+    <string name="history_charges_show_fewer">Show fewer</string>
     <string name="history_battery_day">24 h</string>
     <string name="history_battery_week">Week</string>
     <string name="history_battery_empty">Battery history appears here as the app collects it.</string>
