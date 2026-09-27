@@ -251,6 +251,8 @@
     <string name="wifi_vpn">VPN active</string>
     <string name="wifi_dns">DNS servers</string>
     <string name="wifi_private_dns">Private DNS</string>
+    <string name="data_split_caption">In the foreground %1$d %% · in the background %2$d %%</string>
+    <string name="data_roaming_caption">Of which roaming: %1$s</string>
     <string name="private_dns_off">Off</string>
     <string name="private_dns_automatic">Automatic</string>
     <string name="wifi_interface">Network interface</string>

@@ -29,4 +29,11 @@ interface SystemStatsRepository {
      * months, newest first. Served straight from Android's own stats — no local storage.
      */
     suspend fun monthlyDataUsage(monthsBack: Int = 12): List<MonthlyDataUsage>
+
+    /**
+     * Wi-Fi and mobile traffic since [startMillis] split into foreground and
+     * background shares, plus the mobile traffic spent roaming. A per-UID query,
+     * heavier than [getStats], so the screen asks for it and the widget loop does not.
+     */
+    suspend fun dataBreakdown(startMillis: Long): DataBreakdown
 }

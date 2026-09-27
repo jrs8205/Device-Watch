@@ -17,6 +17,26 @@ data class PrivateDns(val mode: PrivateDnsMode, val serverName: String?)
 /** The Google Play system update, to the day when the version carries one. */
 data class ModuleUpdate(val month: YearMonth, val day: Int?)
 
+/** Whether traffic happened with its app in the foreground, per `NetworkStats.Bucket.getState()`. */
+enum class TrafficState { FOREGROUND, BACKGROUND, UNKNOWN }
+
+/** One per-UID `NetworkStats` bucket, reduced to what the breakdown needs. */
+data class TrafficRecord(val mobile: Boolean, val state: TrafficState, val roaming: Boolean, val bytes: Long)
+
+/** Foreground and background shares of one network's traffic; they add up to 100. */
+data class TrafficSplit(val foregroundPercent: Int, val backgroundPercent: Int)
+
+/**
+ * The counting period's traffic split by app state per network, and the mobile
+ * traffic spent roaming. A split is null when the network had no traffic or some
+ * of it carries no state (the platform did not record one).
+ */
+data class DataBreakdown(val wifi: TrafficSplit?, val mobile: TrafficSplit?, val mobileRoamingBytes: Long) {
+    companion object {
+        val NONE = DataBreakdown(wifi = null, mobile = null, mobileRoamingBytes = 0L)
+    }
+}
+
 /**
  * Pure rules behind the readings added in 1.6.0 on top of the original stats:
  * charge source, the system's own battery estimate, deep sleep, thermal state,
@@ -126,6 +146,29 @@ object ExtraStatsLogic {
     // Anchored at the start only, like Settings' date parse: a build suffix such as
     // "2024-07-01S+" follows the date on some images.
     private val MODULE_VERSION = Regex("""(\d{4})-(\d{2})(?:-(\d{2}))?(?!\d)""")
+
+    /** `NetworkStats.Bucket.STATE_DEFAULT` (1) is background, `STATE_FOREGROUND` (2) foreground. */
+    fun trafficState(bucketState: Int): TrafficState = when (bucketState) {
+        2 -> TrafficState.FOREGROUND
+        1 -> TrafficState.BACKGROUND
+        else -> TrafficState.UNKNOWN
+    }
+
+    fun dataBreakdown(records: List<TrafficRecord>): DataBreakdown {
+        fun split(mobile: Boolean): TrafficSplit? {
+            val network = records.filter { it.mobile == mobile && it.bytes > 0 }
+            if (network.isEmpty() || network.any { it.state == TrafficState.UNKNOWN }) return null
+            val total = network.sumOf { it.bytes }
+            val foreground = network.filter { it.state == TrafficState.FOREGROUND }.sumOf { it.bytes }
+            val foregroundPercent = Math.round(foreground * 100.0 / total).toInt()
+            return TrafficSplit(foregroundPercent, 100 - foregroundPercent)
+        }
+        return DataBreakdown(
+            wifi = split(mobile = false),
+            mobile = split(mobile = true),
+            mobileRoamingBytes = records.filter { it.mobile && it.roaming && it.bytes > 0 }.sumOf { it.bytes },
+        )
+    }
 
     /**
      * The network's MTU (`LinkProperties.getMtu()`, API 29), which is 0 unless the

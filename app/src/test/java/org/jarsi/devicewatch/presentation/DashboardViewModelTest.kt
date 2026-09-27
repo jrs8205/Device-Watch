@@ -10,6 +10,8 @@ import org.jarsi.devicewatch.data.MonthlyDataUsage
 import org.jarsi.devicewatch.data.NotificationStats
 import org.jarsi.devicewatch.data.SystemStats
 import org.jarsi.devicewatch.data.SystemStatsRepository
+import org.jarsi.devicewatch.data.DataBreakdown
+import org.jarsi.devicewatch.data.TrafficSplit
 import org.jarsi.devicewatch.data.UNAVAILABLE_INT
 import org.jarsi.devicewatch.data.UsageHistory
 import org.jarsi.devicewatch.data.UsageTotals
@@ -159,6 +161,29 @@ class DashboardViewModelTest {
             assertThat(comparison.screenTimePrevMillis).isEqualTo(0L)
             assertThat(comparison.unlocksPrev).isEqualTo(0)
             assertThat(comparison.notificationsPrev).isEqualTo(0)
+        }
+
+    @Test
+    fun `given a refresh, then the period's data breakdown reaches the screen`() =
+        runTest(dispatcher) {
+            // Given
+            val breakdown = DataBreakdown(
+                wifi = TrafficSplit(foregroundPercent = 70, backgroundPercent = 30),
+                mobile = null,
+                mobileRoamingBytes = 5L,
+            )
+            val repository = FakeSystemStatsRepository(sampleStats(), breakdown)
+            val viewModel = buildViewModel(repository = repository)
+
+            // When
+            viewModel.refresh()
+            advanceUntilIdle()
+
+            // Then: asked for the current counting period (a day by default).
+            assertThat(viewModel.uiState.value.dataBreakdown).isEqualTo(breakdown)
+            val startOfToday = java.time.LocalDate.now()
+                .atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
+            assertThat(repository.breakdownStartMillis).isEqualTo(startOfToday)
         }
 
     @Test
@@ -599,9 +624,21 @@ class DashboardViewModelTest {
         }
 }
 
-private class FakeSystemStatsRepository(private val stats: SystemStats) : SystemStatsRepository {
+private class FakeSystemStatsRepository(
+    private val stats: SystemStats,
+    private val breakdown: DataBreakdown = DataBreakdown.NONE,
+) : SystemStatsRepository {
     var callCount = 0
         private set
+
+    /** The period start of the last breakdown asked for. */
+    var breakdownStartMillis: Long? = null
+        private set
+
+    override suspend fun dataBreakdown(startMillis: Long): DataBreakdown {
+        breakdownStartMillis = startMillis
+        return breakdown
+    }
 
     override suspend fun getStats(): SystemStats {
         callCount++

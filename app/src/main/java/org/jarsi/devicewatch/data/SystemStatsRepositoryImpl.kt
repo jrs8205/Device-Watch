@@ -4,6 +4,7 @@ import android.Manifest
 import android.annotation.TargetApi
 import android.app.ActivityManager
 import android.app.AppOpsManager
+import android.app.usage.NetworkStats
 import android.app.usage.NetworkStatsManager
 import android.content.Context
 import android.content.Intent
@@ -100,6 +101,38 @@ class SystemStatsRepositoryImpl @Inject constructor(
             wifiGb = readNetworkUsageGb(ConnectivityManager.TYPE_WIFI, startMillis),
             mobileGb = readNetworkUsageGb(ConnectivityManager.TYPE_MOBILE, startMillis),
         )
+    }
+
+    @Suppress("DEPRECATION") // querySummary(networkType, ...) is the public per-UID API
+    override suspend fun dataBreakdown(startMillis: Long): DataBreakdown = withContext(dispatcher) {
+        // The foreground state is recorded from Android 9 on; before that every
+        // bucket reads as background, which would claim a split that is not there.
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P || !hasUsageStatsAccess()) {
+            return@withContext DataBreakdown.NONE
+        }
+        val statsManager = context.getSystemService(NetworkStatsManager::class.java)
+            ?: return@withContext DataBreakdown.NONE
+        val end = System.currentTimeMillis()
+        val records = mutableListOf<TrafficRecord>()
+        for (networkType in intArrayOf(ConnectivityManager.TYPE_WIFI, ConnectivityManager.TYPE_MOBILE)) {
+            try {
+                statsManager.querySummary(networkType, null, startMillis, end)?.use { stats ->
+                    val bucket = NetworkStats.Bucket()
+                    while (stats.hasNextBucket()) {
+                        stats.getNextBucket(bucket)
+                        records += TrafficRecord(
+                            mobile = networkType == ConnectivityManager.TYPE_MOBILE,
+                            state = ExtraStatsLogic.trafficState(bucket.state),
+                            roaming = bucket.roaming == NetworkStats.Bucket.ROAMING_YES,
+                            bytes = bucket.rxBytes + bucket.txBytes,
+                        )
+                    }
+                }
+            } catch (_: Exception) {
+                // One network type failing should not hide the other.
+            }
+        }
+        ExtraStatsLogic.dataBreakdown(records)
     }
 
     override suspend fun monthlyDataUsage(monthsBack: Int): List<MonthlyDataUsage> = withContext(dispatcher) {

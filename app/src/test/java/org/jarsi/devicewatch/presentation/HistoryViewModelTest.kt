@@ -10,6 +10,7 @@ import org.jarsi.devicewatch.data.NotificationLogEntry
 import org.jarsi.devicewatch.data.NotificationStats
 import org.jarsi.devicewatch.data.SystemStats
 import org.jarsi.devicewatch.data.SystemStatsRepository
+import org.jarsi.devicewatch.data.DataBreakdown
 import org.jarsi.devicewatch.data.UsageDayTally
 import org.jarsi.devicewatch.data.UsageHistory
 import app.cash.turbine.test
@@ -77,6 +78,8 @@ class HistoryViewModelTest {
     }
 
     private class FakeStatsRepository : SystemStatsRepository {
+        override suspend fun dataBreakdown(startMillis: Long): DataBreakdown = DataBreakdown.NONE
+
         /** monthsBack argument of every monthlyDataUsage call, in order. */
         val monthlyCalls = mutableListOf<Int>()
         var allUnavailable = false

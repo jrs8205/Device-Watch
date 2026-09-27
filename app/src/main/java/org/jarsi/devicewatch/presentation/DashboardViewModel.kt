@@ -8,6 +8,7 @@ import org.jarsi.devicewatch.data.CHARGE_LIMIT_MAX
 import org.jarsi.devicewatch.data.CHARGE_LIMIT_MIN
 import org.jarsi.devicewatch.data.DATA_QUOTA_MAX_GB
 import org.jarsi.devicewatch.data.DATA_QUOTA_MIN_GB
+import org.jarsi.devicewatch.data.DataBreakdown
 import org.jarsi.devicewatch.data.DataCounterMode
 import org.jarsi.devicewatch.data.DataPeriodCalculator
 import org.jarsi.devicewatch.data.DeviceInfo
@@ -18,6 +19,7 @@ import org.jarsi.devicewatch.data.UNAVAILABLE_INT
 import org.jarsi.devicewatch.data.UsageHistory
 import org.jarsi.devicewatch.system.MonitorServiceRelay
 import java.time.LocalDate
+import java.time.ZoneId
 import org.jarsi.devicewatch.widget.WidgetController
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
@@ -71,6 +73,8 @@ data class DashboardUiState(
     val onboardingCompleted: Boolean? = null,
     /** The pre-1.6 look: wallpaper colours and the regular number font. */
     val classicLook: Boolean = false,
+    /** Foreground/background shares and roaming for the counting period; null until read. */
+    val dataBreakdown: DataBreakdown? = null,
 )
 
 @HiltViewModel
@@ -156,6 +160,10 @@ class DashboardViewModel @Inject constructor(
         }
         usageHistory.purge(today)
 
+        val breakdown = repository.dataBreakdown(
+            periodStart.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        )
+
         val notificationAccess = notificationStats.isListenerEnabled()
         // "Previous period vs now", day-count-aligned. The stores return zeros for
         // days they have nothing on, so a metric's previous value is only trusted
@@ -210,6 +218,7 @@ class DashboardViewModel @Inject constructor(
                 bootCount = usageHistory.bootsBetween(periodStart, today),
                 chargeCount = usageHistory.chargesBetween(periodStart, today),
                 periodComparison = comparison,
+                dataBreakdown = breakdown,
                 notificationAccessEnabled = notificationAccess,
                 notificationCount = if (notificationAccess) {
                     notificationStats.totalBetween(periodStart, today)

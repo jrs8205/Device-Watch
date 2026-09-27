@@ -156,4 +156,56 @@ class ExtraStatsLogicTest {
         assertThat(ExtraStatsLogic.moduleUpdate("")).isNull()
         assertThat(ExtraStatsLogic.moduleUpdate(null)).isNull()
     }
+
+    @Test
+    fun `the bucket state tells foreground from background traffic`() {
+        // NetworkStats.Bucket.STATE_DEFAULT (1) is background, STATE_FOREGROUND (2).
+        assertThat(ExtraStatsLogic.trafficState(2)).isEqualTo(TrafficState.FOREGROUND)
+        assertThat(ExtraStatsLogic.trafficState(1)).isEqualTo(TrafficState.BACKGROUND)
+        assertThat(ExtraStatsLogic.trafficState(-1)).isEqualTo(TrafficState.UNKNOWN)
+    }
+
+    @Test
+    fun `traffic splits into foreground and background shares per network`() {
+        val breakdown = ExtraStatsLogic.dataBreakdown(
+            listOf(
+                TrafficRecord(mobile = false, TrafficState.FOREGROUND, roaming = false, bytes = 700),
+                TrafficRecord(mobile = false, TrafficState.BACKGROUND, roaming = false, bytes = 300),
+                TrafficRecord(mobile = true, TrafficState.FOREGROUND, roaming = false, bytes = 1),
+                TrafficRecord(mobile = true, TrafficState.BACKGROUND, roaming = false, bytes = 2),
+            )
+        )
+
+        assertThat(breakdown.wifi).isEqualTo(TrafficSplit(foregroundPercent = 70, backgroundPercent = 30))
+        // Rounded foreground, background as the rest: the two always make 100.
+        assertThat(breakdown.mobile).isEqualTo(TrafficSplit(foregroundPercent = 33, backgroundPercent = 67))
+        assertThat(breakdown.mobileRoamingBytes).isEqualTo(0L)
+    }
+
+    @Test
+    fun `a network with no traffic, or traffic of unknown state, has no split`() {
+        val breakdown = ExtraStatsLogic.dataBreakdown(
+            listOf(
+                TrafficRecord(mobile = true, TrafficState.FOREGROUND, roaming = false, bytes = 500),
+                TrafficRecord(mobile = true, TrafficState.UNKNOWN, roaming = false, bytes = 10),
+            )
+        )
+
+        assertThat(breakdown.wifi).isNull()
+        assertThat(breakdown.mobile).isNull()
+    }
+
+    @Test
+    fun `roaming counts only mobile traffic flagged as roaming`() {
+        val breakdown = ExtraStatsLogic.dataBreakdown(
+            listOf(
+                TrafficRecord(mobile = true, TrafficState.FOREGROUND, roaming = true, bytes = 400),
+                TrafficRecord(mobile = true, TrafficState.BACKGROUND, roaming = true, bytes = 100),
+                TrafficRecord(mobile = true, TrafficState.BACKGROUND, roaming = false, bytes = 500),
+                TrafficRecord(mobile = false, TrafficState.FOREGROUND, roaming = true, bytes = 900),
+            )
+        )
+
+        assertThat(breakdown.mobileRoamingBytes).isEqualTo(500L)
+    }
 }

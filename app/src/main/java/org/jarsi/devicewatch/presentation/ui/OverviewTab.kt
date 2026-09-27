@@ -51,6 +51,7 @@ import org.jarsi.devicewatch.data.ChargeSource
 import org.jarsi.devicewatch.data.DataCounterMode
 import org.jarsi.devicewatch.data.DataQuotaLogic
 import org.jarsi.devicewatch.data.ThermalLevel
+import org.jarsi.devicewatch.data.TrafficSplit
 import org.jarsi.devicewatch.data.UNAVAILABLE_TEXT
 import org.jarsi.devicewatch.presentation.DashboardUiState
 import org.jarsi.devicewatch.presentation.PeriodComparison
@@ -385,6 +386,7 @@ internal fun OverviewTab(
                 label = stringResource(wifiDataLabelRes(uiState.dataCounterMode)),
                 value = gbTodayText(currentStats.wifiBytesTodayGb)
             )
+            uiState.dataBreakdown?.wifi?.let { DataSplitCaption(it) }
             val mobileLabel = stringResource(simDataLabelRes(uiState.dataCounterMode))
             val simName = currentStats.dataSimName.takeIf { it != UNAVAILABLE_TEXT }
             // With a quota set the row reads "used / quota" (same text the widget shows)
@@ -397,6 +399,12 @@ internal fun OverviewTab(
                 },
                 value = mobileDataText(currentStats.mobileDataUsedGb, currentStats.mobileDataTotalGb)
             )
+            uiState.dataBreakdown?.mobile?.let { DataSplitCaption(it) }
+            uiState.dataBreakdown?.mobileRoamingBytes?.takeIf { it > 0 }?.let { roamingBytes ->
+                DataCaption(
+                    stringResource(R.string.data_roaming_caption, gbTodayText(roamingBytes / GB_BYTES))
+                )
+            }
             val quotaPercentUsed = DataQuotaLogic.percentUsed(
                 quotaGb = currentStats.mobileDataTotalGb,
                 usedGb = currentStats.mobileDataUsedGb,
@@ -630,6 +638,26 @@ internal fun OverviewTab(
         )
     }
 }
+
+/** How much of a network's traffic ran with its app in front, in the caption style. */
+@Composable
+private fun DataSplitCaption(split: TrafficSplit) {
+    DataCaption(stringResource(R.string.data_split_caption, split.foregroundPercent, split.backgroundPercent))
+}
+
+@Composable
+private fun DataCaption(text: String) {
+    Text(
+        text = text,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        fontSize = 11.sp,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.fillMaxWidth()
+    )
+}
+
+private const val GB_BYTES = 1024.0 * 1024.0 * 1024.0
 
 /** Label for the system's thermal level; null when the system reports none. */
 private fun thermalLevelRes(level: ThermalLevel): Int? = when (level) {
