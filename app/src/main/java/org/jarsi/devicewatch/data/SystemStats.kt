@@ -91,4 +91,8 @@ data class SystemStats(
     val systemEstimatePersonalized: Boolean = false,
     /** Deep sleep since boot and its share of the uptime; [UNAVAILABLE_TEXT] when unknown. */
     val deepSleepText: String = UNAVAILABLE_TEXT,
+    /** The system's thermal state (Android 10+). */
+    val thermalLevel: ThermalLevel = ThermalLevel.UNKNOWN,
+    /** Share of the severe-throttling threshold reached (Android 11+); [UNAVAILABLE_INT] when unknown. */
+    val thermalHeadroomPercent: Int = UNAVAILABLE_INT,
 )

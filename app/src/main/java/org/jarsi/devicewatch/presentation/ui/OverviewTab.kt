@@ -50,6 +50,7 @@ import org.jarsi.devicewatch.R
 import org.jarsi.devicewatch.data.ChargeSource
 import org.jarsi.devicewatch.data.DataCounterMode
 import org.jarsi.devicewatch.data.DataQuotaLogic
+import org.jarsi.devicewatch.data.ThermalLevel
 import org.jarsi.devicewatch.data.UNAVAILABLE_TEXT
 import org.jarsi.devicewatch.presentation.DashboardUiState
 import org.jarsi.devicewatch.presentation.PeriodComparison
@@ -474,6 +475,37 @@ internal fun OverviewTab(
                 trackColor = MaterialTheme.colorScheme.outlineVariant
             )
 
+            // How close the phone is to throttling itself for heat: the level the
+            // system reports and, where available, the share of the threshold.
+            thermalLevelRes(currentStats.thermalLevel)?.let { levelRes ->
+                Spacer(modifier = Modifier.height(12.dp))
+                val level = stringResource(levelRes)
+                StackedMetricRow(
+                    label = stringResource(R.string.thermal_label),
+                    value = if (currentStats.thermalHeadroomPercent >= 0) {
+                        stringResource(R.string.thermal_value, level, currentStats.thermalHeadroomPercent)
+                    } else {
+                        level
+                    },
+                    valueSize = SECONDARY_VALUE_SP,
+                    valueColor = if (currentStats.thermalLevel >= ThermalLevel.SEVERE) {
+                        MaterialTheme.colorScheme.error
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    }
+                )
+                // Android gives no temperature for the limit, only the share of it:
+                // say what the limit is, in the same caption style as "4 GB free".
+                if (currentStats.thermalHeadroomPercent >= 0) {
+                    Text(
+                        text = stringResource(R.string.thermal_limit_caption),
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
+
             Spacer(modifier = Modifier.height(20.dp))
             HorizontalDivider(color = MaterialTheme.colorScheme.outline)
             Spacer(modifier = Modifier.height(16.dp))
@@ -597,6 +629,18 @@ internal fun OverviewTab(
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
+}
+
+/** Label for the system's thermal level; null when the system reports none. */
+private fun thermalLevelRes(level: ThermalLevel): Int? = when (level) {
+    ThermalLevel.UNKNOWN -> null
+    ThermalLevel.NONE -> R.string.thermal_none
+    ThermalLevel.LIGHT -> R.string.thermal_light
+    ThermalLevel.MODERATE -> R.string.thermal_moderate
+    ThermalLevel.SEVERE -> R.string.thermal_severe
+    ThermalLevel.CRITICAL -> R.string.thermal_critical
+    ThermalLevel.EMERGENCY -> R.string.thermal_emergency
+    ThermalLevel.SHUTDOWN -> R.string.thermal_shutdown
 }
 
 /** Label for what the phone is plugged into; null on battery. */

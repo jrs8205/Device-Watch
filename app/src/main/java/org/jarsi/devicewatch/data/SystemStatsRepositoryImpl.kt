@@ -504,6 +504,8 @@ class SystemStatsRepositoryImpl @Inject constructor(
 
         val timeRemainingText = buildBatteryTimeText(status, batteryManager)
         val (systemEstimateText, systemEstimatePersonalized) = readSystemEstimate(status)
+        val thermalLevel = readThermalLevel()
+        val thermalHeadroomPercent = readThermalHeadroomPercent()
 
         val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
         val memoryInfo = ActivityManager.MemoryInfo()
@@ -731,6 +733,8 @@ class SystemStatsRepositoryImpl @Inject constructor(
             systemEstimateText = systemEstimateText,
             systemEstimatePersonalized = systemEstimatePersonalized,
             deepSleepText = deepSleepText,
+            thermalLevel = thermalLevel,
+            thermalHeadroomPercent = thermalHeadroomPercent,
         )
     }
 
@@ -803,6 +807,28 @@ class SystemStatsRepositoryImpl @Inject constructor(
         } else {
             context.getString(R.string.battery_time_remaining_minutes, minutes)
         }
+    }
+
+    private fun readThermalLevel(): ThermalLevel {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return ThermalLevel.UNKNOWN
+        val powerManager = context.getSystemService(PowerManager::class.java) ?: return ThermalLevel.UNKNOWN
+        return ExtraStatsLogic.thermalLevel(powerManager.currentThermalStatus)
+    }
+
+    // The headroom is rate-limited by the platform; the last answer is reused in
+    // between. Only touched from computeStats, which runs under the stats mutex.
+    private var lastHeadroomReadMillis: Long? = null
+    private var lastHeadroomPercent: Int = UNAVAILABLE_INT
+
+    private fun readThermalHeadroomPercent(): Int {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return UNAVAILABLE_INT
+        val now = SystemClock.elapsedRealtime()
+        if (!ExtraStatsLogic.headroomDue(lastHeadroomReadMillis, now)) return lastHeadroomPercent
+        val powerManager = context.getSystemService(PowerManager::class.java) ?: return UNAVAILABLE_INT
+        lastHeadroomReadMillis = now
+        lastHeadroomPercent = ExtraStatsLogic.headroomPercent(powerManager.getThermalHeadroom(0))
+            ?: UNAVAILABLE_INT
+        return lastHeadroomPercent
     }
 
     /**
