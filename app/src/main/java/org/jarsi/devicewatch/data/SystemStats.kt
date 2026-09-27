@@ -89,4 +89,6 @@ data class SystemStats(
     val systemEstimateText: String = UNAVAILABLE_TEXT,
     /** True when [systemEstimateText] is learned from this user's usage. */
     val systemEstimatePersonalized: Boolean = false,
+    /** Deep sleep since boot and its share of the uptime; [UNAVAILABLE_TEXT] when unknown. */
+    val deepSleepText: String = UNAVAILABLE_TEXT,
 )

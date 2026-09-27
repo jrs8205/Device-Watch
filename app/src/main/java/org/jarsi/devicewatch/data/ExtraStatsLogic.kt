@@ -32,5 +32,20 @@ object ExtraStatsLogic {
         return (millis / MINUTE_MILLIS).toInt()
     }
 
+    /**
+     * Time since boot the CPU spent in deep sleep: `SystemClock.elapsedRealtime()`
+     * counts it, `uptimeMillis()` does not. Null when the clocks disagree.
+     */
+    fun deepSleepMillis(elapsedMillis: Long, awakeMillis: Long): Long? {
+        if (elapsedMillis <= 0L || awakeMillis < 0L || awakeMillis > elapsedMillis) return null
+        return elapsedMillis - awakeMillis
+    }
+
+    /** [deepSleepMillis] as a whole percentage of the time since boot. */
+    fun deepSleepPercent(elapsedMillis: Long, awakeMillis: Long): Int? {
+        val asleep = deepSleepMillis(elapsedMillis, awakeMillis) ?: return null
+        return (asleep * 100 / elapsedMillis).toInt()
+    }
+
     private const val MINUTE_MILLIS = 60_000L
 }

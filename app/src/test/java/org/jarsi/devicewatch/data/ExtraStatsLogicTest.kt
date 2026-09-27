@@ -35,4 +35,22 @@ class ExtraStatsLogicTest {
         assertThat(ExtraStatsLogic.predictionMinutes(-5_000L)).isNull()
         assertThat(ExtraStatsLogic.predictionMinutes(59_000L)).isNull()
     }
+
+    @Test
+    fun `deep sleep is the share of time since boot the CPU spent asleep`() {
+        val hour = 3_600_000L
+        // 10 h since boot, 2 h of it awake: 8 h asleep.
+        assertThat(ExtraStatsLogic.deepSleepMillis(elapsedMillis = 10 * hour, awakeMillis = 2 * hour))
+            .isEqualTo(8 * hour)
+        assertThat(ExtraStatsLogic.deepSleepPercent(elapsedMillis = 10 * hour, awakeMillis = 2 * hour))
+            .isEqualTo(80)
+    }
+
+    @Test
+    fun `inconsistent clocks give no deep sleep figure`() {
+        assertThat(ExtraStatsLogic.deepSleepPercent(elapsedMillis = 0L, awakeMillis = 0L)).isNull()
+        assertThat(ExtraStatsLogic.deepSleepPercent(elapsedMillis = 1_000L, awakeMillis = 2_000L)).isNull()
+        assertThat(ExtraStatsLogic.deepSleepMillis(elapsedMillis = 1_000L, awakeMillis = 2_000L)).isNull()
+        assertThat(ExtraStatsLogic.deepSleepMillis(elapsedMillis = 1_000L, awakeMillis = -1L)).isNull()
+    }
 }

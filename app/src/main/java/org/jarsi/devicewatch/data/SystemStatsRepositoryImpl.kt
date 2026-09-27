@@ -664,10 +664,21 @@ class SystemStatsRepositoryImpl @Inject constructor(
         val simSlots = readSimSlotCount(telephonyManager)
         val dataSimName = readDataSimName()
 
+        // Awake time first: elapsedRealtime() counts everything uptimeMillis() does,
+        // so reading it second can never leave it behind on a phone that never slept.
+        val awakeMs = SystemClock.uptimeMillis()
         val uptimeMs = SystemClock.elapsedRealtime()
         val uptimeHours = uptimeMs / (1000 * 60 * 60)
         val uptimeMins = (uptimeMs / (1000 * 60)) % 60
         val uptimeText = context.getString(R.string.uptime_short, uptimeHours, uptimeMins)
+        val deepSleepText = ExtraStatsLogic.deepSleepMillis(uptimeMs, awakeMs)?.let { asleepMs ->
+            val percent = ExtraStatsLogic.deepSleepPercent(uptimeMs, awakeMs) ?: 0
+            context.getString(
+                R.string.deep_sleep_value,
+                context.getString(R.string.uptime_short, asleepMs / 3_600_000L, (asleepMs / 60_000L) % 60),
+                percent
+            )
+        } ?: UNAVAILABLE_TEXT
 
         return SystemStats(
             batteryLevel = batteryLevel,
@@ -719,6 +730,7 @@ class SystemStatsRepositoryImpl @Inject constructor(
             chargeSource = chargeSource,
             systemEstimateText = systemEstimateText,
             systemEstimatePersonalized = systemEstimatePersonalized,
+            deepSleepText = deepSleepText,
         )
     }
 

@@ -560,6 +560,17 @@ internal fun OverviewTab(
                     }
                 }
             )
+
+            // How much of the uptime the phone spent in deep sleep: a phone that
+            // rarely sleeps is a phone something keeps awake.
+            if (currentStats.deepSleepText != UNAVAILABLE_TEXT) {
+                Spacer(modifier = Modifier.height(8.dp))
+                StackedMetricRow(
+                    label = stringResource(R.string.deep_sleep_label),
+                    value = currentStats.deepSleepText,
+                    valueSize = SECONDARY_VALUE_SP
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(8.dp))
