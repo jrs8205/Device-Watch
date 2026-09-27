@@ -28,6 +28,7 @@ import org.jarsi.devicewatch.data.ChargeAnchorLogic
 import org.jarsi.devicewatch.data.ChargeAnchorStore
 import org.jarsi.devicewatch.data.DataQuotaLogic
 import org.jarsi.devicewatch.data.QuotaReadingAction
+import org.jarsi.devicewatch.data.QuotaSettingsStamp
 import org.jarsi.devicewatch.data.SystemStats
 import org.jarsi.devicewatch.data.SystemStatsRepository
 import org.jarsi.devicewatch.data.UsageHistory
@@ -397,13 +398,17 @@ class SystemMonitorService : Service() {
             // period figure is available (usage access granted) — the since-boot
             // fallback must never be compared against a period quota.
             val quotaGb = stats.mobileDataTotalGb
-            when (DataQuotaLogic.classifyReading(quotaGb, appSettings.dataQuotaGb())) {
+            val action = DataQuotaLogic.classifyReading(
+                reading = QuotaSettingsStamp(quotaGb, stats.dataSettingsGeneration),
+                current = QuotaSettingsStamp(appSettings.dataQuotaGb(), appSettings.dataSettingsGeneration()),
+            )
+            when (action) {
                 QuotaReadingAction.RELEASE_WATCH -> {
                     disarmUsageCallback()
                     return
                 }
-                // The quota changed under this reading: a fresh reading under the
-                // new quota follows from onDataQuotaChanged.
+                // The quota or its period changed under this reading: a fresh
+                // reading under the new settings follows from onDataQuotaChanged.
                 QuotaReadingAction.IGNORE -> return
                 QuotaReadingAction.CHECK -> Unit
             }

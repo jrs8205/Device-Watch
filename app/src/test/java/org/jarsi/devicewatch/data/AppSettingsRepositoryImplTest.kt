@@ -45,4 +45,21 @@ class AppSettingsRepositoryImplTest {
 
         assertThat(settings.dataQuotaNotified(period, 10.0, DataQuotaLogic.WARNING_PERCENT)).isFalse()
     }
+
+    @Test
+    fun `every change to the quota or its counting period moves the settings generation`() {
+        // A reading is stamped with the generation it was taken under; the monitor
+        // drops one whose generation is no longer current.
+        val start = settings.dataSettingsGeneration()
+        settings.setDataQuotaGb(10.0)
+        val afterQuota = settings.dataSettingsGeneration()
+        settings.setDataCounterMode(DataCounterMode.BILLING_CYCLE)
+        val afterMode = settings.dataSettingsGeneration()
+        settings.setCycleStartDay(15)
+        val afterDay = settings.dataSettingsGeneration()
+
+        assertThat(afterQuota).isGreaterThan(start)
+        assertThat(afterMode).isGreaterThan(afterQuota)
+        assertThat(afterDay).isGreaterThan(afterMode)
+    }
 }

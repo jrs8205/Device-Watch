@@ -75,4 +75,9 @@ data class SystemStats(
      * reading arrives.
      */
     val dataPeriodStartEpochDay: Long = 0L,
+    /**
+     * [AppSettingsRepository.dataSettingsGeneration] as read before the quota and
+     * period settings this reading was computed from.
+     */
+    val dataSettingsGeneration: Long = 0L,
 )

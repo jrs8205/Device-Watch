@@ -52,6 +52,13 @@ interface AppSettingsRepository {
 
     fun setDataQuotaNotified(periodStartEpochDay: Long, quotaGb: Double, threshold: Int)
 
+    /**
+     * Moves on every change to the data quota, the counter mode or the cycle start
+     * day. A stats reading carries the value it was taken under, so the monitor can
+     * tell a reading that predates a change from a current one.
+     */
+    fun dataSettingsGeneration(): Long
+
     /** Apps-tab "last opened" order; true = oldest (and never-used) first. */
     fun appsOldestFirst(): Boolean
 

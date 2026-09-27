@@ -1,6 +1,7 @@
 package org.jarsi.devicewatch.data
 
 import android.content.Context
+import android.content.SharedPreferences
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -29,14 +30,14 @@ class AppSettingsRepositoryImpl @Inject constructor(
     }
 
     override fun setDataCounterMode(mode: DataCounterMode) {
-        prefs.edit().putString(KEY_DATA_COUNTER_MODE, mode.name).apply()
+        prefs.edit().putString(KEY_DATA_COUNTER_MODE, mode.name).nextDataSettingsGeneration().apply()
     }
 
     override fun cycleStartDay(): Int =
         prefs.getInt(KEY_CYCLE_START_DAY, DEFAULT_CYCLE_START_DAY).coerceIn(1, 31)
 
     override fun setCycleStartDay(day: Int) {
-        prefs.edit().putInt(KEY_CYCLE_START_DAY, day.coerceIn(1, 31)).apply()
+        prefs.edit().putInt(KEY_CYCLE_START_DAY, day.coerceIn(1, 31)).nextDataSettingsGeneration().apply()
     }
 
     override fun chargeLimitPercent(): Int =
@@ -61,7 +62,7 @@ class AppSettingsRepositoryImpl @Inject constructor(
 
     override fun setDataQuotaGb(value: Double) {
         val coerced = coerceDataQuota(value)
-        val editor = prefs.edit().putFloat(KEY_DATA_QUOTA_GB, coerced.toFloat())
+        val editor = prefs.edit().putFloat(KEY_DATA_QUOTA_GB, coerced.toFloat()).nextDataSettingsGeneration()
         if (coerced != dataQuotaGb()) {
             // A changed quota makes the 80 %/100 % crossings new events — re-arm
             // both latches instead of staying silent for the rest of the period.
@@ -98,6 +99,12 @@ class AppSettingsRepositoryImpl @Inject constructor(
     private fun quotaNotifiedKey(periodStartEpochDay: Long, quotaGb: Double, threshold: Int): String =
         quotaNotifiedPrefix(periodStartEpochDay, quotaGb) + threshold
 
+    override fun dataSettingsGeneration(): Long = prefs.getLong(KEY_DATA_SETTINGS_GENERATION, 0L)
+
+    /** Written in the same edit as the setting it versions, so the two can never disagree. */
+    private fun SharedPreferences.Editor.nextDataSettingsGeneration(): SharedPreferences.Editor =
+        putLong(KEY_DATA_SETTINGS_GENERATION, dataSettingsGeneration() + 1)
+
     override fun appsOldestFirst(): Boolean =
         prefs.getBoolean(KEY_APPS_OLDEST_FIRST, true)
 
@@ -126,8 +133,9 @@ class AppSettingsRepositoryImpl @Inject constructor(
         const val KEY_APPS_OLDEST_FIRST = "apps_oldest_first"
         const val KEY_CHARGE_LIMIT_PERCENT = "charge_limit_percent"
         const val KEY_DATA_QUOTA_GB = "data_quota_gb"
-        /** Full key: "data_quota_notified:&lt;periodStartEpochDay&gt;:&lt;80|100&gt;". */
+        /** Full key: "data_quota_notified:&lt;periodStartEpochDay&gt;:&lt;quotaGb&gt;:&lt;80|100&gt;". */
         const val KEY_DATA_QUOTA_NOTIFIED_PREFIX = "data_quota_notified"
+        const val KEY_DATA_SETTINGS_GENERATION = "data_settings_generation"
         const val KEY_ONBOARDING_SHOWN = "onboarding_shown"
         /** Written from the UI helpers in OnboardingPage.kt (permanent-denial detection). */
         const val KEY_RUNTIME_PERMISSIONS_REQUESTED = "runtime_permissions_requested"

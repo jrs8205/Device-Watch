@@ -45,19 +45,24 @@ internal class FakeAppSettingsRepository(
     var classic: Boolean = false,
 ) : AppSettingsRepository {
 
-    /** Fired quota alerts as "periodStartEpochDay:threshold", mirroring the real key scoping. */
+    /** Fired quota alerts as "periodStartEpochDay:quotaGb:threshold", mirroring the real key scoping. */
     val quotaNotified = mutableSetOf<String>()
+
+    /** Mirrors the real store: every quota, counter-mode or cycle-day write moves it. */
+    var settingsGeneration = 0L
 
     override fun dataCounterMode(): DataCounterMode = mode
 
     override fun setDataCounterMode(mode: DataCounterMode) {
         this.mode = mode
+        settingsGeneration++
     }
 
     override fun cycleStartDay(): Int = cycleDay
 
     override fun setCycleStartDay(day: Int) {
         cycleDay = day
+        settingsGeneration++
     }
 
     override fun chargeLimitPercent(): Int = chargeLimit
@@ -77,6 +82,7 @@ internal class FakeAppSettingsRepository(
     /** Mirrors the real store: 0 stays off, everything else is bounded to 1..500 GB. */
     override fun setDataQuotaGb(value: Double) {
         quotaGb = if (value <= 0.0) 0.0 else value.coerceIn(DATA_QUOTA_MIN_GB, DATA_QUOTA_MAX_GB)
+        settingsGeneration++
     }
 
     override fun dataQuotaNotified(periodStartEpochDay: Long, quotaGb: Double, threshold: Int): Boolean =
@@ -85,6 +91,8 @@ internal class FakeAppSettingsRepository(
     override fun setDataQuotaNotified(periodStartEpochDay: Long, quotaGb: Double, threshold: Int) {
         quotaNotified += "$periodStartEpochDay:$quotaGb:$threshold"
     }
+
+    override fun dataSettingsGeneration(): Long = settingsGeneration
 
     override fun appsOldestFirst(): Boolean = oldestFirst
 

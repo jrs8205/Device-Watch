@@ -8,8 +8,8 @@ class DataQuotaLogicTest {
     private val gb = 1024L * 1024 * 1024
 
     @Test
-    fun `a reading taken under the current quota is checked`() {
-        assertThat(DataQuotaLogic.classifyReading(readingQuotaGb = 10.0, currentQuotaGb = 10.0))
+    fun `a reading taken under the current settings is checked`() {
+        assertThat(DataQuotaLogic.classifyReading(reading(10.0, generation = 3), current(10.0, generation = 3)))
             .isEqualTo(QuotaReadingAction.CHECK)
     }
 
@@ -17,15 +17,28 @@ class DataQuotaLogicTest {
     fun `a reading taken under another quota is stale`() {
         // The quota was raised while the stats were being read: the old reading
         // must not latch alerts for the new quota.
-        assertThat(DataQuotaLogic.classifyReading(readingQuotaGb = 10.0, currentQuotaGb = 20.0))
+        assertThat(DataQuotaLogic.classifyReading(reading(10.0, generation = 3), current(20.0, generation = 4)))
             .isEqualTo(QuotaReadingAction.IGNORE)
-        assertThat(DataQuotaLogic.classifyReading(readingQuotaGb = 10.0, currentQuotaGb = 0.0))
+        assertThat(DataQuotaLogic.classifyReading(reading(10.0, generation = 3), current(0.0, generation = 4)))
             .isEqualTo(QuotaReadingAction.IGNORE)
     }
 
     @Test
-    fun `a reading without a quota releases the watch only while the quota is off`() {
-        assertThat(DataQuotaLogic.classifyReading(readingQuotaGb = UNAVAILABLE_DOUBLE, currentQuotaGb = 0.0))
+    fun `a reading taken under another counting period is stale even with the same quota`() {
+        // Codex round 4: a late billing-cycle reading (12 GB used) arriving after the
+        // switch to daily counting (7.5 GB used) re-armed the watch for 8 GB instead
+        // of the 0.5 GB left to the day's warning.
+        assertThat(DataQuotaLogic.classifyReading(reading(10.0, generation = 5), current(10.0, generation = 6)))
+            .isEqualTo(QuotaReadingAction.IGNORE)
+    }
+
+    @Test
+    fun `a reading without a quota releases the watch when it is current`() {
+        // Quota off, or usage access revoked: either way there is nothing left the
+        // watch could measure, and a registered callback would keep firing.
+        assertThat(DataQuotaLogic.classifyReading(reading(UNAVAILABLE_DOUBLE, generation = 2), current(0.0, generation = 2)))
+            .isEqualTo(QuotaReadingAction.RELEASE_WATCH)
+        assertThat(DataQuotaLogic.classifyReading(reading(UNAVAILABLE_DOUBLE, generation = 2), current(10.0, generation = 2)))
             .isEqualTo(QuotaReadingAction.RELEASE_WATCH)
     }
 
@@ -33,9 +46,13 @@ class DataQuotaLogicTest {
     fun `a reading without a quota taken before the quota was switched on is stale`() {
         // Delivered after a newer reading under the new quota armed the usage
         // watch, it must not take that watch down.
-        assertThat(DataQuotaLogic.classifyReading(readingQuotaGb = UNAVAILABLE_DOUBLE, currentQuotaGb = 10.0))
+        assertThat(DataQuotaLogic.classifyReading(reading(UNAVAILABLE_DOUBLE, generation = 2), current(10.0, generation = 3)))
             .isEqualTo(QuotaReadingAction.IGNORE)
     }
+
+    private fun reading(quotaGb: Double, generation: Long) = QuotaSettingsStamp(quotaGb, generation)
+
+    private fun current(quotaGb: Double, generation: Long) = QuotaSettingsStamp(quotaGb, generation)
 
     @Test
     fun `the watch points at the warning level while under it`() {

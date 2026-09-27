@@ -569,6 +569,10 @@ class SystemStatsRepositoryImpl @Inject constructor(
             wifiSsid
         }
 
+        // Read before any data setting: a change landing during this read then
+        // leaves the reading with an older generation than the settings, and the
+        // monitor drops it instead of acting on a mix of old and new settings.
+        val dataSettingsGeneration = settings.dataSettingsGeneration()
         // Data counters cover the user-selected period: the current calendar day (default)
         // or a one-month billing cycle starting on the chosen day of month.
         val counterMode = settings.dataCounterMode()
@@ -705,6 +709,7 @@ class SystemStatsRepositoryImpl @Inject constructor(
             uptimeText = uptimeText,
             uptimeMillis = uptimeMs,
             dataPeriodStartEpochDay = periodStartDay.toEpochDay(),
+            dataSettingsGeneration = dataSettingsGeneration,
         )
     }
 

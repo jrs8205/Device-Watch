@@ -43,17 +43,19 @@ object DataQuotaLogic {
     }
 
     /**
-     * What a reading may do, given the quota it was taken under (none when
-     * [readingQuotaGb] <= 0) and the quota the settings hold now. The settings are
-     * written from the UI outside the service's lock, so a reading can arrive
-     * after a change: acting on it would latch the new quota's alerts on the old
-     * quota's figures, or take down the usage watch a newer reading under a newly
-     * switched-on quota has armed. A stale reading does nothing; the change itself
-     * triggers a fresh one.
+     * What a reading may do, given the settings stamp it was taken under and the
+     * one current now. The settings are written from the UI outside the service's
+     * lock, so a reading can arrive after a change to the quota, the counter mode
+     * or the cycle start day; acting on it would latch or re-arm on another
+     * quota's or another period's figures, or take down a watch a newer reading
+     * has armed. A stale reading does nothing — the change itself triggers a fresh
+     * one. A current reading without a quota (quota off, or usage access gone)
+     * leaves nothing the watch could measure, so it releases the watch.
      */
-    fun classifyReading(readingQuotaGb: Double, currentQuotaGb: Double): QuotaReadingAction = when {
-        readingQuotaGb <= 0.0 && currentQuotaGb <= 0.0 -> QuotaReadingAction.RELEASE_WATCH
-        readingQuotaGb > 0.0 && readingQuotaGb == currentQuotaGb -> QuotaReadingAction.CHECK
+    fun classifyReading(reading: QuotaSettingsStamp, current: QuotaSettingsStamp): QuotaReadingAction = when {
+        reading.generation != current.generation -> QuotaReadingAction.IGNORE
+        reading.quotaGb <= 0.0 -> QuotaReadingAction.RELEASE_WATCH
+        reading.quotaGb == current.quotaGb -> QuotaReadingAction.CHECK
         else -> QuotaReadingAction.IGNORE
     }
 
@@ -86,9 +88,12 @@ enum class QuotaReadingAction {
     /** Evaluate the thresholds and re-arm the usage watch. */
     CHECK,
 
-    /** No quota is set: nothing is left to watch. */
+    /** No quota, or no usage figure to compare it with: nothing is left to watch. */
     RELEASE_WATCH,
 
-    /** The reading predates a quota change and must not touch alerts or the watch. */
+    /** The reading predates a settings change and must not touch alerts or the watch. */
     IGNORE,
 }
+
+/** The quota a reading was taken under (<= 0: none) and the settings generation then current. */
+data class QuotaSettingsStamp(val quotaGb: Double, val generation: Long)
