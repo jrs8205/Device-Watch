@@ -48,7 +48,11 @@ import android.telephony.CellInfoTdscdma
 import android.telephony.CellInfoWcdma
 import android.telephony.ServiceState
 import android.telephony.SubscriptionManager
+import android.telephony.CellIdentityNr
+import android.telephony.CellSignalStrengthLte
+import android.telephony.CellSignalStrengthNr
 import android.telephony.TelephonyManager
+import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
 import org.jarsi.devicewatch.R
 import org.jarsi.devicewatch.di.DefaultDispatcher
@@ -177,15 +181,92 @@ class SystemStatsRepositoryImpl @Inject constructor(
 
     override suspend fun deviceState(): DeviceState = withContext(dispatcher) {
         val powerManager = context.getSystemService(PowerManager::class.java)
+        val cellDetails = readCellDetails()
         DeviceState(
             powerSaveMode = powerManager?.let { boolText(it.isPowerSaveMode) } ?: UNAVAILABLE_TEXT,
             deviceIdle = powerManager?.let { boolText(it.isDeviceIdleMode) } ?: UNAVAILABLE_TEXT,
             batteryOptimizationExempt = powerManager
                 ?.let { boolText(it.isIgnoringBatteryOptimizations(context.packageName)) }
                 ?: UNAVAILABLE_TEXT,
+            cellSignalDetails = cellDetails.first,
+            cellSignalBars = cellDetails.second,
+            cellBand = cellDetails.third,
             removableVolumes = readRemovableVolumes(),
             usbDevices = readUsbDevices(),
         )
+    }
+
+    /**
+     * Signal quality, bars and band of the serving cell. With 5G on an LTE anchor
+     * (non-standalone) both signals are reported; the NR one is shown. The band
+     * needs the cell list, which needs the location permission.
+     */
+    private fun readCellDetails(): Triple<String, String, String> {
+        val none = Triple(UNAVAILABLE_TEXT, UNAVAILABLE_TEXT, UNAVAILABLE_TEXT)
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return none
+        val telephony = context.getSystemService(TelephonyManager::class.java) ?: return none
+        val strengths = try {
+            telephony.signalStrength?.cellSignalStrengths.orEmpty()
+        } catch (_: SecurityException) {
+            emptyList()
+        }
+        val serving = strengths.firstOrNull { it is CellSignalStrengthNr } ?: strengths.firstOrNull()
+        val details = when (serving) {
+            is CellSignalStrengthNr -> ExtraStatsLogic.signalDetails(
+                ExtraStatsLogic.cellValue(serving.ssRsrp),
+                ExtraStatsLogic.cellValue(serving.ssRsrq),
+                ExtraStatsLogic.cellValue(serving.ssSinr),
+            )
+            is CellSignalStrengthLte -> ExtraStatsLogic.signalDetails(
+                ExtraStatsLogic.cellValue(serving.rsrp),
+                ExtraStatsLogic.cellValue(serving.rsrq),
+                ExtraStatsLogic.cellValue(serving.rssnr),
+            )
+            else -> null
+        }
+        val bars = serving?.let { "${it.level} / 4" }
+        val band = readRegisteredBands(telephony)
+        return Triple(details ?: UNAVAILABLE_TEXT, bars ?: UNAVAILABLE_TEXT, band ?: UNAVAILABLE_TEXT)
+    }
+
+    @RequiresApi(Build.VERSION_CODES.Q)
+    private fun readRegisteredBands(telephony: TelephonyManager): String? {
+        if (context.checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION) !=
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            return null
+        }
+        val cells = try {
+            telephony.allCellInfo.orEmpty().filter { it.isRegistered }
+        } catch (_: SecurityException) {
+            return null
+        }
+        val parts = cells.mapNotNull { cell ->
+            when (cell) {
+                is CellInfoNr -> {
+                    val identity = cell.cellIdentity as? CellIdentityNr ?: return@mapNotNull null
+                    val bands = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                        ExtraStatsLogic.bandsText(nr = true, identity.bands)
+                    } else {
+                        null
+                    }
+                    val arfcn = ExtraStatsLogic.cellValue(identity.nrarfcn)
+                    listOfNotNull("5G NR", bands, arfcn?.let { "ARFCN $it" }).joinToString(" · ")
+                }
+                is CellInfoLte -> {
+                    val identity = cell.cellIdentity
+                    val bands = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                        ExtraStatsLogic.bandsText(nr = false, identity.bands)
+                    } else {
+                        null
+                    }
+                    val earfcn = ExtraStatsLogic.cellValue(identity.earfcn)
+                    listOfNotNull("LTE", bands, earfcn?.let { "EARFCN $it" }).joinToString(" · ")
+                }
+                else -> null
+            }
+        }
+        return parts.takeIf { it.isNotEmpty() }?.joinToString(" + ")
     }
 
     private fun readRemovableVolumes(): List<Pair<String, String>> {

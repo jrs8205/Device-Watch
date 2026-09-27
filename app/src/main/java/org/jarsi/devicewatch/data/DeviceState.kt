@@ -11,6 +11,13 @@ data class DeviceState(
     val powerSaveMode: String = UNAVAILABLE_TEXT,
     val deviceIdle: String = UNAVAILABLE_TEXT,
     val batteryOptimizationExempt: String = UNAVAILABLE_TEXT,
+    // Mobile network, beyond the dBm figure the stats carry
+    /** RSRP / RSRQ / SINR of the serving cell (Android 10+). */
+    val cellSignalDetails: String = UNAVAILABLE_TEXT,
+    /** The signal level the status bar draws, as "3 / 4". */
+    val cellSignalBars: String = UNAVAILABLE_TEXT,
+    /** Technology, band and channel of the registered cells, e.g. "5G NR n78 · ARFCN 636666". */
+    val cellBand: String = UNAVAILABLE_TEXT,
     // Attached storage and USB
     /** SD cards and USB storage, each as its name and a free/total or state text. */
     val removableVolumes: List<Pair<String, String>> = emptyList(),

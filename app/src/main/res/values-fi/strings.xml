@@ -299,6 +299,9 @@
     <string name="report_column_screen_on">Näyttö päällä</string>
     <string name="power_section">VIRRANHALLINTA</string>
     <string name="external_section">MUISTIKORTIT JA USB</string>
+    <string name="sim_signal_details">Signaalin laatu</string>
+    <string name="sim_signal_bars">Signaalipalkit</string>
+    <string name="sim_band">Taajuuskaista ja kanava</string>
     <string name="external_volumes">Muistikortit ja USB-muistit</string>
     <string name="external_volumes_none">Ei liitettyjä</string>
     <string name="volume_free_of">%1$s vapaana / %2$s</string>

@@ -99,6 +99,11 @@ internal fun DeviceTab(uiState: DashboardUiState) {
             DeviceFact(R.string.sim_country, currentStats.networkCountry)
             DeviceFact(R.string.sim_network, currentStats.mobileNetworkType)
             DeviceFact(R.string.sim_signal, dbmText(currentStats.mobileSignalDbm))
+            uiState.deviceState?.let { state ->
+                DeviceFact(R.string.sim_signal_details, state.cellSignalDetails)
+                DeviceFact(R.string.sim_signal_bars, state.cellSignalBars)
+                DeviceFact(R.string.sim_band, state.cellBand)
+            }
             DeviceFact(R.string.sim_status, currentStats.simState)
             DeviceFact(R.string.sim_slots, countText(currentStats.simSlots))
             DeviceFact(simDataLabelRes(uiState.dataCounterMode), gbTodayText(currentStats.mobileDataUsedGb))

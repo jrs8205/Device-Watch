@@ -136,6 +136,20 @@ object ExtraStatsLogic {
 
     private const val GIB = 1024.0 * 1024.0 * 1024.0
 
+    /** `CellInfo.UNAVAILABLE` (Integer.MAX_VALUE) is no value. */
+    fun cellValue(value: Int): Int? = value.takeIf { it != Int.MAX_VALUE }
+
+    /** "RSRP -95 dBm · RSRQ -11 dB · SINR 12 dB", each part only when reported. */
+    fun signalDetails(rsrp: Int?, rsrq: Int?, sinr: Int?): String? = listOfNotNull(
+        rsrp?.let { "RSRP $it dBm" },
+        rsrq?.let { "RSRQ $it dB" },
+        sinr?.let { "SINR $it dB" },
+    ).takeIf { it.isNotEmpty() }?.joinToString(" · ")
+
+    /** Bands as 3GPP writes them: "n78" for 5G NR, "B20" for LTE. */
+    fun bandsText(nr: Boolean, bands: IntArray): String? =
+        bands.takeIf { it.isNotEmpty() }?.joinToString(", ") { if (nr) "n$it" else "B$it" }
+
     /** SD cards and USB storage; the primary (internal) volume has its own row. */
     fun removableVolumes(volumes: List<VolumeInfo>): List<VolumeInfo> =
         volumes.filter { it.removable && !it.primary }

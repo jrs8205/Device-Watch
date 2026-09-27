@@ -407,4 +407,27 @@ class ExtraStatsLogicTest {
         assertThat(ExtraStatsLogic.usbDeviceName(null, " ", 0x046d, 0xc52b))
             .isEqualTo("USB 046d:c52b")
     }
+
+    @Test
+    fun `the unavailable cell value reads as none`() {
+        // CellInfo.UNAVAILABLE is Integer.MAX_VALUE.
+        assertThat(ExtraStatsLogic.cellValue(Int.MAX_VALUE)).isNull()
+        assertThat(ExtraStatsLogic.cellValue(-95)).isEqualTo(-95)
+    }
+
+    @Test
+    fun `signal details name what the modem reports and skip the rest`() {
+        assertThat(ExtraStatsLogic.signalDetails(rsrp = -95, rsrq = -11, sinr = 12))
+            .isEqualTo("RSRP -95 dBm · RSRQ -11 dB · SINR 12 dB")
+        assertThat(ExtraStatsLogic.signalDetails(rsrp = -101, rsrq = null, sinr = null))
+            .isEqualTo("RSRP -101 dBm")
+        assertThat(ExtraStatsLogic.signalDetails(rsrp = null, rsrq = null, sinr = null)).isNull()
+    }
+
+    @Test
+    fun `bands read in the notation of their technology`() {
+        assertThat(ExtraStatsLogic.bandsText(nr = true, bands = intArrayOf(78, 28))).isEqualTo("n78, n28")
+        assertThat(ExtraStatsLogic.bandsText(nr = false, bands = intArrayOf(20))).isEqualTo("B20")
+        assertThat(ExtraStatsLogic.bandsText(nr = false, bands = intArrayOf())).isNull()
+    }
 }

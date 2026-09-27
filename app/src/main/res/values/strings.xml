@@ -303,6 +303,9 @@
     <string name="report_column_screen_on">Screen on</string>
     <string name="power_section">POWER</string>
     <string name="external_section">MEMORY CARDS AND USB</string>
+    <string name="sim_signal_details">Signal quality</string>
+    <string name="sim_signal_bars">Signal bars</string>
+    <string name="sim_band">Band and channel</string>
     <string name="external_volumes">Memory cards and USB storage</string>
     <string name="external_volumes_none">None attached</string>
     <string name="volume_free_of">%1$s free of %2$s</string>
