@@ -1,5 +1,9 @@
 package org.jarsi.devicewatch.presentation.ui
 
+import org.jarsi.devicewatch.data.HealthAlert
+import androidx.core.content.ContextCompat
+import android.content.pm.PackageManager
+import android.Manifest
 import android.content.Context
 import android.content.Intent
 import android.os.Build
@@ -80,6 +84,7 @@ internal fun SettingsTab(
     onChargeLimitChange: (Int) -> Unit,
     onCommitChargeLimit: () -> Unit,
     onClassicLookChange: (Boolean) -> Unit,
+    onAlertToggle: (HealthAlert, Boolean) -> Unit,
     onShowIntro: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -97,6 +102,22 @@ internal fun SettingsTab(
     LifecycleResumeEffect(Unit) {
         runtimePermissionsGranted = missingRuntimePermissions(context).isEmpty()
         onPauseOrDispose { }
+    }
+    // An alert switched on without the notification permission would never show:
+    // ask for that one permission right there, not the intro's whole set.
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) {
+        runtimePermissionsGranted = missingRuntimePermissions(context).isEmpty()
+    }
+    val onAlertSwitch: (HealthAlert, Boolean) -> Unit = { alert, enabled ->
+        onAlertToggle(alert, enabled)
+        if (enabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) !=
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
     }
 
     val dreamPrefs = remember(context) {
@@ -314,6 +335,36 @@ internal fun SettingsTab(
                     modifier = Modifier.fillMaxWidth()
                 )
             }
+        }
+
+        // Optional alerts, all off by default
+        SettingsSectionCard(titleRes = R.string.alerts_section) {
+            Text(
+                text = stringResource(R.string.alerts_description),
+                fontSize = 11.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            SettingsToggleRow(
+                titleRes = R.string.alert_hot_setting,
+                descriptionRes = R.string.alert_hot_setting_description,
+                checked = HealthAlert.HOT_BATTERY in uiState.enabledAlerts,
+                onCheckedChange = { onAlertSwitch(HealthAlert.HOT_BATTERY, it) }
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            SettingsToggleRow(
+                titleRes = R.string.alert_storage_setting,
+                descriptionRes = R.string.alert_storage_setting_description,
+                checked = HealthAlert.LOW_STORAGE in uiState.enabledAlerts,
+                onCheckedChange = { onAlertSwitch(HealthAlert.LOW_STORAGE, it) }
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            SettingsToggleRow(
+                titleRes = R.string.alert_drain_setting,
+                descriptionRes = R.string.alert_drain_setting_description,
+                checked = HealthAlert.FAST_DRAIN in uiState.enabledAlerts,
+                onCheckedChange = { onAlertSwitch(HealthAlert.FAST_DRAIN, it) }
+            )
         }
 
         // Widget settings

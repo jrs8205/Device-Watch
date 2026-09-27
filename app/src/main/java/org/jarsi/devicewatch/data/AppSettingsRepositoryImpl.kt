@@ -126,6 +126,24 @@ class AppSettingsRepositoryImpl @Inject constructor(
         prefs.edit().putBoolean(KEY_CLASSIC_LOOK, enabled).apply()
     }
 
+    override fun alertEnabled(alert: HealthAlert): Boolean =
+        prefs.getBoolean(alertKey(KEY_ALERT_ENABLED_PREFIX, alert), false)
+
+    override fun setAlertEnabled(alert: HealthAlert, enabled: Boolean) {
+        val editor = prefs.edit().putBoolean(alertKey(KEY_ALERT_ENABLED_PREFIX, alert), enabled)
+        if (!enabled) editor.remove(alertKey(KEY_ALERT_LATCHED_PREFIX, alert))
+        editor.apply()
+    }
+
+    override fun alertLatched(alert: HealthAlert): Boolean =
+        prefs.getBoolean(alertKey(KEY_ALERT_LATCHED_PREFIX, alert), false)
+
+    override fun setAlertLatched(alert: HealthAlert, latched: Boolean) {
+        prefs.edit().putBoolean(alertKey(KEY_ALERT_LATCHED_PREFIX, alert), latched).apply()
+    }
+
+    private fun alertKey(prefix: String, alert: HealthAlert): String = "$prefix:${alert.name.lowercase()}"
+
     companion object {
         const val PREFS_NAME = "app_settings"
         const val KEY_DATA_COUNTER_MODE = "data_counter_mode"
@@ -140,6 +158,9 @@ class AppSettingsRepositoryImpl @Inject constructor(
         /** Written from the UI helpers in OnboardingPage.kt (permanent-denial detection). */
         const val KEY_RUNTIME_PERMISSIONS_REQUESTED = "runtime_permissions_requested"
         const val KEY_CLASSIC_LOOK = "classic_look"
+        /** Full keys: "alert_enabled:hot_battery", "alert_latched:low_storage" and so on. */
+        const val KEY_ALERT_ENABLED_PREFIX = "alert_enabled"
+        const val KEY_ALERT_LATCHED_PREFIX = "alert_latched"
         const val DEFAULT_CYCLE_START_DAY = 1
     }
 }

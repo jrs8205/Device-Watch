@@ -19,6 +19,10 @@ import android.os.SystemClock
 import androidx.core.app.NotificationCompat
 import org.jarsi.devicewatch.R
 import android.os.BatteryManager
+import java.util.Locale
+import org.jarsi.devicewatch.data.HealthAlert
+import org.jarsi.devicewatch.data.AlertStep
+import org.jarsi.devicewatch.data.AlertLogic
 import org.jarsi.devicewatch.data.storageUsedBytes
 import org.jarsi.devicewatch.data.AppSettingsRepository
 import org.jarsi.devicewatch.data.AppUsageRepository
@@ -227,6 +231,7 @@ class SystemMonitorService : Service() {
         if (stats != null) {
             maybeNotifyDataQuota(stats)
             storageUsedBytes(stats.usedStorageGb)?.let { usageHistory.recordStorageUsed(LocalDate.now(), it) }
+            evaluateStorageAlert(stats)
         }
         try {
             val totals = appUsageRepository.usageTotalsToday() ?: return
@@ -333,7 +338,10 @@ class SystemMonitorService : Service() {
                                     .getIntExtra(BatteryManager.EXTRA_TEMPERATURE, Int.MIN_VALUE)
                                     .takeIf { it != Int.MIN_VALUE },
                             )
-                            serviceScope.launch { recordBatterySample(sample) }
+                            serviceScope.launch {
+                                recordBatterySample(sample)
+                                evaluateBatteryAlerts(sample)
+                            }
                         }
                         evaluateChargeLimit(level, plugged)
                     }
@@ -506,6 +514,72 @@ class SystemMonitorService : Service() {
         }
     }
 
+    /** Hot-battery and fast-drain alerts from the sample just stored; both off unless switched on. */
+    private fun evaluateBatteryAlerts(sample: BatterySample) {
+        try {
+            applyAlertStep(HealthAlert.HOT_BATTERY, { latched -> AlertLogic.hotBattery(sample.temperatureDeciC, latched) }) {
+                val temperature = String.format(Locale.getDefault(), "%.1f °C", (sample.temperatureDeciC ?: 0) / 10.0)
+                HealthAlertNotifier.show(
+                    applicationContext,
+                    HealthAlert.HOT_BATTERY,
+                    getString(R.string.alert_hot_title, temperature),
+                    getString(R.string.alert_hot_text),
+                )
+            }
+            if (!appSettings.alertEnabled(HealthAlert.FAST_DRAIN)) return
+            val drain = AlertLogic.drainPercentPerHour(
+                batteryHistory.samplesSince(sample.timeMillis - DRAIN_LOOKBACK_MS),
+                sample.timeMillis,
+            )
+            applyAlertStep(HealthAlert.FAST_DRAIN, { latched -> AlertLogic.fastDrain(drain, sample.charging, latched) }) {
+                HealthAlertNotifier.show(
+                    applicationContext,
+                    HealthAlert.FAST_DRAIN,
+                    getString(R.string.alert_drain_title, drain ?: 0),
+                    getString(R.string.alert_drain_text),
+                )
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    private fun evaluateStorageAlert(stats: SystemStats) {
+        val free = AlertLogic.freePercent(stats.totalStorageGb, stats.usedStorageGb)
+        applyAlertStep(HealthAlert.LOW_STORAGE, { latched -> AlertLogic.lowStorage(free, latched) }) {
+            HealthAlertNotifier.show(
+                applicationContext,
+                HealthAlert.LOW_STORAGE,
+                getString(R.string.alert_storage_title, free ?: 0),
+                getString(
+                    R.string.alert_storage_text,
+                    String.format(Locale.getDefault(), "%.1f GB", stats.totalStorageGb - stats.usedStorageGb),
+                ),
+            )
+        }
+    }
+
+    /**
+     * Posts an enabled alert once and latches it, re-arms it once its condition has
+     * cleared (taking the stale notification down with it). The latch is written
+     * only when the alert really went out, so one refused for a missing permission
+     * is tried again on the next reading.
+     */
+    @Synchronized
+    private fun applyAlertStep(alert: HealthAlert, step: (latched: Boolean) -> AlertStep, post: () -> Boolean) {
+        if (!appSettings.alertEnabled(alert)) return
+        when (step(appSettings.alertLatched(alert))) {
+            AlertStep.FIRE -> if (post()) appSettings.setAlertLatched(alert, true)
+            AlertStep.REARM -> {
+                appSettings.setAlertLatched(alert, false)
+                HealthAlertNotifier.cancel(applicationContext, alert)
+            }
+            AlertStep.NONE -> Unit
+        }
+    }
+
     /**
      * A battery sample is never worth a crash: the store touches the filesystem, and
      * a full disk would otherwise take the service down on every battery broadcast.
@@ -528,6 +602,8 @@ class SystemMonitorService : Service() {
     }
 
     companion object {
+        /** More than the drain window, so the window's first sample is always in the read. */
+        private const val DRAIN_LOOKBACK_MS = 61L * 60 * 1000
         private const val NOTIFICATION_ID = 1001
         private const val USAGE_REFRESH_INTERVAL_MS = 60_000L
 

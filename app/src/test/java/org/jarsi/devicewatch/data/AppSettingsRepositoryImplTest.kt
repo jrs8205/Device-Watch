@@ -13,6 +13,27 @@ class AppSettingsRepositoryImplTest {
     private val period = 20_000L
 
     @Test
+    fun `every alert is off until switched on, each on its own`() {
+        assertThat(HealthAlert.entries.map { settings.alertEnabled(it) }).containsExactly(false, false, false)
+
+        settings.setAlertEnabled(HealthAlert.LOW_STORAGE, true)
+
+        assertThat(settings.alertEnabled(HealthAlert.LOW_STORAGE)).isTrue()
+        assertThat(settings.alertEnabled(HealthAlert.HOT_BATTERY)).isFalse()
+    }
+
+    @Test
+    fun `switching an alert off forgets that it was already posted`() {
+        // Switched back on later, it must be able to alert for a condition still present.
+        settings.setAlertEnabled(HealthAlert.HOT_BATTERY, true)
+        settings.setAlertLatched(HealthAlert.HOT_BATTERY, true)
+
+        settings.setAlertEnabled(HealthAlert.HOT_BATTERY, false)
+
+        assertThat(settings.alertLatched(HealthAlert.HOT_BATTERY)).isFalse()
+    }
+
+    @Test
     fun `a latch lands on the period and quota it was written for`() {
         settings.setDataQuotaGb(10.0)
         settings.setDataQuotaNotified(period, quotaGb = 10.0, threshold = DataQuotaLogic.WARNING_PERCENT)

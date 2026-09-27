@@ -1,5 +1,6 @@
 package org.jarsi.devicewatch.presentation
 
+import org.jarsi.devicewatch.data.HealthAlert
 import kotlinx.coroutines.CompletableDeferred
 import org.jarsi.devicewatch.data.AppPackageFacts
 import org.jarsi.devicewatch.data.AppDataUsage
@@ -113,6 +114,22 @@ internal class FakeAppSettingsRepository(
 
     override fun setClassicLook(enabled: Boolean) {
         classic = enabled
+    }
+
+    val alertsOn = mutableSetOf<HealthAlert>()
+    val alertsLatched = mutableSetOf<HealthAlert>()
+
+    override fun alertEnabled(alert: HealthAlert): Boolean = alert in alertsOn
+
+    override fun setAlertEnabled(alert: HealthAlert, enabled: Boolean) {
+        if (enabled) alertsOn += alert else alertsOn -= alert
+        if (!enabled) alertsLatched -= alert
+    }
+
+    override fun alertLatched(alert: HealthAlert): Boolean = alert in alertsLatched
+
+    override fun setAlertLatched(alert: HealthAlert, latched: Boolean) {
+        if (latched) alertsLatched += alert else alertsLatched -= alert
     }
 }
 

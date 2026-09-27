@@ -167,6 +167,22 @@
     <string name="appearance_section">ULKOASU</string>
     <string name="classic_look_title">Alkuperäinen ulkoasu</string>
     <string name="classic_look_description">Versiota 1.6 edeltävät värit ja numerofontti: Android 12:sta alkaen värit tulevat taustakuvasta.</string>
+    <string name="alert_channel_name">Laitehälytykset</string>
+    <string name="alert_channel_description">Valinnaiset hälytykset: kuuma akku, vähissä oleva tallennustila ja nopeasti tyhjenevä akku</string>
+    <string name="alert_hot_title">Akku on kuuma: %1$s</string>
+    <string name="alert_hot_text">Anna puhelimen jäähtyä: irrota laturi ja sulje raskaat sovellukset.</string>
+    <string name="alert_storage_title">Tallennustila vähissä: %1$d %% vapaana</string>
+    <string name="alert_storage_text">Vapaata %1$s. Sovellukset-välilehti näyttää suurimmat sovellukset.</string>
+    <string name="alert_drain_title">Akku tyhjenee nopeasti: %1$d %%/h</string>
+    <string name="alert_drain_text">Sovellukset-välilehti näyttää, mitkä sovellukset ovat olleet käytössä.</string>
+    <string name="alerts_section">HÄLYTYKSET</string>
+    <string name="alerts_description">Pois päältä, kunnes kytket ne päälle. Kukin hälytys tulee kerran, ja uudelleen vasta, kun tilanne on ensin palannut normaaliksi.</string>
+    <string name="alert_hot_setting">Kuuma akku</string>
+    <string name="alert_hot_setting_description">Kun akku lämpenee 45 °C:seen.</string>
+    <string name="alert_storage_setting">Tallennustila vähissä</string>
+    <string name="alert_storage_setting_description" formatted="false">Kun vapaata tilaa on alle 10 %.</string>
+    <string name="alert_drain_setting">Akku tyhjenee nopeasti</string>
+    <string name="alert_drain_setting_description" formatted="false">Kun akku tyhjenee vähintään 20 % tunnissa, mitattuna vähintään puolen tunnin ajalta ilman laturia.</string>
     <string name="since_charge_title">Latauksesta lähtien</string>
     <string name="since_charge_open">Avaa latausjakson näkymä</string>
     <string name="since_charge_summary_section">LATAUSJAKSO</string>

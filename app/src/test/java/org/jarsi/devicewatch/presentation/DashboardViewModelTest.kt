@@ -1,5 +1,6 @@
 package org.jarsi.devicewatch.presentation
 
+import org.jarsi.devicewatch.data.HealthAlert
 import org.jarsi.devicewatch.data.AppSettingsRepository
 import org.jarsi.devicewatch.data.AppUsageRepository
 import org.jarsi.devicewatch.data.DATA_QUOTA_MAX_GB
@@ -261,6 +262,22 @@ class DashboardViewModelTest {
             assertThat(history.screenOn[today.minusDays(1)]).isEqualTo(3_600_000L)
             // The counting period is a day by default: only today's figure shows.
             assertThat(viewModel.uiState.value.screenOnMillis).isEqualTo(5_400_000L)
+        }
+
+    @Test
+    fun `switching an alert persists it and shows it switched`() =
+        runTest(dispatcher) {
+            val settings = FakeAppSettingsRepository()
+            val viewModel = buildViewModel(settings = settings)
+
+            viewModel.onAlertToggle(HealthAlert.FAST_DRAIN, true)
+
+            assertThat(settings.alertEnabled(HealthAlert.FAST_DRAIN)).isTrue()
+            assertThat(viewModel.uiState.value.enabledAlerts).containsExactly(HealthAlert.FAST_DRAIN)
+
+            viewModel.onAlertToggle(HealthAlert.FAST_DRAIN, false)
+
+            assertThat(viewModel.uiState.value.enabledAlerts).isEmpty()
         }
 
     @Test

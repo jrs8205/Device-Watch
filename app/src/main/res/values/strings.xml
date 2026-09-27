@@ -171,6 +171,22 @@
     <string name="appearance_section">APPEARANCE</string>
     <string name="classic_look_title">Original look</string>
     <string name="classic_look_description">The colours and number font from before version 1.6: on Android 12 and newer the colours follow your wallpaper.</string>
+    <string name="alert_channel_name">Device alerts</string>
+    <string name="alert_channel_description">Optional alerts for a hot battery, low storage and a fast-draining battery</string>
+    <string name="alert_hot_title">The battery is hot: %1$s</string>
+    <string name="alert_hot_text">Let the phone cool down: unplug it and close demanding apps.</string>
+    <string name="alert_storage_title">Storage is running low: %1$d %% free</string>
+    <string name="alert_storage_text">%1$s free. The Apps tab lists the largest apps.</string>
+    <string name="alert_drain_title">The battery is draining fast: %1$d %%/h</string>
+    <string name="alert_drain_text">The Apps tab shows which apps have been in use.</string>
+    <string name="alerts_section">ALERTS</string>
+    <string name="alerts_description">Off unless you switch them on. Each alert comes once, and again only after things have first returned to normal.</string>
+    <string name="alert_hot_setting">Hot battery</string>
+    <string name="alert_hot_setting_description">When the battery reaches 45 °C.</string>
+    <string name="alert_storage_setting">Low storage</string>
+    <string name="alert_storage_setting_description" formatted="false">When less than 10 % of the storage is free.</string>
+    <string name="alert_drain_setting">Fast-draining battery</string>
+    <string name="alert_drain_setting_description" formatted="false">When the battery loses 20 % an hour or more, measured over at least half an hour off the charger.</string>
     <string name="since_charge_title">Since charge</string>
     <string name="since_charge_open">Open the since-charge view</string>
     <string name="since_charge_summary_section">CHARGE PERIOD</string>

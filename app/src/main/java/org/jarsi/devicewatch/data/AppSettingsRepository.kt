@@ -73,4 +73,15 @@ interface AppSettingsRepository {
     fun classicLook(): Boolean
 
     fun setClassicLook(enabled: Boolean)
+
+    /** Whether the user switched [alert] on; every alert is off by default. */
+    fun alertEnabled(alert: HealthAlert): Boolean
+
+    /** Switching an alert off also clears its latch, so switched on again it can alert at once. */
+    fun setAlertEnabled(alert: HealthAlert, enabled: Boolean)
+
+    /** True once [alert] has been posted and the condition has not yet cleared. */
+    fun alertLatched(alert: HealthAlert): Boolean
+
+    fun setAlertLatched(alert: HealthAlert, latched: Boolean)
 }

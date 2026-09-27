@@ -2,6 +2,7 @@ package org.jarsi.devicewatch.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import org.jarsi.devicewatch.data.HealthAlert
 import org.jarsi.devicewatch.data.storageUsedBytes
 import org.jarsi.devicewatch.data.AppSettingsRepository
 import org.jarsi.devicewatch.data.AppUsageRepository
@@ -80,6 +81,8 @@ data class DashboardUiState(
     val onboardingCompleted: Boolean? = null,
     /** The pre-1.6 look: wallpaper colours and the regular number font. */
     val classicLook: Boolean = false,
+    /** The optional alerts the user has switched on. */
+    val enabledAlerts: Set<HealthAlert> = emptySet(),
     /** Foreground/background shares and roaming for the counting period; null until read. */
     val dataBreakdown: DataBreakdown? = null,
     /** What the used storage holds; null until read or when unavailable. */
@@ -109,6 +112,7 @@ class DashboardViewModel @Inject constructor(
             it.copy(
                 onboardingCompleted = settings.onboardingShown(),
                 classicLook = settings.classicLook(),
+                enabledAlerts = HealthAlert.entries.filter(settings::alertEnabled).toSet(),
             )
         }
     }
@@ -123,6 +127,13 @@ class DashboardViewModel @Inject constructor(
     fun onClassicLookChange(enabled: Boolean) {
         settings.setClassicLook(enabled)
         _uiState.update { it.copy(classicLook = enabled) }
+    }
+
+    fun onAlertToggle(alert: HealthAlert, enabled: Boolean) {
+        settings.setAlertEnabled(alert, enabled)
+        _uiState.update {
+            it.copy(enabledAlerts = if (enabled) it.enabledAlerts + alert else it.enabledAlerts - alert)
+        }
     }
 
     /** Reads fresh stats, pushes them to every installed widget, and updates the screen. */
