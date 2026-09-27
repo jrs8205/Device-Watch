@@ -35,8 +35,15 @@ data class VolumeInfo(
     val freeBytes: Long,
 )
 
-/** A `UsageEvents` SCREEN_INTERACTIVE (on) or SCREEN_NON_INTERACTIVE (off) event. */
-data class ScreenEvent(val timeMillis: Long, val on: Boolean)
+/**
+ * `UsageEvents` that bound the screen's on-time: SCREEN_INTERACTIVE (on),
+ * SCREEN_NON_INTERACTIVE (off), DEVICE_SHUTDOWN and DEVICE_STARTUP (Android 10+).
+ */
+enum class ScreenEventKind { ON, OFF, SHUTDOWN, STARTUP }
+
+data class ScreenEvent(val timeMillis: Long, val kind: ScreenEventKind) {
+    constructor(timeMillis: Long, on: Boolean) : this(timeMillis, if (on) ScreenEventKind.ON else ScreenEventKind.OFF)
+}
 
 /** How the battery is being charged, per the health HAL's BatteryChargingState. */
 enum class ChargingState { UNKNOWN, NORMAL, TOO_COLD, TOO_HOT, LONG_LIFE, ADAPTIVE }
@@ -351,9 +358,12 @@ object ExtraStatsLogic {
 
     /**
      * Time the screen was on per local day between [startMillis] and [endMillis],
-     * from its on/off events. An interval over midnight is split between the days.
-     * A first event that turns the screen off means it was on when the window
-     * opened; one still on at the end counts until [endMillis]. Repeated events of
+     * from its on/off and power events. An interval over midnight is split between
+     * the days. A first event that turns the screen off (or shuts down) means it was
+     * on when the window opened; a first startup means it was off. A shutdown ends
+     * an interval like an off event; an interval still open at a startup lost its
+     * end with the power (a flat battery) and is dropped, not stretched over the
+     * outage. One still on at the end counts until [endMillis]. Repeated events of
      * the same kind change nothing. No events give no time: the state is unknown.
      */
     fun screenOnByDay(
@@ -375,12 +385,23 @@ object ExtraStatsLogic {
                 cursor = sliceEnd
             }
         }
-        var on = !sorted.first().on
+        var on = when (sorted.first().kind) {
+            ScreenEventKind.OFF, ScreenEventKind.SHUTDOWN -> true
+            ScreenEventKind.ON, ScreenEventKind.STARTUP -> false
+        }
         var since = startMillis
         for (event in sorted) {
-            if (on && !event.on) addInterval(since, event.timeMillis)
-            if (!on && event.on) since = event.timeMillis
-            on = event.on
+            when (event.kind) {
+                ScreenEventKind.ON -> if (!on) {
+                    since = event.timeMillis
+                    on = true
+                }
+                ScreenEventKind.OFF, ScreenEventKind.SHUTDOWN -> if (on) {
+                    addInterval(since, event.timeMillis)
+                    on = false
+                }
+                ScreenEventKind.STARTUP -> on = false
+            }
         }
         if (on) addInterval(since, endMillis)
         return totals

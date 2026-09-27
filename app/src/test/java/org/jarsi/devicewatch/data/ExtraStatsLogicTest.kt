@@ -382,6 +382,51 @@ class ExtraStatsLogicTest {
     }
 
     @Test
+    fun `a shutdown ends the interval even without a screen-off event`() {
+        // Codex round 6: use 10-11, shutdown, next-day use 12-13 read as 27 hours.
+        val events = listOf(
+            ScreenEvent(at(20, 10), on = true),
+            ScreenEvent(at(20, 11), ScreenEventKind.SHUTDOWN),
+            ScreenEvent(at(21, 11, 30), ScreenEventKind.STARTUP),
+            ScreenEvent(at(21, 12), on = true),
+            ScreenEvent(at(21, 13), on = false),
+        )
+        val byDay = ExtraStatsLogic.screenOnByDay(events, startMillis = at(20, 0), endMillis = at(22, 0), zone = utc)
+
+        assertThat(byDay).containsExactly(
+            LocalDate.of(2026, 9, 20), 60 * 60_000L,
+            LocalDate.of(2026, 9, 21), 60 * 60_000L,
+        )
+    }
+
+    @Test
+    fun `an interval still open at a startup lost its end and is dropped`() {
+        // No off, no shutdown: the battery died. When the screen went off is unknown,
+        // and counting the whole outage would be far worse than counting nothing.
+        val events = listOf(
+            ScreenEvent(at(20, 10), on = true),
+            ScreenEvent(at(21, 9), ScreenEventKind.STARTUP),
+            ScreenEvent(at(21, 12), on = true),
+            ScreenEvent(at(21, 13), on = false),
+        )
+        val byDay = ExtraStatsLogic.screenOnByDay(events, startMillis = at(20, 0), endMillis = at(22, 0), zone = utc)
+
+        assertThat(byDay).containsExactly(LocalDate.of(2026, 9, 21), 60 * 60_000L)
+    }
+
+    @Test
+    fun `a window that opens with a startup begins with the screen off`() {
+        val events = listOf(
+            ScreenEvent(at(20, 6), ScreenEventKind.STARTUP),
+            ScreenEvent(at(20, 7), on = true),
+            ScreenEvent(at(20, 7, 30), on = false),
+        )
+        val byDay = ExtraStatsLogic.screenOnByDay(events, startMillis = at(20, 0), endMillis = at(21, 0), zone = utc)
+
+        assertThat(byDay).containsExactly(LocalDate.of(2026, 9, 20), 30 * 60_000L)
+    }
+
+    @Test
     fun `no events give no screen-on time`() {
         assertThat(ExtraStatsLogic.screenOnByDay(emptyList(), at(20, 0), at(21, 0), utc)).isEmpty()
     }

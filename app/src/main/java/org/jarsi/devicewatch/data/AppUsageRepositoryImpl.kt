@@ -289,10 +289,15 @@ class AppUsageRepositoryImpl @Inject constructor(
             val event = UsageEvents.Event()
             while (events.hasNextEvent()) {
                 events.getNextEvent(event)
-                when (event.eventType) {
-                    UsageEvents.Event.SCREEN_INTERACTIVE -> screenEvents += ScreenEvent(event.timeStamp, on = true)
-                    UsageEvents.Event.SCREEN_NON_INTERACTIVE -> screenEvents += ScreenEvent(event.timeStamp, on = false)
+                val kind = when (event.eventType) {
+                    UsageEvents.Event.SCREEN_INTERACTIVE -> ScreenEventKind.ON
+                    UsageEvents.Event.SCREEN_NON_INTERACTIVE -> ScreenEventKind.OFF
+                    // A screen on before a power-off may never log its "off".
+                    EVENT_DEVICE_SHUTDOWN -> ScreenEventKind.SHUTDOWN
+                    EVENT_DEVICE_STARTUP -> ScreenEventKind.STARTUP
+                    else -> null
                 }
+                if (kind != null) screenEvents += ScreenEvent(event.timeStamp, kind)
             }
         } catch (_: Exception) {
             return@withContext emptyMap()
@@ -404,3 +409,7 @@ class AppUsageRepositoryImpl @Inject constructor(
         private const val SESSION_LOOKBACK_MS = 12L * 60 * 60 * 1000
     }
 }
+
+/** UsageEvents.Event.DEVICE_SHUTDOWN / DEVICE_STARTUP (API 29); older versions never log them. */
+private const val EVENT_DEVICE_SHUTDOWN = 26
+private const val EVENT_DEVICE_STARTUP = 27
