@@ -5,7 +5,6 @@ import android.content.Intent
 import android.content.res.Configuration
 import android.os.Build
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.unit.dp
 import androidx.datastore.preferences.core.Preferences
 import androidx.glance.ColorFilter
 import androidx.glance.GlanceId
@@ -13,10 +12,12 @@ import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
 import androidx.glance.Image
 import androidx.glance.ImageProvider
+import androidx.glance.LocalSize
 import androidx.glance.action.actionStartActivity
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
+import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.appWidgetBackground
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
@@ -50,6 +51,7 @@ import org.jarsi.devicewatch.data.UNAVAILABLE_DOUBLE
 import org.jarsi.devicewatch.data.UNAVAILABLE_INT
 import org.jarsi.devicewatch.data.UNAVAILABLE_TEXT
 import org.jarsi.devicewatch.system.SystemMonitorService
+import java.util.Locale
 import javax.inject.Inject
 
 /**
@@ -60,6 +62,9 @@ import javax.inject.Inject
 class CompactWidget : GlanceAppWidget() {
 
     override val stateDefinition: GlanceStateDefinition<*> = PreferencesGlanceStateDefinition
+
+    // The cell text is fitted to the widget's real width, which only Exact reports.
+    override val sizeMode: SizeMode = SizeMode.Exact
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         provideContent {
@@ -133,14 +138,15 @@ fun CompactWidgetContent() {
     val uptimeMillis = prefs[RefreshStatsAction.UPTIME_MILLIS] ?: -1L
     val mobileDataUsed = prefs[RefreshStatsAction.MOBILE_DATA_USED] ?: UNAVAILABLE_DOUBLE
     val wifiBytes = prefs[RefreshStatsAction.WIFI_BYTES_TODAY] ?: UNAVAILABLE_DOUBLE
+    val cellWidthDp = (LocalSize.current.width - widgetDp(12f) * 2 - widgetDp(8f)).value / 2
 
     Column(
         modifier = GlanceModifier
             .fillMaxSize()
             .appWidgetBackground()
             .background(colors.cardBackground)
-            .cornerRadius(30.dp)
-            .padding(12.dp)
+            .cornerRadius(widgetDp(30f))
+            .padding(widgetDp(12f))
             .clickable(actionStartActivity<MainActivity>())
     ) {
         Row(modifier = GlanceModifier.fillMaxWidth().defaultWeight()) {
@@ -155,9 +161,10 @@ fun CompactWidgetContent() {
                 iconRes = R.drawable.ic_widget_battery,
                 iconColor = colors.batteryAccent,
                 colors = colors,
+                widthDp = cellWidthDp,
                 modifier = GlanceModifier.defaultWeight()
             )
-            Spacer(modifier = GlanceModifier.width(8.dp))
+            Spacer(modifier = GlanceModifier.width(widgetDp(8f)))
             CompactCell(
                 label = context.getString(R.string.widget_tile_uptime),
                 value = compactUptimeText(
@@ -170,28 +177,31 @@ fun CompactWidgetContent() {
                 iconRes = R.drawable.ic_widget_schedule,
                 iconColor = colors.cpuAccent,
                 colors = colors,
+                widthDp = cellWidthDp,
                 modifier = GlanceModifier.defaultWeight()
             )
         }
-        Spacer(modifier = GlanceModifier.height(8.dp))
+        Spacer(modifier = GlanceModifier.height(widgetDp(8f)))
         Row(modifier = GlanceModifier.fillMaxWidth().defaultWeight()) {
             CompactCell(
                 label = context.getString(R.string.widget_tile_mobile),
-                value = dataAmountText(mobileDataUsed),
+                value = compactDataAmountText(mobileDataUsed),
                 valueColor = colors.textPrimary,
                 iconRes = R.drawable.ic_widget_cellular,
                 iconColor = colors.mobileAccent,
                 colors = colors,
+                widthDp = cellWidthDp,
                 modifier = GlanceModifier.defaultWeight()
             )
-            Spacer(modifier = GlanceModifier.width(8.dp))
+            Spacer(modifier = GlanceModifier.width(widgetDp(8f)))
             CompactCell(
                 label = context.getString(R.string.widget_tile_wifi),
-                value = dataAmountText(wifiBytes),
+                value = compactDataAmountText(wifiBytes),
                 valueColor = colors.textPrimary,
                 iconRes = R.drawable.ic_widget_wifi,
                 iconColor = colors.networkAccent,
                 colors = colors,
+                widthDp = cellWidthDp,
                 modifier = GlanceModifier.defaultWeight()
             )
         }
@@ -206,21 +216,24 @@ private fun CompactCell(
     iconRes: Int,
     iconColor: ColorProvider,
     colors: WidgetColors,
+    widthDp: Float,
     modifier: GlanceModifier = GlanceModifier,
 ) {
+    val iconDp = 11f
+    val labelWidthDp = widthDp - widgetDp(iconDp + 4f).value
     Column(modifier = modifier.fillMaxHeight()) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Image(
                 provider = ImageProvider(iconRes),
                 contentDescription = null,
                 colorFilter = ColorFilter.tint(iconColor),
-                modifier = GlanceModifier.size(11.dp)
+                modifier = GlanceModifier.size(widgetDp(iconDp))
             )
-            Spacer(modifier = GlanceModifier.width(4.dp))
+            Spacer(modifier = GlanceModifier.width(widgetDp(4f)))
             Text(
                 text = label,
                 style = TextStyle(
-                    fontSize = widgetSp(9f),
+                    fontSize = spForDp(fittedTextDp(label, widgetTextDp(9f), labelWidthDp)),
                     fontWeight = FontWeight.Bold,
                     color = colors.labelText
                 ),
@@ -230,12 +243,26 @@ private fun CompactCell(
         Text(
             text = value,
             style = TextStyle(
-                fontSize = widgetSp(16f),
+                fontSize = spForDp(fittedTextDp(value, widgetTextDp(16f), widthDp)),
                 fontWeight = FontWeight.Bold,
                 color = valueColor
             ),
             maxLines = 1
         )
+    }
+}
+
+/**
+ * Data amount for a compact cell: at most three significant digits, so the
+ * widest figure is "512 MB" or "100 GB" rather than the large widget's
+ * "100.00 GB".
+ */
+fun compactDataAmountText(gbValue: Double): String {
+    if (gbValue < 0.0) return UNAVAILABLE_TEXT
+    return when {
+        gbValue * 1024.0 < 999.5 -> dataAmountText(gbValue)
+        gbValue < 9.95 -> String.format(Locale.getDefault(), "%.1f GB", gbValue)
+        else -> String.format(Locale.getDefault(), "%.0f GB", gbValue)
     }
 }
 

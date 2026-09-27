@@ -3,7 +3,6 @@ package org.jarsi.devicewatch.widget
 import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
 import androidx.datastore.preferences.core.Preferences
 import androidx.glance.ColorFilter
 import androidx.glance.GlanceId
@@ -11,7 +10,9 @@ import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
 import androidx.glance.Image
 import androidx.glance.ImageProvider
+import androidx.glance.LocalSize
 import androidx.glance.appwidget.GlanceAppWidget
+import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.appWidgetBackground
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
@@ -125,6 +126,9 @@ class DashboardWidget : GlanceAppWidget() {
 
     override val stateDefinition: GlanceStateDefinition<*> = PreferencesGlanceStateDefinition
 
+    // The lines are fitted to the widget's real width, which only Exact reports.
+    override val sizeMode: SizeMode = SizeMode.Exact
+
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         provideContent {
             GlanceTheme {
@@ -182,6 +186,12 @@ fun WidgetContent() {
     val uptime = prefs[RefreshStatsAction.UPTIME] ?: UNAVAILABLE_TEXT
     val lastUpdated = prefs[RefreshStatsAction.LAST_UPDATED] ?: UNAVAILABLE_TEXT
     val screenTimeText = prefs[RefreshStatsAction.SCREEN_TIME_TODAY]
+
+    // Every line is fitted to the widget's real width (see fittedTextDp), so a
+    // raised font or a small resize shrinks the text instead of clipping it.
+    val innerDp = LocalSize.current.width.value - widgetDp(18f).value * 2
+    val tileTextDp = (innerDp - widgetDp(12f).value) / 2 - widgetDp(16f).value * 2
+    val rowTextDp = innerDp - widgetDp(17f).value * 2 - widgetDp(30f + 12f + 16f).value
     // The whole widget opens the app; the previous per-tile system-settings
     // shortcuts were removed deliberately (user request in v1.1.0).
     Column(
@@ -189,8 +199,8 @@ fun WidgetContent() {
             .fillMaxSize()
             .appWidgetBackground()
             .background(colors.cardBackground)
-            .cornerRadius(30.dp)
-            .padding(18.dp)
+            .cornerRadius(widgetDp(30f))
+            .padding(widgetDp(18f))
             .clickable(actionStartActivity<MainActivity>())
     ) {
         // 2x3 grid (6 metric tiles, 12dp gap). Each row takes an equal third of the grid
@@ -209,10 +219,11 @@ fun WidgetContent() {
                     isLimitHigh = false,
                     iconRes = R.drawable.ic_widget_battery,
                     iconColor = ColorProvider(Color(0xFF34D399)),
+                    contentWidthDp = tileTextDp,
                     modifier = GlanceModifier.defaultWeight(),
                     colors = colors
                 )
-                Spacer(modifier = GlanceModifier.width(12.dp))
+                Spacer(modifier = GlanceModifier.width(widgetDp(12f)))
                 val freeRam = if (totalRam >= 0.0 && usedRam >= 0.0) totalRam - usedRam else UNAVAILABLE_DOUBLE
                 MetricTile(
                     title = context.getString(R.string.widget_tile_memory),
@@ -223,11 +234,12 @@ fun WidgetContent() {
                     standardAccent = colors.ramAccent,
                     isLimitHigh = true,
                     iconRes = R.drawable.ic_widget_memory,
+                    contentWidthDp = tileTextDp,
                     modifier = GlanceModifier.defaultWeight(),
                     colors = colors
                 )
             }
-            Spacer(modifier = GlanceModifier.height(12.dp))
+            Spacer(modifier = GlanceModifier.height(widgetDp(12f)))
             Row(modifier = GlanceModifier.fillMaxWidth().defaultWeight()) {
                 MetricTile(
                     title = context.getString(R.string.widget_tile_cpu),
@@ -238,10 +250,11 @@ fun WidgetContent() {
                     standardAccent = colors.cpuAccent,
                     isLimitHigh = true,
                     iconRes = R.drawable.ic_widget_cpu,
+                    contentWidthDp = tileTextDp,
                     modifier = GlanceModifier.defaultWeight(),
                     colors = colors
                 )
-                Spacer(modifier = GlanceModifier.width(12.dp))
+                Spacer(modifier = GlanceModifier.width(widgetDp(12f)))
                 val freeStorage = if (totalStorage >= 0.0 && usedStorage >= 0.0) totalStorage - usedStorage else UNAVAILABLE_DOUBLE
                 MetricTile(
                     title = context.getString(R.string.widget_tile_storage),
@@ -252,13 +265,41 @@ fun WidgetContent() {
                     standardAccent = colors.storageAccent,
                     isLimitHigh = true,
                     iconRes = R.drawable.ic_widget_storage,
+                    contentWidthDp = tileTextDp,
                     modifier = GlanceModifier.defaultWeight(),
                     colors = colors
                 )
             }
         }
 
-        Spacer(modifier = GlanceModifier.height(8.dp))
+        Spacer(modifier = GlanceModifier.height(widgetDp(8f)))
+
+        val wifiTitle = if (wifiBand != UNAVAILABLE_TEXT) "$wifiSsid · $wifiBand" else wifiSsid
+        val wifiFit = networkRowFit(
+            rowDp = rowTextDp,
+            title = wifiTitle,
+            detail = "↓ ${speedText(wifiSpeedDown)} ↑ ${speedText(wifiSpeedUp)}",
+            amount = dataAmountText(wifiBytesToday),
+            label = wifiDataLabel,
+            detailGapDp = widgetDp(8f).value,
+        )
+        val mobileTitle = "$operatorName · $mobileNetworkType"
+        val mobileDetail = context.getString(
+            R.string.widget_signal_line,
+            signalDbmText(context, mobileSignalDbm),
+            signalQualityText(context, mobileSignalDbm)
+        )
+        val mobileAmount = mobileDataText(mobileDataUsed, mobileDataTotal)
+        val mobileFit = networkRowFit(rowTextDp, mobileTitle, mobileDetail, mobileAmount, mobileDataLabel)
+        val uptimeLine = context.getString(R.string.widget_uptime, uptime)
+        val screenLine = screenTimeText?.let { context.getString(R.string.widget_screen_time, it) }
+        val updatedLine = context.getString(R.string.widget_updated, lastUpdated)
+        val footerDp = fittedTextDp(
+            text = listOfNotNull(uptimeLine, screenLine, updatedLine).joinToString("    "),
+            sizeDp = widgetTextDp(13f),
+            availableDp = innerDp - widgetDp(6f + 18f + 6f).value,
+            bold = false,
+        )
 
         // Full-width Wi-Fi row (same style as the mobile row below): icon, SSID + band and
         // link speeds on the left, today's Wi-Fi data usage on the right.
@@ -266,8 +307,8 @@ fun WidgetContent() {
             modifier = GlanceModifier
                 .fillMaxWidth()
                 .background(colors.tileBackground)
-                .cornerRadius(20.dp)
-                .padding(17.dp)
+                .cornerRadius(widgetDp(20f))
+                .padding(widgetDp(17f))
         ) {
             Row(
                 modifier = GlanceModifier.fillMaxWidth(),
@@ -276,16 +317,16 @@ fun WidgetContent() {
                 Image(
                     provider = ImageProvider(R.drawable.ic_widget_wifi),
                     contentDescription = context.getString(R.string.widget_tile_network),
-                    modifier = GlanceModifier.size(30.dp),
+                    modifier = GlanceModifier.size(widgetDp(30f)),
                     colorFilter = ColorFilter.tint(colors.networkAccent)
                 )
-                Spacer(modifier = GlanceModifier.width(12.dp))
+                Spacer(modifier = GlanceModifier.width(widgetDp(12f)))
                 Column(modifier = GlanceModifier.defaultWeight()) {
                     Text(
-                        text = if (wifiBand != UNAVAILABLE_TEXT) "$wifiSsid · $wifiBand" else wifiSsid,
+                        text = wifiTitle,
                         style = TextStyle(
                             color = colors.textPrimary,
-                            fontSize = widgetSp(16f),
+                            fontSize = spForDp(wifiFit.titleDp),
                             fontWeight = FontWeight.Bold
                         ),
                         maxLines = 1
@@ -295,38 +336,38 @@ fun WidgetContent() {
                             text = "↓ ",
                             style = TextStyle(
                                 color = colors.downloadAccent,
-                                fontSize = widgetSp(13f),
+                                fontSize = spForDp(wifiFit.detailDp),
                                 fontWeight = FontWeight.Bold
                             )
                         )
                         Text(
                             text = speedText(wifiSpeedDown),
-                            style = TextStyle(color = colors.textMuted, fontSize = widgetSp(13f)),
+                            style = TextStyle(color = colors.textMuted, fontSize = spForDp(wifiFit.detailDp)),
                             maxLines = 1
                         )
-                        Spacer(modifier = GlanceModifier.width(8.dp))
+                        Spacer(modifier = GlanceModifier.width(widgetDp(8f)))
                         Text(
                             text = "↑ ",
                             style = TextStyle(
                                 color = colors.uploadAccent,
-                                fontSize = widgetSp(13f),
+                                fontSize = spForDp(wifiFit.detailDp),
                                 fontWeight = FontWeight.Bold
                             )
                         )
                         Text(
                             text = speedText(wifiSpeedUp),
-                            style = TextStyle(color = colors.textMuted, fontSize = widgetSp(13f)),
+                            style = TextStyle(color = colors.textMuted, fontSize = spForDp(wifiFit.detailDp)),
                             maxLines = 1
                         )
                     }
                 }
-                Spacer(modifier = GlanceModifier.width(16.dp))
+                Spacer(modifier = GlanceModifier.width(widgetDp(16f)))
                 Column(horizontalAlignment = Alignment.Horizontal.End) {
                     Text(
                         text = dataAmountText(wifiBytesToday),
                         style = TextStyle(
                             color = colors.textPrimary,
-                            fontSize = widgetSp(17f),
+                            fontSize = spForDp(wifiFit.amountDp),
                             fontWeight = FontWeight.Bold
                         ),
                         maxLines = 1
@@ -335,15 +376,15 @@ fun WidgetContent() {
                         Image(
                             provider = ImageProvider(R.drawable.ic_widget_swap),
                             contentDescription = null,
-                            modifier = GlanceModifier.size(15.dp),
+                            modifier = GlanceModifier.size(widgetDp(15f)),
                             colorFilter = ColorFilter.tint(colors.textMuted)
                         )
-                        Spacer(modifier = GlanceModifier.width(4.dp))
+                        Spacer(modifier = GlanceModifier.width(widgetDp(4f)))
                         Text(
                             text = wifiDataLabel,
                             style = TextStyle(
                                 color = colors.textMuted,
-                                fontSize = widgetSp(10f),
+                                fontSize = spForDp(wifiFit.labelDp),
                                 fontWeight = FontWeight.Bold
                             ),
                             maxLines = 1
@@ -353,15 +394,15 @@ fun WidgetContent() {
             }
         }
 
-        Spacer(modifier = GlanceModifier.height(8.dp))
+        Spacer(modifier = GlanceModifier.height(widgetDp(8f)))
 
         // Full-width mobile network row
         Column(
             modifier = GlanceModifier
                 .fillMaxWidth()
                 .background(colors.tileBackground)
-                .cornerRadius(20.dp)
-                .padding(17.dp)
+                .cornerRadius(widgetDp(20f))
+                .padding(widgetDp(17f))
         ) {
             Row(
                 modifier = GlanceModifier.fillMaxWidth(),
@@ -370,40 +411,36 @@ fun WidgetContent() {
                 Image(
                     provider = ImageProvider(R.drawable.ic_widget_cellular),
                     contentDescription = context.getString(R.string.widget_mobile_network),
-                    modifier = GlanceModifier.size(30.dp),
+                    modifier = GlanceModifier.size(widgetDp(30f)),
                     colorFilter = ColorFilter.tint(colors.mobileAccent)
                 )
-                Spacer(modifier = GlanceModifier.width(12.dp))
+                Spacer(modifier = GlanceModifier.width(widgetDp(12f)))
                 Column(modifier = GlanceModifier.defaultWeight()) {
                     Text(
-                        text = "$operatorName · $mobileNetworkType",
+                        text = mobileTitle,
                         style = TextStyle(
                             color = colors.textPrimary,
-                            fontSize = widgetSp(16f),
+                            fontSize = spForDp(mobileFit.titleDp),
                             fontWeight = FontWeight.Bold
                         ),
                         maxLines = 1
                     )
                     Text(
-                        text = context.getString(
-                            R.string.widget_signal_line,
-                            signalDbmText(context, mobileSignalDbm),
-                            signalQualityText(context, mobileSignalDbm)
-                        ),
+                        text = mobileDetail,
                         style = TextStyle(
                             color = colors.textMuted,
-                            fontSize = widgetSp(13f)
+                            fontSize = spForDp(mobileFit.detailDp)
                         ),
                         maxLines = 1
                     )
                 }
-                Spacer(modifier = GlanceModifier.width(16.dp))
+                Spacer(modifier = GlanceModifier.width(widgetDp(16f)))
                 Column(horizontalAlignment = Alignment.Horizontal.End) {
                     Text(
-                        text = mobileDataText(mobileDataUsed, mobileDataTotal),
+                        text = mobileAmount,
                         style = TextStyle(
                             color = colors.textPrimary,
-                            fontSize = widgetSp(17f),
+                            fontSize = spForDp(mobileFit.amountDp),
                             fontWeight = FontWeight.Bold
                         ),
                         maxLines = 1
@@ -412,15 +449,15 @@ fun WidgetContent() {
                         Image(
                             provider = ImageProvider(R.drawable.ic_widget_swap),
                             contentDescription = null,
-                            modifier = GlanceModifier.size(15.dp),
+                            modifier = GlanceModifier.size(widgetDp(15f)),
                             colorFilter = ColorFilter.tint(colors.textMuted)
                         )
-                        Spacer(modifier = GlanceModifier.width(4.dp))
+                        Spacer(modifier = GlanceModifier.width(widgetDp(4f)))
                         Text(
                             text = mobileDataLabel,
                             style = TextStyle(
                                 color = colors.textMuted,
-                                fontSize = widgetSp(10f),
+                                fontSize = spForDp(mobileFit.labelDp),
                                 fontWeight = FontWeight.Bold
                             ),
                             maxLines = 1
@@ -430,45 +467,45 @@ fun WidgetContent() {
             }
         }
 
-        Spacer(modifier = GlanceModifier.height(12.dp))
+        Spacer(modifier = GlanceModifier.height(widgetDp(12f)))
 
         // Footer row
         Row(
-            modifier = GlanceModifier.fillMaxWidth().padding(end = 6.dp),
+            modifier = GlanceModifier.fillMaxWidth().padding(end = widgetDp(6f)),
             verticalAlignment = Alignment.Vertical.CenterVertically
         ) {
             Image(
                 provider = ImageProvider(R.drawable.ic_widget_schedule),
                 contentDescription = null,
-                modifier = GlanceModifier.size(18.dp),
+                modifier = GlanceModifier.size(widgetDp(18f)),
                 colorFilter = ColorFilter.tint(colors.textMuted)
             )
-            Spacer(modifier = GlanceModifier.width(6.dp))
+            Spacer(modifier = GlanceModifier.width(widgetDp(6f)))
             Text(
-                text = context.getString(R.string.widget_uptime, uptime),
+                text = uptimeLine,
                 style = TextStyle(
                     color = colors.textMuted,
-                    fontSize = widgetSp(13f)
+                    fontSize = spForDp(footerDp)
                 ),
                 maxLines = 1
             )
             Spacer(modifier = GlanceModifier.defaultWeight())
-            if (screenTimeText != null) {
+            if (screenLine != null) {
                 Text(
-                    text = context.getString(R.string.widget_screen_time, screenTimeText),
+                    text = screenLine,
                     style = TextStyle(
                         color = colors.textMuted,
-                        fontSize = widgetSp(13f)
+                        fontSize = spForDp(footerDp)
                     ),
                     maxLines = 1
                 )
                 Spacer(modifier = GlanceModifier.defaultWeight())
             }
             Text(
-                text = context.getString(R.string.widget_updated, lastUpdated),
+                text = updatedLine,
                 style = TextStyle(
                     color = colors.textMuted,
-                    fontSize = widgetSp(13f)
+                    fontSize = spForDp(footerDp)
                 ),
                 maxLines = 1
             )
@@ -478,21 +515,21 @@ fun WidgetContent() {
 
 @Composable
 fun ProgressBar(percent: Int, activeColor: ColorProvider, trackColor: ColorProvider) {
-    val totalWidth = 100
-    val activeWidth = (totalWidth * percent.coerceIn(0, 100)) / 100
+    val totalWidth = 100f
+    val activeWidth = totalWidth * percent.coerceIn(0, 100) / 100f
 
     Box(
         modifier = GlanceModifier
-            .width(totalWidth.dp)
-            .height(8.dp)
-            .cornerRadius(99.dp)
+            .width(widgetDp(totalWidth))
+            .height(widgetDp(8f))
+            .cornerRadius(widgetDp(99f))
             .background(trackColor)
     ) {
         Box(
             modifier = GlanceModifier
-                .width(activeWidth.dp)
-                .height(8.dp)
-                .cornerRadius(99.dp)
+                .width(widgetDp(activeWidth))
+                .height(widgetDp(8f))
+                .cornerRadius(widgetDp(99f))
                 .background(activeColor)
         ) {}
     }
@@ -509,6 +546,7 @@ fun MetricTile(
     isLimitHigh: Boolean,
     iconRes: Int,
     iconColor: ColorProvider = standardAccent,
+    contentWidthDp: Float = Float.POSITIVE_INFINITY,
     modifier: GlanceModifier = GlanceModifier,
     colors: WidgetColors,
     kind: MetricTileKind = MetricTileKind.Standard,
@@ -527,8 +565,8 @@ fun MetricTile(
         modifier = modifier
             .fillMaxHeight()
             .background(colors.tileBackground)
-            .cornerRadius(20.dp)
-            .padding(16.dp)
+            .cornerRadius(widgetDp(20f))
+            .padding(widgetDp(16f))
     ) {
         Row(
             modifier = GlanceModifier.fillMaxWidth(),
@@ -538,7 +576,7 @@ fun MetricTile(
                 text = title,
                 style = TextStyle(
                     color = colors.labelText,
-                    fontSize = widgetSp(12f),
+                    fontSize = spForDp(fittedTextDp(title, widgetTextDp(12f), contentWidthDp - widgetDp(22f).value)),
                     fontWeight = FontWeight.Bold
                 ),
                 maxLines = 1
@@ -547,12 +585,12 @@ fun MetricTile(
             Image(
                 provider = ImageProvider(iconRes),
                 contentDescription = title,
-                modifier = GlanceModifier.size(22.dp),
+                modifier = GlanceModifier.size(widgetDp(22f)),
                 colorFilter = ColorFilter.tint(iconColor)
             )
         }
 
-        Spacer(modifier = GlanceModifier.height(2.dp))
+        Spacer(modifier = GlanceModifier.height(widgetDp(2f)))
 
         if (kind == MetricTileKind.Wifi && wifiDown != null && wifiUp != null) {
             Text(
@@ -564,13 +602,13 @@ fun MetricTile(
                 ),
                 maxLines = 1
             )
-            Spacer(modifier = GlanceModifier.height(6.dp))
+            Spacer(modifier = GlanceModifier.height(widgetDp(6f)))
             if (wifiBand != UNAVAILABLE_TEXT) {
                 Box(
                     modifier = GlanceModifier
                         .background(colors.bandChipBg)
-                        .cornerRadius(8.dp)
-                        .padding(vertical = 4.dp, horizontal = 7.dp),
+                        .cornerRadius(widgetDp(8f))
+                        .padding(vertical = widgetDp(4f), horizontal = widgetDp(7f)),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
@@ -592,7 +630,7 @@ fun MetricTile(
                     style = TextStyle(color = colors.textPrimary, fontSize = widgetSp(14f), fontWeight = FontWeight.Bold),
                     maxLines = 1
                 )
-                Spacer(modifier = GlanceModifier.width(8.dp))
+                Spacer(modifier = GlanceModifier.width(widgetDp(8f)))
                 Text("↑ ", style = TextStyle(color = colors.uploadAccent, fontSize = widgetSp(16f), fontWeight = FontWeight.Bold))
                 Text(
                     speedText(wifiUp),
@@ -600,7 +638,7 @@ fun MetricTile(
                     maxLines = 1
                 )
             }
-            Spacer(modifier = GlanceModifier.height(4.dp))
+            Spacer(modifier = GlanceModifier.height(widgetDp(4f)))
             Text(
                 text = bottomText,
                 style = TextStyle(
@@ -619,7 +657,7 @@ fun MetricTile(
                 ),
                 maxLines = 1
             )
-            Spacer(modifier = GlanceModifier.height(8.dp))
+            Spacer(modifier = GlanceModifier.height(widgetDp(8f)))
             Column {
                 Text(
                     text = androidx.glance.LocalContext.current.getString(R.string.widget_capacity_label),
@@ -654,35 +692,69 @@ fun MetricTile(
                 text = value,
                 style = TextStyle(
                     color = colors.textPrimary,
-                    fontSize = widgetSp(34f),
+                    fontSize = spForDp(fittedTextDp(value, widgetTextDp(34f), contentWidthDp)),
                     fontWeight = FontWeight.Bold
                 ),
-                maxLines = 2
+                maxLines = 1
             )
-            Spacer(modifier = GlanceModifier.height(2.dp))
+            Spacer(modifier = GlanceModifier.height(widgetDp(2f)))
             Text(
                 text = subtext,
                 style = TextStyle(
                     color = colors.textMuted,
-                    fontSize = widgetSp(13f)
+                    fontSize = spForDp(fittedTextDp(subtext, widgetTextDp(13f), contentWidthDp, bold = false))
                 ),
                 maxLines = 1
             )
             Spacer(modifier = GlanceModifier.defaultWeight())
             if (progressPercent != null) {
                 ProgressBar(progressPercent, activeColor, colors.progressTrack)
-                Spacer(modifier = GlanceModifier.height(4.dp))
+                Spacer(modifier = GlanceModifier.height(widgetDp(4f)))
             }
             Text(
                 text = bottomText,
                 style = TextStyle(
                     color = colors.textMuted,
-                    fontSize = widgetSp(13f)
+                    fontSize = spForDp(fittedTextDp(bottomText, widgetTextDp(13f), contentWidthDp, bold = false))
                 ),
                 maxLines = 1
             )
         }
     }
+}
+
+private class NetworkRowFit(
+    val titleDp: Float,
+    val detailDp: Float,
+    val amountDp: Float,
+    val labelDp: Float,
+)
+
+/**
+ * Text sizes for a full-width network row: the data amount and its label get
+ * up to half of [rowDp], and the name and detail lines fit what they leave.
+ */
+@Composable
+private fun networkRowFit(
+    rowDp: Float,
+    title: String,
+    detail: String,
+    amount: String,
+    label: String,
+    detailGapDp: Float = 0f,
+): NetworkRowFit {
+    val rightDp = rowDp / 2
+    val labelIconDp = widgetDp(15f + 4f).value
+    val amountDp = fittedTextDp(amount, widgetTextDp(17f), rightDp)
+    val labelDp = fittedTextDp(label, widgetTextDp(10f), rightDp - labelIconDp)
+    val usedRightDp = maxOf(textWidthDp(amount, amountDp), labelIconDp + textWidthDp(label, labelDp))
+    val leftDp = rowDp - usedRightDp
+    return NetworkRowFit(
+        titleDp = fittedTextDp(title, widgetTextDp(16f), leftDp),
+        detailDp = fittedTextDp(detail, widgetTextDp(13f), leftDp - detailGapDp, bold = false),
+        amountDp = amountDp,
+        labelDp = labelDp,
+    )
 }
 
 fun getMetricColor(percent: Int, standardAccent: ColorProvider, isLimitHigh: Boolean): ColorProvider {
