@@ -84,6 +84,18 @@ internal fun DeviceTab(uiState: DashboardUiState) {
                 DeviceFact(R.string.power_battery_optimization_exempt, state.batteryOptimizationExempt)
             }
 
+            SettingsSectionCard(titleRes = R.string.settings_state_section) {
+                DeviceFact(R.string.display_brightness, state.brightness)
+                DeviceFact(R.string.display_timeout, state.screenTimeout)
+                DeviceFact(R.string.display_font_size, state.fontSize)
+                DeviceFact(R.string.display_size, state.displaySize)
+                DeviceFact(R.string.display_dark_theme, state.darkTheme)
+                DeviceFact(R.string.system_developer_options, state.developerOptions)
+                DeviceFact(R.string.system_usb_debugging, state.usbDebugging)
+                DeviceFact(R.string.system_auto_time, state.automaticTime)
+                DeviceFact(R.string.system_auto_time_zone, state.automaticTimeZone)
+            }
+
             SettingsSectionCard(titleRes = R.string.external_section) {
                 if (state.removableVolumes.isEmpty()) {
                     DeviceFact(R.string.external_volumes, stringResource(R.string.external_volumes_none))

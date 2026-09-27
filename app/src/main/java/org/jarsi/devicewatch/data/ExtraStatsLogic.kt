@@ -199,6 +199,33 @@ object ExtraStatsLogic {
     fun bandsText(nr: Boolean, bands: IntArray): String? =
         bands.takeIf { it.isNotEmpty() }?.joinToString(", ") { if (nr) "n$it" else "B$it" }
 
+    /**
+     * The Settings brightness slider's position for a `Settings.System.SCREEN_BRIGHTNESS`
+     * value. The setting is linear over [min]..[max]; Settings draws the slider on
+     * the perceptual HLG curve (BrightnessUtils.convertLinearToGamma), so the raw
+     * share would read far lower than what the user set.
+     */
+    fun brightnessSliderPercent(raw: Int, min: Int = 1, max: Int = 255): Int {
+        val normalized = (raw.coerceIn(min, max) - min).toDouble() / (max - min) * 12.0
+        val gamma = if (normalized <= 1.0) {
+            Math.sqrt(normalized) * HLG_R
+        } else {
+            HLG_A * Math.log(normalized - HLG_B) + HLG_C
+        }
+        return Math.round(gamma * 100).toInt().coerceIn(0, 100)
+    }
+
+    private const val HLG_R = 0.5
+    private const val HLG_A = 0.17883277
+    private const val HLG_B = 0.28466892
+    private const val HLG_C = 0.55991073
+
+    /** The display-size setting as a share of the device's default density. */
+    fun displaySizePercent(densityDpi: Int, defaultDpi: Int): Int? {
+        if (densityDpi <= 0 || defaultDpi <= 0) return null
+        return Math.round(densityDpi * 100.0 / defaultDpi).toInt()
+    }
+
     /** SD cards and USB storage; the primary (internal) volume has its own row. */
     fun removableVolumes(volumes: List<VolumeInfo>): List<VolumeInfo> =
         volumes.filter { it.removable && !it.primary }

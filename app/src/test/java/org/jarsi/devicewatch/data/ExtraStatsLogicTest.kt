@@ -468,4 +468,26 @@ class ExtraStatsLogicTest {
         assertThat(ExtraStatsLogic.bandwidthText(downKbps = 1_500, upKbps = 400, locale = Locale.US)).isEqualTo("↓ 1.5 Mb/s · ↑ 0.4 Mb/s")
         assertThat(ExtraStatsLogic.bandwidthText(downKbps = 0, upKbps = 0, locale = Locale.US)).isNull()
     }
+
+    @Test
+    fun `brightness reads as the position of the Settings slider`() {
+        // Settings draws the slider on a perceptual (HLG) curve over the linear
+        // 1..255 setting: the ends meet, and half the linear range sits high up.
+        assertThat(ExtraStatsLogic.brightnessSliderPercent(255)).isEqualTo(100)
+        assertThat(ExtraStatsLogic.brightnessSliderPercent(1)).isEqualTo(0)
+        assertThat(ExtraStatsLogic.brightnessSliderPercent(128)).isEqualTo(87)
+    }
+
+    @Test
+    fun `an out-of-range brightness is clamped to the slider`() {
+        assertThat(ExtraStatsLogic.brightnessSliderPercent(0)).isEqualTo(0)
+        assertThat(ExtraStatsLogic.brightnessSliderPercent(400)).isEqualTo(100)
+    }
+
+    @Test
+    fun `display size reads as a share of the default density`() {
+        assertThat(ExtraStatsLogic.displaySizePercent(densityDpi = 546, defaultDpi = 420)).isEqualTo(130)
+        assertThat(ExtraStatsLogic.displaySizePercent(densityDpi = 420, defaultDpi = 420)).isEqualTo(100)
+        assertThat(ExtraStatsLogic.displaySizePercent(densityDpi = 420, defaultDpi = 0)).isNull()
+    }
 }

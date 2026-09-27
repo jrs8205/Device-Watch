@@ -11,6 +11,16 @@ data class DeviceState(
     val powerSaveMode: String = UNAVAILABLE_TEXT,
     val deviceIdle: String = UNAVAILABLE_TEXT,
     val batteryOptimizationExempt: String = UNAVAILABLE_TEXT,
+    // Display and system settings
+    val brightness: String = UNAVAILABLE_TEXT,
+    val screenTimeout: String = UNAVAILABLE_TEXT,
+    val fontSize: String = UNAVAILABLE_TEXT,
+    val displaySize: String = UNAVAILABLE_TEXT,
+    val darkTheme: String = UNAVAILABLE_TEXT,
+    val developerOptions: String = UNAVAILABLE_TEXT,
+    val usbDebugging: String = UNAVAILABLE_TEXT,
+    val automaticTime: String = UNAVAILABLE_TEXT,
+    val automaticTimeZone: String = UNAVAILABLE_TEXT,
     // Active network
     /** Whether the active network reaches the internet, or waits at a sign-in page. */
     val internetAccess: String = UNAVAILABLE_TEXT,

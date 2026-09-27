@@ -9,6 +9,7 @@ import android.app.usage.NetworkStatsManager
 import android.os.storage.StorageManager
 import android.app.usage.StorageStatsManager
 import android.content.Context
+import android.content.res.Configuration
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
@@ -191,6 +192,21 @@ class SystemStatsRepositoryImpl @Inject constructor(
             batteryOptimizationExempt = powerManager
                 ?.let { boolText(it.isIgnoringBatteryOptimizations(context.packageName)) }
                 ?: UNAVAILABLE_TEXT,
+            brightness = readBrightness(),
+            screenTimeout = readScreenTimeout(),
+            fontSize = "${Math.round(context.resources.configuration.fontScale * 100)} %",
+            displaySize = ExtraStatsLogic.displaySizePercent(
+                context.resources.configuration.densityDpi,
+                DisplayMetrics.DENSITY_DEVICE_STABLE,
+            )?.let { "$it %" } ?: UNAVAILABLE_TEXT,
+            darkTheme = boolText(
+                (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
+                    Configuration.UI_MODE_NIGHT_YES
+            ),
+            developerOptions = globalFlag(Settings.Global.DEVELOPMENT_SETTINGS_ENABLED, default = false),
+            usbDebugging = globalFlag(Settings.Global.ADB_ENABLED, default = false),
+            automaticTime = globalFlag(Settings.Global.AUTO_TIME, default = true),
+            automaticTimeZone = globalFlag(Settings.Global.AUTO_TIME_ZONE, default = true),
             internetAccess = network.first,
             bandwidthEstimate = network.second,
             networkMetered = network.third,
@@ -202,6 +218,50 @@ class SystemStatsRepositoryImpl @Inject constructor(
             removableVolumes = readRemovableVolumes(),
             usbDevices = readUsbDevices(),
         )
+    }
+
+    /** The slider position Settings shows, and whether it follows the light. */
+    private fun readBrightness(): String {
+        val raw = try {
+            Settings.System.getInt(context.contentResolver, Settings.System.SCREEN_BRIGHTNESS)
+        } catch (_: Exception) {
+            return UNAVAILABLE_TEXT
+        }
+        val percent = ExtraStatsLogic.brightnessSliderPercent(raw)
+        val automatic = try {
+            Settings.System.getInt(context.contentResolver, Settings.System.SCREEN_BRIGHTNESS_MODE) ==
+                Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC
+        } catch (_: Exception) {
+            false
+        }
+        return context.getString(
+            if (automatic) R.string.display_brightness_auto else R.string.display_brightness_manual,
+            percent
+        )
+    }
+
+    private fun readScreenTimeout(): String {
+        val millis = try {
+            Settings.System.getInt(context.contentResolver, Settings.System.SCREEN_OFF_TIMEOUT).toLong()
+        } catch (_: Exception) {
+            return UNAVAILABLE_TEXT
+        }
+        val seconds = millis / 1000
+        return when {
+            seconds <= 0 -> UNAVAILABLE_TEXT
+            seconds < 60 -> context.getString(R.string.duration_seconds, seconds)
+            seconds < 3600 -> context.getString(R.string.duration_minutes, seconds / 60)
+            // Some makers offer "never" as a very large value.
+            seconds >= 24 * 3600 -> context.getString(R.string.display_timeout_never)
+            else -> context.getString(R.string.duration_hours, seconds / 3600)
+        }
+    }
+
+    /** A never-written flag holds the platform default, so [default] stands in for it. */
+    private fun globalFlag(name: String, default: Boolean): String = try {
+        boolText(Settings.Global.getInt(context.contentResolver, name, if (default) 1 else 0) != 0)
+    } catch (_: Exception) {
+        UNAVAILABLE_TEXT
     }
 
     /** Internet reachability, bandwidth estimate and metering of the active network. */
