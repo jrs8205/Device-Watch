@@ -271,7 +271,10 @@
     <string name="device_info_physical_size">Näytön koko</string>
     <string name="device_info_hdr">HDR</string>
     <string name="device_info_battery_tech">Akkutyyppi</string>
-    <string name="device_info_battery_capacity">Akun kapasiteetti</string>
+    <string name="device_info_battery_capacity">Akun nimelliskapasiteetti</string>
+    <string name="battery_full_capacity">Täysi varaus nyt (arvio)</string>
+    <string name="battery_full_capacity_value">noin %1$d mAh</string>
+    <string name="hidden_by_android">Android ei kerro tätä sovelluksille</string>
     <string name="device_info_boot_count">Käynnistyksiä yhteensä</string>
 
     <string name="camera_info_section">KAMERAT</string>

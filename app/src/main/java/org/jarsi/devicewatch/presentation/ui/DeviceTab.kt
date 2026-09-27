@@ -59,6 +59,9 @@ internal fun DeviceTab(uiState: DashboardUiState) {
                 DeviceFact(R.string.device_info_storage, info.totalStorage)
                 DeviceFact(R.string.device_info_battery_tech, info.batteryTechnology)
                 DeviceFact(R.string.device_info_battery_capacity, info.batteryCapacityMah)
+                uiState.deviceState?.let { state ->
+                    DeviceFact(R.string.battery_full_capacity, state.batteryFullCapacity)
+                }
             }
 
             SettingsSectionCard(titleRes = R.string.camera_info_section) {

@@ -378,6 +378,31 @@ object ExtraStatsLogic {
         )
     }
 
+    /**
+     * The battery's full-charge capacity now, in mAh, from
+     * `BATTERY_PROPERTY_CHARGE_COUNTER` (µAh, or mAh on some makers) and the
+     * level: what a full battery holds today, wear included. Under 20 % the
+     * whole-percent level makes the division too coarse; a result outside
+     * 500..20 000 mAh is no phone battery.
+     */
+    fun estimatedFullCapacityMah(chargeCounter: Int, levelPercent: Int): Int? {
+        if (chargeCounter <= 0 || levelPercent !in MIN_ESTIMATE_LEVEL..100) return null
+        val plausible = 500.0..20_000.0
+        val fromMicroAmpHours = chargeCounter / 1000.0 * 100.0 / levelPercent
+        if (fromMicroAmpHours in plausible) return Math.round(fromMicroAmpHours).toInt()
+        val fromMilliAmpHours = chargeCounter * 100.0 / levelPercent
+        return Math.round(fromMilliAmpHours).toInt().takeIf { fromMilliAmpHours in plausible }
+    }
+
+    private const val MIN_ESTIMATE_LEVEL = 20
+
+    /**
+     * Whether an app can read the developer-options and USB-debugging switches.
+     * Android 17 (SDK 37) hands apps "off" while both are on (seen on a Pixel 8a),
+     * so from there the rows say the value is hidden instead of reporting it.
+     */
+    fun developerFlagsReadable(sdkInt: Int): Boolean = sdkInt < 37
+
     /** A size setting's share of its default, or null at the default itself. */
     fun relativeToDefault(percent: Int): Int? = percent.takeIf { it != 100 }
 

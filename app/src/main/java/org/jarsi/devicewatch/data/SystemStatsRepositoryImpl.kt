@@ -216,8 +216,9 @@ class SystemStatsRepositoryImpl @Inject constructor(
                 (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
                     Configuration.UI_MODE_NIGHT_YES
             ),
-            developerOptions = globalFlag(Settings.Global.DEVELOPMENT_SETTINGS_ENABLED, default = false),
-            usbDebugging = globalFlag(Settings.Global.ADB_ENABLED, default = false),
+            developerOptions = developerFlag(Settings.Global.DEVELOPMENT_SETTINGS_ENABLED),
+            usbDebugging = developerFlag(Settings.Global.ADB_ENABLED),
+            batteryFullCapacity = readFullCapacityEstimate(),
             automaticTime = globalFlag(Settings.Global.AUTO_TIME, default = true),
             automaticTimeZone = globalFlag(Settings.Global.AUTO_TIME_ZONE, default = true),
             screenLock = context.getSystemService(KeyguardManager::class.java)
@@ -474,6 +475,22 @@ class SystemStatsRepositoryImpl @Inject constructor(
             seconds >= 24 * 3600 -> context.getString(R.string.display_timeout_never)
             else -> context.getString(R.string.duration_hours, seconds / 3600)
         }
+    }
+
+    /** Developer switches; Android 17 hides them from apps, so the row says so instead of "off". */
+    private fun developerFlag(name: String): String =
+        if (ExtraStatsLogic.developerFlagsReadable(Build.VERSION.SDK_INT)) {
+            globalFlag(name, default = false)
+        } else {
+            context.getString(R.string.hidden_by_android)
+        }
+
+    private fun readFullCapacityEstimate(): String {
+        val batteryManager = context.getSystemService(BatteryManager::class.java) ?: return UNAVAILABLE_TEXT
+        val counter = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER)
+        val level = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
+        val mah = ExtraStatsLogic.estimatedFullCapacityMah(counter, level) ?: return UNAVAILABLE_TEXT
+        return context.getString(R.string.battery_full_capacity_value, mah)
     }
 
     /** A never-written flag holds the platform default, so [default] stands in for it. */

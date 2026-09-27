@@ -51,6 +51,8 @@ data class DeviceState(
     val cellSignalBars: String = UNAVAILABLE_TEXT,
     /** Technology, band and channel of the registered cells, e.g. "5G NR n78 · ARFCN 636666". */
     val cellBand: String = UNAVAILABLE_TEXT,
+    /** What a full battery holds now, estimated from the charge counter and the level. */
+    val batteryFullCapacity: String = UNAVAILABLE_TEXT,
     // Attached storage and USB
     /** SD cards and USB storage, each as its name and a free/total or state text. */
     val removableVolumes: List<Pair<String, String>> = emptyList(),

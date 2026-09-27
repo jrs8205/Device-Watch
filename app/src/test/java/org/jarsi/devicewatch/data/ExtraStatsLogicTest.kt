@@ -686,4 +686,36 @@ class ExtraStatsLogicTest {
         assertThat(ExtraStatsLogic.relativeToDefault(130)).isEqualTo(130)
         assertThat(ExtraStatsLogic.relativeToDefault(85)).isEqualTo(85)
     }
+
+    @Test
+    fun `the full-charge capacity is estimated from the charge counter and the level`() {
+        // Pixel 8a on Android 17: 3 468 000 µAh at 83 % -> about 4 178 mAh.
+        assertThat(ExtraStatsLogic.estimatedFullCapacityMah(chargeCounter = 3_468_000, levelPercent = 83))
+            .isEqualTo(4178)
+    }
+
+    @Test
+    fun `a counter reported in mAh is recognised`() {
+        // Some makers report the counter in mAh, as they do CURRENT_NOW.
+        assertThat(ExtraStatsLogic.estimatedFullCapacityMah(chargeCounter = 3_468, levelPercent = 83))
+            .isEqualTo(4178)
+    }
+
+    @Test
+    fun `a low level or an implausible result gives no estimate`() {
+        // Under 20 % the whole-percent level makes the division too coarse.
+        assertThat(ExtraStatsLogic.estimatedFullCapacityMah(chargeCounter = 600_000, levelPercent = 15)).isNull()
+        assertThat(ExtraStatsLogic.estimatedFullCapacityMah(chargeCounter = 0, levelPercent = 80)).isNull()
+        assertThat(ExtraStatsLogic.estimatedFullCapacityMah(chargeCounter = Int.MIN_VALUE, levelPercent = 80)).isNull()
+        assertThat(ExtraStatsLogic.estimatedFullCapacityMah(chargeCounter = 3_468_000, levelPercent = 0)).isNull()
+    }
+
+    @Test
+    fun `Android 17 hides the developer switches from apps`() {
+        // The Pixel 8a on Android 17 (SDK 37) reads developer options and USB
+        // debugging as off while both are on; Android 15 reads them correctly.
+        assertThat(ExtraStatsLogic.developerFlagsReadable(sdkInt = 35)).isTrue()
+        assertThat(ExtraStatsLogic.developerFlagsReadable(sdkInt = 36)).isTrue()
+        assertThat(ExtraStatsLogic.developerFlagsReadable(sdkInt = 37)).isFalse()
+    }
 }

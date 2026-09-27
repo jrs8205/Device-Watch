@@ -275,7 +275,10 @@
     <string name="device_info_physical_size">Screen size</string>
     <string name="device_info_hdr">HDR</string>
     <string name="device_info_battery_tech">Battery type</string>
-    <string name="device_info_battery_capacity">Battery capacity</string>
+    <string name="device_info_battery_capacity">Battery design capacity</string>
+    <string name="battery_full_capacity">Full charge now (estimate)</string>
+    <string name="battery_full_capacity_value">about %1$d mAh</string>
+    <string name="hidden_by_android">Android hides this from apps</string>
     <string name="device_info_boot_count">Total restarts</string>
 
     <string name="camera_info_section">CAMERAS</string>
