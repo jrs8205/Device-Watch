@@ -47,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.style.TextOverflow
 import org.jarsi.devicewatch.R
+import org.jarsi.devicewatch.data.ChargeSource
 import org.jarsi.devicewatch.data.DataCounterMode
 import org.jarsi.devicewatch.data.DataQuotaLogic
 import org.jarsi.devicewatch.data.UNAVAILABLE_TEXT
@@ -163,28 +164,42 @@ internal fun OverviewTab(
             HorizontalDivider(color = MaterialTheme.colorScheme.outline)
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Three stat columns that wrap onto further lines instead of being
-            // squeezed together once the system font makes them too wide.
+            // A two-column grid: the values that only appear in some states (the
+            // power source, the system's estimate) fill the next cell instead of
+            // squeezing a single row, and the columns stay aligned.
             FlowRow(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceAround,
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                maxItemsInEachRow = 2,
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 StackedMetricRow(
                     label = stringResource(R.string.time_remaining),
                     value = currentStats.timeRemainingText,
-                    valueSize = SECONDARY_VALUE_SP
+                    valueSize = SECONDARY_VALUE_SP,
+                    modifier = Modifier.weight(1f)
                 )
                 StackedMetricRow(
                     label = stringResource(R.string.temperature),
                     value = "${currentStats.batteryTemp} °C",
-                    valueSize = SECONDARY_VALUE_SP
+                    valueSize = SECONDARY_VALUE_SP,
+                    modifier = Modifier.weight(1f)
                 )
                 StackedMetricRow(
                     label = stringResource(R.string.voltage),
                     value = "%.2f V".format(currentStats.batteryVoltage),
-                    valueSize = SECONDARY_VALUE_SP
+                    valueSize = SECONDARY_VALUE_SP,
+                    modifier = Modifier.weight(1f)
                 )
+                // Only while plugged in: on battery there is no source to name.
+                chargeSourceRes(currentStats.chargeSource)?.let { sourceRes ->
+                    StackedMetricRow(
+                        label = stringResource(R.string.charge_source_label),
+                        value = stringResource(sourceRes),
+                        valueSize = SECONDARY_VALUE_SP,
+                    modifier = Modifier.weight(1f)
+                    )
+                }
             }
         }
 
@@ -557,6 +572,15 @@ internal fun OverviewTab(
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
+}
+
+/** Label for what the phone is plugged into; null on battery. */
+private fun chargeSourceRes(source: ChargeSource): Int? = when (source) {
+    ChargeSource.NONE -> null
+    ChargeSource.AC -> R.string.charge_source_ac
+    ChargeSource.USB -> R.string.charge_source_usb
+    ChargeSource.WIRELESS -> R.string.charge_source_wireless
+    ChargeSource.DOCK -> R.string.charge_source_dock
 }
 
 @Composable

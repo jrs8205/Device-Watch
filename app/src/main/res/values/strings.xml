@@ -304,6 +304,11 @@
     <string name="battery_status_discharging">In use</string>
     <string name="battery_status_full">Full</string>
     <string name="battery_status_not_charging">Not charging</string>
+    <string name="charge_source_label">Power source</string>
+    <string name="charge_source_ac">Mains</string>
+    <string name="charge_source_usb">USB</string>
+    <string name="charge_source_wireless">Wireless</string>
+    <string name="charge_source_dock">Dock</string>
     <string name="battery_health_good">Good</string>
     <string name="battery_health_overheat">Hot</string>
     <string name="battery_health_dead">Worn</string>

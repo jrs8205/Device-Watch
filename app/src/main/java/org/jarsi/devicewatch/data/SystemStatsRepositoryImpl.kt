@@ -466,6 +466,10 @@ class SystemStatsRepositoryImpl @Inject constructor(
             else -> UNAVAILABLE_TEXT
         }
 
+        val chargeSource = ExtraStatsLogic.chargeSource(
+            batteryStatusIntent?.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0) ?: 0
+        )
+
         val health = batteryStatusIntent?.getIntExtra(BatteryManager.EXTRA_HEALTH, -1) ?: -1
         val batteryHealth = when (health) {
             BatteryManager.BATTERY_HEALTH_GOOD -> context.getString(R.string.battery_health_good)
@@ -710,6 +714,7 @@ class SystemStatsRepositoryImpl @Inject constructor(
             uptimeMillis = uptimeMs,
             dataPeriodStartEpochDay = periodStartDay.toEpochDay(),
             dataSettingsGeneration = dataSettingsGeneration,
+            chargeSource = chargeSource,
         )
     }
 

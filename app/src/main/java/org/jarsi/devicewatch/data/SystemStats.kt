@@ -80,4 +80,6 @@ data class SystemStats(
      * period settings this reading was computed from.
      */
     val dataSettingsGeneration: Long = 0L,
+    /** What the phone is plugged into; [ChargeSource.NONE] on battery. */
+    val chargeSource: ChargeSource = ChargeSource.NONE,
 )
