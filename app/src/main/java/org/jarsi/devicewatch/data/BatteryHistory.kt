@@ -91,6 +91,16 @@ object BatteryHistoryCodec {
         return age < RETENTION_DAYS
     }
 
+    /**
+     * A plug or unplug too soon after [previous] to store yet: it may be charger
+     * bounce. The store holds it and writes it, with its own time and level, once
+     * a later sample shows the new state has held.
+     */
+    fun isHeldFlip(previous: BatterySample?, candidate: BatterySample): Boolean {
+        if (previous == null || candidate.level < 0 || previous.charging == candidate.charging) return false
+        return candidate.timeMillis - previous.timeMillis in 0 until MIN_FLIP_INTERVAL_MS
+    }
+
     /** True when [candidate] should be stored given the [previous] stored sample (null = always). */
     fun shouldSample(previous: BatterySample?, candidate: BatterySample): Boolean {
         if (candidate.level < 0) return false

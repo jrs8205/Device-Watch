@@ -50,6 +50,46 @@ class BatteryHistoryImplTest {
         assertThat(history.samplesSince(recent.timeMillis)).containsExactly(recent)
     }
 
+    private val minute = 60_000L
+    private val t0 = 1_000_000L
+
+    @Test
+    fun `an unplug right after a stored sample still ends the charge, at its own time and level`() {
+        // Codex round 8: the charge reminder's 80 % sample is stored, the user unplugs
+        // 10 s later; that too-soon flip was dropped and the charge read as running
+        // on until the next discharging sample, 20 minutes and two levels later.
+        val history = history()
+        history.record(sample(t0, level = 20, charging = true))
+        history.record(sample(t0 + 60 * minute, level = 80, charging = true))
+        history.record(sample(t0 + 60 * minute + 10_000L, level = 80, charging = false))
+        history.record(sample(t0 + 80 * minute, level = 78, charging = false))
+
+        val charge = ChargeSessions.from(history.samplesSince(0L), nowMillis = t0 + 81 * minute).single()
+
+        assertThat(charge.endMillis).isEqualTo(t0 + 60 * minute + 10_000L)
+        assertThat(charge.endLevel).isEqualTo(80)
+    }
+
+    @Test
+    fun `a held unplug is read back before a later sample confirms it`() {
+        val history = history()
+        history.record(sample(t0, level = 80, charging = true))
+        history.record(sample(t0 + 10_000L, level = 80, charging = false))
+
+        assertThat(history.samplesSince(0L).last()).isEqualTo(sample(t0 + 10_000L, level = 80, charging = false))
+    }
+
+    @Test
+    fun `charger bounce still leaves nothing behind`() {
+        val history = history()
+        val plugged = sample(t0, level = 50, charging = true)
+        history.record(plugged)
+        history.record(sample(t0 + 5_000L, level = 50, charging = false))
+        history.record(sample(t0 + 8_000L, level = 50, charging = true))
+
+        assertThat(history.samplesSince(0L)).containsExactly(plugged)
+    }
+
     @Test
     fun `record throttles samples that arrive too soon`() {
         val history = history()
