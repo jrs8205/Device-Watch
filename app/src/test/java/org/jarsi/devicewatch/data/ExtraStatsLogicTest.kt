@@ -249,4 +249,28 @@ class ExtraStatsLogicTest {
 
         assertThat(breakdown.otherBytes).isEqualTo(0L)
     }
+
+    @Test
+    fun `app sizes are summed once per app uid`() {
+        // Codex round 5: the user-wide queryStatsForUser figure folds the whole
+        // shared storage into dataBytes, so a 300 MB download showed up as apps
+        // (twice, on the emulator). Per-UID figures hold only each app's own files;
+        // packages sharing a UID report the same figures and count once.
+        val sizes = mapOf(
+            10_100 to AppSizes(codeBytes = 100, dataBytes = 50, cacheBytes = 5),
+            10_200 to AppSizes(codeBytes = 300, dataBytes = 20, cacheBytes = 2),
+        )
+        val total = ExtraStatsLogic.appSizeTotal(uids = listOf(10_100, 10_200, 10_100)) { sizes[it] }
+
+        assertThat(total).isEqualTo(AppSizes(codeBytes = 400, dataBytes = 70, cacheBytes = 7))
+    }
+
+    @Test
+    fun `an app whose size cannot be read is left out`() {
+        val total = ExtraStatsLogic.appSizeTotal(uids = listOf(1, 2)) { uid ->
+            if (uid == 1) AppSizes(codeBytes = 10, dataBytes = 1, cacheBytes = 0) else null
+        }
+
+        assertThat(total).isEqualTo(AppSizes(codeBytes = 10, dataBytes = 1, cacheBytes = 0))
+    }
 }

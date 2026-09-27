@@ -147,11 +147,21 @@ class SystemStatsRepositoryImpl @Inject constructor(
             // so the parts add up to it; the system partition is not part of it.
             val dataStat = StatFs(Environment.getDataDirectory().path)
             val used = (dataStat.blockCountLong - dataStat.availableBlocksLong) * dataStat.blockSizeLong
-            val apps = manager.queryStatsForUser(uuid, user)
+            // Per app, not queryStatsForUser: the user-wide figure folds the whole
+            // shared storage into dataBytes, so photos and downloads read as apps.
+            @Suppress("DEPRECATION") // the flags overload is API 33+
+            val uids = context.packageManager.getInstalledApplications(0).map { it.uid }
+            val apps = ExtraStatsLogic.appSizeTotal(uids) { uid ->
+                try {
+                    manager.queryStatsForUid(uuid, uid).let { AppSizes(it.appBytes, it.dataBytes, it.cacheBytes) }
+                } catch (_: Exception) {
+                    null
+                }
+            }
             val media = manager.queryExternalStatsForUser(uuid, user)
             ExtraStatsLogic.storageBreakdown(
                 usedBytes = used,
-                appCodeBytes = apps.appBytes,
+                appCodeBytes = apps.codeBytes,
                 appDataBytes = apps.dataBytes,
                 appCacheBytes = apps.cacheBytes,
                 imageBytes = media.imageBytes,

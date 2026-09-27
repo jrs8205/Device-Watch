@@ -52,6 +52,9 @@ data class StorageBreakdown(
     val otherBytes: Long,
 )
 
+/** One app's `StorageStats`: its code, its data (cache and own external dirs included) and cache. */
+data class AppSizes(val codeBytes: Long, val dataBytes: Long, val cacheBytes: Long)
+
 /**
  * Pure rules behind the readings added in 1.6.0 on top of the original stats:
  * charge source, the system's own battery estimate, deep sleep, thermal state,
@@ -186,9 +189,28 @@ object ExtraStatsLogic {
     }
 
     /**
-     * App code and data from `StorageStatsManager.queryStatsForUser` (data already
-     * includes the cache and each app's external files), media from
-     * `queryExternalStatsForUser`; what the used space holds beyond them is "other".
+     * Every installed app's sizes, summed once per UID: packages that share a UID
+     * report the same figures. Per-UID figures (`queryStatsForUid`) hold only each
+     * app's own files; the user-wide `queryStatsForUser` also folds the whole shared
+     * storage into its data figure, which would count downloads and photos as apps.
+     */
+    fun appSizeTotal(uids: Iterable<Int>, sizesOf: (Int) -> AppSizes?): AppSizes {
+        var code = 0L
+        var data = 0L
+        var cache = 0L
+        for (uid in uids.toSet()) {
+            val sizes = sizesOf(uid) ?: continue
+            code += sizes.codeBytes
+            data += sizes.dataBytes
+            cache += sizes.cacheBytes
+        }
+        return AppSizes(code, data, cache)
+    }
+
+    /**
+     * App code and data summed per app ([appSizeTotal]; data already includes the
+     * cache and each app's external files), media from `queryExternalStatsForUser`;
+     * what the used space holds beyond them is "other".
      */
     fun storageBreakdown(
         usedBytes: Long,

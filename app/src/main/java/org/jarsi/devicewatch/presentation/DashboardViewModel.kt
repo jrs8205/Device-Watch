@@ -163,10 +163,6 @@ class DashboardViewModel @Inject constructor(
         }
         usageHistory.purge(today)
 
-        val storage = repository.storageBreakdown()
-        val breakdown = repository.dataBreakdown(
-            periodStart.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
-        )
 
         val notificationAccess = notificationStats.isListenerEnabled()
         // "Previous period vs now", day-count-aligned. The stores return zeros for
@@ -222,8 +218,6 @@ class DashboardViewModel @Inject constructor(
                 bootCount = usageHistory.bootsBetween(periodStart, today),
                 chargeCount = usageHistory.chargesBetween(periodStart, today),
                 periodComparison = comparison,
-                dataBreakdown = breakdown,
-                storageBreakdown = storage,
                 notificationAccessEnabled = notificationAccess,
                 notificationCount = if (notificationAccess) {
                     notificationStats.totalBetween(periodStart, today)
@@ -232,6 +226,14 @@ class DashboardViewModel @Inject constructor(
                 },
             )
         }
+
+        // The breakdowns scan every app and every UID's traffic, which can take a
+        // second or two: the figures above are on screen first, these fill in after.
+        val breakdown = repository.dataBreakdown(
+            periodStart.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        )
+        val storage = repository.storageBreakdown()
+        _uiState.update { it.copy(dataBreakdown = breakdown, storageBreakdown = storage) }
     }
 
     /** Loads the static, root-free device facts once (build, SoC, display, memory). */
