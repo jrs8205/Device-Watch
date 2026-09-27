@@ -300,6 +300,10 @@
     <string name="power_section">VIRRANHALLINTA</string>
     <string name="external_section">MUISTIKORTIT JA USB</string>
     <string name="settings_state_section">NÄYTTÖ JA ASETUKSET</string>
+    <string name="device_info_cpu_clusters">Suoritinklusterit</string>
+    <string name="device_info_cpu_governor">Taajuuden säätäjä</string>
+    <string name="memory_swap">Swap (ZRAM) käytössä</string>
+    <string name="swap_used_of">%1$s / %2$s</string>
     <string name="display_brightness">Kirkkaus</string>
     <string name="display_brightness_manual">%1$d %%</string>
     <string name="display_brightness_auto">%1$d %% · mukautuva</string>

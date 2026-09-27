@@ -490,4 +490,45 @@ class ExtraStatsLogicTest {
         assertThat(ExtraStatsLogic.displaySizePercent(densityDpi = 420, defaultDpi = 420)).isEqualTo(100)
         assertThat(ExtraStatsLogic.displaySizePercent(densityDpi = 420, defaultDpi = 0)).isNull()
     }
+
+    @Test
+    fun `swap is read from meminfo in kilobytes`() {
+        val meminfo = """
+            MemTotal:        7843156 kB
+            SwapTotal:       4194300 kB
+            SwapFree:        3145725 kB
+        """.trimIndent()
+
+        assertThat(ExtraStatsLogic.swapFromMeminfo(meminfo)).isEqualTo(SwapInfo(totalKb = 4_194_300, freeKb = 3_145_725))
+    }
+
+    @Test
+    fun `no swap, or no meminfo, reads as none`() {
+        assertThat(ExtraStatsLogic.swapFromMeminfo("SwapTotal: 0 kB\nSwapFree: 0 kB")).isNull()
+        assertThat(ExtraStatsLogic.swapFromMeminfo("MemTotal: 100 kB")).isNull()
+        assertThat(ExtraStatsLogic.swapFromMeminfo(null)).isNull()
+    }
+
+    @Test
+    fun `cores with the same frequency range form a cluster, slowest first`() {
+        val cores = listOf(
+            300_000L to 1_800_000L, 300_000L to 1_800_000L, 300_000L to 1_800_000L, 300_000L to 1_800_000L,
+            400_000L to 2_400_000L, 400_000L to 2_400_000L, 400_000L to 2_400_000L,
+            500_000L to 2_900_000L,
+        ).shuffled(java.util.Random(7))
+
+        assertThat(ExtraStatsLogic.cpuClustersText(cores, Locale.US))
+            .isEqualTo("4 \u00d7 0.3\u20131.8 GHz + 3 \u00d7 0.4\u20132.4 GHz + 1 \u00d7 0.5\u20132.9 GHz")
+    }
+
+    @Test
+    fun `cores reporting an implausible frequency are left out`() {
+        // The emulator's cpufreq nodes report a few kHz; no real core runs under 100 MHz.
+        assertThat(ExtraStatsLogic.cpuClustersText(listOf(1_000L to 40_000L), Locale.US)).isNull()
+    }
+
+    @Test
+    fun `no readable cores give no clusters`() {
+        assertThat(ExtraStatsLogic.cpuClustersText(emptyList(), Locale.US)).isNull()
+    }
 }

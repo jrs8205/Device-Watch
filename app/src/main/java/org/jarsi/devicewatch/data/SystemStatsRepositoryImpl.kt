@@ -192,6 +192,13 @@ class SystemStatsRepositoryImpl @Inject constructor(
             batteryOptimizationExempt = powerManager
                 ?.let { boolText(it.isIgnoringBatteryOptimizations(context.packageName)) }
                 ?: UNAVAILABLE_TEXT,
+            swap = ExtraStatsLogic.swapFromMeminfo(readSysFile("/proc/meminfo"))?.let { swap ->
+                context.getString(
+                    R.string.swap_used_of,
+                    "%.1f GB".format((swap.totalKb - swap.freeKb) / KB_PER_GB),
+                    "%.1f GB".format(swap.totalKb / KB_PER_GB),
+                )
+            } ?: UNAVAILABLE_TEXT,
             brightness = readBrightness(),
             screenTimeout = readScreenTimeout(),
             fontSize = "${Math.round(context.resources.configuration.fontScale * 100)} %",
@@ -218,6 +225,26 @@ class SystemStatsRepositoryImpl @Inject constructor(
             removableVolumes = readRemovableVolumes(),
             usbDevices = readUsbDevices(),
         )
+    }
+
+    /**
+     * A pseudo-file read without [readFileTextOnce]'s cache: that cache is only safe
+     * under the stats mutex, and the device facts and state are read outside it.
+     */
+    private fun readSysFile(path: String): String? = try {
+        File(path).readText()
+    } catch (_: Exception) {
+        null
+    }
+
+    private fun readCpuClusters(): String {
+        val cores = (0 until Runtime.getRuntime().availableProcessors()).mapNotNull { index ->
+            val base = "/sys/devices/system/cpu/cpu$index/cpufreq"
+            val max = readSysFile("$base/cpuinfo_max_freq")?.trim()?.toLongOrNull() ?: return@mapNotNull null
+            val min = readSysFile("$base/cpuinfo_min_freq")?.trim()?.toLongOrNull() ?: return@mapNotNull null
+            min to max
+        }
+        return ExtraStatsLogic.cpuClustersText(cores) ?: UNAVAILABLE_TEXT
     }
 
     /** The slider position Settings shows, and whether it follows the light. */
@@ -626,6 +653,9 @@ class SystemStatsRepositoryImpl @Inject constructor(
             vpnActive = vpnActive,
             dnsServers = dnsServers,
             wifiCapabilities = readWifiCapabilities(),
+            cpuClusters = readCpuClusters(),
+            cpuGovernor = readSysFile("/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor")
+                ?.trim()?.takeIf { it.isNotEmpty() } ?: UNAVAILABLE_TEXT,
             privateDns = privateDns,
             networkInterface = networkInterface,
             mtu = mtu,
@@ -1732,5 +1762,6 @@ class SystemStatsRepositoryImpl @Inject constructor(
 
     private companion object {
         private const val GB_BYTES = 1024.0 * 1024.0 * 1024.0
+        private const val KB_PER_GB = 1024.0 * 1024.0
     }
 }

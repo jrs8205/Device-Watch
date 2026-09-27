@@ -11,6 +11,8 @@ data class DeviceState(
     val powerSaveMode: String = UNAVAILABLE_TEXT,
     val deviceIdle: String = UNAVAILABLE_TEXT,
     val batteryOptimizationExempt: String = UNAVAILABLE_TEXT,
+    /** Swap (ZRAM) in use of its total. */
+    val swap: String = UNAVAILABLE_TEXT,
     // Display and system settings
     val brightness: String = UNAVAILABLE_TEXT,
     val screenTimeout: String = UNAVAILABLE_TEXT,

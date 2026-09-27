@@ -39,6 +39,8 @@ internal fun DeviceTab(uiState: DashboardUiState) {
                 DeviceFact(R.string.device_info_soc, info.soc)
                 DeviceFact(R.string.device_info_abis, info.supportedAbis)
                 DeviceFact(R.string.device_info_kernel, info.kernelVersion)
+                DeviceFact(R.string.device_info_cpu_clusters, info.cpuClusters)
+                DeviceFact(R.string.device_info_cpu_governor, info.cpuGovernor)
                 DeviceFact(R.string.device_info_gpu, info.gpuRenderer)
                 DeviceFact(R.string.device_info_gl, info.glVersion)
                 DeviceFact(R.string.device_info_resolution, info.screenResolution)
@@ -48,6 +50,7 @@ internal fun DeviceTab(uiState: DashboardUiState) {
                 DeviceFact(R.string.device_info_hdr, info.hdr)
                 DeviceFact(R.string.device_info_ram, info.totalRam)
                 DeviceFact(R.string.device_info_ram_advertised, info.advertisedRam)
+                uiState.deviceState?.let { state -> DeviceFact(R.string.memory_swap, state.swap) }
                 DeviceFact(R.string.device_info_storage, info.totalStorage)
                 DeviceFact(R.string.device_info_battery_tech, info.batteryTechnology)
                 DeviceFact(R.string.device_info_battery_capacity, info.batteryCapacityMah)

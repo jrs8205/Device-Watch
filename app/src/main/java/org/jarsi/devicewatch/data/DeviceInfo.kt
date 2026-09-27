@@ -19,6 +19,10 @@ data class DeviceInfo(
     val soc: String,
     val supportedAbis: String,
     val kernelVersion: String,
+    /** Cores grouped by frequency range, e.g. "4 × 0,3–1,8 GHz + 4 × 0,4–2,4 GHz". */
+    val cpuClusters: String = UNAVAILABLE_TEXT,
+    /** The CPU frequency governor, e.g. "schedutil". */
+    val cpuGovernor: String = UNAVAILABLE_TEXT,
     val gpuRenderer: String,
     val glVersion: String,
     // Display

@@ -10,6 +10,9 @@ import java.util.Locale
 /** Where the charge comes from, as `BatteryManager.EXTRA_PLUGGED` reports it. */
 enum class ChargeSource { NONE, AC, USB, WIRELESS, DOCK }
 
+/** Swap space (on phones, compressed RAM: ZRAM) from /proc/meminfo, in kilobytes. */
+data class SwapInfo(val totalKb: Long, val freeKb: Long)
+
 /** Whether the active network reaches the internet, per its `NetworkCapabilities`. */
 enum class InternetState { VALIDATED, CAPTIVE_PORTAL, NOT_VALIDATED }
 
@@ -225,6 +228,35 @@ object ExtraStatsLogic {
         if (densityDpi <= 0 || defaultDpi <= 0) return null
         return Math.round(densityDpi * 100.0 / defaultDpi).toInt()
     }
+
+    /** SwapTotal and SwapFree from /proc/meminfo; null without swap or without the lines. */
+    fun swapFromMeminfo(meminfo: String?): SwapInfo? {
+        if (meminfo == null) return null
+        fun field(name: String): Long? = Regex("""(?m)^$name:\s+(\d+)\s*kB""")
+            .find(meminfo)?.groupValues?.get(1)?.toLongOrNull()
+        val total = field("SwapTotal") ?: return null
+        val free = field("SwapFree") ?: return null
+        return SwapInfo(total, free).takeIf { total > 0L }
+    }
+
+    /**
+     * Cores grouped by their frequency range (`cpuinfo_min_freq`, `cpuinfo_max_freq`
+     * in kHz), slowest cluster first: "4 × 0.3–1.8 GHz + 3 × 0.4–2.4 GHz".
+     */
+    fun cpuClustersText(cores: List<Pair<Long, Long>>, locale: Locale = Locale.getDefault()): String? {
+        // No real core tops out under 100 MHz; emulators report a few kHz.
+        val plausible = cores.filter { it.second >= MIN_PLAUSIBLE_MAX_KHZ }
+        if (plausible.isEmpty()) return null
+        return plausible.groupingBy { it }.eachCount().entries
+            .sortedWith(compareBy({ it.key.second }, { it.key.first }))
+            .joinToString(" + ") { (range, count) ->
+                val min = String.format(locale, "%.1f", range.first / 1_000_000.0)
+                val max = String.format(locale, "%.1f", range.second / 1_000_000.0)
+                "$count \u00d7 $min\u2013$max GHz"
+            }
+    }
+
+    private const val MIN_PLAUSIBLE_MAX_KHZ = 100_000L
 
     /** SD cards and USB storage; the primary (internal) volume has its own row. */
     fun removableVolumes(volumes: List<VolumeInfo>): List<VolumeInfo> =
