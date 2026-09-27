@@ -20,12 +20,35 @@ class BatteryHistoryCodecTest {
     }
 
     @Test
-    fun `encode produces one line of four numeric fields`() {
-        val line = BatteryHistoryCodec.encode(sample(1_783_000_000_000L, level = 42, charging = true))
+    fun `encode produces one v2 line with the temperature in tenths of a degree`() {
+        val line = BatteryHistoryCodec.encode(
+            BatterySample(1_783_000_000_000L, level = 42, charging = true, temperatureDeciC = 315)
+        )
         assertThat(line).doesNotContain("\n")
         assertThat(line).doesNotContain("\r")
         assertThat(line.split('\t'))
-            .containsExactly("v1", "1783000000000", "42", "1").inOrder()
+            .containsExactly("v2", "1783000000000", "42", "1", "315").inOrder()
+    }
+
+    @Test
+    fun `an unknown temperature is an empty field and reads back as unknown`() {
+        val unknown = sample(1_783_000_000_000L, level = 42, charging = false)
+        val line = BatteryHistoryCodec.encode(unknown)
+
+        assertThat(line.split('\t').last()).isEmpty()
+        assertThat(BatteryHistoryCodec.decodeOrNull(line)).isEqualTo(unknown)
+    }
+
+    @Test
+    fun `v1 lines written before 1_6 still read, without a temperature`() {
+        assertThat(BatteryHistoryCodec.decodeOrNull("v1\t1783000000000\t42\t1"))
+            .isEqualTo(BatterySample(1_783_000_000_000L, level = 42, charging = true, temperatureDeciC = null))
+    }
+
+    @Test
+    fun `a v2 line with a non-numeric temperature is corruption`() {
+        assertThat(BatteryHistoryCodec.decodeOrNull("v2\t1\t42\t0\thot")).isNull()
+        assertThat(BatteryHistoryCodec.decodeOrNull("v2\t1\t42\t0")).isNull()
     }
 
     @Test

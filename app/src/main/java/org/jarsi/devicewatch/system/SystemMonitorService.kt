@@ -324,6 +324,10 @@ class SystemMonitorService : Service() {
                                 timeMillis = System.currentTimeMillis(),
                                 level = level.coerceIn(0, 100),
                                 charging = plugged,
+                                // Tenths of a degree; kept for the charge history's peak.
+                                temperatureDeciC = intent
+                                    .getIntExtra(BatteryManager.EXTRA_TEMPERATURE, Int.MIN_VALUE)
+                                    .takeIf { it != Int.MIN_VALUE },
                             )
                             serviceScope.launch { recordBatterySample(sample) }
                         }

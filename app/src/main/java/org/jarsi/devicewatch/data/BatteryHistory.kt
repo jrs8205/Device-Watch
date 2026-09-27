@@ -3,8 +3,17 @@ package org.jarsi.devicewatch.data
 import java.time.LocalDate
 import kotlin.math.abs
 
-/** One battery reading. Everything stays on the device. */
-data class BatterySample(val timeMillis: Long, val level: Int, val charging: Boolean)
+/**
+ * One battery reading. Everything stays on the device. [temperatureDeciC] is the
+ * battery temperature in tenths of a degree, as the battery broadcast reports it;
+ * null for samples stored before 1.6.0 or when the device reports none.
+ */
+data class BatterySample(
+    val timeMillis: Long,
+    val level: Int,
+    val charging: Boolean,
+    val temperatureDeciC: Int? = null,
+)
 
 /** Rolling on-device history of battery levels, for the discharge chart. */
 interface BatteryHistory {
@@ -17,8 +26,10 @@ interface BatteryHistory {
 
 /**
  * Line format for the daily history files: tab-separated
- * `v1<TAB>millis<TAB>level<TAB>0|1`. Every field is numeric, so nothing needs
- * escaping and one sample is always exactly one line. TSV instead of JSON
+ * `v2<TAB>millis<TAB>level<TAB>0|1<TAB>tempDeciC` (the last field empty when the
+ * temperature is unknown); `v1` lines, written before 1.6.0 without the
+ * temperature, still read. Every field is numeric, so nothing needs escaping and
+ * one sample is always exactly one line. TSV instead of JSON
  * because org.json is not available to plain-JVM unit tests.
  */
 object BatteryHistoryCodec {
@@ -37,15 +48,21 @@ object BatteryHistoryCodec {
     private val LEVEL_RANGE = 0..100
 
     fun encode(sample: BatterySample): String = listOf(
-        "v1",
+        "v2",
         sample.timeMillis.toString(),
         sample.level.toString(),
         if (sample.charging) "1" else "0",
+        sample.temperatureDeciC?.toString().orEmpty(),
     ).joinToString("\t")
 
     fun decodeOrNull(line: String): BatterySample? {
         val parts = line.split('\t')
-        if (parts.size != 4 || parts[0] != "v1") return null
+        val expectedFields = when (parts[0]) {
+            "v1" -> 4
+            "v2" -> 5
+            else -> return null
+        }
+        if (parts.size != expectedFields) return null
         val millis = parts[1].toLongOrNull() ?: return null
         val level = parts[2].toIntOrNull()?.takeIf { it in LEVEL_RANGE } ?: return null
         val charging = when (parts[3]) {
@@ -53,7 +70,12 @@ object BatteryHistoryCodec {
             "0" -> false
             else -> return null
         }
-        return BatterySample(timeMillis = millis, level = level, charging = charging)
+        val temperature = if (expectedFields == 5 && parts[4].isNotEmpty()) {
+            parts[4].toIntOrNull() ?: return null
+        } else {
+            null
+        }
+        return BatterySample(timeMillis = millis, level = level, charging = charging, temperatureDeciC = temperature)
     }
 
     fun fileNameFor(day: LocalDate): String = "${day.toEpochDay()}.log"
