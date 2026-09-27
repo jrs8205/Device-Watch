@@ -136,6 +136,28 @@ object ExtraStatsLogic {
 
     private const val GIB = 1024.0 * 1024.0 * 1024.0
 
+    /**
+     * `WifiInfo.getCurrentSecurityType()` (API 31) by its Wi-Fi Alliance name. Open
+     * networks, unknown and newer types give null: "open" is the caller's to say
+     * in the user's language, and an unnamed type is better shown as unknown.
+     */
+    fun wifiSecurityName(type: Int): String? = when (type) {
+        1 -> "WEP"
+        2 -> "WPA2-Personal"
+        3 -> "WPA2-Enterprise"
+        4 -> "WPA3-Personal"
+        5 -> "WPA3-Enterprise 192-bit"
+        6 -> "Enhanced Open"
+        7 -> "WAPI-PSK"
+        8 -> "WAPI-CERT"
+        9 -> "WPA3-Enterprise"
+        10 -> "OSEN"
+        11 -> "Passpoint"
+        12 -> "Passpoint R3"
+        13 -> "Easy Connect (DPP)"
+        else -> null
+    }
+
     /** `CellInfo.UNAVAILABLE` (Integer.MAX_VALUE) is no value. */
     fun cellValue(value: Int): Int? = value.takeIf { it != Int.MAX_VALUE }
 

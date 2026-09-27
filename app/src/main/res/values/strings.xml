@@ -304,6 +304,12 @@
     <string name="power_section">POWER</string>
     <string name="external_section">MEMORY CARDS AND USB</string>
     <string name="sim_signal_details">Signal quality</string>
+    <string name="wifi_security">Security</string>
+    <string name="wifi_security_open">Open (no password)</string>
+    <string name="wifi_mlo">Multi-link (Wi-Fi 7) links</string>
+    <string name="wifi_mlo_none">Not in use</string>
+    <string name="wifi_capabilities">Chip supports</string>
+    <string name="wifi_capabilities_basic">No 6 GHz, WPA3 or Wi-Fi 7</string>
     <string name="sim_signal_bars">Signal bars</string>
     <string name="sim_band">Band and channel</string>
     <string name="external_volumes">Memory cards and USB storage</string>

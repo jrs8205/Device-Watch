@@ -300,6 +300,12 @@
     <string name="power_section">VIRRANHALLINTA</string>
     <string name="external_section">MUISTIKORTIT JA USB</string>
     <string name="sim_signal_details">Signaalin laatu</string>
+    <string name="wifi_security">Suojaus</string>
+    <string name="wifi_security_open">Avoin (ei salasanaa)</string>
+    <string name="wifi_mlo">Monilinkki (Wi-Fi 7) -linkit</string>
+    <string name="wifi_mlo_none">Ei käytössä</string>
+    <string name="wifi_capabilities">Piiri tukee</string>
+    <string name="wifi_capabilities_basic">Ei 6 GHz:ä, WPA3:a eikä Wi-Fi 7:ää</string>
     <string name="sim_signal_bars">Signaalipalkit</string>
     <string name="sim_band">Taajuuskaista ja kanava</string>
     <string name="external_volumes">Muistikortit ja USB-muistit</string>

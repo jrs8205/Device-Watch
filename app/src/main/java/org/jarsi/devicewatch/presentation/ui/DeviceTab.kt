@@ -113,6 +113,11 @@ internal fun DeviceTab(uiState: DashboardUiState) {
             DeviceFact(R.string.wifi_name, currentStats.wifiSsidName)
             DeviceFact(R.string.wifi_band_label, currentStats.wifiBand)
             DeviceFact(R.string.wifi_standard, currentStats.wifiStandard)
+            uiState.deviceState?.let { state ->
+                DeviceFact(R.string.wifi_security, state.wifiSecurity)
+                DeviceFact(R.string.wifi_mlo, state.wifiMloLinks)
+            }
+            uiState.deviceInfo?.let { info -> DeviceFact(R.string.wifi_capabilities, info.wifiCapabilities) }
             DeviceFact(R.string.wifi_signal, dbmText(currentStats.wifiRssiDbm))
             DeviceFact(R.string.wifi_link_speed, mbpsText(currentStats.wifiLinkSpeedMbps))
             DeviceFact(R.string.wifi_ip, currentStats.ipAddress)

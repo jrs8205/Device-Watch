@@ -430,4 +430,21 @@ class ExtraStatsLogicTest {
         assertThat(ExtraStatsLogic.bandsText(nr = false, bands = intArrayOf(20))).isEqualTo("B20")
         assertThat(ExtraStatsLogic.bandsText(nr = false, bands = intArrayOf())).isNull()
     }
+
+    @Test
+    fun `the Wi-Fi security type reads by its standard name`() {
+        // WifiInfo.SECURITY_TYPE_* (API 31).
+        assertThat(ExtraStatsLogic.wifiSecurityName(2)).isEqualTo("WPA2-Personal")
+        assertThat(ExtraStatsLogic.wifiSecurityName(4)).isEqualTo("WPA3-Personal")
+        assertThat(ExtraStatsLogic.wifiSecurityName(6)).isEqualTo("Enhanced Open")
+        assertThat(ExtraStatsLogic.wifiSecurityName(9)).isEqualTo("WPA3-Enterprise")
+    }
+
+    @Test
+    fun `an open, unknown or new security type has no standard name`() {
+        // Open is the caller's to say in the user's language.
+        assertThat(ExtraStatsLogic.wifiSecurityName(0)).isNull()
+        assertThat(ExtraStatsLogic.wifiSecurityName(-1)).isNull()
+        assertThat(ExtraStatsLogic.wifiSecurityName(99)).isNull()
+    }
 }

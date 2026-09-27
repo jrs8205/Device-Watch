@@ -55,6 +55,8 @@ data class DeviceInfo(
     val deviceFeatures: String,
     /** Total boots since factory reset (Settings.Global.BOOT_COUNT, API 24+). */
     val bootCountTotal: String,
+    /** What the Wi-Fi chip supports beyond the basics: 6 GHz, WPA3, Wi-Fi 7. */
+    val wifiCapabilities: String = UNAVAILABLE_TEXT,
     // Network (snapshot)
     val vpnActive: String,
     val dnsServers: String,

@@ -23,6 +23,7 @@ import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.TrafficStats
 import android.net.wifi.WifiInfo
+import android.net.wifi.ScanResult
 import android.net.wifi.WifiManager
 import android.opengl.EGL14
 import android.opengl.EGLConfig
@@ -182,18 +183,53 @@ class SystemStatsRepositoryImpl @Inject constructor(
     override suspend fun deviceState(): DeviceState = withContext(dispatcher) {
         val powerManager = context.getSystemService(PowerManager::class.java)
         val cellDetails = readCellDetails()
+        val wifiConnection = readWifiConnection()
         DeviceState(
             powerSaveMode = powerManager?.let { boolText(it.isPowerSaveMode) } ?: UNAVAILABLE_TEXT,
             deviceIdle = powerManager?.let { boolText(it.isDeviceIdleMode) } ?: UNAVAILABLE_TEXT,
             batteryOptimizationExempt = powerManager
                 ?.let { boolText(it.isIgnoringBatteryOptimizations(context.packageName)) }
                 ?: UNAVAILABLE_TEXT,
+            wifiSecurity = wifiConnection.first,
+            wifiMloLinks = wifiConnection.second,
             cellSignalDetails = cellDetails.first,
             cellSignalBars = cellDetails.second,
             cellBand = cellDetails.third,
             removableVolumes = readRemovableVolumes(),
             usbDevices = readUsbDevices(),
         )
+    }
+
+    /** Security type and multi-link count of the Wi-Fi connection; dashes when not on Wi-Fi. */
+    @Suppress("DEPRECATION") // connectionInfo still carries these, un-redacted
+    private fun readWifiConnection(): Pair<String, String> {
+        val none = UNAVAILABLE_TEXT to UNAVAILABLE_TEXT
+        val connectivity = context.getSystemService(ConnectivityManager::class.java) ?: return none
+        val onWifi = connectivity.getNetworkCapabilities(connectivity.activeNetwork)
+            ?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true
+        if (!onWifi) return none
+        val info = try {
+            context.applicationContext.getSystemService(WifiManager::class.java)?.connectionInfo
+        } catch (_: SecurityException) {
+            null
+        } ?: return none
+        val security = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val type = info.currentSecurityType
+            if (type == WifiInfo.SECURITY_TYPE_OPEN) {
+                context.getString(R.string.wifi_security_open)
+            } else {
+                ExtraStatsLogic.wifiSecurityName(type) ?: UNAVAILABLE_TEXT
+            }
+        } else {
+            UNAVAILABLE_TEXT
+        }
+        val mlo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            val links = info.associatedMloLinks.size
+            if (links > 0) links.toString() else context.getString(R.string.wifi_mlo_none)
+        } else {
+            UNAVAILABLE_TEXT
+        }
+        return security to mlo
     }
 
     /**
@@ -503,6 +539,7 @@ class SystemStatsRepositoryImpl @Inject constructor(
             bootCountTotal = bootCountTotal,
             vpnActive = vpnActive,
             dnsServers = dnsServers,
+            wifiCapabilities = readWifiCapabilities(),
             privateDns = privateDns,
             networkInterface = networkInterface,
             mtu = mtu,
@@ -634,6 +671,21 @@ class SystemStatsRepositoryImpl @Inject constructor(
         } else {
             update.month.format(java.time.format.DateTimeFormatter.ofPattern("LLLL yyyy", locale))
         }
+    }
+
+    /** The Wi-Fi chip's support for 6 GHz (API 30), WPA3-SAE (API 29) and Wi-Fi 7 (API 30). */
+    private fun readWifiCapabilities(): String {
+        val wifi = context.applicationContext.getSystemService(WifiManager::class.java) ?: return UNAVAILABLE_TEXT
+        val features = buildList {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && wifi.is6GHzBandSupported) add("6 GHz")
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && wifi.isWpa3SaeSupported) add("WPA3")
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R &&
+                wifi.isWifiStandardSupported(ScanResult.WIFI_STANDARD_11BE)
+            ) {
+                add("Wi-Fi 7")
+            }
+        }
+        return if (features.isEmpty()) context.getString(R.string.wifi_capabilities_basic) else features.joinToString(", ")
     }
 
     private fun readVpnActive(connManager: ConnectivityManager?, network: Network?): String {

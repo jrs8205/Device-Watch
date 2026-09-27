@@ -11,6 +11,11 @@ data class DeviceState(
     val powerSaveMode: String = UNAVAILABLE_TEXT,
     val deviceIdle: String = UNAVAILABLE_TEXT,
     val batteryOptimizationExempt: String = UNAVAILABLE_TEXT,
+    // Wi-Fi connection
+    /** The connected network's security, e.g. "WPA3-Personal" (Android 12+). */
+    val wifiSecurity: String = UNAVAILABLE_TEXT,
+    /** Wi-Fi 7 multi-link: how many links the connection uses (Android 14+). */
+    val wifiMloLinks: String = UNAVAILABLE_TEXT,
     // Mobile network, beyond the dBm figure the stats carry
     /** RSRP / RSRQ / SINR of the serving cell (Android 10+). */
     val cellSignalDetails: String = UNAVAILABLE_TEXT,
