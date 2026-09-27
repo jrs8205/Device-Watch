@@ -54,6 +54,12 @@ data class DeviceInfo(
     val rearCamera: String,
     val frontCamera: String,
     val cameraFlash: String,
+    /** Zoom range of the rear camera, e.g. "0,7–8×". */
+    val cameraZoom: String = UNAVAILABLE_TEXT,
+    val cameraRaw: String = UNAVAILABLE_TEXT,
+    val cameraManual: String = UNAVAILABLE_TEXT,
+    /** Camera2 hardware level per side, one side per line. */
+    val cameraLevel: String = UNAVAILABLE_TEXT,
     // Sensors
     val sensorCount: String,
     val sensors: String,

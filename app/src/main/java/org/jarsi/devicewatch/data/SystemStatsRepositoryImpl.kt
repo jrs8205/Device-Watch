@@ -849,6 +849,10 @@ class SystemStatsRepositoryImpl @Inject constructor(
             rearCamera = camera.rear,
             frontCamera = camera.front,
             cameraFlash = camera.flash,
+            cameraZoom = camera.zoom,
+            cameraRaw = camera.raw,
+            cameraManual = camera.manual,
+            cameraLevel = camera.level,
             sensorCount = sensorCount,
             sensors = sensors,
             locale = locale,
@@ -897,40 +901,149 @@ class SystemStatsRepositoryImpl @Inject constructor(
         val rear: String,
         val front: String,
         val flash: String,
+        val zoom: String = UNAVAILABLE_TEXT,
+        val raw: String = UNAVAILABLE_TEXT,
+        val manual: String = UNAVAILABLE_TEXT,
+        val level: String = UNAVAILABLE_TEXT,
     )
 
+    /**
+     * Every lens behind the cameras Android lists: a logical multi-camera stands
+     * for its physical lenses (API 28+), which carry the real focal lengths.
+     */
     private fun readCameraSummary(): CameraSummary {
         val unavailable = CameraSummary(UNAVAILABLE_TEXT, UNAVAILABLE_TEXT, UNAVAILABLE_TEXT, UNAVAILABLE_TEXT)
         val cameraManager = context.getSystemService(Context.CAMERA_SERVICE) as? CameraManager ?: return unavailable
         return try {
             val ids = cameraManager.cameraIdList
-            var rearMp = 0
-            var frontMp = 0
+            val lenses = mutableListOf<CameraLens>()
+            val levels = linkedMapOf<CameraFacing, String>()
             var anyFlash = false
+            var anyRaw = false
+            var anyManual = false
+            var rearZoom: String? = null
             for (id in ids) {
                 val characteristics = cameraManager.getCameraCharacteristics(id)
-                val facing = characteristics.get(CameraCharacteristics.LENS_FACING)
-                val size = characteristics.get(CameraCharacteristics.SENSOR_INFO_PIXEL_ARRAY_SIZE)
-                val megapixels = if (size != null) {
-                    ((size.width.toLong() * size.height) / 1_000_000.0).roundToInt()
-                } else {
-                    0
-                }
+                val facing = cameraFacing(characteristics.get(CameraCharacteristics.LENS_FACING)) ?: continue
+                val capabilities = characteristics.get(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES) ?: IntArray(0)
                 if (characteristics.get(CameraCharacteristics.FLASH_INFO_AVAILABLE) == true) anyFlash = true
-                when (facing) {
-                    CameraCharacteristics.LENS_FACING_BACK -> if (megapixels > rearMp) rearMp = megapixels
-                    CameraCharacteristics.LENS_FACING_FRONT -> if (megapixels > frontMp) frontMp = megapixels
+                if (CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_RAW in capabilities) anyRaw = true
+                if (CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_MANUAL_SENSOR in capabilities) anyManual = true
+                characteristics.get(CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL)
+                    ?.let(CameraLogic::hardwareLevelName)
+                    ?.let { levels.putIfAbsent(facing, it) }
+                if (facing == CameraFacing.BACK && rearZoom == null) rearZoom = readZoom(characteristics)
+                val physicalIds = if (
+                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.P &&
+                    CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_LOGICAL_MULTI_CAMERA in capabilities
+                ) {
+                    characteristics.physicalCameraIds
+                } else {
+                    emptySet()
+                }
+                if (physicalIds.isEmpty()) {
+                    lenses += lensOf(characteristics, facing)
+                } else {
+                    physicalIds.forEach { physicalId ->
+                        val physical = try {
+                            cameraManager.getCameraCharacteristics(physicalId)
+                        } catch (_: Exception) {
+                            null
+                        } ?: return@forEach
+                        lenses += lensOf(physical, cameraFacing(physical.get(CameraCharacteristics.LENS_FACING)) ?: facing)
+                    }
                 }
             }
             CameraSummary(
                 count = if (ids.isNotEmpty()) ids.size.toString() else UNAVAILABLE_TEXT,
-                rear = if (rearMp > 0) "$rearMp MP" else UNAVAILABLE_TEXT,
-                front = if (frontMp > 0) "$frontMp MP" else UNAVAILABLE_TEXT,
+                rear = lensLines(lenses.filter { it.facing == CameraFacing.BACK }),
+                front = lensLines(lenses.filter { it.facing == CameraFacing.FRONT }),
                 flash = boolText(anyFlash),
+                zoom = rearZoom ?: UNAVAILABLE_TEXT,
+                raw = if (ids.isNotEmpty()) boolText(anyRaw) else UNAVAILABLE_TEXT,
+                manual = if (ids.isNotEmpty()) boolText(anyManual) else UNAVAILABLE_TEXT,
+                level = levels.entries
+                    .filter { it.key != CameraFacing.EXTERNAL }
+                    .joinToString("\n") { (facing, level) ->
+                        val side = context.getString(
+                            if (facing == CameraFacing.BACK) R.string.camera_rear else R.string.camera_front
+                        )
+                        context.getString(R.string.camera_lens_line, side, level)
+                    }
+                    .ifEmpty { UNAVAILABLE_TEXT },
             )
         } catch (_: Exception) {
             unavailable
         }
+    }
+
+    private fun cameraFacing(value: Int?): CameraFacing? = when (value) {
+        CameraCharacteristics.LENS_FACING_BACK -> CameraFacing.BACK
+        CameraCharacteristics.LENS_FACING_FRONT -> CameraFacing.FRONT
+        CameraCharacteristics.LENS_FACING_EXTERNAL -> CameraFacing.EXTERNAL
+        else -> null
+    }
+
+    private fun lensOf(characteristics: CameraCharacteristics, facing: CameraFacing): CameraLens {
+        // Quad-Bayer sensors list their binned size here; the full one is separate (API 31).
+        val binned = characteristics.get(CameraCharacteristics.SENSOR_INFO_PIXEL_ARRAY_SIZE)
+        val full = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            characteristics.get(CameraCharacteristics.SENSOR_INFO_PIXEL_ARRAY_SIZE_MAXIMUM_RESOLUTION)
+        } else {
+            null
+        }
+        val pixels = listOfNotNull(binned, full).maxOfOrNull { it.width.toLong() * it.height }
+        val megapixels = pixels?.let { (it / 1_000_000.0).roundToInt() }?.takeIf { it > 0 }
+        val sensor = characteristics.get(CameraCharacteristics.SENSOR_INFO_PHYSICAL_SIZE)
+        val focal = characteristics.get(CameraCharacteristics.LENS_INFO_AVAILABLE_FOCAL_LENGTHS)?.minOrNull()
+        val equivalent = if (focal != null && sensor != null) {
+            CameraLogic.equivalentFocalMm(focal, sensor.width, sensor.height)
+        } else {
+            null
+        }
+        val stabilisation = characteristics.get(CameraCharacteristics.LENS_INFO_AVAILABLE_OPTICAL_STABILIZATION)
+        return CameraLens(
+            facing = facing,
+            megapixels = megapixels,
+            equivalentFocalMm = equivalent,
+            aperture = characteristics.get(CameraCharacteristics.LENS_INFO_AVAILABLE_APERTURES)?.minOrNull(),
+            ois = stabilisation?.contains(CameraCharacteristics.LENS_OPTICAL_STABILIZATION_MODE_ON) == true,
+        )
+    }
+
+    /** One line per lens, named by its field of view where the side has several. */
+    private fun lensLines(lenses: List<CameraLens>): String {
+        val locale = Locale.getDefault()
+        return CameraLogic.labelled(lenses)
+            .mapNotNull { (role, lens) ->
+                val text = CameraLogic.lensText(lens, locale) ?: return@mapNotNull null
+                if (role == null) {
+                    text
+                } else {
+                    val name = context.getString(
+                        when (role) {
+                            LensRole.ULTRAWIDE -> R.string.camera_lens_ultrawide
+                            LensRole.MAIN -> R.string.camera_lens_main
+                            LensRole.TELEPHOTO -> R.string.camera_lens_telephoto
+                        }
+                    )
+                    context.getString(R.string.camera_lens_line, name, text)
+                }
+            }
+            .joinToString("\n")
+            .ifEmpty { UNAVAILABLE_TEXT }
+    }
+
+    /** The rear camera's zoom ratio range (API 30+), or up to its digital zoom before that. */
+    private fun readZoom(characteristics: CameraCharacteristics): String? {
+        val locale = Locale.getDefault()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            characteristics.get(CameraCharacteristics.CONTROL_ZOOM_RATIO_RANGE)?.let { range ->
+                return CameraLogic.zoomText(range.lower, range.upper, locale)
+            }
+        }
+        val digital = characteristics.get(CameraCharacteristics.SCALER_AVAILABLE_MAX_DIGITAL_ZOOM) ?: return null
+        return CameraLogic.zoomText(1f, digital, locale)
     }
 
     private fun readSensorSummary(): Pair<String, String> {

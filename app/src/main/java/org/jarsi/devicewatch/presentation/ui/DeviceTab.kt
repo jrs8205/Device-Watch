@@ -69,6 +69,10 @@ internal fun DeviceTab(uiState: DashboardUiState) {
                 DeviceFact(R.string.camera_rear, info.rearCamera)
                 DeviceFact(R.string.camera_front, info.frontCamera)
                 DeviceFact(R.string.camera_flash, info.cameraFlash)
+                if (info.cameraZoom != UNAVAILABLE_TEXT) DeviceFact(R.string.camera_zoom, info.cameraZoom)
+                if (info.cameraRaw != UNAVAILABLE_TEXT) DeviceFact(R.string.camera_raw, info.cameraRaw)
+                if (info.cameraManual != UNAVAILABLE_TEXT) DeviceFact(R.string.camera_manual, info.cameraManual)
+                if (info.cameraLevel != UNAVAILABLE_TEXT) DeviceFact(R.string.camera_level, info.cameraLevel)
             }
 
             SettingsSectionCard(titleRes = R.string.sensors_section) {

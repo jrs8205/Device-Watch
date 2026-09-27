@@ -320,6 +320,14 @@
     <string name="camera_rear">Rear camera</string>
     <string name="camera_front">Front camera</string>
     <string name="camera_flash">Flash</string>
+    <string name="camera_zoom">Zoom (rear camera)</string>
+    <string name="camera_raw">RAW photos</string>
+    <string name="camera_manual">Manual controls</string>
+    <string name="camera_level">Camera2 support</string>
+    <string name="camera_lens_line">%1$s: %2$s</string>
+    <string name="camera_lens_ultrawide">Ultra-wide</string>
+    <string name="camera_lens_main">Main</string>
+    <string name="camera_lens_telephoto">Telephoto</string>
 
     <string name="sensors_section">SENSORS</string>
     <string name="sensors_count">Sensor count</string>

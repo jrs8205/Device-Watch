@@ -316,6 +316,14 @@
     <string name="camera_rear">Takakamera</string>
     <string name="camera_front">Etukamera</string>
     <string name="camera_flash">Salama</string>
+    <string name="camera_zoom">Zoom (takakamera)</string>
+    <string name="camera_raw">RAW-kuvat</string>
+    <string name="camera_manual">Käsisäädöt</string>
+    <string name="camera_level">Camera2-tuki</string>
+    <string name="camera_lens_line">%1$s: %2$s</string>
+    <string name="camera_lens_ultrawide">Ultralaajakulma</string>
+    <string name="camera_lens_main">Pääkamera</string>
+    <string name="camera_lens_telephoto">Tele</string>
 
     <string name="sensors_section">ANTURIT</string>
     <string name="sensors_count">Antureiden määrä</string>
