@@ -6,6 +6,8 @@ import android.app.ActivityManager
 import android.app.AppOpsManager
 import android.app.usage.NetworkStats
 import android.app.usage.NetworkStatsManager
+import android.os.storage.StorageManager
+import android.app.usage.StorageStatsManager
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
@@ -133,6 +135,33 @@ class SystemStatsRepositoryImpl @Inject constructor(
             }
         }
         ExtraStatsLogic.dataBreakdown(records)
+    }
+
+    override suspend fun storageBreakdown(): StorageBreakdown? = withContext(dispatcher) {
+        if (!hasUsageStatsAccess()) return@withContext null
+        val manager = context.getSystemService(StorageStatsManager::class.java) ?: return@withContext null
+        try {
+            val uuid = StorageManager.UUID_DEFAULT
+            val user = android.os.Process.myUserHandle()
+            // The same used figure the storage row above shows (the data partition),
+            // so the parts add up to it; the system partition is not part of it.
+            val dataStat = StatFs(Environment.getDataDirectory().path)
+            val used = (dataStat.blockCountLong - dataStat.availableBlocksLong) * dataStat.blockSizeLong
+            val apps = manager.queryStatsForUser(uuid, user)
+            val media = manager.queryExternalStatsForUser(uuid, user)
+            ExtraStatsLogic.storageBreakdown(
+                usedBytes = used,
+                appCodeBytes = apps.appBytes,
+                appDataBytes = apps.dataBytes,
+                appCacheBytes = apps.cacheBytes,
+                imageBytes = media.imageBytes,
+                videoBytes = media.videoBytes,
+                audioBytes = media.audioBytes,
+            )
+        } catch (_: Exception) {
+            // IOException from a busy volume, SecurityException without usage access.
+            null
+        }
     }
 
     override suspend fun monthlyDataUsage(monthsBack: Int): List<MonthlyDataUsage> = withContext(dispatcher) {

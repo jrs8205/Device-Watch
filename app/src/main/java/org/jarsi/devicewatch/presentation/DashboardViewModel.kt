@@ -9,6 +9,7 @@ import org.jarsi.devicewatch.data.CHARGE_LIMIT_MIN
 import org.jarsi.devicewatch.data.DATA_QUOTA_MAX_GB
 import org.jarsi.devicewatch.data.DATA_QUOTA_MIN_GB
 import org.jarsi.devicewatch.data.DataBreakdown
+import org.jarsi.devicewatch.data.StorageBreakdown
 import org.jarsi.devicewatch.data.DataCounterMode
 import org.jarsi.devicewatch.data.DataPeriodCalculator
 import org.jarsi.devicewatch.data.DeviceInfo
@@ -75,6 +76,8 @@ data class DashboardUiState(
     val classicLook: Boolean = false,
     /** Foreground/background shares and roaming for the counting period; null until read. */
     val dataBreakdown: DataBreakdown? = null,
+    /** What the used storage holds; null until read or when unavailable. */
+    val storageBreakdown: StorageBreakdown? = null,
 )
 
 @HiltViewModel
@@ -160,6 +163,7 @@ class DashboardViewModel @Inject constructor(
         }
         usageHistory.purge(today)
 
+        val storage = repository.storageBreakdown()
         val breakdown = repository.dataBreakdown(
             periodStart.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
         )
@@ -219,6 +223,7 @@ class DashboardViewModel @Inject constructor(
                 chargeCount = usageHistory.chargesBetween(periodStart, today),
                 periodComparison = comparison,
                 dataBreakdown = breakdown,
+                storageBreakdown = storage,
                 notificationAccessEnabled = notificationAccess,
                 notificationCount = if (notificationAccess) {
                     notificationStats.totalBetween(periodStart, today)

@@ -12,6 +12,7 @@ import org.jarsi.devicewatch.data.SystemStats
 import org.jarsi.devicewatch.data.SystemStatsRepository
 import org.jarsi.devicewatch.data.DataBreakdown
 import org.jarsi.devicewatch.data.TrafficSplit
+import org.jarsi.devicewatch.data.StorageBreakdown
 import org.jarsi.devicewatch.data.UNAVAILABLE_INT
 import org.jarsi.devicewatch.data.UsageHistory
 import org.jarsi.devicewatch.data.UsageTotals
@@ -184,6 +185,22 @@ class DashboardViewModelTest {
             val startOfToday = java.time.LocalDate.now()
                 .atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
             assertThat(repository.breakdownStartMillis).isEqualTo(startOfToday)
+        }
+
+    @Test
+    fun `given a refresh, then the storage breakdown reaches the screen`() =
+        runTest(dispatcher) {
+            val storage = StorageBreakdown(
+                appsBytes = 1L, cacheBytes = 2L, imageBytes = 3L,
+                videoBytes = 4L, audioBytes = 5L, otherBytes = 6L,
+            )
+            val repository = FakeSystemStatsRepository(sampleStats(), storage = storage)
+            val viewModel = buildViewModel(repository = repository)
+
+            viewModel.refresh()
+            advanceUntilIdle()
+
+            assertThat(viewModel.uiState.value.storageBreakdown).isEqualTo(storage)
         }
 
     @Test
@@ -627,7 +644,10 @@ class DashboardViewModelTest {
 private class FakeSystemStatsRepository(
     private val stats: SystemStats,
     private val breakdown: DataBreakdown = DataBreakdown.NONE,
+    private val storage: StorageBreakdown? = null,
 ) : SystemStatsRepository {
+    override suspend fun storageBreakdown(): StorageBreakdown? = storage
+
     var callCount = 0
         private set
 

@@ -38,6 +38,21 @@ data class DataBreakdown(val wifi: TrafficSplit?, val mobile: TrafficSplit?, val
 }
 
 /**
+ * What the used internal storage holds: installed apps with their data (the
+ * cache is part of it, shown on its own too), the shared photos, videos and
+ * audio, and everything else on the data partition — downloads, documents and
+ * the system's own files there.
+ */
+data class StorageBreakdown(
+    val appsBytes: Long,
+    val cacheBytes: Long,
+    val imageBytes: Long,
+    val videoBytes: Long,
+    val audioBytes: Long,
+    val otherBytes: Long,
+)
+
+/**
  * Pure rules behind the readings added in 1.6.0 on top of the original stats:
  * charge source, the system's own battery estimate, deep sleep, thermal state,
  * private DNS, the Google Play system update and the data and storage
@@ -167,6 +182,31 @@ object ExtraStatsLogic {
             wifi = split(mobile = false),
             mobile = split(mobile = true),
             mobileRoamingBytes = records.filter { it.mobile && it.roaming && it.bytes > 0 }.sumOf { it.bytes },
+        )
+    }
+
+    /**
+     * App code and data from `StorageStatsManager.queryStatsForUser` (data already
+     * includes the cache and each app's external files), media from
+     * `queryExternalStatsForUser`; what the used space holds beyond them is "other".
+     */
+    fun storageBreakdown(
+        usedBytes: Long,
+        appCodeBytes: Long,
+        appDataBytes: Long,
+        appCacheBytes: Long,
+        imageBytes: Long,
+        videoBytes: Long,
+        audioBytes: Long,
+    ): StorageBreakdown {
+        val apps = appCodeBytes + appDataBytes
+        return StorageBreakdown(
+            appsBytes = apps,
+            cacheBytes = appCacheBytes,
+            imageBytes = imageBytes,
+            videoBytes = videoBytes,
+            audioBytes = audioBytes,
+            otherBytes = (usedBytes - apps - imageBytes - videoBytes - audioBytes).coerceAtLeast(0L),
         )
     }
 

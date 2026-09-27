@@ -247,6 +247,12 @@
     <string name="wifi_vpn">VPN käytössä</string>
     <string name="wifi_dns">DNS-palvelimet</string>
     <string name="wifi_private_dns">Yksityinen DNS</string>
+    <string name="storage_apps">Sovellukset</string>
+    <string name="storage_cache">Välimuisti</string>
+    <string name="storage_images">Kuvat</string>
+    <string name="storage_video">Videot</string>
+    <string name="storage_audio">Ääni</string>
+    <string name="storage_other">Muut tiedostot</string>
     <string name="data_split_caption">Etualalla %1$d %% · taustalla %2$d %%</string>
     <string name="data_roaming_caption">Josta roamingissa: %1$s</string>
     <string name="private_dns_off">Pois</string>

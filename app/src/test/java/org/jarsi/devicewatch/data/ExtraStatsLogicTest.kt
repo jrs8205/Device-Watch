@@ -208,4 +208,45 @@ class ExtraStatsLogicTest {
 
         assertThat(breakdown.mobileRoamingBytes).isEqualTo(500L)
     }
+
+    @Test
+    fun `storage splits into apps, media and the rest of what is used`() {
+        val gb = 1_000_000_000L
+        val breakdown = ExtraStatsLogic.storageBreakdown(
+            usedBytes = 100 * gb,
+            appCodeBytes = 20 * gb,
+            appDataBytes = 15 * gb,
+            appCacheBytes = 4 * gb,
+            imageBytes = 10 * gb,
+            videoBytes = 30 * gb,
+            audioBytes = 5 * gb,
+        )
+
+        // App data already includes its cache; the rest is system and other files.
+        assertThat(breakdown).isEqualTo(
+            StorageBreakdown(
+                appsBytes = 35 * gb,
+                cacheBytes = 4 * gb,
+                imageBytes = 10 * gb,
+                videoBytes = 30 * gb,
+                audioBytes = 5 * gb,
+                otherBytes = 20 * gb,
+            )
+        )
+    }
+
+    @Test
+    fun `categories that overshoot the used space leave no negative remainder`() {
+        val breakdown = ExtraStatsLogic.storageBreakdown(
+            usedBytes = 10L,
+            appCodeBytes = 8L,
+            appDataBytes = 4L,
+            appCacheBytes = 1L,
+            imageBytes = 0L,
+            videoBytes = 0L,
+            audioBytes = 0L,
+        )
+
+        assertThat(breakdown.otherBytes).isEqualTo(0L)
+    }
 }

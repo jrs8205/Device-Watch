@@ -36,4 +36,11 @@ interface SystemStatsRepository {
      * heavier than [getStats], so the screen asks for it and the widget loop does not.
      */
     suspend fun dataBreakdown(startMillis: Long): DataBreakdown
+
+    /**
+     * What the used internal storage holds (apps, cache, media, other); null without
+     * usage access or when the platform refuses. Scans every app's sizes, so the
+     * screen asks for it and the widget loop does not.
+     */
+    suspend fun storageBreakdown(): StorageBreakdown?
 }

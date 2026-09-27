@@ -551,6 +551,32 @@ internal fun OverviewTab(
                 modifier = Modifier.fillMaxWidth()
             )
 
+            // What the used space holds, the same split as Settings' storage page.
+            uiState.storageBreakdown?.let { storage ->
+                Spacer(modifier = Modifier.height(8.dp))
+                FlowRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    maxItemsInEachRow = 2,
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    listOf(
+                        R.string.storage_apps to storage.appsBytes,
+                        R.string.storage_cache to storage.cacheBytes,
+                        R.string.storage_images to storage.imageBytes,
+                        R.string.storage_video to storage.videoBytes,
+                        R.string.storage_audio to storage.audioBytes,
+                        R.string.storage_other to storage.otherBytes,
+                    ).forEach { (labelRes, bytes) ->
+                        StackedMetricRow(
+                            label = stringResource(labelRes),
+                            value = gbTodayText(bytes / GB_BYTES),
+                            valueSize = STORAGE_PART_SP,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+            }
+
             Spacer(modifier = Modifier.height(20.dp))
             HorizontalDivider(color = MaterialTheme.colorScheme.outline)
             Spacer(modifier = Modifier.height(16.dp))
@@ -658,6 +684,8 @@ private fun DataCaption(text: String) {
 }
 
 private const val GB_BYTES = 1024.0 * 1024.0 * 1024.0
+
+private val STORAGE_PART_SP = 16.sp
 
 /** Label for the system's thermal level; null when the system reports none. */
 private fun thermalLevelRes(level: ThermalLevel): Int? = when (level) {

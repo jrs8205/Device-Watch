@@ -251,6 +251,12 @@
     <string name="wifi_vpn">VPN active</string>
     <string name="wifi_dns">DNS servers</string>
     <string name="wifi_private_dns">Private DNS</string>
+    <string name="storage_apps">Apps</string>
+    <string name="storage_cache">App cache</string>
+    <string name="storage_images">Photos</string>
+    <string name="storage_video">Videos</string>
+    <string name="storage_audio">Audio</string>
+    <string name="storage_other">Other files</string>
     <string name="data_split_caption">In the foreground %1$d %% · in the background %2$d %%</string>
     <string name="data_roaming_caption">Of which roaming: %1$s</string>
     <string name="private_dns_off">Off</string>
