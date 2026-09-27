@@ -91,6 +91,21 @@ class BatteryHistoryImplTest {
     }
 
     @Test
+    fun `bounce with several updates in between still leaves one charge`() {
+        // Codex round 9: unplug +5 s, another unplugged update +6 s, plugged again
+        // +8 s; the second update confirmed the unplug at once and split the charge.
+        val history = history()
+        val plugged = sample(t0, level = 50, charging = true)
+        history.record(plugged)
+        history.record(sample(t0 + 5_000L, level = 50, charging = false))
+        history.record(sample(t0 + 6_000L, level = 50, charging = false))
+        history.record(sample(t0 + 8_000L, level = 50, charging = true))
+        history.record(sample(t0 + 30 * minute, level = 70, charging = true))
+
+        assertThat(history.samplesSince(0L).map { it.charging }).containsExactly(true, true).inOrder()
+    }
+
+    @Test
     fun `record throttles samples that arrive too soon`() {
         val history = history()
         val first = sample(1_000L, level = 50)

@@ -40,12 +40,19 @@ class BatteryHistoryImpl internal constructor(
         baseDir.mkdirs()
         purge(today)
         var previous = (lastSample ?: latestStored(today)).also { lastSample = it }
-        heldFlip?.let { held ->
-            heldFlip = null
-            // The new state held: a real plug or unplug. A flip back was bounce.
-            if (sample.charging == held.charging) {
-                append(today, held)
-                previous = held
+        val held = heldFlip
+        if (held != null) {
+            when {
+                // Flipped back: it was bounce, however many updates came in between.
+                sample.charging != held.charging -> heldFlip = null
+                // The new state has lasted the bounce window: a real plug or unplug.
+                BatteryHistoryCodec.flipHasHeld(held, sample) -> {
+                    heldFlip = null
+                    append(today, held)
+                    previous = held
+                }
+                // Still inside the window: keep holding, store nothing yet.
+                else -> return
             }
         }
         if (BatteryHistoryCodec.shouldSample(previous, sample)) {
