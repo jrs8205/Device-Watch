@@ -264,6 +264,19 @@ class DashboardViewModelTest {
         }
 
     @Test
+    fun `a refresh keeps today's used storage for the history`() =
+        runTest(dispatcher) {
+            val history = FakeUsageHistory()
+            val viewModel = buildViewModel(history = history)
+
+            viewModel.refresh()
+            advanceUntilIdle()
+
+            // The sample stats use 64 GiB.
+            assertThat(history.storage[java.time.LocalDate.now()]).isEqualTo(64L * 1024 * 1024 * 1024)
+        }
+
+    @Test
     fun `given a platform without screen events, then screen-on time is unavailable, not zero`() =
         runTest(dispatcher) {
             // Codex round 6: Android 8 has no SCREEN_INTERACTIVE events; the empty

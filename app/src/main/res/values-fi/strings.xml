@@ -346,6 +346,7 @@
     <string name="screen_on_label">Näyttö päällä</string>
     <string name="report_summary_screen_on">Näyttö päällä / vrk</string>
     <string name="report_column_screen_on">Näyttö päällä</string>
+    <string name="report_column_storage">Tallennustilaa käytössä</string>
     <string name="power_section">VIRRANHALLINTA</string>
     <string name="external_section">MUISTIKORTIT JA USB</string>
     <string name="settings_state_section">NÄYTTÖ JA ASETUKSET</string>

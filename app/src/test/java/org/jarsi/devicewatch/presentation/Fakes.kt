@@ -213,6 +213,7 @@ internal class FakeUsageHistory : UsageHistory {
     val unlocks = mutableMapOf<LocalDate, Int>()
     val screen = mutableMapOf<LocalDate, Long>()
     val screenOn = mutableMapOf<LocalDate, Long>()
+    val storage = mutableMapOf<LocalDate, Long>()
     val boots = mutableMapOf<LocalDate, Int>()
     val charges = mutableMapOf<LocalDate, Int>()
     var lastBootCount: Int = -1
@@ -228,6 +229,10 @@ internal class FakeUsageHistory : UsageHistory {
 
     override fun recordScreenOn(day: LocalDate, millis: Long) {
         screenOn[day] = millis
+    }
+
+    override fun recordStorageUsed(day: LocalDate, bytes: Long) {
+        storage[day] = bytes
     }
 
     override fun screenOnBetween(start: LocalDate, end: LocalDate): Long =
@@ -265,6 +270,7 @@ internal class FakeUsageHistory : UsageHistory {
                 unlocks = unlocks[day] ?: 0,
                 screenTimeMillis = screen[day] ?: 0L,
                 screenOnMillis = screenOn[day] ?: 0L,
+                storageUsedBytes = storage[day] ?: 0L,
                 boots = boots[day] ?: 0,
                 charges = charges[day] ?: 0,
             )
@@ -297,6 +303,7 @@ internal val TEST_REPORT_LABELS = HtmlReportLabels(
     columnDay = "Day",
     columnScreenTime = "Screen time",
     columnScreenOn = "Screen on",
+    columnStorage = "Storage used",
     columnUnlocks = "Unlocks",
     columnNotifications = "Notifications",
     columnBoots = "Restarts",

@@ -11,6 +11,8 @@ data class UsageDayTally(
     val charges: Int,
     /** Time the display was on, as opposed to [screenTimeMillis] of app use. */
     val screenOnMillis: Long = 0L,
+    /** Internal storage in use at the day's last reading; 0 when the day has none. */
+    val storageUsedBytes: Long = 0L,
 )
 
 /**
@@ -29,6 +31,9 @@ interface UsageHistory {
     fun recordScreenOn(day: LocalDate, millis: Long)
 
     fun screenOnBetween(start: LocalDate, end: LocalDate): Long
+
+    /** Internal storage in use on [day]; each reading replaces the day's earlier one. */
+    fun recordStorageUsed(day: LocalDate, bytes: Long)
 
     /**
      * Registers the current Settings.Global.BOOT_COUNT and attributes the delta
@@ -54,7 +59,14 @@ interface UsageHistory {
     fun purge(today: LocalDate)
 }
 
-internal val HISTORY_PREFIXES = setOf("unlocks", "screen", "boots", "charges", "screenon")
+internal val HISTORY_PREFIXES = setOf("unlocks", "screen", "boots", "charges", "screenon", "storage")
+
+/**
+ * The used storage of a stats reading ([usedGb] in GiB, as the stats compute it)
+ * in bytes; null for an unknown or impossible reading, which is not recorded.
+ */
+fun storageUsedBytes(usedGb: Double): Long? =
+    if (usedGb > 0.0) Math.round(usedGb * 1024.0 * 1024.0 * 1024.0) else null
 
 /** Baseline key for the boot-count delta logic; survives purging. */
 internal const val KEY_LAST_BOOT_COUNT = "last_boot_count"

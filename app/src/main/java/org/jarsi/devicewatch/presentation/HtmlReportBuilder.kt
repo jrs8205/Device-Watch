@@ -41,6 +41,7 @@ data class HtmlReportLabels(
     val columnDay: String,
     val columnScreenTime: String,
     val columnScreenOn: String,
+    val columnStorage: String,
     val columnUnlocks: String,
     val columnNotifications: String,
     val columnBoots: String,
@@ -150,6 +151,7 @@ object HtmlReportBuilder {
     /** The log can run to hundreds of rows over its 7-day retention. */
     private const val DEFAULT_LOG_ROWS = 100
     private val DASH = "—"
+    private const val BYTES_PER_GIB = 1024.0 * 1024.0 * 1024.0
 
     fun escape(value: String): String = buildString(value.length) {
         value.forEach { c ->
@@ -402,6 +404,7 @@ object HtmlReportBuilder {
                 labels.columnCharges,
                 // Added in 1.6.0; last, like in the CSV, so the older columns keep their places.
                 labels.columnScreenOn,
+                labels.columnStorage,
             ),
             tableClass = "days",
             tableName = "days",
@@ -427,6 +430,11 @@ object HtmlReportBuilder {
             append("<td>")
             append(
                 if (coverage.screenOnKnown(day.day)) escape(durationText(day.screenOnMillis, labels)) else DASH
+            )
+            append("</td>")
+            append("<td>")
+            append(
+                if (day.storageUsedBytes > 0L) escape(gbText(day.storageUsedBytes / BYTES_PER_GIB, data.locale)) else DASH
             )
             append("</td>")
             append("</tr>\n")

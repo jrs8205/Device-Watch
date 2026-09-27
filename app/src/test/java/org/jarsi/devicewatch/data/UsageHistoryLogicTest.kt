@@ -29,6 +29,13 @@ class UsageHistoryLogicTest {
     }
 
     @Test
+    fun `used storage is kept in bytes, and an unknown reading is not kept`() {
+        assertThat(storageUsedBytes(1.5)).isEqualTo(1_610_612_736L)
+        assertThat(storageUsedBytes(-1.0)).isNull()
+        assertThat(storageUsedBytes(0.0)).isNull()
+    }
+
+    @Test
     fun `given history keys, when checking retention, then baseline and current days survive`() {
         val today = LocalDate.of(2026, 7, 4)
         val retained = NotificationCounting.retainedDays(today)
@@ -38,6 +45,7 @@ class UsageHistoryLogicTest {
         assertThat(isRetainedHistoryKey(KEY_LAST_BOOT_COUNT, retained)).isTrue()
         assertThat(isRetainedHistoryKey("unlocks:$todayEpoch", retained)).isTrue()
         assertThat(isRetainedHistoryKey("screen:$todayEpoch", retained)).isTrue()
+        assertThat(isRetainedHistoryKey("storage:$todayEpoch", retained)).isTrue()
         assertThat(isRetainedHistoryKey("boots:$oldEpoch", retained)).isFalse()
         assertThat(isRetainedHistoryKey("garbage", retained)).isFalse()
         assertThat(isRetainedHistoryKey("charges:abc", retained)).isFalse()

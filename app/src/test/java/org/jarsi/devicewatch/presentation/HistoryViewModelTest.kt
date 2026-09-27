@@ -44,6 +44,7 @@ class HistoryViewModelTest {
         override fun recordUnlocks(day: LocalDate, count: Int) = Unit
         override fun recordScreenTime(day: LocalDate, millis: Long) = Unit
         override fun recordScreenOn(day: LocalDate, millis: Long) = Unit
+        override fun recordStorageUsed(day: LocalDate, bytes: Long) = Unit
         override fun screenOnBetween(start: LocalDate, end: LocalDate) = 0L
         override fun registerBootCount(day: LocalDate, bootCountTotal: Int) = Unit
         override fun incrementCharge(day: LocalDate) = Unit
@@ -56,7 +57,9 @@ class HistoryViewModelTest {
             val days = mutableListOf<UsageDayTally>()
             var d = start
             while (!d.isAfter(end)) {
-                days += UsageDayTally(d, unlocks = 1, screenTimeMillis = 60_000L, boots = 0, charges = 2)
+                days += UsageDayTally(
+                    d, unlocks = 1, screenTimeMillis = 60_000L, boots = 0, charges = 2, storageUsedBytes = 5_000L,
+                )
                 d = d.plusDays(1)
             }
             return days
@@ -179,6 +182,7 @@ class HistoryViewModelTest {
         assertThat(state.days.last().unlocks).isEqualTo(1)
         assertThat(state.days.last().screenTimeMillis).isEqualTo(60_000L)
         assertThat(state.days.last().charges).isEqualTo(2)
+        assertThat(state.days.last().storageUsedBytes).isEqualTo(5_000L)
         assertThat(state.logEntries).hasSize(1)
         assertThat(state.listenerEnabled).isTrue()
     }

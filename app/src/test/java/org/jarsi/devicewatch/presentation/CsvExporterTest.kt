@@ -45,11 +45,13 @@ class CsvExporterTest {
         val csv = CsvExporter.usageHistoryCsv(days)
 
         val lines = csv.trimEnd().lines()
-        assertThat(lines[0]).isEqualTo("day,screen_time_minutes,unlocks,notifications,boots,charges,screen_on_minutes")
+        assertThat(lines[0]).isEqualTo(
+            "day,screen_time_minutes,unlocks,notifications,boots,charges,screen_on_minutes,storage_used_gb"
+        )
         // 90 s rounds to 2 minutes; a full hour is exactly 60. Screen-on time was
         // never collected here, so its column stays empty.
-        assertThat(lines[1]).isEqualTo("2026-08-13,2,12,7,1,2,")
-        assertThat(lines[2]).isEqualTo("2026-08-14,60,3,0,0,1,")
+        assertThat(lines[1]).isEqualTo("2026-08-13,2,12,7,1,2,,")
+        assertThat(lines[2]).isEqualTo("2026-08-14,60,3,0,0,1,,")
         assertThat(lines).hasSize(3)
     }
 
@@ -78,8 +80,8 @@ class CsvExporterTest {
 
         // Notifications, boots and charges were first recorded on the 14th; the
         // 13th's zeros are "not collected yet" and stay empty rather than 0.
-        assertThat(lines[1]).isEqualTo("2026-08-13,2,12,,,,")
-        assertThat(lines[2]).isEqualTo("2026-08-14,60,3,7,1,1,")
+        assertThat(lines[1]).isEqualTo("2026-08-13,2,12,,,,,")
+        assertThat(lines[2]).isEqualTo("2026-08-14,60,3,7,1,1,,")
     }
 
     @Test
@@ -91,8 +93,23 @@ class CsvExporterTest {
 
         val lines = CsvExporter.usageHistoryCsv(days).trimEnd().lines()
 
-        assertThat(lines[1]).endsWith(",")
-        assertThat(lines[2]).endsWith(",90")
+        assertThat(lines[1]).endsWith(",,")
+        assertThat(lines[2]).endsWith(",90,")
+    }
+
+    @Test
+    fun `usage history csv carries the used storage of each day that has a reading`() {
+        val gib = 1024L * 1024 * 1024
+        val days = listOf(
+            HistoryDay(LocalDate.of(2026, 8, 13), 60_000L, 1, 0, 0, 0, storageUsedBytes = 52 * gib + gib / 4),
+            HistoryDay(LocalDate.of(2026, 8, 14), 60_000L, 1, 0, 0, 0, storageUsedBytes = 0L),
+        )
+
+        val lines = CsvExporter.usageHistoryCsv(days).trimEnd().lines()
+
+        // Always a dot, whatever the phone's locale: a spreadsheet reads it as a number.
+        assertThat(lines[1]).endsWith(",52.25")
+        assertThat(lines[2]).endsWith(",")
     }
 
     @Test

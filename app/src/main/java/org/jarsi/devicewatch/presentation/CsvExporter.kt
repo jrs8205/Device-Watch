@@ -5,12 +5,14 @@ import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 /** RFC 4180 CSV rendering of the usage history and the notification log. */
 object CsvExporter {
 
-    // Screen-on time came in 1.6.0 and goes last, so the earlier columns keep their places.
-    private const val USAGE_HEADER = "day,screen_time_minutes,unlocks,notifications,boots,charges,screen_on_minutes"
+    // Screen-on time and used storage came in 1.6.0 and go last, so the earlier columns keep their places.
+    private const val USAGE_HEADER =
+        "day,screen_time_minutes,unlocks,notifications,boots,charges,screen_on_minutes,storage_used_gb"
     private const val LOG_HEADER = "time,package,app,title,text"
 
     /**
@@ -53,6 +55,9 @@ object CsvExporter {
                 day.charges.takeIf { coverage.chargesKnown(day.day) }?.toString().orEmpty(),
                 ((day.screenOnMillis + 30_000L) / 60_000L)
                     .takeIf { coverage.screenOnKnown(day.day) }?.toString().orEmpty(),
+                // A plain dot decimal, whatever the phone's locale, so a spreadsheet reads a number.
+                day.storageUsedBytes.takeIf { it > 0L }
+                    ?.let { String.format(Locale.ROOT, "%.2f", it / BYTES_PER_GIB) }.orEmpty(),
             )
             appendLine(cells.joinToString(","))
         }
@@ -76,4 +81,6 @@ object CsvExporter {
                 appendLine(fields)
             }
         }
+
+    private const val BYTES_PER_GIB = 1024.0 * 1024.0 * 1024.0
 }

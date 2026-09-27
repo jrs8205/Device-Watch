@@ -2,6 +2,7 @@ package org.jarsi.devicewatch.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import org.jarsi.devicewatch.data.storageUsedBytes
 import org.jarsi.devicewatch.data.AppSettingsRepository
 import org.jarsi.devicewatch.data.AppUsageRepository
 import org.jarsi.devicewatch.data.CHARGE_LIMIT_MAX
@@ -180,6 +181,7 @@ class DashboardViewModel @Inject constructor(
                 usageHistory.recordUnlocks(today, totals.unlockCount)
             }
         }
+        storageUsedBytes(stats.usedStorageGb)?.let { usageHistory.recordStorageUsed(today, it) }
         usageHistory.purge(today)
 
 

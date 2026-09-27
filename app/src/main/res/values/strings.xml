@@ -350,6 +350,7 @@
     <string name="screen_on_label">Screen on</string>
     <string name="report_summary_screen_on">Screen on per day</string>
     <string name="report_column_screen_on">Screen on</string>
+    <string name="report_column_storage">Storage used</string>
     <string name="power_section">POWER</string>
     <string name="external_section">MEMORY CARDS AND USB</string>
     <string name="settings_state_section">DISPLAY AND SETTINGS</string>

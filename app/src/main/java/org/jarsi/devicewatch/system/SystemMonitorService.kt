@@ -19,6 +19,7 @@ import android.os.SystemClock
 import androidx.core.app.NotificationCompat
 import org.jarsi.devicewatch.R
 import android.os.BatteryManager
+import org.jarsi.devicewatch.data.storageUsedBytes
 import org.jarsi.devicewatch.data.AppSettingsRepository
 import org.jarsi.devicewatch.data.AppUsageRepository
 import org.jarsi.devicewatch.data.BatteryHistory
@@ -223,7 +224,10 @@ class SystemMonitorService : Service() {
         if (lastUsageRefreshMs != 0L && now - lastUsageRefreshMs < USAGE_REFRESH_INTERVAL_MS) return
         lastUsageRefreshMs = now
         // Before the usage-events pass, which bails out without usage access.
-        if (stats != null) maybeNotifyDataQuota(stats)
+        if (stats != null) {
+            maybeNotifyDataQuota(stats)
+            storageUsedBytes(stats.usedStorageGb)?.let { usageHistory.recordStorageUsed(LocalDate.now(), it) }
+        }
         try {
             val totals = appUsageRepository.usageTotalsToday() ?: return
             val today = LocalDate.now()

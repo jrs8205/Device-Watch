@@ -7,14 +7,33 @@ import java.time.LocalDate
 
 class HistoryListLogicTest {
 
-    private fun day(offset: Long, screen: Long = 0L, notifications: Int = 0) = HistoryDay(
+    private fun day(offset: Long, screen: Long = 0L, notifications: Int = 0, storage: Long = 0L) = HistoryDay(
         day = LocalDate.of(2026, 7, 1).plusDays(offset),
         screenTimeMillis = screen,
         unlocks = 0,
         notifications = notifications,
         boots = 0,
         charges = 0,
+        storageUsedBytes = storage,
     )
+
+    private val gb = 1024L * 1024 * 1024
+
+    @Test
+    fun `a day without a storage reading shows no amount rather than zero`() {
+        assertThat(HistoryMetric.Storage.rowValue(day(0, storage = 50 * gb))).isEqualTo(HistoryRowValue.Bytes(50 * gb))
+        assertThat(HistoryMetric.Storage.rowValue(day(1))).isEqualTo(HistoryRowValue.Bytes(null))
+    }
+
+    @Test
+    fun `the storage change compares with the last earlier day that has a reading`() {
+        // Newest first: day 3 read 52 GB, day 2 was not read, day 1 read 50 GB.
+        val newestFirst = listOf(day(3, storage = 52 * gb), day(2), day(1, storage = 50 * gb))
+
+        assertThat(storageChangeBytes(newestFirst, 0)).isEqualTo(2 * gb)
+        assertThat(storageChangeBytes(newestFirst, 1)).isNull()
+        assertThat(storageChangeBytes(newestFirst, 2)).isNull()
+    }
 
     @Test
     fun `list starts from the first day with data and is newest first`() {

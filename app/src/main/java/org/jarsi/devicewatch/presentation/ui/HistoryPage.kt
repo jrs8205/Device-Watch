@@ -59,6 +59,7 @@ import org.jarsi.devicewatch.R
 import org.jarsi.devicewatch.data.ChargeSession
 import org.jarsi.devicewatch.data.MonthlyDataUsage
 import org.jarsi.devicewatch.data.NotificationLogEntry
+import org.jarsi.devicewatch.data.UNAVAILABLE_TEXT
 import org.jarsi.devicewatch.presentation.HistoryDay
 import org.jarsi.devicewatch.presentation.HistoryViewModel
 import kotlinx.coroutines.delay
@@ -485,7 +486,7 @@ private fun HistoryDayList(days: List<HistoryDay>, metric: HistoryMetric) {
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Spacer(modifier = Modifier.height(8.dp))
-        days.forEach { day ->
+        days.forEachIndexed { index, day ->
             val isToday = day.day == today
             Row(
                 modifier = Modifier
@@ -506,12 +507,24 @@ private fun HistoryDayList(days: List<HistoryDay>, metric: HistoryMetric) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.weight(1f)
                 )
+                if (metric == HistoryMetric.Storage) {
+                    storageChangeBytes(days, index)?.let { change ->
+                        Text(
+                            text = storageChangeText(change),
+                            maxLines = 1,
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                    }
+                }
                 Text(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     text = when (val value = metric.rowValue(day)) {
                         is HistoryRowValue.Duration -> durationText(context, value.millis)
                         is HistoryRowValue.Count -> value.value.toString()
+                        is HistoryRowValue.Bytes -> value.bytes?.let(::bytesText) ?: UNAVAILABLE_TEXT
                     },
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold
@@ -608,6 +621,13 @@ private fun ChargeSessionRow(charge: ChargeSession) {
 }
 
 private const val CHARGES_SHOWN_FIRST = 5
+
+/** "+1,20 GB", "−350 MB" or "±0" beside a day's used storage. */
+private fun storageChangeText(changeBytes: Long): String = when {
+    changeBytes > 0L -> "+" + bytesText(changeBytes)
+    changeBytes < 0L -> "\u2212" + bytesText(-changeBytes)
+    else -> "\u00b10"
+}
 
 @Composable
 private fun NotificationLogRow(entry: NotificationLogEntry, modifier: Modifier = Modifier) {

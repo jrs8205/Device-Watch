@@ -38,7 +38,8 @@ class HtmlReportBuilderTest {
         boots: Int = 0,
         charges: Int = 0,
         screenOnMillis: Long = 0L,
-    ) = HistoryDay(date, screenTimeMillis, unlocks, notifications, boots, charges, screenOnMillis)
+        storageUsedBytes: Long = 0L,
+    ) = HistoryDay(date, screenTimeMillis, unlocks, notifications, boots, charges, screenOnMillis, storageUsedBytes)
 
     @Test
     fun `the daily table and the summary carry screen-on time`() {
@@ -54,6 +55,24 @@ class HtmlReportBuilderTest {
 
         assertThat(html).contains("<th>Screen on</th>")
         assertThat(html).contains("<div class=\"k\">Screen on per day</div><div class=\"v\">1 h 30 min</div>")
+    }
+
+    @Test
+    fun `the daily table carries the used storage, a dash for a day without a reading`() {
+        val gib = 1024L * 1024 * 1024
+        val html = HtmlReportBuilder.build(
+            data(
+                days = listOf(
+                    day(LocalDate.of(2026, 8, 13), screenTimeMillis = 60_000L, storageUsedBytes = 52 * gib + gib / 4),
+                    day(LocalDate.of(2026, 8, 14), screenTimeMillis = 60_000L),
+                ),
+            ),
+            labels,
+        )
+
+        assertThat(html).contains("<th>Storage used</th>")
+        assertThat(html).contains("<td>52.25 GB</td></tr>")
+        assertThat(html).contains("<td>\u2014</td></tr>")
     }
 
     @Test

@@ -30,6 +30,10 @@ class UsageHistoryImpl @Inject constructor(
         prefs.edit().putLong(key(PREFIX_SCREEN_ON, day), millis).apply()
     }
 
+    override fun recordStorageUsed(day: LocalDate, bytes: Long) {
+        prefs.edit().putLong(key(PREFIX_STORAGE, day), bytes).apply()
+    }
+
     override fun screenOnBetween(start: LocalDate, end: LocalDate): Long =
         sumLong(PREFIX_SCREEN_ON, start, end)
 
@@ -68,6 +72,7 @@ class UsageHistoryImpl @Inject constructor(
                 boots = prefs.getInt(key(PREFIX_BOOTS, day), 0),
                 charges = prefs.getInt(key(PREFIX_CHARGES, day), 0),
                 screenOnMillis = prefs.getLong(key(PREFIX_SCREEN_ON, day), 0L),
+                storageUsedBytes = prefs.getLong(key(PREFIX_STORAGE, day), 0L),
             )
             day = day.plusDays(1)
         }
@@ -115,5 +120,6 @@ class UsageHistoryImpl @Inject constructor(
         private const val PREFIX_BOOTS = "boots"
         private const val PREFIX_CHARGES = "charges"
         private const val PREFIX_SCREEN_ON = "screenon"
+        private const val PREFIX_STORAGE = "storage"
     }
 }
