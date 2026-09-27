@@ -58,4 +58,11 @@ data class DeviceState(
     val removableVolumes: List<Pair<String, String>> = emptyList(),
     /** Devices attached to the USB host port, comma-separated; a "none" text when empty. */
     val usbDevices: String = UNAVAILABLE_TEXT,
+    // Audio
+    /** Headphones, Bluetooth and other audio devices connected now, one per line. */
+    val audioDevices: String = UNAVAILABLE_TEXT,
+    /** Built-in microphones (Android 9+). */
+    val microphones: String = UNAVAILABLE_TEXT,
+    /** Spatial audio on, off or not supported (Android 12L+). */
+    val spatialAudio: String = UNAVAILABLE_TEXT,
 )

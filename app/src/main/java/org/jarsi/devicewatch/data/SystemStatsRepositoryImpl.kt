@@ -18,6 +18,8 @@ import android.hardware.Sensor
 import android.hardware.SensorManager
 import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraManager
+import android.media.AudioManager
+import android.media.AudioDeviceInfo
 import android.hardware.display.DisplayManager
 import android.hardware.biometrics.BiometricManager
 import android.hardware.usb.UsbManager
@@ -242,6 +244,63 @@ class SystemStatsRepositoryImpl @Inject constructor(
             otherExemptApps = readOtherExemptApps(powerManager),
             removableVolumes = readRemovableVolumes(),
             usbDevices = readUsbDevices(),
+            audioDevices = readAudioDevices(),
+            microphones = readMicrophones(),
+            spatialAudio = readSpatialAudio(),
+        )
+    }
+
+    private fun readAudioDevices(): String {
+        val audioManager = context.getSystemService(AudioManager::class.java) ?: return UNAVAILABLE_TEXT
+        val routes = try {
+            audioManager.getDevices(AudioManager.GET_DEVICES_INPUTS or AudioManager.GET_DEVICES_OUTPUTS)
+                .map { it.type to it.productName?.toString() }
+        } catch (_: Exception) {
+            return UNAVAILABLE_TEXT
+        }
+        val connected = AudioLogic.connected(routes, builtInName = Build.MODEL)
+        if (connected.isEmpty()) return context.getString(R.string.usb_devices_none)
+        return connected.joinToString("\n") { endpoint ->
+            val kind = context.getString(
+                when (endpoint.kind) {
+                    AudioDeviceKind.WIRED -> R.string.audio_kind_wired
+                    AudioDeviceKind.USB -> R.string.audio_kind_usb
+                    AudioDeviceKind.BLUETOOTH -> R.string.audio_kind_bluetooth
+                    AudioDeviceKind.HEARING_AID -> R.string.audio_kind_hearing_aid
+                    AudioDeviceKind.HDMI -> R.string.audio_kind_hdmi
+                    AudioDeviceKind.DOCK -> R.string.audio_kind_dock
+                    AudioDeviceKind.LINE -> R.string.audio_kind_line
+                }
+            )
+            endpoint.name?.let { context.getString(R.string.camera_lens_line, kind, it) } ?: kind
+        }
+    }
+
+    private fun readMicrophones(): String {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) return UNAVAILABLE_TEXT
+        val audioManager = context.getSystemService(AudioManager::class.java) ?: return UNAVAILABLE_TEXT
+        val builtIn = try {
+            audioManager.microphones.count { it.type == AudioDeviceInfo.TYPE_BUILTIN_MIC }
+        } catch (_: Exception) {
+            return UNAVAILABLE_TEXT
+        }
+        return if (builtIn > 0) builtIn.toString() else UNAVAILABLE_TEXT
+    }
+
+    private fun readSpatialAudio(): String {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S_V2) return UNAVAILABLE_TEXT
+        val spatializer = context.getSystemService(AudioManager::class.java)?.spatializer ?: return UNAVAILABLE_TEXT
+        val state = try {
+            AudioLogic.spatialAudio(Build.VERSION.SDK_INT, spatializer.immersiveAudioLevel, spatializer.isEnabled)
+        } catch (_: Exception) {
+            null
+        } ?: return UNAVAILABLE_TEXT
+        return context.getString(
+            when (state) {
+                SpatialAudio.ON -> R.string.audio_spatial_on
+                SpatialAudio.OFF -> R.string.audio_spatial_off
+                SpatialAudio.NOT_SUPPORTED -> R.string.audio_spatial_not_supported
+            }
         )
     }
 

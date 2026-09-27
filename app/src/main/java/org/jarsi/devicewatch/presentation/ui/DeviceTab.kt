@@ -128,6 +128,12 @@ internal fun DeviceTab(uiState: DashboardUiState) {
                 }
                 DeviceFact(R.string.usb_devices, state.usbDevices)
             }
+
+            SettingsSectionCard(titleRes = R.string.audio_section) {
+                DeviceFact(R.string.audio_devices, state.audioDevices)
+                if (state.microphones != UNAVAILABLE_TEXT) DeviceFact(R.string.audio_microphones, state.microphones)
+                if (state.spatialAudio != UNAVAILABLE_TEXT) DeviceFact(R.string.audio_spatial, state.spatialAudio)
+            }
         }
 
         SettingsSectionCard(titleRes = R.string.sim_info_section) {
