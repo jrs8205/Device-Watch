@@ -189,6 +189,34 @@ class DashboardViewModelTest {
         }
 
     @Test
+    fun `given two refreshes finishing out of order, then the older one's breakdown is dropped`() =
+        runTest(dispatcher) {
+            // Codex round 6: switching day to billing cycle while the day's breakdown
+            // was still being read let that late read overwrite the cycle's.
+            val dayRead = kotlinx.coroutines.CompletableDeferred<DataBreakdown>()
+            val cycleRead = kotlinx.coroutines.CompletableDeferred<DataBreakdown>()
+            val reads = ArrayDeque(listOf(dayRead, cycleRead))
+            val repository = FakeSystemStatsRepository(
+                sampleStats(),
+                breakdownProvider = { reads.removeFirst().await() },
+            )
+            val viewModel = buildViewModel(repository = repository)
+            val dayBreakdown = DataBreakdown(TrafficSplit(10, 90), null, 0L)
+            val cycleBreakdown = DataBreakdown(TrafficSplit(60, 40), null, 0L)
+
+            viewModel.refresh()
+            advanceUntilIdle()
+            viewModel.onDataCounterModeSelected(DataCounterMode.BILLING_CYCLE)
+            advanceUntilIdle()
+            cycleRead.complete(cycleBreakdown)
+            advanceUntilIdle()
+            dayRead.complete(dayBreakdown)
+            advanceUntilIdle()
+
+            assertThat(viewModel.uiState.value.dataBreakdown).isEqualTo(cycleBreakdown)
+        }
+
+    @Test
     fun `given a refresh, then the storage breakdown reaches the screen`() =
         runTest(dispatcher) {
             val storage = StorageBreakdown(
@@ -678,6 +706,8 @@ private class FakeSystemStatsRepository(
     private val breakdown: DataBreakdown = DataBreakdown.NONE,
     private val storage: StorageBreakdown? = null,
     private val state: DeviceState = DeviceState(),
+    /** Overrides [breakdown] per call, so a test can hold one read back. */
+    private val breakdownProvider: (suspend (Long) -> DataBreakdown)? = null,
 ) : SystemStatsRepository {
     override suspend fun deviceState(): DeviceState = state
 
@@ -692,7 +722,7 @@ private class FakeSystemStatsRepository(
 
     override suspend fun dataBreakdown(startMillis: Long): DataBreakdown {
         breakdownStartMillis = startMillis
-        return breakdown
+        return breakdownProvider?.invoke(startMillis) ?: breakdown
     }
 
     override suspend fun getStats(): SystemStats {

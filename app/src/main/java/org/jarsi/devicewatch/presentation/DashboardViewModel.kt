@@ -141,7 +141,16 @@ class DashboardViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Bumped by every refresh; a refresh publishes only while it is still the
+     * latest. Refreshes overlap (resume, pull, a counting-mode change), and an
+     * older one finishing last would otherwise overwrite the newer figures — a
+     * day's data breakdown landing over the billing cycle's. Main thread only.
+     */
+    private var refreshGeneration = 0
+
     private suspend fun refreshInternal() {
+        val generation = ++refreshGeneration
         val stats = repository.getStats()
         val widgetInstalled = widgetController.pushStats(stats)
 
@@ -205,6 +214,7 @@ class DashboardViewModel @Inject constructor(
                 daysCompared = w.daysCompared,
             )
         }
+        if (generation != refreshGeneration) return
         _uiState.update {
             it.copy(
                 stats = stats,
@@ -246,6 +256,7 @@ class DashboardViewModel @Inject constructor(
         )
         val storage = repository.storageBreakdown()
         val deviceState = repository.deviceState()
+        if (generation != refreshGeneration) return
         _uiState.update {
             it.copy(dataBreakdown = breakdown, storageBreakdown = storage, deviceState = deviceState)
         }
