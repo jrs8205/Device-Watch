@@ -15,12 +15,14 @@ internal data class HistoryCoverage(
     val notificationsSince: LocalDate?,
     val bootsSince: LocalDate?,
     val chargesSince: LocalDate?,
+    val screenOnSince: LocalDate? = null,
 ) {
     fun screenTimeKnown(day: LocalDate): Boolean = known(screenTimeSince, day)
     fun unlocksKnown(day: LocalDate): Boolean = known(unlocksSince, day)
     fun notificationsKnown(day: LocalDate): Boolean = known(notificationsSince, day)
     fun bootsKnown(day: LocalDate): Boolean = known(bootsSince, day)
     fun chargesKnown(day: LocalDate): Boolean = known(chargesSince, day)
+    fun screenOnKnown(day: LocalDate): Boolean = known(screenOnSince, day)
 
     private fun known(since: LocalDate?, day: LocalDate): Boolean =
         since != null && !day.isBefore(since)
@@ -32,6 +34,7 @@ internal data class HistoryCoverage(
             notificationsSince = days.firstDayWhere { it.notifications > 0 },
             bootsSince = days.firstDayWhere { it.boots > 0 },
             chargesSince = days.firstDayWhere { it.charges > 0 },
+            screenOnSince = days.firstDayWhere { it.screenOnMillis > 0L },
         )
 
         private fun List<HistoryDay>.firstDayWhere(hasData: (HistoryDay) -> Boolean): LocalDate? =

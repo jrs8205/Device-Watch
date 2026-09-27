@@ -218,6 +218,24 @@ class DashboardViewModelTest {
         }
 
     @Test
+    fun `given usage access, then screen-on time is backfilled and shown for the period`() =
+        runTest(dispatcher) {
+            val today = java.time.LocalDate.now()
+            val appUsage = FakeAppUsageRepository(
+                screenOn = mapOf(today to 5_400_000L, today.minusDays(1) to 3_600_000L),
+            )
+            val history = FakeUsageHistory()
+            val viewModel = buildViewModel(appUsage = appUsage, history = history)
+
+            viewModel.refresh()
+            advanceUntilIdle()
+
+            assertThat(history.screenOn[today.minusDays(1)]).isEqualTo(3_600_000L)
+            // The counting period is a day by default: only today's figure shows.
+            assertThat(viewModel.uiState.value.screenOnMillis).isEqualTo(5_400_000L)
+        }
+
+    @Test
     fun `given a committed charge limit, then the monitor is told to apply it at once`() =
         runTest(dispatcher) {
             // Given

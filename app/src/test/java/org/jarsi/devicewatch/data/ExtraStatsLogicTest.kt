@@ -2,7 +2,10 @@ package org.jarsi.devicewatch.data
 
 import com.google.common.truth.Truth.assertThat
 import org.junit.Test
+import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.YearMonth
+import java.time.ZoneOffset
 
 class ExtraStatsLogicTest {
 
@@ -314,5 +317,71 @@ class ExtraStatsLogicTest {
             .isEqualTo("16 (API 36)")
         assertThat(ExtraStatsLogic.androidVersionText("15", sdkInt = 35, sdkIntFull = null))
             .isEqualTo("15 (API 35)")
+    }
+
+    private val utc = ZoneOffset.UTC
+    private fun at(day: Int, hour: Int, minute: Int = 0): Long =
+        LocalDateTime.of(2026, 9, day, hour, minute).toInstant(utc).toEpochMilli()
+
+    @Test
+    fun `screen-on time sums the intervals between on and off events per day`() {
+        val events = listOf(
+            ScreenEvent(at(20, 8), on = true),
+            ScreenEvent(at(20, 9), on = false),
+            ScreenEvent(at(20, 12), on = true),
+            ScreenEvent(at(20, 12, 30), on = false),
+        )
+        val byDay = ExtraStatsLogic.screenOnByDay(events, startMillis = at(20, 0), endMillis = at(21, 0), zone = utc)
+
+        assertThat(byDay).containsExactly(LocalDate.of(2026, 9, 20), 90 * 60_000L)
+    }
+
+    @Test
+    fun `an interval across midnight is split between the two days`() {
+        val events = listOf(
+            ScreenEvent(at(20, 23), on = true),
+            ScreenEvent(at(21, 1), on = false),
+        )
+        val byDay = ExtraStatsLogic.screenOnByDay(events, startMillis = at(20, 0), endMillis = at(22, 0), zone = utc)
+
+        assertThat(byDay).containsExactly(
+            LocalDate.of(2026, 9, 20), 60 * 60_000L,
+            LocalDate.of(2026, 9, 21), 60 * 60_000L,
+        )
+    }
+
+    @Test
+    fun `a screen already on when the window opens counts from its start`() {
+        // The first event turns the screen off: it was on before the window.
+        val events = listOf(ScreenEvent(at(20, 0, 30), on = false))
+        val byDay = ExtraStatsLogic.screenOnByDay(events, startMillis = at(20, 0), endMillis = at(20, 6), zone = utc)
+
+        assertThat(byDay).containsExactly(LocalDate.of(2026, 9, 20), 30 * 60_000L)
+    }
+
+    @Test
+    fun `a screen still on counts until now`() {
+        val events = listOf(ScreenEvent(at(20, 10), on = true))
+        val byDay = ExtraStatsLogic.screenOnByDay(events, startMillis = at(20, 0), endMillis = at(20, 10, 45), zone = utc)
+
+        assertThat(byDay).containsExactly(LocalDate.of(2026, 9, 20), 45 * 60_000L)
+    }
+
+    @Test
+    fun `a repeated on event does not restart the interval`() {
+        val events = listOf(
+            ScreenEvent(at(20, 10), on = true),
+            ScreenEvent(at(20, 10, 20), on = true),
+            ScreenEvent(at(20, 11), on = false),
+            ScreenEvent(at(20, 11, 5), on = false),
+        )
+        val byDay = ExtraStatsLogic.screenOnByDay(events, startMillis = at(20, 0), endMillis = at(21, 0), zone = utc)
+
+        assertThat(byDay).containsExactly(LocalDate.of(2026, 9, 20), 60 * 60_000L)
+    }
+
+    @Test
+    fun `no events give no screen-on time`() {
+        assertThat(ExtraStatsLogic.screenOnByDay(emptyList(), at(20, 0), at(21, 0), utc)).isEmpty()
     }
 }

@@ -31,6 +31,7 @@ data class HtmlReportLabels(
     val generatedAt: String,
     val summarySection: String,
     val summaryScreenTime: String,
+    val summaryScreenOn: String,
     val summaryUnlocks: String,
     val summaryNotifications: String,
     val summaryData: String,
@@ -39,6 +40,7 @@ data class HtmlReportLabels(
     val daysSection: String,
     val columnDay: String,
     val columnScreenTime: String,
+    val columnScreenOn: String,
     val columnUnlocks: String,
     val columnNotifications: String,
     val columnBoots: String,
@@ -207,6 +209,7 @@ object HtmlReportBuilder {
         val screenDays = data.days.filter { coverage.screenTimeKnown(it.day) }
         val unlockDays = data.days.filter { coverage.unlocksKnown(it.day) }
         val notificationDays = data.days.filter { coverage.notificationsKnown(it.day) }
+        val screenOnDays = data.days.filter { coverage.screenOnKnown(it.day) }
         val nothingCollected = screenDays.isEmpty() && unlockDays.isEmpty() && notificationDays.isEmpty()
         if (nothingCollected && data.monthly.isEmpty()) {
             appendEmpty(labels)
@@ -218,6 +221,11 @@ object HtmlReportBuilder {
             labels.summaryScreenTime,
             if (screenDays.isEmpty()) DASH
             else durationText(screenDays.sumOf { it.screenTimeMillis } / screenDays.size, labels),
+        )
+        appendCard(
+            labels.summaryScreenOn,
+            if (screenOnDays.isEmpty()) DASH
+            else durationText(screenOnDays.sumOf { it.screenOnMillis } / screenOnDays.size, labels),
         )
         appendCard(
             labels.summaryUnlocks,
@@ -392,6 +400,8 @@ object HtmlReportBuilder {
                 labels.columnNotifications,
                 labels.columnBoots,
                 labels.columnCharges,
+                // Added in 1.6.0; last, like in the CSV, so the older columns keep their places.
+                labels.columnScreenOn,
             ),
             tableClass = "days",
             tableName = "days",
@@ -414,6 +424,11 @@ object HtmlReportBuilder {
             append("</td>")
             append("<td>").append(if (coverage.bootsKnown(day.day)) day.boots.toString() else DASH).append("</td>")
             append("<td>").append(if (coverage.chargesKnown(day.day)) day.charges.toString() else DASH).append("</td>")
+            append("<td>")
+            append(
+                if (coverage.screenOnKnown(day.day)) escape(durationText(day.screenOnMillis, labels)) else DASH
+            )
+            append("</td>")
             append("</tr>\n")
         }
         appendTableEnd()

@@ -9,6 +9,8 @@ data class UsageDayTally(
     val screenTimeMillis: Long,
     val boots: Int,
     val charges: Int,
+    /** Time the display was on, as opposed to [screenTimeMillis] of app use. */
+    val screenOnMillis: Long = 0L,
 )
 
 /**
@@ -23,6 +25,10 @@ interface UsageHistory {
     fun recordUnlocks(day: LocalDate, count: Int)
 
     fun recordScreenTime(day: LocalDate, millis: Long)
+
+    fun recordScreenOn(day: LocalDate, millis: Long)
+
+    fun screenOnBetween(start: LocalDate, end: LocalDate): Long
 
     /**
      * Registers the current Settings.Global.BOOT_COUNT and attributes the delta
@@ -48,7 +54,7 @@ interface UsageHistory {
     fun purge(today: LocalDate)
 }
 
-internal val HISTORY_PREFIXES = setOf("unlocks", "screen", "boots", "charges")
+internal val HISTORY_PREFIXES = setOf("unlocks", "screen", "boots", "charges", "screenon")
 
 /** Baseline key for the boot-count delta logic; survives purging. */
 internal const val KEY_LAST_BOOT_COUNT = "last_boot_count"

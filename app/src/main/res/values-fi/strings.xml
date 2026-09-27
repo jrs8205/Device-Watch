@@ -293,6 +293,9 @@
 
     <string name="system_info_section">JÄRJESTELMÄ</string>
     <string name="device_info_ram_advertised">RAM myyntitietojen mukaan</string>
+    <string name="screen_on_label">Näyttö päällä</string>
+    <string name="report_summary_screen_on">Näyttö päällä / vrk</string>
+    <string name="report_column_screen_on">Näyttö päällä</string>
     <string name="power_section">VIRRANHALLINTA</string>
     <string name="power_save_mode">Virransäästö päällä</string>
     <string name="power_device_idle">Syvä lepotila (Doze) nyt</string>

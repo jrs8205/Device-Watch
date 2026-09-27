@@ -49,6 +49,13 @@ interface AppUsageRepository {
      */
     suspend fun screenTimeByDay(days: Int): Map<LocalDate, Long>
 
+    /**
+     * Time the screen was on per local day over the last [days] days, from the
+     * SCREEN_INTERACTIVE / SCREEN_NON_INTERACTIVE events (Android 9+) — the display,
+     * not app use. Android keeps these events for about a week.
+     */
+    suspend fun screenOnByDay(days: Int): Map<LocalDate, Long>
+
     /** Precise totals since local midnight in one event pass; null without access. */
     suspend fun usageTotalsToday(): UsageTotals?
 

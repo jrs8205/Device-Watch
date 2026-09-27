@@ -62,6 +62,8 @@ data class DashboardUiState(
     val dataQuotaGb: Double = 0.0,
     // Usage counters, scoped to the selected counting period (day or billing cycle).
     val screenTimeMillis: Long = -1L,
+    /** Time the display was on in the counting period; -1 without usage access. */
+    val screenOnMillis: Long = -1L,
     val unlockCount: Int = UNAVAILABLE_INT,
     val notificationCount: Int = UNAVAILABLE_INT,
     val bootCount: Int = 0,
@@ -159,6 +161,8 @@ class DashboardViewModel @Inject constructor(
                 .forEach { (day, millis) -> usageHistory.recordScreenTime(day, millis) }
             appUsageRepository.unlockCountsByDay(HISTORY_BACKFILL_DAYS)
                 .forEach { (day, count) -> usageHistory.recordUnlocks(day, count) }
+            appUsageRepository.screenOnByDay(HISTORY_BACKFILL_DAYS)
+                .forEach { (day, millis) -> usageHistory.recordScreenOn(day, millis) }
             appUsageRepository.usageTotalsToday()?.let { totals ->
                 usageHistory.recordScreenTime(today, totals.screenTimeMillis)
                 usageHistory.recordUnlocks(today, totals.unlockCount)
@@ -210,6 +214,11 @@ class DashboardViewModel @Inject constructor(
                 unlockCountingSupported = supportsUnlocks,
                 screenTimeMillis = if (hasUsageAccess) {
                     usageHistory.screenTimeBetween(periodStart, today)
+                } else {
+                    -1L
+                },
+                screenOnMillis = if (hasUsageAccess) {
+                    usageHistory.screenOnBetween(periodStart, today)
                 } else {
                     -1L
                 },

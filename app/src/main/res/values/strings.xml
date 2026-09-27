@@ -297,6 +297,9 @@
 
     <string name="system_info_section">SYSTEM</string>
     <string name="device_info_ram_advertised">RAM as sold</string>
+    <string name="screen_on_label">Screen on</string>
+    <string name="report_summary_screen_on">Screen on per day</string>
+    <string name="report_column_screen_on">Screen on</string>
     <string name="power_section">POWER</string>
     <string name="power_save_mode">Battery saver on</string>
     <string name="power_device_idle">Deep idle (Doze) now</string>

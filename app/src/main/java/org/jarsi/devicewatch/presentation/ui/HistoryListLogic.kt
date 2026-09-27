@@ -7,6 +7,7 @@ import org.jarsi.devicewatch.presentation.HistoryDay
 /** Metric shown by the history day list; label reuses the Overview usage-counter strings. */
 internal enum class HistoryMetric(@StringRes val labelRes: Int) {
     ScreenTime(R.string.screen_time_total_label),
+    ScreenOn(R.string.screen_on_label),
     Unlocks(R.string.unlock_count_label),
     Notifications(R.string.notification_count_label),
     Boots(R.string.boot_count_label),
@@ -14,6 +15,7 @@ internal enum class HistoryMetric(@StringRes val labelRes: Int) {
 
     fun valueOf(day: HistoryDay): Long = when (this) {
         ScreenTime -> day.screenTimeMillis
+        ScreenOn -> day.screenOnMillis
         Unlocks -> day.unlocks.toLong()
         Notifications -> day.notifications.toLong()
         Boots -> day.boots.toLong()

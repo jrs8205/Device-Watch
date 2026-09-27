@@ -44,6 +44,8 @@ data class HistoryDay(
     val notifications: Int,
     val boots: Int,
     val charges: Int,
+    /** Time the display was on; zero until collected. */
+    val screenOnMillis: Long = 0L,
 )
 
 data class HistoryUiState(
@@ -121,6 +123,7 @@ class HistoryViewModel @Inject constructor(
                         HistoryDay(
                             day = tally.day,
                             screenTimeMillis = tally.screenTimeMillis,
+                            screenOnMillis = tally.screenOnMillis,
                             unlocks = tally.unlocks,
                             notifications = notificationStats.totalForDay(tally.day),
                             boots = tally.boots,
@@ -282,6 +285,7 @@ class HistoryViewModel @Inject constructor(
         generatedAt = context.getString(R.string.report_generated_at),
         summarySection = context.getString(R.string.report_summary_section),
         summaryScreenTime = context.getString(R.string.report_summary_screen_time),
+        summaryScreenOn = context.getString(R.string.report_summary_screen_on),
         summaryUnlocks = context.getString(R.string.report_summary_unlocks),
         summaryNotifications = context.getString(R.string.report_summary_notifications),
         summaryData = context.getString(R.string.report_summary_data),
@@ -290,6 +294,7 @@ class HistoryViewModel @Inject constructor(
         daysSection = context.getString(R.string.report_days_section),
         columnDay = context.getString(R.string.report_column_day),
         columnScreenTime = context.getString(R.string.report_column_screen_time),
+        columnScreenOn = context.getString(R.string.report_column_screen_on),
         columnUnlocks = context.getString(R.string.report_column_unlocks),
         columnNotifications = context.getString(R.string.report_column_notifications),
         columnBoots = context.getString(R.string.report_column_boots),

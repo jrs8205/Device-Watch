@@ -37,7 +37,24 @@ class HtmlReportBuilderTest {
         notifications: Int = 0,
         boots: Int = 0,
         charges: Int = 0,
-    ) = HistoryDay(date, screenTimeMillis, unlocks, notifications, boots, charges)
+        screenOnMillis: Long = 0L,
+    ) = HistoryDay(date, screenTimeMillis, unlocks, notifications, boots, charges, screenOnMillis)
+
+    @Test
+    fun `the daily table and the summary carry screen-on time`() {
+        val html = HtmlReportBuilder.build(
+            data(
+                days = listOf(
+                    day(LocalDate.of(2026, 8, 13), screenTimeMillis = 60_000L, screenOnMillis = 7_200_000L),
+                    day(LocalDate.of(2026, 8, 14), screenTimeMillis = 60_000L, screenOnMillis = 3_600_000L),
+                ),
+            ),
+            labels,
+        )
+
+        assertThat(html).contains("<th>Screen on</th>")
+        assertThat(html).contains("<div class=\"k\">Screen on per day</div><div class=\"v\">1 h 30 min</div>")
+    }
 
     @Test
     fun `document is a self-contained mobile page`() {

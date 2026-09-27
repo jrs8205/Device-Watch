@@ -8,7 +8,7 @@ import javax.inject.Singleton
 
 /**
  * SharedPreferences-backed daily tallies ("usage_history"). Tiny dataset
- * (four ints/longs per day, 62-day retention) with synchronous writes from
+ * (five ints/longs per day, 62-day retention) with synchronous writes from
  * broadcast receivers — the same trade-off as [NotificationStatsImpl].
  */
 @Singleton
@@ -25,6 +25,13 @@ class UsageHistoryImpl @Inject constructor(
     override fun recordScreenTime(day: LocalDate, millis: Long) {
         prefs.edit().putLong(key(PREFIX_SCREEN, day), millis).apply()
     }
+
+    override fun recordScreenOn(day: LocalDate, millis: Long) {
+        prefs.edit().putLong(key(PREFIX_SCREEN_ON, day), millis).apply()
+    }
+
+    override fun screenOnBetween(start: LocalDate, end: LocalDate): Long =
+        sumLong(PREFIX_SCREEN_ON, start, end)
 
     override fun registerBootCount(day: LocalDate, bootCountTotal: Int) {
         val delta = bootCountDelta(prefs.getInt(KEY_LAST_BOOT_COUNT, -1), bootCountTotal)
@@ -60,6 +67,7 @@ class UsageHistoryImpl @Inject constructor(
                 screenTimeMillis = prefs.getLong(key(PREFIX_SCREEN, day), 0L),
                 boots = prefs.getInt(key(PREFIX_BOOTS, day), 0),
                 charges = prefs.getInt(key(PREFIX_CHARGES, day), 0),
+                screenOnMillis = prefs.getLong(key(PREFIX_SCREEN_ON, day), 0L),
             )
             day = day.plusDays(1)
         }
@@ -106,5 +114,6 @@ class UsageHistoryImpl @Inject constructor(
         private const val PREFIX_SCREEN = "screen"
         private const val PREFIX_BOOTS = "boots"
         private const val PREFIX_CHARGES = "charges"
+        private const val PREFIX_SCREEN_ON = "screenon"
     }
 }

@@ -249,6 +249,31 @@ class AppUsageRepositoryImpl @Inject constructor(
         totals
     }
 
+    override suspend fun screenOnByDay(days: Int): Map<LocalDate, Long> = withContext(dispatcher) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P || !hasUsageAccess()) return@withContext emptyMap()
+        val usageStatsManager = usageStatsManager() ?: return@withContext emptyMap()
+        val zone = ZoneId.systemDefault()
+        val startMillis = LocalDate.now()
+            .minusDays((days - 1).coerceAtLeast(0).toLong())
+            .atStartOfDay(zone).toInstant().toEpochMilli()
+        val end = System.currentTimeMillis()
+        val screenEvents = mutableListOf<ScreenEvent>()
+        try {
+            val events = usageStatsManager.queryEvents(startMillis, end) ?: return@withContext emptyMap()
+            val event = UsageEvents.Event()
+            while (events.hasNextEvent()) {
+                events.getNextEvent(event)
+                when (event.eventType) {
+                    UsageEvents.Event.SCREEN_INTERACTIVE -> screenEvents += ScreenEvent(event.timeStamp, on = true)
+                    UsageEvents.Event.SCREEN_NON_INTERACTIVE -> screenEvents += ScreenEvent(event.timeStamp, on = false)
+                }
+            }
+        } catch (_: Exception) {
+            return@withContext emptyMap()
+        }
+        ExtraStatsLogic.screenOnByDay(screenEvents, startMillis, end, zone)
+    }
+
     override suspend fun usageTotalsToday(): UsageTotals? = withContext(dispatcher) {
         if (!hasUsageAccess()) return@withContext null
         val usageStatsManager = usageStatsManager() ?: return@withContext null

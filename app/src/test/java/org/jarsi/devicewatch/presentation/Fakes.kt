@@ -121,6 +121,7 @@ internal class FakeAppUsageRepository(
     var supportsUnlocks: Boolean = true,
     var unlocksByDay: Map<LocalDate, Int> = emptyMap(),
     var screenByDay: Map<LocalDate, Long> = emptyMap(),
+    var screenOn: Map<LocalDate, Long> = emptyMap(),
     var totalsToday: UsageTotals? = null,
     var launchers: Set<String> = emptySet(),
     var unlocksSince: Int? = 0,
@@ -149,6 +150,9 @@ internal class FakeAppUsageRepository(
 
     override suspend fun unlockCountsByDay(days: Int): Map<LocalDate, Int> =
         if (hasAccess && supportsUnlocks) unlocksByDay else emptyMap()
+
+    override suspend fun screenOnByDay(days: Int): Map<LocalDate, Long> =
+        if (hasAccess) screenOn else emptyMap()
 
     override suspend fun screenTimeByDay(days: Int): Map<LocalDate, Long> =
         if (hasAccess) screenByDay else emptyMap()
@@ -190,6 +194,7 @@ internal class FakeNotificationStats(
 internal class FakeUsageHistory : UsageHistory {
     val unlocks = mutableMapOf<LocalDate, Int>()
     val screen = mutableMapOf<LocalDate, Long>()
+    val screenOn = mutableMapOf<LocalDate, Long>()
     val boots = mutableMapOf<LocalDate, Int>()
     val charges = mutableMapOf<LocalDate, Int>()
     var lastBootCount: Int = -1
@@ -202,6 +207,13 @@ internal class FakeUsageHistory : UsageHistory {
     override fun recordScreenTime(day: LocalDate, millis: Long) {
         screen[day] = millis
     }
+
+    override fun recordScreenOn(day: LocalDate, millis: Long) {
+        screenOn[day] = millis
+    }
+
+    override fun screenOnBetween(start: LocalDate, end: LocalDate): Long =
+        screenOn.filterKeys { !it.isBefore(start) && !it.isAfter(end) }.values.sum()
 
     override fun registerBootCount(day: LocalDate, bootCountTotal: Int) {
         if (lastBootCount in 0 until bootCountTotal) {
@@ -234,6 +246,7 @@ internal class FakeUsageHistory : UsageHistory {
                 day = day,
                 unlocks = unlocks[day] ?: 0,
                 screenTimeMillis = screen[day] ?: 0L,
+                screenOnMillis = screenOn[day] ?: 0L,
                 boots = boots[day] ?: 0,
                 charges = charges[day] ?: 0,
             )
@@ -256,6 +269,7 @@ internal val TEST_REPORT_LABELS = HtmlReportLabels(
     generatedAt = "Created %1\$s",
     summarySection = "Summary",
     summaryScreenTime = "Screen time / day",
+    summaryScreenOn = "Screen on per day",
     summaryUnlocks = "Unlocks / day",
     summaryNotifications = "Notifications / day",
     summaryData = "Data total",
@@ -264,6 +278,7 @@ internal val TEST_REPORT_LABELS = HtmlReportLabels(
     daysSection = "Daily usage",
     columnDay = "Day",
     columnScreenTime = "Screen time",
+    columnScreenOn = "Screen on",
     columnUnlocks = "Unlocks",
     columnNotifications = "Notifications",
     columnBoots = "Restarts",

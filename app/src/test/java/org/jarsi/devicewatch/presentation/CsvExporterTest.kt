@@ -45,10 +45,11 @@ class CsvExporterTest {
         val csv = CsvExporter.usageHistoryCsv(days)
 
         val lines = csv.trimEnd().lines()
-        assertThat(lines[0]).isEqualTo("day,screen_time_minutes,unlocks,notifications,boots,charges")
-        // 90 s rounds to 2 minutes; a full hour is exactly 60.
-        assertThat(lines[1]).isEqualTo("2026-08-13,2,12,7,1,2")
-        assertThat(lines[2]).isEqualTo("2026-08-14,60,3,0,0,1")
+        assertThat(lines[0]).isEqualTo("day,screen_time_minutes,unlocks,notifications,boots,charges,screen_on_minutes")
+        // 90 s rounds to 2 minutes; a full hour is exactly 60. Screen-on time was
+        // never collected here, so its column stays empty.
+        assertThat(lines[1]).isEqualTo("2026-08-13,2,12,7,1,2,")
+        assertThat(lines[2]).isEqualTo("2026-08-14,60,3,0,0,1,")
         assertThat(lines).hasSize(3)
     }
 
@@ -77,8 +78,21 @@ class CsvExporterTest {
 
         // Notifications, boots and charges were first recorded on the 14th; the
         // 13th's zeros are "not collected yet" and stay empty rather than 0.
-        assertThat(lines[1]).isEqualTo("2026-08-13,2,12,,,")
-        assertThat(lines[2]).isEqualTo("2026-08-14,60,3,7,1,1")
+        assertThat(lines[1]).isEqualTo("2026-08-13,2,12,,,,")
+        assertThat(lines[2]).isEqualTo("2026-08-14,60,3,7,1,1,")
+    }
+
+    @Test
+    fun `usage history csv carries screen-on minutes from the first day they were collected`() {
+        val days = listOf(
+            HistoryDay(LocalDate.of(2026, 8, 13), 60_000L, 1, 0, 0, 0, screenOnMillis = 0L),
+            HistoryDay(LocalDate.of(2026, 8, 14), 60_000L, 1, 0, 0, 0, screenOnMillis = 5_400_000L),
+        )
+
+        val lines = CsvExporter.usageHistoryCsv(days).trimEnd().lines()
+
+        assertThat(lines[1]).endsWith(",")
+        assertThat(lines[2]).endsWith(",90")
     }
 
     @Test

@@ -1,10 +1,16 @@
 package org.jarsi.devicewatch.data
 
 import java.time.DateTimeException
+import java.time.Instant
+import java.time.LocalDate
 import java.time.YearMonth
+import java.time.ZoneId
 
 /** Where the charge comes from, as `BatteryManager.EXTRA_PLUGGED` reports it. */
 enum class ChargeSource { NONE, AC, USB, WIRELESS, DOCK }
+
+/** A `UsageEvents` SCREEN_INTERACTIVE (on) or SCREEN_NON_INTERACTIVE (off) event. */
+data class ScreenEvent(val timeMillis: Long, val on: Boolean)
 
 /** How the battery is being charged, per the health HAL's BatteryChargingState. */
 enum class ChargingState { UNKNOWN, NORMAL, TOO_COLD, TOO_HOT, LONG_LIFE, ADAPTIVE }
@@ -119,6 +125,43 @@ object ExtraStatsLogic {
     }
 
     private const val GIB = 1024.0 * 1024.0 * 1024.0
+
+    /**
+     * Time the screen was on per local day between [startMillis] and [endMillis],
+     * from its on/off events. An interval over midnight is split between the days.
+     * A first event that turns the screen off means it was on when the window
+     * opened; one still on at the end counts until [endMillis]. Repeated events of
+     * the same kind change nothing. No events give no time: the state is unknown.
+     */
+    fun screenOnByDay(
+        events: List<ScreenEvent>,
+        startMillis: Long,
+        endMillis: Long,
+        zone: ZoneId,
+    ): Map<LocalDate, Long> {
+        val sorted = events.filter { it.timeMillis in startMillis..endMillis }.sortedBy { it.timeMillis }
+        if (sorted.isEmpty()) return emptyMap()
+        val totals = linkedMapOf<LocalDate, Long>()
+        fun addInterval(from: Long, to: Long) {
+            var cursor = from
+            while (cursor < to) {
+                val day = Instant.ofEpochMilli(cursor).atZone(zone).toLocalDate()
+                val nextMidnight = day.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
+                val sliceEnd = minOf(to, nextMidnight)
+                totals.merge(day, sliceEnd - cursor, Long::plus)
+                cursor = sliceEnd
+            }
+        }
+        var on = !sorted.first().on
+        var since = startMillis
+        for (event in sorted) {
+            if (on && !event.on) addInterval(since, event.timeMillis)
+            if (!on && event.on) since = event.timeMillis
+            on = event.on
+        }
+        if (on) addInterval(since, endMillis)
+        return totals
+    }
 
     /**
      * `PowerManager.getBatteryDischargePrediction()` in whole minutes, or null when
