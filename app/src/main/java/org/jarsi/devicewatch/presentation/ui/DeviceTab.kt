@@ -90,6 +90,7 @@ internal fun DeviceTab(uiState: DashboardUiState) {
                 DeviceFact(R.string.power_save_mode, state.powerSaveMode)
                 DeviceFact(R.string.power_device_idle, state.deviceIdle)
                 DeviceFact(R.string.power_battery_optimization_exempt, state.batteryOptimizationExempt)
+                DeviceFact(R.string.power_other_exempt_apps, state.otherExemptApps)
             }
 
             SettingsSectionCard(titleRes = R.string.settings_state_section) {
@@ -107,6 +108,7 @@ internal fun DeviceTab(uiState: DashboardUiState) {
             SettingsSectionCard(titleRes = R.string.security_section) {
                 DeviceFact(R.string.security_screen_lock, state.screenLock)
                 DeviceFact(R.string.security_biometrics, state.biometrics)
+                DeviceFact(R.string.security_biometric_enrollment, state.biometricEnrollment)
                 DeviceFact(R.string.security_strongbox, state.strongBox)
                 DeviceFact(R.string.security_nfc, state.nfc)
             }

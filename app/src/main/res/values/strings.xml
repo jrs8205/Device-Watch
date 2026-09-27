@@ -372,7 +372,21 @@
     <string name="usb_devices_none">None attached</string>
     <string name="power_save_mode">Battery saver on</string>
     <string name="power_device_idle">Deep idle (Doze) now</string>
-    <string name="power_battery_optimization_exempt">This app skips battery optimisation</string>
+    <string name="power_battery_optimization_exempt">Device Watch skips battery optimisation</string>
+    <string name="power_other_exempt_apps">Other apps skipping it</string>
+    <string name="exempt_none">None</string>
+    <string name="exempt_user_and_system">%1$s + %2$s</string>
+    <plurals name="exempt_system_apps">
+        <item quantity="one">%d background service</item>
+        <item quantity="other">%d background services</item>
+    </plurals>
+    <string name="size_default">Default</string>
+    <string name="size_of_default">%1$d %% of default</string>
+    <string name="security_biometric_enrollment">Strong biometrics</string>
+    <string name="biometrics_enrolled">Set up</string>
+    <string name="biometrics_not_enrolled">Sensor, nothing enrolled</string>
+    <string name="biometrics_no_sensor">No sensor</string>
+    <string name="biometrics_unavailable">Unavailable right now</string>
     <string name="system_locale">Language</string>
     <string name="system_timezone">Time zone</string>
     <string name="system_webview">WebView</string>

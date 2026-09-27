@@ -21,6 +21,9 @@
         android:name="android.permission.QUERY_ALL_PACKAGES"
         tools:ignore="QueryAllPackagesPermission" />
     <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />
+    <!-- Normal permission, granted on install: only reads whether a strong biometric
+         is enrolled for the Device tab; the app never authenticates anyone. -->
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
 
     <application
         android:name=".MonitorApp"

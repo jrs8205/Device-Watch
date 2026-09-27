@@ -368,7 +368,21 @@
     <string name="usb_devices_none">Ei liitettyjä</string>
     <string name="power_save_mode">Virransäästö päällä</string>
     <string name="power_device_idle">Syvä lepotila (Doze) nyt</string>
-    <string name="power_battery_optimization_exempt">Sovellus ohittaa akun optimoinnin</string>
+    <string name="power_battery_optimization_exempt">Laitevahti ohittaa akun optimoinnin</string>
+    <string name="power_other_exempt_apps">Muut optimoinnin ohittavat</string>
+    <string name="exempt_none">Ei yhtään</string>
+    <string name="exempt_user_and_system">%1$s + %2$s</string>
+    <plurals name="exempt_system_apps">
+        <item quantity="one">%d taustapalvelu</item>
+        <item quantity="other">%d taustapalvelua</item>
+    </plurals>
+    <string name="size_default">Oletus</string>
+    <string name="size_of_default">%1$d %% oletuksesta</string>
+    <string name="security_biometric_enrollment">Vahva biometriikka</string>
+    <string name="biometrics_enrolled">Käytössä</string>
+    <string name="biometrics_not_enrolled">Anturi on, ei rekisteröity</string>
+    <string name="biometrics_no_sensor">Ei anturia</string>
+    <string name="biometrics_unavailable">Ei juuri nyt käytettävissä</string>
     <string name="system_locale">Kieli</string>
     <string name="system_timezone">Aikavyöhyke</string>
     <string name="system_webview">WebView</string>

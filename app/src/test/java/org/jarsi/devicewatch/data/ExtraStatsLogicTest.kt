@@ -649,4 +649,41 @@ class ExtraStatsLogicTest {
         // power a multiband fix costs, not that it receives two frequencies.
         assertThat(GnssCapability.entries.map { it.name }).doesNotContain("MULTIBAND")
     }
+
+    @Test
+    fun `apps with an icon are named, background services counted, this app left out`() {
+        // A preinstalled app such as Chrome is still an app to the person: whether
+        // it has a launcher icon decides, not the system flag.
+        val summary = ExtraStatsLogic.exemptAppsSummary(
+            listOf(
+                ExemptApp("Tehtävät", launchable = true, self = false),
+                ExemptApp("chrome", launchable = true, self = false),
+                ExemptApp("Laitevahti", launchable = true, self = true),
+                ExemptApp("Google Play services", launchable = false, self = false),
+                ExemptApp("Carrier services", launchable = false, self = false),
+            )
+        )
+
+        // Sorted as a person reads them, not by code point.
+        assertThat(summary.userApps).containsExactly("chrome", "Tehtävät").inOrder()
+        assertThat(summary.systemCount).isEqualTo(2)
+    }
+
+    @Test
+    fun `the biometric status says whether strong biometrics are set up`() {
+        // BiometricManager.BIOMETRIC_SUCCESS / _ERROR_NONE_ENROLLED / _ERROR_NO_HARDWARE;
+        // anything else (temporarily unavailable, security update) is unavailable.
+        assertThat(ExtraStatsLogic.biometricState(0)).isEqualTo(BiometricState.ENROLLED)
+        assertThat(ExtraStatsLogic.biometricState(11)).isEqualTo(BiometricState.NOT_ENROLLED)
+        assertThat(ExtraStatsLogic.biometricState(12)).isEqualTo(BiometricState.NO_HARDWARE)
+        assertThat(ExtraStatsLogic.biometricState(1)).isEqualTo(BiometricState.UNAVAILABLE)
+        assertThat(ExtraStatsLogic.biometricState(15)).isEqualTo(BiometricState.UNAVAILABLE)
+    }
+
+    @Test
+    fun `a size setting reads as the default or as a share of it`() {
+        assertThat(ExtraStatsLogic.relativeToDefault(100)).isNull()
+        assertThat(ExtraStatsLogic.relativeToDefault(130)).isEqualTo(130)
+        assertThat(ExtraStatsLogic.relativeToDefault(85)).isEqualTo(85)
+    }
 }

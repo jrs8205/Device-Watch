@@ -10,6 +10,15 @@ import java.util.Locale
 /** Where the charge comes from, as `BatteryManager.EXTRA_PLUGGED` reports it. */
 enum class ChargeSource { NONE, AC, USB, WIRELESS, DOCK }
 
+/** Whether strong (Class 3) biometrics can be used, per `BiometricManager.canAuthenticate`. */
+enum class BiometricState { ENROLLED, NOT_ENROLLED, NO_HARDWARE, UNAVAILABLE }
+
+/** An installed app on the battery-optimisation allowlist; [launchable] when it has a launcher icon. */
+data class ExemptApp(val label: String, val launchable: Boolean, val self: Boolean)
+
+/** The allowlisted apps a person can open, by name, and how many background services are on it. */
+data class ExemptSummary(val userApps: List<String>, val systemCount: Int)
+
 /** A biometric sensor the device has, per its system features. */
 enum class BiometricSensor { FINGERPRINT, FACE, IRIS }
 
@@ -341,6 +350,36 @@ object ExtraStatsLogic {
         if (face) add(BiometricSensor.FACE)
         if (iris) add(BiometricSensor.IRIS)
     }
+
+    /**
+     * `BiometricManager.BIOMETRIC_SUCCESS` (0): strong biometrics set up;
+     * `_ERROR_NONE_ENROLLED` (11): a sensor without enrolment; `_ERROR_NO_HARDWARE`
+     * (12): none; anything else (busy, security update required) is unavailable.
+     */
+    fun biometricState(code: Int): BiometricState = when (code) {
+        0 -> BiometricState.ENROLLED
+        11 -> BiometricState.NOT_ENROLLED
+        12 -> BiometricState.NO_HARDWARE
+        else -> BiometricState.UNAVAILABLE
+    }
+
+    /**
+     * The apps skipping battery optimisation: the ones with a launcher icon by
+     * name — preinstalled or not, as a person sees apps — sorted as the user's
+     * language sorts them, and the background services only counted (a phone
+     * allowlists a dozen of its own). This app has its own row.
+     */
+    fun exemptAppsSummary(apps: List<ExemptApp>, locale: Locale = Locale.getDefault()): ExemptSummary {
+        val others = apps.filterNot { it.self }
+        val collator = java.text.Collator.getInstance(locale)
+        return ExemptSummary(
+            userApps = others.filter { it.launchable }.map { it.label }.sortedWith(collator),
+            systemCount = others.count { !it.launchable },
+        )
+    }
+
+    /** A size setting's share of its default, or null at the default itself. */
+    fun relativeToDefault(percent: Int): Int? = percent.takeIf { it != 100 }
 
     fun nfcState(present: Boolean, enabled: Boolean): NfcState = when {
         !present -> NfcState.NONE

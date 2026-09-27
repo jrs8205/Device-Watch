@@ -11,6 +11,8 @@ data class DeviceState(
     val powerSaveMode: String = UNAVAILABLE_TEXT,
     val deviceIdle: String = UNAVAILABLE_TEXT,
     val batteryOptimizationExempt: String = UNAVAILABLE_TEXT,
+    /** Other apps on the battery-optimisation allowlist: user apps by name, system ones counted. */
+    val otherExemptApps: String = UNAVAILABLE_TEXT,
     /** Swap (ZRAM) in use of its total. */
     val swap: String = UNAVAILABLE_TEXT,
     // Display and system settings
@@ -26,6 +28,8 @@ data class DeviceState(
     // Security
     val screenLock: String = UNAVAILABLE_TEXT,
     val biometrics: String = UNAVAILABLE_TEXT,
+    /** Whether strong biometrics are enrolled (needs USE_BIOMETRIC, Android 10+). */
+    val biometricEnrollment: String = UNAVAILABLE_TEXT,
     val strongBox: String = UNAVAILABLE_TEXT,
     val nfc: String = UNAVAILABLE_TEXT,
     // Active network

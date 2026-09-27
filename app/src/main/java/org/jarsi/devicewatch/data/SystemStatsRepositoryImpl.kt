@@ -19,6 +19,7 @@ import android.hardware.SensorManager
 import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraManager
 import android.hardware.display.DisplayManager
+import android.hardware.biometrics.BiometricManager
 import android.hardware.usb.UsbManager
 import android.location.LocationManager
 import android.media.MediaCodecList
@@ -206,11 +207,11 @@ class SystemStatsRepositoryImpl @Inject constructor(
             } ?: UNAVAILABLE_TEXT,
             brightness = readBrightness(),
             screenTimeout = readScreenTimeout(),
-            fontSize = "${Math.round(context.resources.configuration.fontScale * 100)} %",
+            fontSize = sizeText(Math.round(context.resources.configuration.fontScale * 100)),
             displaySize = ExtraStatsLogic.displaySizePercent(
                 context.resources.configuration.densityDpi,
                 DisplayMetrics.DENSITY_DEVICE_STABLE,
-            )?.let { "$it %" } ?: UNAVAILABLE_TEXT,
+            )?.let(::sizeText) ?: UNAVAILABLE_TEXT,
             darkTheme = boolText(
                 (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
                     Configuration.UI_MODE_NIGHT_YES
@@ -222,6 +223,7 @@ class SystemStatsRepositoryImpl @Inject constructor(
             screenLock = context.getSystemService(KeyguardManager::class.java)
                 ?.let { boolText(it.isDeviceSecure) } ?: UNAVAILABLE_TEXT,
             biometrics = readBiometricSensors(),
+            biometricEnrollment = readBiometricEnrollment(),
             strongBox = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                 boolText(context.packageManager.hasSystemFeature(PackageManager.FEATURE_STRONGBOX_KEYSTORE))
             } else {
@@ -236,6 +238,7 @@ class SystemStatsRepositoryImpl @Inject constructor(
             cellSignalDetails = cellDetails.first,
             cellSignalBars = cellDetails.second,
             cellBand = cellDetails.third,
+            otherExemptApps = readOtherExemptApps(powerManager),
             removableVolumes = readRemovableVolumes(),
             usbDevices = readUsbDevices(),
         )
@@ -351,6 +354,69 @@ class SystemStatsRepositoryImpl @Inject constructor(
                 }
             )
         }
+    }
+
+    /** "Default", or "130 % of default": a bare "100 %" read as the maximum. */
+    private fun sizeText(percent: Int): String =
+        ExtraStatsLogic.relativeToDefault(percent)
+            ?.let { context.getString(R.string.size_of_default, it) }
+            ?: context.getString(R.string.size_default)
+
+    private fun readOtherExemptApps(powerManager: PowerManager?): String {
+        powerManager ?: return UNAVAILABLE_TEXT
+        @Suppress("DEPRECATION") // the flags overload is API 33+
+        val installed = try {
+            context.packageManager.getInstalledApplications(0)
+        } catch (_: Exception) {
+            return UNAVAILABLE_TEXT
+        }
+        val exempt = installed.mapNotNull { info ->
+            val allowlisted = try {
+                powerManager.isIgnoringBatteryOptimizations(info.packageName)
+            } catch (_: Exception) {
+                false
+            }
+            if (!allowlisted) return@mapNotNull null
+            ExemptApp(
+                label = context.packageManager.getApplicationLabel(info).toString(),
+                launchable = context.packageManager.getLaunchIntentForPackage(info.packageName) != null,
+                self = info.packageName == context.packageName,
+            )
+        }
+        val summary = ExtraStatsLogic.exemptAppsSummary(exempt, context.resources.configuration.locales[0])
+        val systemText = summary.systemCount.takeIf { it > 0 }?.let {
+            context.resources.getQuantityString(R.plurals.exempt_system_apps, it, it)
+        }
+        return when {
+            summary.userApps.isEmpty() && systemText == null -> context.getString(R.string.exempt_none)
+            summary.userApps.isEmpty() -> systemText!!
+            systemText == null -> summary.userApps.joinToString(", ")
+            else -> context.getString(R.string.exempt_user_and_system, summary.userApps.joinToString(", "), systemText)
+        }
+    }
+
+    /** Strong biometrics enrolled or not; USE_BIOMETRIC is a normal permission, granted on install. */
+    private fun readBiometricEnrollment(): String {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return UNAVAILABLE_TEXT
+        val manager = context.getSystemService(BiometricManager::class.java) ?: return UNAVAILABLE_TEXT
+        val code = try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                manager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG)
+            } else {
+                @Suppress("DEPRECATION") // the no-argument form is Android 10's only one
+                manager.canAuthenticate()
+            }
+        } catch (_: Exception) {
+            return UNAVAILABLE_TEXT
+        }
+        return context.getString(
+            when (ExtraStatsLogic.biometricState(code)) {
+                BiometricState.ENROLLED -> R.string.biometrics_enrolled
+                BiometricState.NOT_ENROLLED -> R.string.biometrics_not_enrolled
+                BiometricState.NO_HARDWARE -> R.string.biometrics_no_sensor
+                BiometricState.UNAVAILABLE -> R.string.biometrics_unavailable
+            }
+        )
     }
 
     private fun readNfc(): String {
