@@ -48,6 +48,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.style.TextOverflow
 import org.jarsi.devicewatch.R
 import org.jarsi.devicewatch.data.ChargeSource
+import org.jarsi.devicewatch.data.ChargingState
 import org.jarsi.devicewatch.data.DataCounterMode
 import org.jarsi.devicewatch.data.DataQuotaLogic
 import org.jarsi.devicewatch.data.ThermalLevel
@@ -213,8 +214,24 @@ internal fun OverviewTab(
                         label = stringResource(R.string.charge_source_label),
                         value = stringResource(sourceRes),
                         valueSize = SECONDARY_VALUE_SP,
-                    modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f)
                     )
+                }
+                // How the phone charges (adaptive, held for battery life, paused by
+                // temperature) matters only while plugged in.
+                if (currentStats.chargeSource != ChargeSource.NONE) {
+                    chargingStateRes(currentStats.chargingState)?.let { stateRes ->
+                        StackedMetricRow(
+                            label = stringResource(R.string.charging_state_label),
+                            value = stringResource(stateRes),
+                            valueSize = SECONDARY_VALUE_SP,
+                            valueColor = when (currentStats.chargingState) {
+                                ChargingState.TOO_COLD, ChargingState.TOO_HOT -> MaterialTheme.colorScheme.error
+                                else -> MaterialTheme.colorScheme.onSurface
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
                 }
             }
         }
@@ -697,6 +714,16 @@ private fun thermalLevelRes(level: ThermalLevel): Int? = when (level) {
     ThermalLevel.CRITICAL -> R.string.thermal_critical
     ThermalLevel.EMERGENCY -> R.string.thermal_emergency
     ThermalLevel.SHUTDOWN -> R.string.thermal_shutdown
+}
+
+/** Label for how the battery is being charged; null when the platform says nothing. */
+private fun chargingStateRes(state: ChargingState): Int? = when (state) {
+    ChargingState.UNKNOWN -> null
+    ChargingState.NORMAL -> R.string.charging_state_normal
+    ChargingState.TOO_COLD -> R.string.charging_state_too_cold
+    ChargingState.TOO_HOT -> R.string.charging_state_too_hot
+    ChargingState.LONG_LIFE -> R.string.charging_state_long_life
+    ChargingState.ADAPTIVE -> R.string.charging_state_adaptive
 }
 
 /** Label for what the phone is plugged into; null on battery. */

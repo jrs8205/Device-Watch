@@ -603,6 +603,13 @@ class SystemStatsRepositoryImpl @Inject constructor(
         val chargeSource = ExtraStatsLogic.chargeSource(
             batteryStatusIntent?.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0) ?: 0
         )
+        val chargingState = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            ExtraStatsLogic.chargingState(
+                batteryStatusIntent?.getIntExtra(BatteryManager.EXTRA_CHARGING_STATUS, 0) ?: 0
+            )
+        } else {
+            ChargingState.UNKNOWN
+        }
 
         val health = batteryStatusIntent?.getIntExtra(BatteryManager.EXTRA_HEALTH, -1) ?: -1
         val batteryHealth = when (health) {
@@ -863,6 +870,7 @@ class SystemStatsRepositoryImpl @Inject constructor(
             dataPeriodStartEpochDay = periodStartDay.toEpochDay(),
             dataSettingsGeneration = dataSettingsGeneration,
             chargeSource = chargeSource,
+            chargingState = chargingState,
             systemEstimateText = systemEstimateText,
             systemEstimatePersonalized = systemEstimatePersonalized,
             deepSleepText = deepSleepText,

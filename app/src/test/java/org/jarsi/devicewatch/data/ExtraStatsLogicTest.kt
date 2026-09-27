@@ -273,4 +273,21 @@ class ExtraStatsLogicTest {
 
         assertThat(total).isEqualTo(AppSizes(codeBytes = 10, dataBytes = 1, cacheBytes = 0))
     }
+
+    @Test
+    fun `the charging status names how the battery is being charged`() {
+        // EXTRA_CHARGING_STATUS (API 34) carries the health HAL's BatteryChargingState.
+        assertThat(ExtraStatsLogic.chargingState(1)).isEqualTo(ChargingState.NORMAL)
+        assertThat(ExtraStatsLogic.chargingState(2)).isEqualTo(ChargingState.TOO_COLD)
+        assertThat(ExtraStatsLogic.chargingState(3)).isEqualTo(ChargingState.TOO_HOT)
+        assertThat(ExtraStatsLogic.chargingState(4)).isEqualTo(ChargingState.LONG_LIFE)
+        assertThat(ExtraStatsLogic.chargingState(5)).isEqualTo(ChargingState.ADAPTIVE)
+    }
+
+    @Test
+    fun `an invalid or unknown charging status names nothing`() {
+        assertThat(ExtraStatsLogic.chargingState(0)).isEqualTo(ChargingState.UNKNOWN)
+        assertThat(ExtraStatsLogic.chargingState(-1)).isEqualTo(ChargingState.UNKNOWN)
+        assertThat(ExtraStatsLogic.chargingState(6)).isEqualTo(ChargingState.UNKNOWN)
+    }
 }

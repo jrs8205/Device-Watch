@@ -6,6 +6,9 @@ import java.time.YearMonth
 /** Where the charge comes from, as `BatteryManager.EXTRA_PLUGGED` reports it. */
 enum class ChargeSource { NONE, AC, USB, WIRELESS, DOCK }
 
+/** How the battery is being charged, per the health HAL's BatteryChargingState. */
+enum class ChargingState { UNKNOWN, NORMAL, TOO_COLD, TOO_HOT, LONG_LIFE, ADAPTIVE }
+
 /** `PowerManager.getCurrentThermalStatus()` levels; [UNKNOWN] when unsupported. */
 enum class ThermalLevel { UNKNOWN, NONE, LIGHT, MODERATE, SEVERE, CRITICAL, EMERGENCY, SHUTDOWN }
 
@@ -73,6 +76,21 @@ object ExtraStatsLogic {
         4 -> ChargeSource.WIRELESS
         8 -> ChargeSource.DOCK
         else -> ChargeSource.NONE
+    }
+
+    /**
+     * `BatteryManager.EXTRA_CHARGING_STATUS` (API 34), which carries the health
+     * HAL's BatteryChargingState: 1 normal, 2 paused too cold, 3 paused too hot,
+     * 4 long-life (held below full to spare the battery), 5 adaptive. The platform
+     * keeps the names hidden; 0 is invalid.
+     */
+    fun chargingState(status: Int): ChargingState = when (status) {
+        1 -> ChargingState.NORMAL
+        2 -> ChargingState.TOO_COLD
+        3 -> ChargingState.TOO_HOT
+        4 -> ChargingState.LONG_LIFE
+        5 -> ChargingState.ADAPTIVE
+        else -> ChargingState.UNKNOWN
     }
 
     /**

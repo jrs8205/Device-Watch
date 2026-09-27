@@ -82,6 +82,8 @@ data class SystemStats(
     val dataSettingsGeneration: Long = 0L,
     /** What the phone is plugged into; [ChargeSource.NONE] on battery. */
     val chargeSource: ChargeSource = ChargeSource.NONE,
+    /** How the battery is being charged while plugged in (Android 14+). */
+    val chargingState: ChargingState = ChargingState.UNKNOWN,
     /**
      * The system's own time-left estimate (Android 12+, on battery), formatted
      * like [timeRemainingText]; [UNAVAILABLE_TEXT] when the system has none.
