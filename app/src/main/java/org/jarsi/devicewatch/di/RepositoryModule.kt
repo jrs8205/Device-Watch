@@ -24,6 +24,8 @@ import org.jarsi.devicewatch.widget.GlanceWidgetController
 import org.jarsi.devicewatch.widget.WidgetController
 import org.jarsi.devicewatch.data.TrafficCounterSource
 import org.jarsi.devicewatch.data.TrafficStatsCounterSource
+import org.jarsi.devicewatch.system.AlertNotifications
+import org.jarsi.devicewatch.system.SystemAlertNotifications
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -80,4 +82,7 @@ abstract class RepositoryModule {
 
     @Binds
     abstract fun bindTrafficCounterSource(impl: TrafficStatsCounterSource): TrafficCounterSource
+
+    @Binds
+    abstract fun bindAlertNotifications(impl: SystemAlertNotifications): AlertNotifications
 }

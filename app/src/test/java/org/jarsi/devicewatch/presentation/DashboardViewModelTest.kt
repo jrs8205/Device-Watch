@@ -56,7 +56,8 @@ class DashboardViewModelTest {
         notifications: NotificationStats = FakeNotificationStats(),
         history: UsageHistory = FakeUsageHistory(),
         relay: FakeMonitorServiceRelay = FakeMonitorServiceRelay(),
-    ) = DashboardViewModel(repository, widget, settings, appUsage, notifications, history, relay)
+        alertNotifications: FakeAlertNotifications = FakeAlertNotifications(),
+    ) = DashboardViewModel(repository, widget, settings, appUsage, notifications, history, relay, alertNotifications)
 
     @Test
     fun `given fresh stats, when refreshing, then state reflects repository and widget flag`() =
@@ -278,6 +279,20 @@ class DashboardViewModelTest {
             viewModel.onAlertToggle(HealthAlert.FAST_DRAIN, false)
 
             assertThat(viewModel.uiState.value.enabledAlerts).isEmpty()
+        }
+
+    @Test
+    fun `switching an alert off takes its notification down`() =
+        runTest(dispatcher) {
+            // Codex round 8: an alert already in the shade stayed there after being
+            // switched off, since a disabled alert is never evaluated again.
+            val alertNotifications = FakeAlertNotifications()
+            val viewModel = buildViewModel(alertNotifications = alertNotifications)
+            viewModel.onAlertToggle(HealthAlert.HOT_BATTERY, true)
+
+            viewModel.onAlertToggle(HealthAlert.HOT_BATTERY, false)
+
+            assertThat(alertNotifications.cancelled).containsExactly(HealthAlert.HOT_BATTERY)
         }
 
     @Test

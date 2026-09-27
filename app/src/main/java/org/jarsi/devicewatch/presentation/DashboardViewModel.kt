@@ -21,6 +21,7 @@ import org.jarsi.devicewatch.data.SystemStats
 import org.jarsi.devicewatch.data.SystemStatsRepository
 import org.jarsi.devicewatch.data.UNAVAILABLE_INT
 import org.jarsi.devicewatch.data.UsageHistory
+import org.jarsi.devicewatch.system.AlertNotifications
 import org.jarsi.devicewatch.system.MonitorServiceRelay
 import java.time.LocalDate
 import java.time.ZoneId
@@ -100,6 +101,7 @@ class DashboardViewModel @Inject constructor(
     private val notificationStats: NotificationStats,
     private val usageHistory: UsageHistory,
     private val monitorRelay: MonitorServiceRelay,
+    private val alertNotifications: AlertNotifications,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DashboardUiState())
@@ -131,6 +133,9 @@ class DashboardViewModel @Inject constructor(
 
     fun onAlertToggle(alert: HealthAlert, enabled: Boolean) {
         settings.setAlertEnabled(alert, enabled)
+        // A disabled alert is never evaluated again, so nothing else would take
+        // down one already in the shade.
+        if (!enabled) alertNotifications.cancel(alert)
         _uiState.update {
             it.copy(enabledAlerts = if (enabled) it.enabledAlerts + alert else it.enabledAlerts - alert)
         }

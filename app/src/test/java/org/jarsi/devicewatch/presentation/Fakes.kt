@@ -1,5 +1,6 @@
 package org.jarsi.devicewatch.presentation
 
+import org.jarsi.devicewatch.system.AlertNotifications
 import org.jarsi.devicewatch.data.HealthAlert
 import kotlinx.coroutines.CompletableDeferred
 import org.jarsi.devicewatch.data.AppPackageFacts
@@ -22,6 +23,14 @@ import org.jarsi.devicewatch.system.MonitorServiceRelay
 import java.time.LocalDate
 
 /** Hand-written fakes shared by the presentation-layer ViewModel tests. */
+
+internal class FakeAlertNotifications : AlertNotifications {
+    val cancelled = mutableListOf<HealthAlert>()
+
+    override fun cancel(alert: HealthAlert) {
+        cancelled += alert
+    }
+}
 
 internal class FakeMonitorServiceRelay : MonitorServiceRelay {
     var chargeLimitChangedCount = 0
