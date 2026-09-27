@@ -541,4 +541,26 @@ class ExtraStatsLogicTest {
         // Years before 2016 are the platform's "unknown" placeholder, not a real chip year.
         assertThat(ExtraStatsLogic.gnssHardwareText("Qualcomm", 2015)).isEqualTo("Qualcomm")
     }
+
+    @Test
+    fun `the Vulkan feature version reads as major dot minor`() {
+        // FEATURE_VULKAN_HARDWARE_VERSION packs major << 22 | minor << 12 | patch.
+        assertThat(ExtraStatsLogic.vulkanVersionText((1 shl 22) or (3 shl 12))).isEqualTo("1.3")
+        assertThat(ExtraStatsLogic.vulkanVersionText((1 shl 22) or (1 shl 12) or 73)).isEqualTo("1.1")
+        assertThat(ExtraStatsLogic.vulkanVersionText(0)).isNull()
+    }
+
+    @Test
+    fun `hardware decoders are named for the formats worth knowing`() {
+        val codecs = listOf(
+            CodecRecord(types = listOf("video/av01"), hardware = true, encoder = false),
+            CodecRecord(types = listOf("video/hevc"), hardware = true, encoder = false),
+            // A software decoder or an encoder says nothing about playback hardware.
+            CodecRecord(types = listOf("video/x-vnd.on2.vp9"), hardware = false, encoder = false),
+            CodecRecord(types = listOf("video/dolby-vision"), hardware = true, encoder = true),
+            CodecRecord(types = listOf("video/avc"), hardware = true, encoder = false),
+        )
+
+        assertThat(ExtraStatsLogic.hardwareDecoders(codecs)).containsExactly("AV1", "HEVC").inOrder()
+    }
 }

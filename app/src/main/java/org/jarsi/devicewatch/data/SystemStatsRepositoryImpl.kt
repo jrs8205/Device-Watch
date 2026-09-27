@@ -20,6 +20,8 @@ import android.hardware.camera2.CameraManager
 import android.hardware.display.DisplayManager
 import android.hardware.usb.UsbManager
 import android.location.LocationManager
+import android.media.MediaCodecList
+import android.media.MediaDrm
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
@@ -236,6 +238,41 @@ class SystemStatsRepositoryImpl @Inject constructor(
         File(path).readText()
     } catch (_: Exception) {
         null
+    }
+
+    /** Widevine's security level from a throwaway MediaDrm session; the DRM is closed at once. */
+    private fun readWidevineLevel(): String {
+        var drm: MediaDrm? = null
+        return try {
+            drm = MediaDrm(WIDEVINE_UUID)
+            drm.getPropertyString("securityLevel").takeIf { it.isNotBlank() } ?: UNAVAILABLE_TEXT
+        } catch (_: Exception) {
+            // UnsupportedSchemeException: no Widevine at all.
+            context.getString(R.string.widevine_none)
+        } finally {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) drm?.close() else @Suppress("DEPRECATION") drm?.release()
+        }
+    }
+
+    private fun readHardwareDecoders(): String {
+        val codecs = try {
+            MediaCodecList(MediaCodecList.REGULAR_CODECS).codecInfos.map { info ->
+                CodecRecord(
+                    types = info.supportedTypes.toList(),
+                    hardware = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        info.isHardwareAccelerated
+                    } else {
+                        // Before Android 10 the software codecs are the platform's own.
+                        !info.name.startsWith("OMX.google.") && !info.name.startsWith("c2.android.")
+                    },
+                    encoder = info.isEncoder,
+                )
+            }
+        } catch (_: Exception) {
+            return UNAVAILABLE_TEXT
+        }
+        return ExtraStatsLogic.hardwareDecoders(codecs).takeIf { it.isNotEmpty() }?.joinToString(", ")
+            ?: context.getString(R.string.decoders_none)
     }
 
     private fun readGnssHardware(): String {
@@ -690,6 +727,11 @@ class SystemStatsRepositoryImpl @Inject constructor(
             wifiCapabilities = readWifiCapabilities(),
             cpuClusters = readCpuClusters(),
             gnssHardware = readGnssHardware(),
+            vulkanVersion = context.packageManager.systemAvailableFeatures
+                .firstOrNull { it.name == PackageManager.FEATURE_VULKAN_HARDWARE_VERSION }
+                ?.let { ExtraStatsLogic.vulkanVersionText(it.version) } ?: UNAVAILABLE_TEXT,
+            widevineLevel = readWidevineLevel(),
+            hardwareDecoders = readHardwareDecoders(),
             gnssCapabilities = readGnssCapabilities(),
             cpuGovernor = readSysFile("/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor")
                 ?.trim()?.takeIf { it.isNotEmpty() } ?: UNAVAILABLE_TEXT,
@@ -1800,5 +1842,6 @@ class SystemStatsRepositoryImpl @Inject constructor(
     private companion object {
         private const val GB_BYTES = 1024.0 * 1024.0 * 1024.0
         private const val KB_PER_GB = 1024.0 * 1024.0
+        private val WIDEVINE_UUID = java.util.UUID.fromString("edef8ba9-79d6-4ace-a3c8-27dcd51d21ed")
     }
 }

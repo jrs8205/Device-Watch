@@ -10,6 +10,9 @@ import java.util.Locale
 /** Where the charge comes from, as `BatteryManager.EXTRA_PLUGGED` reports it. */
 enum class ChargeSource { NONE, AC, USB, WIRELESS, DOCK }
 
+/** One `MediaCodecInfo`, reduced to what the decoder list needs. */
+data class CodecRecord(val types: List<String>, val hardware: Boolean, val encoder: Boolean)
+
 /** Swap space (on phones, compressed RAM: ZRAM) from /proc/meminfo, in kilobytes. */
 data class SwapInfo(val totalKb: Long, val freeKb: Long)
 
@@ -272,6 +275,36 @@ object ExtraStatsLogic {
             else -> null
         }
     }
+
+    /**
+     * `FEATURE_VULKAN_HARDWARE_VERSION` as "major.minor"; the feature packs
+     * major << 22 | minor << 12 | patch. Null when the device has no Vulkan.
+     */
+    fun vulkanVersionText(encoded: Int): String? {
+        if (encoded <= 0) return null
+        val major = encoded ushr 22
+        val minor = (encoded ushr 12) and 0x3ff
+        return "$major.$minor"
+    }
+
+    /**
+     * The video formats that need a hardware decoder to play smoothly — AV1, HEVC,
+     * VP9, Dolby Vision — that one of the device's hardware decoders handles, in
+     * that order. Software decoders and encoders say nothing about playback.
+     */
+    fun hardwareDecoders(codecs: List<CodecRecord>): List<String> {
+        val decodable = codecs.filter { it.hardware && !it.encoder }
+            .flatMap { codec -> codec.types.map { it.lowercase(Locale.ROOT) } }
+            .toSet()
+        return NOTABLE_VIDEO_FORMATS.filter { (mime, _) -> mime in decodable }.map { it.second }
+    }
+
+    private val NOTABLE_VIDEO_FORMATS = listOf(
+        "video/av01" to "AV1",
+        "video/hevc" to "HEVC",
+        "video/x-vnd.on2.vp9" to "VP9",
+        "video/dolby-vision" to "Dolby Vision",
+    )
 
     /** SD cards and USB storage; the primary (internal) volume has its own row. */
     fun removableVolumes(volumes: List<VolumeInfo>): List<VolumeInfo> =

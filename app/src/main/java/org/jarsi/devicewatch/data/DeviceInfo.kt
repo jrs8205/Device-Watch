@@ -29,6 +29,12 @@ data class DeviceInfo(
     val gnssHardware: String = UNAVAILABLE_TEXT,
     /** What the GNSS chip can do beyond a position fix (Android 12+). */
     val gnssCapabilities: String = UNAVAILABLE_TEXT,
+    /** Vulkan API version the GPU supports, e.g. "1.3". */
+    val vulkanVersion: String = UNAVAILABLE_TEXT,
+    /** Widevine DRM security level: L1 plays HD streams, L3 caps them. */
+    val widevineLevel: String = UNAVAILABLE_TEXT,
+    /** Video formats a hardware decoder plays, e.g. "AV1, HEVC, VP9". */
+    val hardwareDecoders: String = UNAVAILABLE_TEXT,
     // Display
     val screenResolution: String,
     val screenDensity: String,

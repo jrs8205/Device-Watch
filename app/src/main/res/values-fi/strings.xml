@@ -302,6 +302,11 @@
     <string name="settings_state_section">NÄYTTÖ JA ASETUKSET</string>
     <string name="device_info_cpu_clusters">Suoritinklusterit</string>
     <string name="device_info_gnss">Satelliittipaikannuspiiri (GNSS)</string>
+    <string name="device_info_vulkan">Vulkan</string>
+    <string name="device_info_decoders">Videon laitteistopurku</string>
+    <string name="decoders_none">Ei AV1:tä, HEVC:tä, VP9:ää eikä Dolby Visionia</string>
+    <string name="device_info_widevine">Widevine DRM -taso</string>
+    <string name="widevine_none">Ei Widevinea</string>
     <string name="device_info_gnss_capabilities">GNSS-kyvyt</string>
     <string name="gnss_measurements">raakamittaukset</string>
     <string name="gnss_navigation_messages">navigointiviestit</string>

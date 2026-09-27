@@ -306,6 +306,11 @@
     <string name="settings_state_section">DISPLAY AND SETTINGS</string>
     <string name="device_info_cpu_clusters">CPU clusters</string>
     <string name="device_info_gnss">GNSS chip</string>
+    <string name="device_info_vulkan">Vulkan</string>
+    <string name="device_info_decoders">Hardware video decoding</string>
+    <string name="decoders_none">None of AV1, HEVC, VP9, Dolby Vision</string>
+    <string name="device_info_widevine">Widevine DRM level</string>
+    <string name="widevine_none">No Widevine</string>
     <string name="device_info_gnss_capabilities">GNSS capabilities</string>
     <string name="gnss_measurements">raw measurements</string>
     <string name="gnss_navigation_messages">navigation messages</string>
