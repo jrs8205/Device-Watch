@@ -42,6 +42,7 @@
     <string name="screen_time_section">SCREEN TIME TODAY</string>
     <string name="screen_time_others">Others</string>
     <string name="data_consumers_section">TOP DATA TODAY</string>
+    <string name="storage_consumers_section">LARGEST APPS</string>
     <string name="last_opened_section">LAST OPENED</string>
     <string name="last_used_never">Never used</string>
     <string name="last_used_today_at">Today %1$s</string>

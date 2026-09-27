@@ -17,6 +17,13 @@ data class AppDataUsage(
     val bytes: Long,
 )
 
+/** One installed app's size on internal storage: code plus data (cache and own external files). */
+data class AppStorageUsage(
+    val packageName: String,
+    val label: String,
+    val bytes: Long,
+)
+
 /** A launchable app with the last time the user opened it (null = never in the query range). */
 data class LaunchableApp(
     val packageName: String,

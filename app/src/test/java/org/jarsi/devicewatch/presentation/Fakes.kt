@@ -2,6 +2,7 @@ package org.jarsi.devicewatch.presentation
 
 import org.jarsi.devicewatch.data.AppDataUsage
 import org.jarsi.devicewatch.data.AppScreenTime
+import org.jarsi.devicewatch.data.AppStorageUsage
 import org.jarsi.devicewatch.data.AppSettingsRepository
 import org.jarsi.devicewatch.data.AppUsageRepository
 import org.jarsi.devicewatch.data.CHARGE_LIMIT_MAX
@@ -122,6 +123,7 @@ internal class FakeAppUsageRepository(
     var unlocksByDay: Map<LocalDate, Int> = emptyMap(),
     var screenByDay: Map<LocalDate, Long> = emptyMap(),
     var screenOn: Map<LocalDate, Long> = emptyMap(),
+    var storage: List<AppStorageUsage> = emptyList(),
     var totalsToday: UsageTotals? = null,
     var launchers: Set<String> = emptySet(),
     var unlocksSince: Int? = 0,
@@ -150,6 +152,9 @@ internal class FakeAppUsageRepository(
 
     override suspend fun unlockCountsByDay(days: Int): Map<LocalDate, Int> =
         if (hasAccess && supportsUnlocks) unlocksByDay else emptyMap()
+
+    override suspend fun storageConsumers(): List<AppStorageUsage> =
+        if (hasAccess) storage else emptyList()
 
     override suspend fun screenOnByDay(days: Int): Map<LocalDate, Long> =
         if (hasAccess) screenOn else emptyMap()

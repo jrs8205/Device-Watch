@@ -41,6 +41,7 @@
     <string name="screen_time_section">RUUTUAIKA TÄNÄÄN</string>
     <string name="screen_time_others">Muut</string>
     <string name="data_consumers_section">ENITEN DATAA TÄNÄÄN</string>
+    <string name="storage_consumers_section">ENITEN TILAA VIEVÄT</string>
     <string name="last_opened_section">VIIMEKSI AVATUT</string>
     <string name="last_used_never">Ei koskaan käytetty</string>
     <string name="last_used_today_at">Tänään %1$s</string>

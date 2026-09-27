@@ -3,6 +3,7 @@ package org.jarsi.devicewatch.presentation
 import org.jarsi.devicewatch.data.AppDataUsage
 import org.jarsi.devicewatch.data.AppScreenTime
 import org.jarsi.devicewatch.data.AppSettingsRepository
+import org.jarsi.devicewatch.data.AppStorageUsage
 import org.jarsi.devicewatch.data.AppUsageRepository
 import org.jarsi.devicewatch.data.DataCounterMode
 import org.jarsi.devicewatch.data.LaunchableApp
@@ -42,6 +43,28 @@ class AppsViewModelTest {
 
     private fun app(pkg: String, lastUsed: Long?) =
         LaunchableApp(pkg, "label-$pkg", lastUsed, isSystemApp = false)
+
+    @Test
+    fun `given app sizes, when refreshing, then the largest apps come first and empty ones drop`() =
+        runTest(dispatcher) {
+            val repository = FakeAppUsageRepository(
+                storage = listOf(
+                    AppStorageUsage("small", "Small", 10L),
+                    AppStorageUsage("none", "None", 0L),
+                    AppStorageUsage("big", "Big", 900L),
+                    AppStorageUsage("mid", "Mid", 300L),
+                ),
+            )
+            val viewModel = AppsViewModel(
+                repository, FakeAppSettingsRepository(), FakeNotificationStats(enabled = true)
+            )
+
+            viewModel.refresh()
+            advanceUntilIdle()
+
+            assertThat(viewModel.uiState.value.storageConsumers.map { it.packageName })
+                .containsExactly("big", "mid", "small").inOrder()
+        }
 
     @Test
     fun `given usage data, when refreshing, then lists donut and sort are loaded`() =

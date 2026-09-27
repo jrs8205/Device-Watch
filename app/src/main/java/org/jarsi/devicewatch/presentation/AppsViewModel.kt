@@ -3,6 +3,7 @@ package org.jarsi.devicewatch.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import org.jarsi.devicewatch.data.AppDataUsage
+import org.jarsi.devicewatch.data.AppStorageUsage
 import org.jarsi.devicewatch.data.AppScreenTime
 import org.jarsi.devicewatch.data.AppSettingsRepository
 import org.jarsi.devicewatch.data.AppUsageDetail
@@ -30,6 +31,8 @@ data class AppsUiState(
     val screenTimeSegments: List<DonutSegment> = emptyList(),
     val totalScreenTimeMillis: Long = 0L,
     val dataConsumers: List<AppDataUsage> = emptyList(),
+    /** Installed apps by size, largest first; filled in after the other lists. */
+    val storageConsumers: List<AppStorageUsage> = emptyList(),
     val apps: List<LaunchableApp> = emptyList(),
     val oldestFirst: Boolean = true,
     val notificationAccessEnabled: Boolean = false,
@@ -113,6 +116,11 @@ class AppsViewModel @Inject constructor(
                 notificationAccessEnabled = notificationStats.isListenerEnabled(),
             )
         }
+        // One storage query per installed app: the lists above are on screen first.
+        val storage = appUsageRepository.storageConsumers()
+            .filter { it.bytes > 0L }
+            .sortedByDescending { it.bytes }
+        _uiState.update { it.copy(storageConsumers = storage) }
     }
 
     /** Assembles the detail sheet for [packageName] from the already-loaded lists. */
@@ -123,6 +131,7 @@ class AppsViewModel @Inject constructor(
         val label = screenTime?.label
             ?: app?.label
             ?: state.dataConsumers.firstOrNull { it.packageName == packageName }?.label
+            ?: state.storageConsumers.firstOrNull { it.packageName == packageName }?.label
             ?: packageName
         val notifications = if (state.notificationAccessEnabled) {
             notificationStats.countForPackage(packageName, LocalDate.now())

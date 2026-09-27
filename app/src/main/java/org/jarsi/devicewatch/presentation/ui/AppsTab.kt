@@ -279,6 +279,42 @@ internal fun AppsTab(viewModel: AppsViewModel = hiltViewModel()) {
             }
         }
 
+        if (uiState.storageConsumers.isNotEmpty()) {
+            item(key = "storage_consumers") {
+                SettingsSectionCard(titleRes = R.string.storage_consumers_section) {
+                    uiState.storageConsumers.take(10).forEach { app ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable(onClick = withTapHaptic { viewModel.onAppSelected(app.packageName) })
+                                .padding(vertical = 6.dp, horizontal = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            AppIcon(app.packageName, modifier = Modifier.size(28.dp))
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = app.label,
+                                fontSize = 14.sp,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                textDecoration = detailLinkDecoration(true),
+                                modifier = Modifier.weight(1f)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                text = bytesText(app.bytes),
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
         item(key = "last_opened_header") {
             Row(
                 modifier = Modifier

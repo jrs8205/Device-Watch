@@ -3,6 +3,7 @@ package org.jarsi.devicewatch.data
 import android.app.AppOpsManager
 import android.app.usage.NetworkStats
 import android.app.usage.NetworkStatsManager
+import android.app.usage.StorageStatsManager
 import android.app.usage.UsageEvents
 import android.app.usage.UsageStatsManager
 import android.content.Context
@@ -247,6 +248,31 @@ class AppUsageRepositoryImpl @Inject constructor(
             return@withContext emptyMap()
         }
         totals
+    }
+
+    override suspend fun storageConsumers(): List<AppStorageUsage> = withContext(dispatcher) {
+        if (!hasUsageAccess()) return@withContext emptyList()
+        val manager = context.getSystemService(StorageStatsManager::class.java) ?: return@withContext emptyList()
+        val user = Process.myUserHandle()
+        @Suppress("DEPRECATION") // the flags overload is API 33+
+        val installed = try {
+            context.packageManager.getInstalledApplications(0)
+        } catch (_: Exception) {
+            return@withContext emptyList()
+        }
+        installed.mapNotNull { info ->
+            try {
+                val stats = manager.queryStatsForPackage(info.storageUuid, info.packageName, user)
+                AppStorageUsage(
+                    packageName = info.packageName,
+                    label = context.packageManager.getApplicationLabel(info).toString(),
+                    bytes = stats.appBytes + stats.dataBytes,
+                )
+            } catch (_: Exception) {
+                // NameNotFound for an app removed meanwhile, IOException from the volume.
+                null
+            }
+        }
     }
 
     override suspend fun screenOnByDay(days: Int): Map<LocalDate, Long> = withContext(dispatcher) {

@@ -56,6 +56,13 @@ interface AppUsageRepository {
      */
     suspend fun screenOnByDay(days: Int): Map<LocalDate, Long>
 
+    /**
+     * Every installed app's size (StorageStatsManager.queryStatsForPackage), in no
+     * particular order; empty without usage access. One query per app, so the Apps
+     * tab asks for it after its quicker lists.
+     */
+    suspend fun storageConsumers(): List<AppStorageUsage>
+
     /** Precise totals since local midnight in one event pass; null without access. */
     suspend fun usageTotalsToday(): UsageTotals?
 
