@@ -76,23 +76,27 @@ class AppSettingsRepositoryImpl @Inject constructor(
     private fun coerceDataQuota(value: Double): Double =
         if (value <= 0.0) 0.0 else value.coerceIn(DATA_QUOTA_MIN_GB, DATA_QUOTA_MAX_GB)
 
-    override fun dataQuotaNotified(periodStartEpochDay: Long, threshold: Int): Boolean =
-        prefs.getBoolean(quotaNotifiedKey(periodStartEpochDay, threshold), false)
+    override fun dataQuotaNotified(periodStartEpochDay: Long, quotaGb: Double, threshold: Int): Boolean =
+        prefs.getBoolean(quotaNotifiedKey(periodStartEpochDay, quotaGb, threshold), false)
 
-    override fun setDataQuotaNotified(periodStartEpochDay: Long, threshold: Int) {
-        // The keys are period-scoped, so every period would otherwise leave two
-        // booleans behind forever; older periods are pruned as the latch is written.
-        val currentPeriodPrefix = "$KEY_DATA_QUOTA_NOTIFIED_PREFIX:$periodStartEpochDay:"
+    override fun setDataQuotaNotified(periodStartEpochDay: Long, quotaGb: Double, threshold: Int) {
+        // The keys are scoped to a period and a quota, so every period would
+        // otherwise leave booleans behind forever; latches for any other period or
+        // quota are pruned as this one is written.
+        val currentPrefix = quotaNotifiedPrefix(periodStartEpochDay, quotaGb)
         val stale = prefs.all.keys.filter {
-            it.startsWith("$KEY_DATA_QUOTA_NOTIFIED_PREFIX:") && !it.startsWith(currentPeriodPrefix)
+            it.startsWith("$KEY_DATA_QUOTA_NOTIFIED_PREFIX:") && !it.startsWith(currentPrefix)
         }
         val editor = prefs.edit()
         stale.forEach { editor.remove(it) }
-        editor.putBoolean(quotaNotifiedKey(periodStartEpochDay, threshold), true).apply()
+        editor.putBoolean(quotaNotifiedKey(periodStartEpochDay, quotaGb, threshold), true).apply()
     }
 
-    private fun quotaNotifiedKey(periodStartEpochDay: Long, threshold: Int): String =
-        "$KEY_DATA_QUOTA_NOTIFIED_PREFIX:$periodStartEpochDay:$threshold"
+    private fun quotaNotifiedPrefix(periodStartEpochDay: Long, quotaGb: Double): String =
+        "$KEY_DATA_QUOTA_NOTIFIED_PREFIX:$periodStartEpochDay:$quotaGb:"
+
+    private fun quotaNotifiedKey(periodStartEpochDay: Long, quotaGb: Double, threshold: Int): String =
+        quotaNotifiedPrefix(periodStartEpochDay, quotaGb) + threshold
 
     override fun appsOldestFirst(): Boolean =
         prefs.getBoolean(KEY_APPS_OLDEST_FIRST, true)

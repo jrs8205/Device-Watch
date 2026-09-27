@@ -382,9 +382,10 @@ class SystemMonitorService : Service() {
 
     /**
      * Data-quota alerts: 80 % and the limit itself, each at most once per counting
-     * period. The latch lives in settings and is keyed by the period start, so a new
-     * day (or billing cycle) re-arms both — and a quota switched on mid-period only
-     * alerts for what the period has actually used. Synchronized because the
+     * period. The latch lives in settings and is keyed by the period start and the
+     * quota, so a new day (or billing cycle) re-arms both, a latch written just after
+     * the user changed the quota belongs to the old quota only — and a quota switched
+     * on mid-period only alerts for what the period has actually used. Synchronized because the
      * screen-on loop and the battery receiver both call it from the service scope,
      * and the latch is read before it is written.
      */
@@ -410,21 +411,21 @@ class SystemMonitorService : Service() {
             val pending = DataQuotaLogic.pendingThresholds(
                 quotaGb = quotaGb,
                 usedGb = stats.mobileDataUsedGb,
-                notified80 = appSettings.dataQuotaNotified(periodStartEpochDay, DataQuotaLogic.WARNING_PERCENT),
-                notified100 = appSettings.dataQuotaNotified(periodStartEpochDay, DataQuotaLogic.REACHED_PERCENT),
+                notified80 = appSettings.dataQuotaNotified(periodStartEpochDay, quotaGb, DataQuotaLogic.WARNING_PERCENT),
+                notified100 = appSettings.dataQuotaNotified(periodStartEpochDay, quotaGb, DataQuotaLogic.REACHED_PERCENT),
             )
             pending.forEach { threshold ->
                 // Latched only once the alert was really posted; a refused one is retried.
                 val shown = DataQuotaNotifier.show(
                     applicationContext, threshold, stats.mobileDataUsedGb, quotaGb
                 )
-                if (shown) appSettings.setDataQuotaNotified(periodStartEpochDay, threshold)
+                if (shown) appSettings.setDataQuotaNotified(periodStartEpochDay, quotaGb, threshold)
             }
             armUsageCallback(
                 quotaGb = quotaGb,
                 usedGb = stats.mobileDataUsedGb,
-                notified80 = appSettings.dataQuotaNotified(periodStartEpochDay, DataQuotaLogic.WARNING_PERCENT),
-                notified100 = appSettings.dataQuotaNotified(periodStartEpochDay, DataQuotaLogic.REACHED_PERCENT),
+                notified80 = appSettings.dataQuotaNotified(periodStartEpochDay, quotaGb, DataQuotaLogic.WARNING_PERCENT),
+                notified100 = appSettings.dataQuotaNotified(periodStartEpochDay, quotaGb, DataQuotaLogic.REACHED_PERCENT),
             )
         } catch (e: CancellationException) {
             throw e

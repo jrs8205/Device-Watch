@@ -44,11 +44,13 @@ interface AppSettingsRepository {
 
     /**
      * Quota-alert latch, scoped to the counting period that started on
-     * [periodStartEpochDay] so a new period re-arms both thresholds (80 and 100).
+     * [periodStartEpochDay] so a new period re-arms both thresholds (80 and 100),
+     * and to the quota the alert was judged against, so a latch the service writes
+     * just after the user changed the quota cannot silence the new quota's alerts.
      */
-    fun dataQuotaNotified(periodStartEpochDay: Long, threshold: Int): Boolean
+    fun dataQuotaNotified(periodStartEpochDay: Long, quotaGb: Double, threshold: Int): Boolean
 
-    fun setDataQuotaNotified(periodStartEpochDay: Long, threshold: Int)
+    fun setDataQuotaNotified(periodStartEpochDay: Long, quotaGb: Double, threshold: Int)
 
     /** Apps-tab "last opened" order; true = oldest (and never-used) first. */
     fun appsOldestFirst(): Boolean

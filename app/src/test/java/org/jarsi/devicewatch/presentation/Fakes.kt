@@ -79,11 +79,11 @@ internal class FakeAppSettingsRepository(
         quotaGb = if (value <= 0.0) 0.0 else value.coerceIn(DATA_QUOTA_MIN_GB, DATA_QUOTA_MAX_GB)
     }
 
-    override fun dataQuotaNotified(periodStartEpochDay: Long, threshold: Int): Boolean =
-        "$periodStartEpochDay:$threshold" in quotaNotified
+    override fun dataQuotaNotified(periodStartEpochDay: Long, quotaGb: Double, threshold: Int): Boolean =
+        "$periodStartEpochDay:$quotaGb:$threshold" in quotaNotified
 
-    override fun setDataQuotaNotified(periodStartEpochDay: Long, threshold: Int) {
-        quotaNotified += "$periodStartEpochDay:$threshold"
+    override fun setDataQuotaNotified(periodStartEpochDay: Long, quotaGb: Double, threshold: Int) {
+        quotaNotified += "$periodStartEpochDay:$quotaGb:$threshold"
     }
 
     override fun appsOldestFirst(): Boolean = oldestFirst
