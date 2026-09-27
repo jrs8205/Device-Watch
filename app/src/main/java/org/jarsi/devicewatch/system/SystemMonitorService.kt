@@ -232,7 +232,9 @@ class SystemMonitorService : Service() {
         // Before the usage-events pass, which bails out without usage access.
         if (stats != null) {
             maybeNotifyDataQuota(stats)
-            storageUsedBytes(stats.usedStorageGb)?.let { usageHistory.recordStorageUsed(LocalDate.now(), it) }
+            storageUsedBytes(stats.usedStorageGb)?.let {
+                usageHistory.recordStorageUsed(LocalDate.now(), it, stats.readAtMillis)
+            }
             evaluateStorageAlert(stats)
         }
         try {

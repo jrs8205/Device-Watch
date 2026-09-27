@@ -299,13 +299,16 @@ class DashboardViewModelTest {
     fun `a refresh keeps today's used storage for the history`() =
         runTest(dispatcher) {
             val history = FakeUsageHistory()
-            val viewModel = buildViewModel(history = history)
+            val stats = sampleStats().copy(readAtMillis = 5_000L)
+            val viewModel = buildViewModel(repository = FakeSystemStatsRepository(stats), history = history)
 
             viewModel.refresh()
             advanceUntilIdle()
 
-            // The sample stats use 64 GiB.
+            // The sample stats use 64 GiB; the reading's own time goes with it, so the
+            // store can refuse it when the service has stored a newer one meanwhile.
             assertThat(history.storage[java.time.LocalDate.now()]).isEqualTo(64L * 1024 * 1024 * 1024)
+            assertThat(history.storageReadAt[java.time.LocalDate.now()]).isEqualTo(5_000L)
         }
 
     @Test

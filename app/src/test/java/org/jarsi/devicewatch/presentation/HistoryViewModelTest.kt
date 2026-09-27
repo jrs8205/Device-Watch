@@ -44,7 +44,7 @@ class HistoryViewModelTest {
         override fun recordUnlocks(day: LocalDate, count: Int) = Unit
         override fun recordScreenTime(day: LocalDate, millis: Long) = Unit
         override fun recordScreenOn(day: LocalDate, millis: Long) = Unit
-        override fun recordStorageUsed(day: LocalDate, bytes: Long) = Unit
+        override fun recordStorageUsed(day: LocalDate, bytes: Long, readAtMillis: Long) = Unit
         override fun screenOnBetween(start: LocalDate, end: LocalDate) = 0L
         override fun registerBootCount(day: LocalDate, bootCountTotal: Int) = Unit
         override fun incrementCharge(day: LocalDate) = Unit

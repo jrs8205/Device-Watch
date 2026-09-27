@@ -30,8 +30,14 @@ class UsageHistoryImpl @Inject constructor(
         prefs.edit().putLong(key(PREFIX_SCREEN_ON, day), millis).apply()
     }
 
-    override fun recordStorageUsed(day: LocalDate, bytes: Long) {
-        prefs.edit().putLong(key(PREFIX_STORAGE, day), bytes).apply()
+    @Synchronized
+    override fun recordStorageUsed(day: LocalDate, bytes: Long, readAtMillis: Long) {
+        val storedAt = prefs.getLong(key(PREFIX_STORAGE_AT, day), Long.MIN_VALUE)
+        if (readAtMillis < storedAt) return
+        prefs.edit()
+            .putLong(key(PREFIX_STORAGE, day), bytes)
+            .putLong(key(PREFIX_STORAGE_AT, day), readAtMillis)
+            .apply()
     }
 
     override fun screenOnBetween(start: LocalDate, end: LocalDate): Long =
@@ -121,5 +127,6 @@ class UsageHistoryImpl @Inject constructor(
         private const val PREFIX_CHARGES = "charges"
         private const val PREFIX_SCREEN_ON = "screenon"
         private const val PREFIX_STORAGE = "storage"
+        private const val PREFIX_STORAGE_AT = "storageat"
     }
 }

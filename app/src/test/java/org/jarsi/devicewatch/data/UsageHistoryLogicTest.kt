@@ -46,6 +46,7 @@ class UsageHistoryLogicTest {
         assertThat(isRetainedHistoryKey("unlocks:$todayEpoch", retained)).isTrue()
         assertThat(isRetainedHistoryKey("screen:$todayEpoch", retained)).isTrue()
         assertThat(isRetainedHistoryKey("storage:$todayEpoch", retained)).isTrue()
+        assertThat(isRetainedHistoryKey("storageat:$todayEpoch", retained)).isTrue()
         assertThat(isRetainedHistoryKey("boots:$oldEpoch", retained)).isFalse()
         assertThat(isRetainedHistoryKey("garbage", retained)).isFalse()
         assertThat(isRetainedHistoryKey("charges:abc", retained)).isFalse()
