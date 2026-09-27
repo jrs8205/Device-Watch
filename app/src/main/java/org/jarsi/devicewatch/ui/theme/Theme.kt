@@ -132,10 +132,21 @@ fun ModernWidgetTheme(
         else -> ClassicLightColorScheme
     }
     val metricFont = if (classicLook) FontFamily.Default else FontFamily.Monospace
-    // The whole tree is measured under the app's own bounds on font size and
-    // display size (see AppScale.kt): every label and readout stays on one
-    // line whatever the system settings are. Dialogs and sheets compose under
-    // this same provider.
+    // Dialogs and sheets compose under this same provider.
+    ProvideBoundedDensity {
+        CompositionLocalProvider(LocalMetricFontFamily provides metricFont) {
+            MaterialTheme(colorScheme = colorScheme, content = content)
+        }
+    }
+}
+
+/**
+ * Measures [content] under the app's own bounds on font size and display size
+ * (see AppScale.kt), so every label and readout stays on one line whatever the
+ * system settings are. The app's screens and the screensaver both use it.
+ */
+@Composable
+fun ProvideBoundedDensity(content: @Composable () -> Unit) {
     val systemDensity = LocalDensity.current
     val configuration = LocalConfiguration.current
     val defaultDensity = DisplayMetrics.DENSITY_DEVICE_STABLE / DisplayMetrics.DENSITY_DEFAULT.toFloat()
@@ -148,12 +159,7 @@ fun ModernWidgetTheme(
             fontScale = clampedFontScale(systemDensity.fontScale),
         )
     }
-    CompositionLocalProvider(
-        LocalMetricFontFamily provides metricFont,
-        LocalDensity provides boundedDensity,
-    ) {
-        MaterialTheme(colorScheme = colorScheme, content = content)
-    }
+    CompositionLocalProvider(LocalDensity provides boundedDensity, content = content)
 }
 
 /**

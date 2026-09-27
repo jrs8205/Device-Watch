@@ -19,6 +19,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -36,9 +37,11 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.jarsi.devicewatch.R
+import org.jarsi.devicewatch.ui.theme.ProvideBoundedDensity
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
@@ -102,7 +105,9 @@ class MonitorDreamService : DreamService(), LifecycleOwner, ViewModelStoreOwner,
             setViewTreeSavedStateRegistryOwner(this@MonitorDreamService)
             
             setContent {
-                ScreensaverContent(this@MonitorDreamService)
+                ProvideBoundedDensity {
+                    ScreensaverContent(this@MonitorDreamService)
+                }
             }
         }
         
@@ -508,7 +513,9 @@ fun ClockBlock(
             Column(modifier = Modifier.padding(bottom = 16.dp)) {
                 Text(
                     text = ":$secondsText",
-                    fontSize = secondsSize.sp,
+                    autoSize = fitUpTo(secondsSize.sp),
+                    maxLines = 1,
+                    softWrap = false,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF38BDF8),
                     style = TextStyle(fontFeatureSettings = "tnum")
@@ -516,7 +523,9 @@ fun ClockBlock(
                 if (amPmText.isNotEmpty()) {
                     Text(
                         text = amPmText,
-                        fontSize = (secondsSize * 0.6f).sp,
+                        autoSize = fitUpTo((secondsSize * 0.6f).sp),
+                        maxLines = 1,
+                        softWrap = false,
                         fontWeight = FontWeight.Medium,
                         color = Color(0xFF8B929C)
                     )
@@ -526,7 +535,9 @@ fun ClockBlock(
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = dateText,
-            fontSize = dateSize.sp,
+            autoSize = fitUpTo(dateSize.sp),
+            maxLines = 1,
+            softWrap = false,
             fontWeight = FontWeight.Medium,
             color = Color(0xFF8B929C)
         )
@@ -534,7 +545,9 @@ fun ClockBlock(
             Spacer(modifier = Modifier.height(6.dp))
             Text(
                 text = alarmText,
-                fontSize = (dateSize * 0.72f).sp,
+                autoSize = fitUpTo((dateSize * 0.72f).sp),
+                maxLines = 1,
+                softWrap = false,
                 fontWeight = FontWeight.Medium,
                 color = Color(0xFF6E7681),
                 style = TextStyle(fontFeatureSettings = "tnum")
@@ -575,7 +588,9 @@ fun BatteryBlockLandscape(
                 } else {
                     stringResource(R.string.dream_on_battery)
                 },
-                fontSize = 22.sp,
+                autoSize = fitUpTo(22.sp),
+                maxLines = 1,
+                softWrap = false,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF34D399)
             )
@@ -623,7 +638,9 @@ fun BatteryBlockLandscape(
 
         Text(
             text = detailsStr,
-            fontSize = 24.sp,
+            autoSize = fitUpTo(24.sp),
+            maxLines = 1,
+            softWrap = false,
             fontWeight = FontWeight.Medium,
             color = Color(0xFF9AA0A8),
             style = TextStyle(fontFeatureSettings = "tnum")
@@ -633,7 +650,9 @@ fun BatteryBlockLandscape(
             Spacer(modifier = Modifier.height(6.dp))
             Text(
                 text = fullTimeStr,
-                fontSize = 24.sp,
+                autoSize = fitUpTo(24.sp),
+                maxLines = 1,
+                softWrap = false,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF34D399),
                 style = TextStyle(fontFeatureSettings = "tnum")
@@ -674,7 +693,9 @@ fun BatteryBlockPortrait(
                 } else {
                     stringResource(R.string.dream_on_battery)
                 },
-                fontSize = 26.sp,
+                autoSize = fitUpTo(26.sp),
+                maxLines = 1,
+                softWrap = false,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF34D399)
             )
@@ -722,7 +743,9 @@ fun BatteryBlockPortrait(
 
         Text(
             text = detailsStr,
-            fontSize = 24.sp,
+            autoSize = fitUpTo(24.sp),
+            maxLines = 1,
+            softWrap = false,
             fontWeight = FontWeight.Medium,
             color = Color(0xFF9AA0A8),
             style = TextStyle(fontFeatureSettings = "tnum")
@@ -732,7 +755,9 @@ fun BatteryBlockPortrait(
             Spacer(modifier = Modifier.height(6.dp))
             Text(
                 text = fullTimeStr,
-                fontSize = 24.sp,
+                autoSize = fitUpTo(24.sp),
+                maxLines = 1,
+                softWrap = false,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF34D399),
                 style = TextStyle(fontFeatureSettings = "tnum")
@@ -826,6 +851,13 @@ internal fun fittedClockSp(
     }
     return fitted.toInt().coerceIn(minClockSp, maxClockSp)
 }
+
+/**
+ * Screensaver lines stay on one line: they shrink from [max] toward a floor
+ * when a long localized date or a wide details line would otherwise wrap.
+ */
+private fun fitUpTo(max: TextUnit): TextAutoSize =
+    TextAutoSize.StepBased(minFontSize = minOf(12f, max.value).sp, maxFontSize = max, stepSize = 1.sp)
 
 fun getBatteryGradientColors(level: Int): List<Color> {
     return when {
