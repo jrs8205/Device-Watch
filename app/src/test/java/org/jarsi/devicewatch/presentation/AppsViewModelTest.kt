@@ -1,5 +1,8 @@
 package org.jarsi.devicewatch.presentation
 
+import kotlinx.coroutines.CompletableDeferred
+import org.jarsi.devicewatch.data.AppPackageFacts
+import org.jarsi.devicewatch.data.PermissionCategory
 import org.jarsi.devicewatch.data.AppDataUsage
 import org.jarsi.devicewatch.data.AppScreenTime
 import org.jarsi.devicewatch.data.AppSettingsRepository
@@ -198,6 +201,83 @@ class AppsViewModelTest {
             assertThat(detail.lastOpenedEpochMillis).isEqualTo(5_000)
             assertThat(detail.dataBytesToday).isEqualTo(150L)
             assertThat(detail.notificationsToday).isEqualTo(7)
+        }
+
+    private fun facts(version: String) = AppPackageFacts(
+        versionName = version,
+        versionCode = 17L,
+        installedMillis = 1_000L,
+        updatedMillis = 2_000L,
+        targetSdk = 36,
+        minSdk = 29,
+        installerLabel = "F-Droid",
+        systemApp = false,
+        grantedCategories = listOf(PermissionCategory.CAMERA),
+        requestedPermissionCount = 9,
+    )
+
+    @Test
+    fun `given package facts, when selecting an app, then the detail carries them`() =
+        runTest(dispatcher) {
+            val repository = FakeAppUsageRepository(
+                apps = listOf(app("a", 5_000L)),
+                facts = mapOf("a" to facts("1.5.0")),
+            )
+            val viewModel = AppsViewModel(repository, FakeAppSettingsRepository(), FakeNotificationStats())
+            viewModel.refresh()
+            advanceUntilIdle()
+
+            viewModel.onAppSelected("a")
+            advanceUntilIdle()
+
+            assertThat(viewModel.uiState.value.selectedDetail!!.facts).isEqualTo(facts("1.5.0"))
+        }
+
+    @Test
+    fun `facts read for one app never land on the sheet of the next`() =
+        runTest(dispatcher) {
+            val gate = CompletableDeferred<Unit>()
+            val repository = FakeAppUsageRepository(
+                apps = listOf(app("a", 5_000L), app("b", 4_000L)),
+                facts = mapOf("a" to facts("a-version"), "b" to facts("b-version")),
+                factsGate = gate,
+            )
+            val viewModel = AppsViewModel(repository, FakeAppSettingsRepository(), FakeNotificationStats())
+            viewModel.refresh()
+            advanceUntilIdle()
+
+            viewModel.onAppSelected("a")
+            advanceUntilIdle()
+            viewModel.onAppSelected("b")
+            advanceUntilIdle()
+            gate.complete(Unit)
+            advanceUntilIdle()
+
+            val detail = viewModel.uiState.value.selectedDetail!!
+            assertThat(detail.packageName).isEqualTo("b")
+            assertThat(detail.facts!!.versionName).isEqualTo("b-version")
+        }
+
+    @Test
+    fun `facts arriving after the sheet closed do not reopen it`() =
+        runTest(dispatcher) {
+            val gate = CompletableDeferred<Unit>()
+            val repository = FakeAppUsageRepository(
+                apps = listOf(app("a", 5_000L)),
+                facts = mapOf("a" to facts("1.5.0")),
+                factsGate = gate,
+            )
+            val viewModel = AppsViewModel(repository, FakeAppSettingsRepository(), FakeNotificationStats())
+            viewModel.refresh()
+            advanceUntilIdle()
+
+            viewModel.onAppSelected("a")
+            advanceUntilIdle()
+            viewModel.onDetailDismiss()
+            gate.complete(Unit)
+            advanceUntilIdle()
+
+            assertThat(viewModel.uiState.value.selectedDetail).isNull()
         }
 
     @Test

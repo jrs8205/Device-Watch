@@ -48,4 +48,6 @@ data class AppUsageDetail(
     val dataBytesToday: Long,
     /** [UNAVAILABLE_INT] when the notification listener is not enabled. */
     val notificationsToday: Int,
+    /** Read after the sheet opens; null until then, or when the package is gone. */
+    val facts: AppPackageFacts? = null,
 )

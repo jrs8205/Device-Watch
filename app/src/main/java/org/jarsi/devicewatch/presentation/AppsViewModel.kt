@@ -14,6 +14,7 @@ import org.jarsi.devicewatch.data.NotificationStats
 import org.jarsi.devicewatch.data.UNAVAILABLE_INT
 import org.jarsi.devicewatch.data.UsageEventAggregator
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -53,6 +54,8 @@ class AppsViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(AppsUiState())
     val uiState: StateFlow<AppsUiState> = _uiState.asStateFlow()
+
+    private var factsJob: Job? = null
 
     /** Screen times before launcher filtering, so the detail sheet can show launchers too. */
     private var allScreenTimes: List<AppScreenTime> = emptyList()
@@ -150,9 +153,19 @@ class AppsViewModel @Inject constructor(
             notificationsToday = notifications,
         )
         _uiState.update { it.copy(selectedDetail = detail) }
+        factsJob?.cancel()
+        factsJob = viewModelScope.launch {
+            val facts = appUsageRepository.packageFacts(packageName) ?: return@launch
+            // The sheet may have closed, or moved on to another app, while this read ran.
+            _uiState.update { state ->
+                val open = state.selectedDetail
+                if (open?.packageName == packageName) state.copy(selectedDetail = open.copy(facts = facts)) else state
+            }
+        }
     }
 
     fun onDetailDismiss() {
+        factsJob?.cancel()
         _uiState.update { it.copy(selectedDetail = null) }
     }
 

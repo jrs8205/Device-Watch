@@ -71,4 +71,7 @@ interface AppUsageRepository {
 
     /** Packages that handle the HOME intent; used to keep launchers out of usage rankings. */
     fun launcherPackages(): Set<String>
+
+    /** Version, install, source and permission facts of [packageName]; null when it is not installed. */
+    suspend fun packageFacts(packageName: String): AppPackageFacts?
 }

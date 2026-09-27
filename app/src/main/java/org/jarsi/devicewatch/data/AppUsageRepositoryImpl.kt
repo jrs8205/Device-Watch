@@ -399,6 +399,71 @@ class AppUsageRepositoryImpl @Inject constructor(
     private fun fallbackUidLabel(uid: Int): String =
         if (uid == Process.SYSTEM_UID) "Android" else "UID $uid"
 
+    override suspend fun packageFacts(packageName: String): AppPackageFacts? = withContext(dispatcher) {
+        val packageManager = context.packageManager
+        val info = try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                packageManager.getPackageInfo(
+                    packageName,
+                    PackageManager.PackageInfoFlags.of(PackageManager.GET_PERMISSIONS.toLong()),
+                )
+            } else {
+                @Suppress("DEPRECATION")
+                packageManager.getPackageInfo(packageName, PackageManager.GET_PERMISSIONS)
+            }
+        } catch (_: Exception) {
+            return@withContext null
+        }
+        val application = info.applicationInfo ?: return@withContext null
+        val systemApp = application.flags and ApplicationInfo.FLAG_SYSTEM != 0
+        val dates = AppPackageLogic.installDates(
+            firstInstallMillis = info.firstInstallTime,
+            lastUpdateMillis = info.lastUpdateTime,
+            systemApp = systemApp,
+            updatedSystemApp = application.flags and ApplicationInfo.FLAG_UPDATED_SYSTEM_APP != 0,
+        )
+        AppPackageFacts(
+            versionName = info.versionName,
+            versionCode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                info.longVersionCode
+            } else {
+                @Suppress("DEPRECATION")
+                info.versionCode.toLong()
+            },
+            installedMillis = dates.installedMillis,
+            updatedMillis = dates.updatedMillis,
+            targetSdk = application.targetSdkVersion,
+            minSdk = application.minSdkVersion,
+            installerLabel = installerLabel(packageName),
+            systemApp = systemApp,
+            grantedCategories = AppPackageLogic.grantedCategories(
+                info.requestedPermissions,
+                info.requestedPermissionsFlags,
+            ),
+            requestedPermissionCount = info.requestedPermissions?.size ?: 0,
+        )
+    }
+
+    /** The store or installer app responsible for [packageName], by its label. */
+    private fun installerLabel(packageName: String): String? {
+        val packageManager = context.packageManager
+        val installer = try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                packageManager.getInstallSourceInfo(packageName).installingPackageName
+            } else {
+                @Suppress("DEPRECATION")
+                packageManager.getInstallerPackageName(packageName)
+            }
+        } catch (_: Exception) {
+            null
+        } ?: return null
+        return try {
+            packageManager.getApplicationLabel(packageManager.getApplicationInfo(installer, 0)).toString()
+        } catch (_: Exception) {
+            installer
+        }
+    }
+
     private companion object {
         /** How far back the "last opened" list looks. */
         private const val LAST_USE_RANGE_MS = 2L * 365 * 24 * 60 * 60 * 1000
