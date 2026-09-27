@@ -427,6 +427,20 @@ class ExtraStatsLogicTest {
     }
 
     @Test
+    fun `a window that opens with a shutdown says nothing about the screen before it`() {
+        // Codex round 7: shutdown 6, startup 8, screen on 8:01-8:31 read as 6 h 30 min.
+        val events = listOf(
+            ScreenEvent(at(20, 6), ScreenEventKind.SHUTDOWN),
+            ScreenEvent(at(20, 8), ScreenEventKind.STARTUP),
+            ScreenEvent(at(20, 8, 1), on = true),
+            ScreenEvent(at(20, 8, 31), on = false),
+        )
+        val byDay = ExtraStatsLogic.screenOnByDay(events, startMillis = at(20, 0), endMillis = at(21, 0), zone = utc)
+
+        assertThat(byDay).containsExactly(LocalDate.of(2026, 9, 20), 30 * 60_000L)
+    }
+
+    @Test
     fun `no events give no screen-on time`() {
         assertThat(ExtraStatsLogic.screenOnByDay(emptyList(), at(20, 0), at(21, 0), utc)).isEmpty()
     }

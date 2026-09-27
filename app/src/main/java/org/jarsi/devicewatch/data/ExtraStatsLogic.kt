@@ -452,8 +452,8 @@ object ExtraStatsLogic {
     /**
      * Time the screen was on per local day between [startMillis] and [endMillis],
      * from its on/off and power events. An interval over midnight is split between
-     * the days. A first event that turns the screen off (or shuts down) means it was
-     * on when the window opened; a first startup means it was off. A shutdown ends
+     * the days. Only a first "off" event means the screen was on when the window
+     * opened; any other first event starts it off. A shutdown ends
      * an interval like an off event; an interval still open at a startup lost its
      * end with the power (a flat battery) and is dropped, not stretched over the
      * outage. One still on at the end counts until [endMillis]. Repeated events of
@@ -478,10 +478,9 @@ object ExtraStatsLogic {
                 cursor = sliceEnd
             }
         }
-        var on = when (sorted.first().kind) {
-            ScreenEventKind.OFF, ScreenEventKind.SHUTDOWN -> true
-            ScreenEventKind.ON, ScreenEventKind.STARTUP -> false
-        }
+        // Only an "off" proves the screen was on before it; a shutdown says nothing
+        // about the screen, and the screen can be off long before one.
+        var on = sorted.first().kind == ScreenEventKind.OFF
         var since = startMillis
         for (event in sorted) {
             when (event.kind) {
