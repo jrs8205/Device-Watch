@@ -290,4 +290,29 @@ class ExtraStatsLogicTest {
         assertThat(ExtraStatsLogic.chargingState(-1)).isEqualTo(ChargingState.UNKNOWN)
         assertThat(ExtraStatsLogic.chargingState(6)).isEqualTo(ChargingState.UNKNOWN)
     }
+
+    @Test
+    fun `advertised memory reads as whole gigabytes in either unit`() {
+        // MemoryInfo.advertisedMem (API 34) may be binary or decimal gigabytes.
+        assertThat(ExtraStatsLogic.advertisedRamGb(8L * 1024 * 1024 * 1024)).isEqualTo(8)
+        assertThat(ExtraStatsLogic.advertisedRamGb(8_000_000_000L)).isEqualTo(8)
+        assertThat(ExtraStatsLogic.advertisedRamGb(12L * 1024 * 1024 * 1024)).isEqualTo(12)
+    }
+
+    @Test
+    fun `no advertised memory reads as none`() {
+        assertThat(ExtraStatsLogic.advertisedRamGb(0L)).isNull()
+        assertThat(ExtraStatsLogic.advertisedRamGb(-1L)).isNull()
+    }
+
+    @Test
+    fun `the Android version names the SDK minor version when there is one`() {
+        // Build.VERSION.SDK_INT_FULL (API 36) = major * 100000 + minor.
+        assertThat(ExtraStatsLogic.androidVersionText("16", sdkInt = 36, sdkIntFull = 3_600_001))
+            .isEqualTo("16 (API 36.1)")
+        assertThat(ExtraStatsLogic.androidVersionText("16", sdkInt = 36, sdkIntFull = 3_600_000))
+            .isEqualTo("16 (API 36)")
+        assertThat(ExtraStatsLogic.androidVersionText("15", sdkInt = 35, sdkIntFull = null))
+            .isEqualTo("15 (API 35)")
+    }
 }

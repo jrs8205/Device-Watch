@@ -46,6 +46,7 @@ internal fun DeviceTab(uiState: DashboardUiState) {
                 DeviceFact(R.string.device_info_refresh, info.refreshRate)
                 DeviceFact(R.string.device_info_hdr, info.hdr)
                 DeviceFact(R.string.device_info_ram, info.totalRam)
+                DeviceFact(R.string.device_info_ram_advertised, info.advertisedRam)
                 DeviceFact(R.string.device_info_storage, info.totalStorage)
                 DeviceFact(R.string.device_info_battery_tech, info.batteryTechnology)
                 DeviceFact(R.string.device_info_battery_capacity, info.batteryCapacityMah)

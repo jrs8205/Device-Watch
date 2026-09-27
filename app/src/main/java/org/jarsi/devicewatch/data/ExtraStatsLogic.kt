@@ -94,6 +94,33 @@ object ExtraStatsLogic {
     }
 
     /**
+     * `ActivityManager.MemoryInfo.advertisedMem` (API 34) in whole gigabytes. Makers
+     * report it in binary or decimal units, so the reading that lands closer to a
+     * whole number wins (8 GiB and 8 000 000 000 bytes both read as 8).
+     */
+    fun advertisedRamGb(bytes: Long): Int? {
+        if (bytes <= 0L) return null
+        val binary = bytes / GIB
+        val decimal = bytes / 1e9
+        val binaryWhole = Math.round(binary).coerceAtLeast(1L)
+        val decimalWhole = Math.round(decimal).coerceAtLeast(1L)
+        val binaryError = Math.abs(binary - binaryWhole) / binaryWhole
+        val decimalError = Math.abs(decimal - decimalWhole) / decimalWhole
+        return (if (binaryError <= decimalError) binaryWhole else decimalWhole).toInt()
+    }
+
+    /**
+     * "16 (API 36.1)": the release and the SDK level, with the minor version from
+     * `Build.VERSION.SDK_INT_FULL` (API 36, major × 100 000 + minor) when non-zero.
+     */
+    fun androidVersionText(release: String, sdkInt: Int, sdkIntFull: Int?): String {
+        val minor = sdkIntFull?.rem(100_000) ?: 0
+        return if (minor > 0) "$release (API $sdkInt.$minor)" else "$release (API $sdkInt)"
+    }
+
+    private const val GIB = 1024.0 * 1024.0 * 1024.0
+
+    /**
      * `PowerManager.getBatteryDischargePrediction()` in whole minutes, or null when
      * the system has no prediction or one under a minute (nothing worth showing).
      */

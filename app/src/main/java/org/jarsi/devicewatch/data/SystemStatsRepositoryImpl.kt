@@ -219,7 +219,18 @@ class SystemStatsRepositoryImpl @Inject constructor(
             ?.takeIf { it.isNotBlank() } ?: UNAVAILABLE_TEXT
         val model = Build.MODEL?.takeIf { it.isNotBlank() } ?: UNAVAILABLE_TEXT
         val codename = Build.DEVICE?.takeIf { it.isNotBlank() } ?: UNAVAILABLE_TEXT
-        val androidVersion = "${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})"
+        val androidVersion = ExtraStatsLogic.androidVersionText(
+            release = Build.VERSION.RELEASE,
+            sdkInt = Build.VERSION.SDK_INT,
+            sdkIntFull = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA) Build.VERSION.SDK_INT_FULL else null,
+        )
+        val advertisedRam = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            val memoryInfo = ActivityManager.MemoryInfo()
+            (context.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager)?.getMemoryInfo(memoryInfo)
+            ExtraStatsLogic.advertisedRamGb(memoryInfo.advertisedMem)?.let { "$it GB" } ?: UNAVAILABLE_TEXT
+        } else {
+            UNAVAILABLE_TEXT
+        }
         val securityPatch = Build.VERSION.SECURITY_PATCH?.takeIf { it.isNotBlank() } ?: UNAVAILABLE_TEXT
         val buildNumber = Build.DISPLAY?.takeIf { it.isNotBlank() } ?: UNAVAILABLE_TEXT
         val bootloader = Build.BOOTLOADER?.takeIf { it.isNotBlank() && it != Build.UNKNOWN } ?: UNAVAILABLE_TEXT
@@ -339,6 +350,7 @@ class SystemStatsRepositoryImpl @Inject constructor(
             refreshRate = refreshRate,
             hdr = hdr,
             totalRam = totalRam,
+            advertisedRam = advertisedRam,
             totalStorage = totalStorage,
             batteryTechnology = batteryTechnology,
             batteryCapacityMah = batteryCapacityMah,

@@ -292,6 +292,7 @@
     <string name="sensor_heart_rate">Syke</string>
 
     <string name="system_info_section">JÄRJESTELMÄ</string>
+    <string name="device_info_ram_advertised">RAM myyntitietojen mukaan</string>
     <string name="power_section">VIRRANHALLINTA</string>
     <string name="power_save_mode">Virransäästö päällä</string>
     <string name="power_device_idle">Syvä lepotila (Doze) nyt</string>

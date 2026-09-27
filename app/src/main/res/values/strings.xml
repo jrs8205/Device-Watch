@@ -296,6 +296,7 @@
     <string name="sensor_heart_rate">Heart rate</string>
 
     <string name="system_info_section">SYSTEM</string>
+    <string name="device_info_ram_advertised">RAM as sold</string>
     <string name="power_section">POWER</string>
     <string name="power_save_mode">Battery saver on</string>
     <string name="power_device_idle">Deep idle (Doze) now</string>

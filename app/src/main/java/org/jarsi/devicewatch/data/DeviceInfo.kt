@@ -29,6 +29,8 @@ data class DeviceInfo(
     val hdr: String,
     // Memory / storage
     val totalRam: String,
+    /** The RAM the device is sold with (Android 14+), e.g. "8 GB". */
+    val advertisedRam: String = UNAVAILABLE_TEXT,
     val totalStorage: String,
     // Battery (static)
     val batteryTechnology: String,
