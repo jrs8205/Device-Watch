@@ -328,7 +328,6 @@
     <string name="gnss_navigation_messages">navigation messages</string>
     <string name="gnss_corrections">measurement corrections</string>
     <string name="gnss_antenna_info">antenna info</string>
-    <string name="gnss_multiband">dual-frequency</string>
     <string name="gnss_capabilities_none">Position only</string>
     <string name="device_info_cpu_governor">CPU governor</string>
     <string name="memory_swap">Swap (ZRAM) in use</string>

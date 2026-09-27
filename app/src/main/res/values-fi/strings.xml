@@ -324,7 +324,6 @@
     <string name="gnss_navigation_messages">navigointiviestit</string>
     <string name="gnss_corrections">mittauskorjaukset</string>
     <string name="gnss_antenna_info">antennitiedot</string>
-    <string name="gnss_multiband">kaksitaajuus</string>
     <string name="gnss_capabilities_none">Vain sijainti</string>
     <string name="device_info_cpu_governor">Taajuuden säätäjä</string>
     <string name="memory_swap">Swap (ZRAM) käytössä</string>

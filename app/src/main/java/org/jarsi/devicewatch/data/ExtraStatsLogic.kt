@@ -16,6 +16,9 @@ enum class BiometricSensor { FINGERPRINT, FACE, IRIS }
 /** The NFC controller: missing, switched off or on. */
 enum class NfcState { NONE, OFF, ON }
 
+/** A GNSS capability beyond a plain position fix, per `GnssCapabilities`. */
+enum class GnssCapability { MEASUREMENTS, NAVIGATION_MESSAGES, ANTENNA_INFO, CORRECTIONS }
+
 /** One `MediaCodecInfo`, reduced to what the decoder list needs. */
 data class CodecRecord(val types: List<String>, val hardware: Boolean, val encoder: Boolean)
 
@@ -343,6 +346,23 @@ object ExtraStatsLogic {
         !present -> NfcState.NONE
         enabled -> NfcState.ON
         else -> NfcState.OFF
+    }
+
+    /**
+     * The GNSS capabilities worth naming, in a fixed order. Deliberately nothing
+     * from the power flags: hasPowerMultibandTracking() says the chip can measure
+     * what a multiband fix costs, not that it receives two frequencies.
+     */
+    fun gnssCapabilities(
+        measurements: Boolean,
+        navigationMessages: Boolean,
+        antennaInfo: Boolean,
+        corrections: Boolean,
+    ): List<GnssCapability> = buildList {
+        if (measurements) add(GnssCapability.MEASUREMENTS)
+        if (navigationMessages) add(GnssCapability.NAVIGATION_MESSAGES)
+        if (antennaInfo) add(GnssCapability.ANTENNA_INFO)
+        if (corrections) add(GnssCapability.CORRECTIONS)
     }
 
     /** SD cards and USB storage; the primary (internal) volume has its own row. */

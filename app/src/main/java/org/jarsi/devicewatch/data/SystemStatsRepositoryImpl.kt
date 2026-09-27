@@ -295,28 +295,31 @@ class SystemStatsRepositoryImpl @Inject constructor(
 
     /**
      * Raw measurements and navigation messages (the inputs precise-positioning
-     * apps use), measurement corrections, antenna info and dual-frequency
-     * (multiband) tracking, as far as the running Android reports them.
+     * apps use), antenna info and measurement corrections, as far as the running
+     * Android reports them.
      */
     private fun readGnssCapabilities(): String {
-        // The capability getters became public in Android 12, the correction and
-        // multiband ones in Android 14.
+        // The capability getters became public in Android 12, the corrections one in 14.
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return UNAVAILABLE_TEXT
         val capabilities = context.getSystemService(LocationManager::class.java)?.gnssCapabilities
             ?: return UNAVAILABLE_TEXT
-        val names = buildList {
-            if (capabilities.hasMeasurements()) add(R.string.gnss_measurements)
-            if (capabilities.hasNavigationMessages()) add(R.string.gnss_navigation_messages)
-            if (capabilities.hasAntennaInfo()) add(R.string.gnss_antenna_info)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                if (capabilities.hasMeasurementCorrections()) add(R.string.gnss_corrections)
-                if (capabilities.hasPowerMultibandTracking()) add(R.string.gnss_multiband)
-            }
-        }
-        return if (names.isEmpty()) {
-            context.getString(R.string.gnss_capabilities_none)
-        } else {
-            names.joinToString(", ") { context.getString(it) }
+        val names = ExtraStatsLogic.gnssCapabilities(
+            measurements = capabilities.hasMeasurements(),
+            navigationMessages = capabilities.hasNavigationMessages(),
+            antennaInfo = capabilities.hasAntennaInfo(),
+            corrections = Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE &&
+                capabilities.hasMeasurementCorrections(),
+        )
+        if (names.isEmpty()) return context.getString(R.string.gnss_capabilities_none)
+        return names.joinToString(", ") { capability ->
+            context.getString(
+                when (capability) {
+                    GnssCapability.MEASUREMENTS -> R.string.gnss_measurements
+                    GnssCapability.NAVIGATION_MESSAGES -> R.string.gnss_navigation_messages
+                    GnssCapability.ANTENNA_INFO -> R.string.gnss_antenna_info
+                    GnssCapability.CORRECTIONS -> R.string.gnss_corrections
+                }
+            )
         }
     }
 

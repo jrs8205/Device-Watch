@@ -633,4 +633,20 @@ class ExtraStatsLogicTest {
         assertThat(ExtraStatsLogic.lteRssnrDb(raw = 12, sdkInt = 30)).isEqualTo(12)
         assertThat(ExtraStatsLogic.lteRssnrDb(raw = null, sdkInt = 29)).isNull()
     }
+
+    @Test
+    fun `GNSS capabilities name what the chip reports, in a fixed order`() {
+        assertThat(
+            ExtraStatsLogic.gnssCapabilities(
+                measurements = true, navigationMessages = false, antennaInfo = true, corrections = true,
+            )
+        ).containsExactly(GnssCapability.MEASUREMENTS, GnssCapability.ANTENNA_INFO, GnssCapability.CORRECTIONS).inOrder()
+    }
+
+    @Test
+    fun `no dual-frequency claim is derived from the power-measurement flags`() {
+        // Codex round 6: hasPowerMultibandTracking() says the chip can report the
+        // power a multiband fix costs, not that it receives two frequencies.
+        assertThat(GnssCapability.entries.map { it.name }).doesNotContain("MULTIBAND")
+    }
 }
