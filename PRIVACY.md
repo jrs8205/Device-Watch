@@ -15,8 +15,9 @@ To show its statistics, Device Watch reads the following information **locally o
 - **Battery, memory, CPU, storage and uptime** — shown on the widget, dashboard and screensaver.
 - **App usage statistics** (requires the *Usage access* special permission you grant manually) — used for screen-time, last-opened and since-charge views.
 - **Notifications** (requires the *Notification access* special permission you grant manually) — used only to count notifications and keep an on-device notification log with a 7-day retention. Notification content never leaves the device.
-- **Network state, Wi-Fi details and SIM information** (`ACCESS_NETWORK_STATE`, `ACCESS_WIFI_STATE`, `READ_PHONE_STATE`, location permissions) — Android requires the location permission to reveal the Wi-Fi network name (SSID). It is used solely to display the SSID; the app does not access or store your geographic location.
-- **Installed application list** (`QUERY_ALL_PACKAGES`) — needed to resolve app names and icons for the usage statistics. `REQUEST_DELETE_PACKAGES` is used only to open the standard Android uninstall dialog when you tap *Uninstall*.
+- **Network state, Wi-Fi details and SIM information** (`ACCESS_NETWORK_STATE`, `ACCESS_WIFI_STATE`, `READ_PHONE_STATE`, location permissions) — Android requires the location permission to reveal the Wi-Fi network name (SSID) and the band and channel of the mobile cell the phone is registered to. It is used solely to display those; the app does not access or store your geographic location.
+- **Installed application list** (`QUERY_ALL_PACKAGES`) — needed to resolve app names and icons for the usage statistics, the per-app storage sizes and the list of apps exempt from battery optimisation. `REQUEST_DELETE_PACKAGES` is used only to open the standard Android uninstall dialog when you tap *Uninstall*.
+- **Device settings and hardware facts** — brightness, screen timeout, font and display size, developer options, power modes, screen lock, biometric sensors, NFC and similar read-only facts shown on the Device tab. `USE_BIOMETRIC` is used only to ask Android whether a strong biometric is enrolled (a yes/no); the app never authenticates you and never sees biometric data.
 
 ## Where the data lives
 

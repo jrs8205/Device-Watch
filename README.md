@@ -149,6 +149,7 @@ The app requests only permissions that are used by the current feature set:
 - `PACKAGE_USAGE_STATS`
 - `QUERY_ALL_PACKAGES` (resolve names/icons for the per-app data list; the app is distributed outside Google Play)
 - `REQUEST_DELETE_PACKAGES` (uninstall from the last-opened list via the system dialog)
+- `USE_BIOMETRIC` (a normal permission, granted on install: only to show on the Device tab whether a strong biometric is enrolled — the app never authenticates anyone)
 
 Notification counting additionally uses the optional Notification access special permission (a `NotificationListenerService`); counting starts when access is granted. Do Not Disturb and Bluetooth control permissions are not requested.
 
