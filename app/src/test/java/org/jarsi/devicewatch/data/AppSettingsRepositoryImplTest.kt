@@ -26,7 +26,7 @@ class AppSettingsRepositoryImplTest {
     fun `switching an alert off forgets that it was already posted`() {
         // Switched back on later, it must be able to alert for a condition still present.
         settings.setAlertEnabled(HealthAlert.HOT_BATTERY, true)
-        settings.setAlertLatched(HealthAlert.HOT_BATTERY, true)
+        settings.latchAlert(HealthAlert.HOT_BATTERY, settings.alertGeneration(HealthAlert.HOT_BATTERY))
 
         settings.setAlertEnabled(HealthAlert.HOT_BATTERY, false)
 

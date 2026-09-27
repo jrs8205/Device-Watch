@@ -60,6 +60,8 @@ class SystemMonitorService : Service() {
     @Inject lateinit var chargeAnchorStore: ChargeAnchorStore
     @Inject lateinit var batteryHistory: BatteryHistory
     @Inject lateinit var appSettings: AppSettingsRepository
+    @Inject lateinit var alertNotifications: AlertNotifications
+    private val alertController by lazy { HealthAlertController(appSettings, alertNotifications) }
     @Inject lateinit var batteryStatus: BatteryStatusReader
 
     private var lastUsageRefreshMs = 0L
@@ -561,24 +563,8 @@ class SystemMonitorService : Service() {
         }
     }
 
-    /**
-     * Posts an enabled alert once and latches it, re-arms it once its condition has
-     * cleared (taking the stale notification down with it). The latch is written
-     * only when the alert really went out, so one refused for a missing permission
-     * is tried again on the next reading.
-     */
-    @Synchronized
-    private fun applyAlertStep(alert: HealthAlert, step: (latched: Boolean) -> AlertStep, post: () -> Boolean) {
-        if (!appSettings.alertEnabled(alert)) return
-        when (step(appSettings.alertLatched(alert))) {
-            AlertStep.FIRE -> if (post()) appSettings.setAlertLatched(alert, true)
-            AlertStep.REARM -> {
-                appSettings.setAlertLatched(alert, false)
-                HealthAlertNotifier.cancel(applicationContext, alert)
-            }
-            AlertStep.NONE -> Unit
-        }
-    }
+    private fun applyAlertStep(alert: HealthAlert, step: (latched: Boolean) -> AlertStep, post: () -> Boolean) =
+        alertController.apply(alert, step, post)
 
     /**
      * A battery sample is never worth a crash: the store touches the filesystem, and

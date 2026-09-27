@@ -129,8 +129,15 @@ class AppSettingsRepositoryImpl @Inject constructor(
     override fun alertEnabled(alert: HealthAlert): Boolean =
         prefs.getBoolean(alertKey(KEY_ALERT_ENABLED_PREFIX, alert), false)
 
+    // The switch and the latch share this object's lock: the switch comes from the
+    // UI, the latch from the monitor service, and a latch must never land after
+    // the switch that cleared it. apply() updates the in-memory map at once, so
+    // reads inside the lock always see the other side's write.
+    @Synchronized
     override fun setAlertEnabled(alert: HealthAlert, enabled: Boolean) {
-        val editor = prefs.edit().putBoolean(alertKey(KEY_ALERT_ENABLED_PREFIX, alert), enabled)
+        val editor = prefs.edit()
+            .putBoolean(alertKey(KEY_ALERT_ENABLED_PREFIX, alert), enabled)
+            .putLong(alertKey(KEY_ALERT_GENERATION_PREFIX, alert), alertGeneration(alert) + 1)
         if (!enabled) editor.remove(alertKey(KEY_ALERT_LATCHED_PREFIX, alert))
         editor.apply()
     }
@@ -138,8 +145,19 @@ class AppSettingsRepositoryImpl @Inject constructor(
     override fun alertLatched(alert: HealthAlert): Boolean =
         prefs.getBoolean(alertKey(KEY_ALERT_LATCHED_PREFIX, alert), false)
 
-    override fun setAlertLatched(alert: HealthAlert, latched: Boolean) {
-        prefs.edit().putBoolean(alertKey(KEY_ALERT_LATCHED_PREFIX, alert), latched).apply()
+    override fun alertGeneration(alert: HealthAlert): Long =
+        prefs.getLong(alertKey(KEY_ALERT_GENERATION_PREFIX, alert), 0L)
+
+    @Synchronized
+    override fun latchAlert(alert: HealthAlert, generation: Long): Boolean {
+        if (!alertEnabled(alert) || alertGeneration(alert) != generation) return false
+        prefs.edit().putBoolean(alertKey(KEY_ALERT_LATCHED_PREFIX, alert), true).apply()
+        return true
+    }
+
+    @Synchronized
+    override fun unlatchAlert(alert: HealthAlert) {
+        prefs.edit().remove(alertKey(KEY_ALERT_LATCHED_PREFIX, alert)).apply()
     }
 
     private fun alertKey(prefix: String, alert: HealthAlert): String = "$prefix:${alert.name.lowercase()}"
@@ -161,6 +179,7 @@ class AppSettingsRepositoryImpl @Inject constructor(
         /** Full keys: "alert_enabled:hot_battery", "alert_latched:low_storage" and so on. */
         const val KEY_ALERT_ENABLED_PREFIX = "alert_enabled"
         const val KEY_ALERT_LATCHED_PREFIX = "alert_latched"
+        const val KEY_ALERT_GENERATION_PREFIX = "alert_generation"
         const val DEFAULT_CYCLE_START_DAY = 1
     }
 }

@@ -83,5 +83,14 @@ interface AppSettingsRepository {
     /** True once [alert] has been posted and the condition has not yet cleared. */
     fun alertLatched(alert: HealthAlert): Boolean
 
-    fun setAlertLatched(alert: HealthAlert, latched: Boolean)
+    /** Moves on every switch of [alert], so a decision taken before a switch can tell. */
+    fun alertGeneration(alert: HealthAlert): Long
+
+    /**
+     * Latches [alert] if it is still on and has not been switched since [generation];
+     * returns whether it did. One step with the switch, so neither can slip between.
+     */
+    fun latchAlert(alert: HealthAlert, generation: Long): Boolean
+
+    fun unlatchAlert(alert: HealthAlert)
 }

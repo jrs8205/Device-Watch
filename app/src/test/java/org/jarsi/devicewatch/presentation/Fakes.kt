@@ -130,15 +130,26 @@ internal class FakeAppSettingsRepository(
 
     override fun alertEnabled(alert: HealthAlert): Boolean = alert in alertsOn
 
+    private val alertGenerations = mutableMapOf<HealthAlert, Long>()
+
     override fun setAlertEnabled(alert: HealthAlert, enabled: Boolean) {
         if (enabled) alertsOn += alert else alertsOn -= alert
         if (!enabled) alertsLatched -= alert
+        alertGenerations[alert] = alertGeneration(alert) + 1
     }
 
     override fun alertLatched(alert: HealthAlert): Boolean = alert in alertsLatched
 
-    override fun setAlertLatched(alert: HealthAlert, latched: Boolean) {
-        if (latched) alertsLatched += alert else alertsLatched -= alert
+    override fun alertGeneration(alert: HealthAlert): Long = alertGenerations[alert] ?: 0L
+
+    override fun latchAlert(alert: HealthAlert, generation: Long): Boolean {
+        if (alert !in alertsOn || alertGeneration(alert) != generation) return false
+        alertsLatched += alert
+        return true
+    }
+
+    override fun unlatchAlert(alert: HealthAlert) {
+        alertsLatched -= alert
     }
 }
 
