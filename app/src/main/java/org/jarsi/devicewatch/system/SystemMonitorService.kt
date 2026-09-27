@@ -233,7 +233,7 @@ class SystemMonitorService : Service() {
         if (stats != null) {
             maybeNotifyDataQuota(stats)
             storageUsedBytes(stats.usedStorageGb)?.let {
-                usageHistory.recordStorageUsed(LocalDate.now(), it, stats.readAtMillis)
+                usageHistory.recordStorageUsed(LocalDate.now(), it, stats.readAtElapsedMillis)
             }
             evaluateStorageAlert(stats)
         }

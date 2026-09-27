@@ -197,7 +197,7 @@ class DashboardViewModel @Inject constructor(
                 usageHistory.recordUnlocks(today, totals.unlockCount)
             }
         }
-        storageUsedBytes(stats.usedStorageGb)?.let { usageHistory.recordStorageUsed(today, it, stats.readAtMillis) }
+        storageUsedBytes(stats.usedStorageGb)?.let { usageHistory.recordStorageUsed(today, it, stats.readAtElapsedMillis) }
         usageHistory.purge(today)
 
 

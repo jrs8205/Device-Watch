@@ -1554,7 +1554,7 @@ class SystemStatsRepositoryImpl @Inject constructor(
             cpuTemp = cpuTemp,
             totalStorageGb = totalStorageGb,
             usedStorageGb = usedStorageGb,
-            readAtMillis = System.currentTimeMillis(),
+            readAtElapsedMillis = SystemClock.elapsedRealtime(),
             storagePercent = storagePercent,
             wifiSsid = wifiSsid,
             wifiSsidName = wifiSsidName,

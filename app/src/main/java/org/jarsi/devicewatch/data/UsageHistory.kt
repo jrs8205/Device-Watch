@@ -33,12 +33,12 @@ interface UsageHistory {
     fun screenOnBetween(start: LocalDate, end: LocalDate): Long
 
     /**
-     * Internal storage in use on [day], as read at [readAtMillis]. A reading replaces
-     * the day's value only if it is not older than the stored one: the Home refresh
-     * and the monitor service both write, and a slow refresh must not put back a
-     * reading the service has already superseded.
+     * Internal storage in use on [day], read at [readAtElapsedMillis] on the
+     * monotonic clock. Within a process a reading older than the last one stored is
+     * refused: the Home refresh and the monitor service both write, and a slow
+     * refresh must not put back a reading the service has already superseded.
      */
-    fun recordStorageUsed(day: LocalDate, bytes: Long, readAtMillis: Long)
+    fun recordStorageUsed(day: LocalDate, bytes: Long, readAtElapsedMillis: Long)
 
     /**
      * Registers the current Settings.Global.BOOT_COUNT and attributes the delta
@@ -64,7 +64,7 @@ interface UsageHistory {
     fun purge(today: LocalDate)
 }
 
-internal val HISTORY_PREFIXES = setOf("unlocks", "screen", "boots", "charges", "screenon", "storage", "storageat")
+internal val HISTORY_PREFIXES = setOf("unlocks", "screen", "boots", "charges", "screenon", "storage")
 
 /**
  * The used storage of a stats reading ([usedGb] in GiB, as the stats compute it)

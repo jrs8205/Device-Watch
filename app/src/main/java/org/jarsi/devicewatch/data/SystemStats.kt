@@ -41,8 +41,8 @@ data class SystemStats(
     val cpuTemp: Double,
     val totalStorageGb: Double,
     val usedStorageGb: Double,
-    /** Wall-clock time the reading was taken, so a later write can tell it is stale; 0 in tests. */
-    val readAtMillis: Long = 0L,
+    /** Monotonic time (elapsedRealtime) the reading was taken, so a late write can tell it is stale. */
+    val readAtElapsedMillis: Long = 0L,
     val storagePercent: Int,
     val wifiSsid: String,
     val wifiSsidName: String,

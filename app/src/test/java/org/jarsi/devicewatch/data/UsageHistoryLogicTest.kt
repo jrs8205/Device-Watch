@@ -46,7 +46,8 @@ class UsageHistoryLogicTest {
         assertThat(isRetainedHistoryKey("unlocks:$todayEpoch", retained)).isTrue()
         assertThat(isRetainedHistoryKey("screen:$todayEpoch", retained)).isTrue()
         assertThat(isRetainedHistoryKey("storage:$todayEpoch", retained)).isTrue()
-        assertThat(isRetainedHistoryKey("storageat:$todayEpoch", retained)).isTrue()
+        // 1.6.0 development builds kept a wall-clock stamp here; it is dropped now.
+        assertThat(isRetainedHistoryKey("storageat:$todayEpoch", retained)).isFalse()
         assertThat(isRetainedHistoryKey("boots:$oldEpoch", retained)).isFalse()
         assertThat(isRetainedHistoryKey("garbage", retained)).isFalse()
         assertThat(isRetainedHistoryKey("charges:abc", retained)).isFalse()

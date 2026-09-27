@@ -270,9 +270,9 @@ internal class FakeUsageHistory : UsageHistory {
 
     val storageReadAt = mutableMapOf<LocalDate, Long>()
 
-    override fun recordStorageUsed(day: LocalDate, bytes: Long, readAtMillis: Long) {
+    override fun recordStorageUsed(day: LocalDate, bytes: Long, readAtElapsedMillis: Long) {
         storage[day] = bytes
-        storageReadAt[day] = readAtMillis
+        storageReadAt[day] = readAtElapsedMillis
     }
 
     override fun screenOnBetween(start: LocalDate, end: LocalDate): Long =

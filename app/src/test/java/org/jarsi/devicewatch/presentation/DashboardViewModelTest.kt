@@ -299,7 +299,7 @@ class DashboardViewModelTest {
     fun `a refresh keeps today's used storage for the history`() =
         runTest(dispatcher) {
             val history = FakeUsageHistory()
-            val stats = sampleStats().copy(readAtMillis = 5_000L)
+            val stats = sampleStats().copy(readAtElapsedMillis = 5_000L)
             val viewModel = buildViewModel(repository = FakeSystemStatsRepository(stats), history = history)
 
             viewModel.refresh()
