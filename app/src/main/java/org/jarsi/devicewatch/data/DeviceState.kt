@@ -11,4 +11,9 @@ data class DeviceState(
     val powerSaveMode: String = UNAVAILABLE_TEXT,
     val deviceIdle: String = UNAVAILABLE_TEXT,
     val batteryOptimizationExempt: String = UNAVAILABLE_TEXT,
+    // Attached storage and USB
+    /** SD cards and USB storage, each as its name and a free/total or state text. */
+    val removableVolumes: List<Pair<String, String>> = emptyList(),
+    /** Devices attached to the USB host port, comma-separated; a "none" text when empty. */
+    val usbDevices: String = UNAVAILABLE_TEXT,
 )

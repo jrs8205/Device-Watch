@@ -309,12 +309,18 @@ internal fun SettingsToggleRow(
  */
 @Composable
 internal fun DeviceFact(@StringRes labelRes: Int, value: String) {
+    DeviceFact(label = stringResource(labelRes), value = value)
+}
+
+/** [DeviceFact] for a label that comes from the device, such as a volume's name. */
+@Composable
+internal fun DeviceFact(label: String, value: String) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(vertical = 10.dp)) {
             Text(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                text = stringResource(labelRes),
+                text = label,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurfaceVariant

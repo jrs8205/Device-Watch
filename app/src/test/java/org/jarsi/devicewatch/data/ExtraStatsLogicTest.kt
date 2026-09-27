@@ -384,4 +384,27 @@ class ExtraStatsLogicTest {
     fun `no events give no screen-on time`() {
         assertThat(ExtraStatsLogic.screenOnByDay(emptyList(), at(20, 0), at(21, 0), utc)).isEmpty()
     }
+
+    @Test
+    fun `only removable volumes are listed, internal storage has its own row`() {
+        val volumes = listOf(
+            VolumeInfo("Internal shared storage", primary = true, removable = false, mounted = true, 64_000L, 20_000L),
+            VolumeInfo("SanDisk SD card", primary = false, removable = true, mounted = true, 32_000L, 8_000L),
+            VolumeInfo("USB drive", primary = false, removable = true, mounted = false, 0L, 0L),
+        )
+
+        assertThat(ExtraStatsLogic.removableVolumes(volumes).map { it.description })
+            .containsExactly("SanDisk SD card", "USB drive").inOrder()
+    }
+
+    @Test
+    fun `a USB device is named by maker and product, or by its ids`() {
+        assertThat(ExtraStatsLogic.usbDeviceName("Logitech", "USB Receiver", 0x046d, 0xc52b))
+            .isEqualTo("Logitech USB Receiver")
+        // A product name that already starts with the maker is not doubled.
+        assertThat(ExtraStatsLogic.usbDeviceName("SanDisk", "SanDisk Ultra", 0x0781, 0x5581))
+            .isEqualTo("SanDisk Ultra")
+        assertThat(ExtraStatsLogic.usbDeviceName(null, " ", 0x046d, 0xc52b))
+            .isEqualTo("USB 046d:c52b")
+    }
 }

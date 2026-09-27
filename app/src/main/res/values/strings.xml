@@ -302,6 +302,14 @@
     <string name="report_summary_screen_on">Screen on per day</string>
     <string name="report_column_screen_on">Screen on</string>
     <string name="power_section">POWER</string>
+    <string name="external_section">MEMORY CARDS AND USB</string>
+    <string name="external_volumes">Memory cards and USB storage</string>
+    <string name="external_volumes_none">None attached</string>
+    <string name="volume_free_of">%1$s free of %2$s</string>
+    <string name="volume_mounted">In use</string>
+    <string name="volume_not_mounted">Not in use</string>
+    <string name="usb_devices">USB devices</string>
+    <string name="usb_devices_none">None attached</string>
     <string name="power_save_mode">Battery saver on</string>
     <string name="power_device_idle">Deep idle (Doze) now</string>
     <string name="power_battery_optimization_exempt">This app skips battery optimisation</string>

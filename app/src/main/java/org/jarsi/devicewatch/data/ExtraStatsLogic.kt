@@ -9,6 +9,16 @@ import java.time.ZoneId
 /** Where the charge comes from, as `BatteryManager.EXTRA_PLUGGED` reports it. */
 enum class ChargeSource { NONE, AC, USB, WIRELESS, DOCK }
 
+/** One `StorageVolume`, with its size where the platform exposes its directory (API 30). */
+data class VolumeInfo(
+    val description: String,
+    val primary: Boolean,
+    val removable: Boolean,
+    val mounted: Boolean,
+    val totalBytes: Long,
+    val freeBytes: Long,
+)
+
 /** A `UsageEvents` SCREEN_INTERACTIVE (on) or SCREEN_NON_INTERACTIVE (off) event. */
 data class ScreenEvent(val timeMillis: Long, val on: Boolean)
 
@@ -125,6 +135,26 @@ object ExtraStatsLogic {
     }
 
     private const val GIB = 1024.0 * 1024.0 * 1024.0
+
+    /** SD cards and USB storage; the primary (internal) volume has its own row. */
+    fun removableVolumes(volumes: List<VolumeInfo>): List<VolumeInfo> =
+        volumes.filter { it.removable && !it.primary }
+
+    /**
+     * A USB device as "maker product", without doubling a maker the product name
+     * already starts with, or as "USB vendor:product" in hex when it names neither.
+     */
+    fun usbDeviceName(manufacturer: String?, product: String?, vendorId: Int, productId: Int): String {
+        val maker = manufacturer?.trim()?.takeIf { it.isNotEmpty() }
+        val name = product?.trim()?.takeIf { it.isNotEmpty() }
+        return when {
+            maker != null && name != null ->
+                if (name.startsWith(maker, ignoreCase = true)) name else "$maker $name"
+            name != null -> name
+            maker != null -> maker
+            else -> "USB %04x:%04x".format(vendorId, productId)
+        }
+    }
 
     /**
      * Time the screen was on per local day between [startMillis] and [endMillis],

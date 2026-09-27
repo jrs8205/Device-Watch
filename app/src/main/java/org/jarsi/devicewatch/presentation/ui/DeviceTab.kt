@@ -9,6 +9,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import org.jarsi.devicewatch.R
 import org.jarsi.devicewatch.data.UNAVAILABLE_TEXT
@@ -81,6 +82,15 @@ internal fun DeviceTab(uiState: DashboardUiState) {
                 DeviceFact(R.string.power_save_mode, state.powerSaveMode)
                 DeviceFact(R.string.power_device_idle, state.deviceIdle)
                 DeviceFact(R.string.power_battery_optimization_exempt, state.batteryOptimizationExempt)
+            }
+
+            SettingsSectionCard(titleRes = R.string.external_section) {
+                if (state.removableVolumes.isEmpty()) {
+                    DeviceFact(R.string.external_volumes, stringResource(R.string.external_volumes_none))
+                } else {
+                    state.removableVolumes.forEach { (name, value) -> DeviceFact(name, value) }
+                }
+                DeviceFact(R.string.usb_devices, state.usbDevices)
             }
         }
 

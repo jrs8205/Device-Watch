@@ -17,6 +17,7 @@ import android.hardware.SensorManager
 import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraManager
 import android.hardware.display.DisplayManager
+import android.hardware.usb.UsbManager
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
@@ -182,7 +183,58 @@ class SystemStatsRepositoryImpl @Inject constructor(
             batteryOptimizationExempt = powerManager
                 ?.let { boolText(it.isIgnoringBatteryOptimizations(context.packageName)) }
                 ?: UNAVAILABLE_TEXT,
+            removableVolumes = readRemovableVolumes(),
+            usbDevices = readUsbDevices(),
         )
+    }
+
+    private fun readRemovableVolumes(): List<Pair<String, String>> {
+        val volumes = try {
+            context.getSystemService(StorageManager::class.java)?.storageVolumes.orEmpty()
+        } catch (_: Exception) {
+            emptyList()
+        }
+        val infos = volumes.map { volume ->
+            val directory = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) volume.directory else null
+            val stat = directory?.let { dir -> runCatching { StatFs(dir.path) }.getOrNull() }
+            VolumeInfo(
+                description = volume.getDescription(context),
+                primary = volume.isPrimary,
+                removable = volume.isRemovable,
+                mounted = volume.state == Environment.MEDIA_MOUNTED ||
+                    volume.state == Environment.MEDIA_MOUNTED_READ_ONLY,
+                totalBytes = stat?.totalBytes ?: 0L,
+                freeBytes = stat?.availableBytes ?: 0L,
+            )
+        }
+        return ExtraStatsLogic.removableVolumes(infos).map { volume ->
+            volume.description to when {
+                !volume.mounted -> context.getString(R.string.volume_not_mounted)
+                volume.totalBytes > 0L -> context.getString(
+                    R.string.volume_free_of,
+                    "%.1f GB".format(volume.freeBytes / GB_BYTES),
+                    "%.1f GB".format(volume.totalBytes / GB_BYTES),
+                )
+                else -> context.getString(R.string.volume_mounted)
+            }
+        }
+    }
+
+    private fun readUsbDevices(): String {
+        val devices = try {
+            context.getSystemService(UsbManager::class.java)?.deviceList?.values.orEmpty()
+        } catch (_: Exception) {
+            return UNAVAILABLE_TEXT
+        }
+        if (devices.isEmpty()) return context.getString(R.string.usb_devices_none)
+        return devices.joinToString(", ") { device ->
+            val (maker, product) = try {
+                device.manufacturerName to device.productName
+            } catch (_: SecurityException) {
+                null to null
+            }
+            ExtraStatsLogic.usbDeviceName(maker, product, device.vendorId, device.productId)
+        }
     }
 
     override suspend fun monthlyDataUsage(monthsBack: Int): List<MonthlyDataUsage> = withContext(dispatcher) {

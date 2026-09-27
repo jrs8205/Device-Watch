@@ -298,6 +298,14 @@
     <string name="report_summary_screen_on">Näyttö päällä / vrk</string>
     <string name="report_column_screen_on">Näyttö päällä</string>
     <string name="power_section">VIRRANHALLINTA</string>
+    <string name="external_section">MUISTIKORTIT JA USB</string>
+    <string name="external_volumes">Muistikortit ja USB-muistit</string>
+    <string name="external_volumes_none">Ei liitettyjä</string>
+    <string name="volume_free_of">%1$s vapaana / %2$s</string>
+    <string name="volume_mounted">Käytössä</string>
+    <string name="volume_not_mounted">Ei käytössä</string>
+    <string name="usb_devices">USB-laitteet</string>
+    <string name="usb_devices_none">Ei liitettyjä</string>
     <string name="power_save_mode">Virransäästö päällä</string>
     <string name="power_device_idle">Syvä lepotila (Doze) nyt</string>
     <string name="power_battery_optimization_exempt">Sovellus ohittaa akun optimoinnin</string>
