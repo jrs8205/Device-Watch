@@ -43,4 +43,7 @@ interface SystemStatsRepository {
      * screen asks for it and the widget loop does not.
      */
     suspend fun storageBreakdown(): StorageBreakdown?
+
+    /** Settings and states that change while the app runs; read on each screen refresh. */
+    suspend fun deviceState(): DeviceState
 }

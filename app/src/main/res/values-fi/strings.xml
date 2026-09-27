@@ -292,6 +292,10 @@
     <string name="sensor_heart_rate">Syke</string>
 
     <string name="system_info_section">JÄRJESTELMÄ</string>
+    <string name="power_section">VIRRANHALLINTA</string>
+    <string name="power_save_mode">Virransäästö päällä</string>
+    <string name="power_device_idle">Syvä lepotila (Doze) nyt</string>
+    <string name="power_battery_optimization_exempt">Sovellus ohittaa akun optimoinnin</string>
     <string name="system_locale">Kieli</string>
     <string name="system_timezone">Aikavyöhyke</string>
     <string name="system_webview">WebView</string>

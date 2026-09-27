@@ -174,6 +174,17 @@ class SystemStatsRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun deviceState(): DeviceState = withContext(dispatcher) {
+        val powerManager = context.getSystemService(PowerManager::class.java)
+        DeviceState(
+            powerSaveMode = powerManager?.let { boolText(it.isPowerSaveMode) } ?: UNAVAILABLE_TEXT,
+            deviceIdle = powerManager?.let { boolText(it.isDeviceIdleMode) } ?: UNAVAILABLE_TEXT,
+            batteryOptimizationExempt = powerManager
+                ?.let { boolText(it.isIgnoringBatteryOptimizations(context.packageName)) }
+                ?: UNAVAILABLE_TEXT,
+        )
+    }
+
     override suspend fun monthlyDataUsage(monthsBack: Int): List<MonthlyDataUsage> = withContext(dispatcher) {
         val ranges = DataPeriodCalculator.monthRanges(LocalDate.now(), ZoneId.systemDefault(), monthsBack)
         if (!hasUsageStatsAccess()) {

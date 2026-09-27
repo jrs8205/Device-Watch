@@ -75,6 +75,14 @@ internal fun DeviceTab(uiState: DashboardUiState) {
             }
         }
 
+        uiState.deviceState?.let { state ->
+            SettingsSectionCard(titleRes = R.string.power_section) {
+                DeviceFact(R.string.power_save_mode, state.powerSaveMode)
+                DeviceFact(R.string.power_device_idle, state.deviceIdle)
+                DeviceFact(R.string.power_battery_optimization_exempt, state.batteryOptimizationExempt)
+            }
+        }
+
         SettingsSectionCard(titleRes = R.string.sim_info_section) {
             DeviceFact(R.string.sim_operator, currentStats.operatorName)
             DeviceFact(R.string.sim_country, currentStats.networkCountry)

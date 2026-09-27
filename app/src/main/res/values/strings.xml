@@ -296,6 +296,10 @@
     <string name="sensor_heart_rate">Heart rate</string>
 
     <string name="system_info_section">SYSTEM</string>
+    <string name="power_section">POWER</string>
+    <string name="power_save_mode">Battery saver on</string>
+    <string name="power_device_idle">Deep idle (Doze) now</string>
+    <string name="power_battery_optimization_exempt">This app skips battery optimisation</string>
     <string name="system_locale">Language</string>
     <string name="system_timezone">Time zone</string>
     <string name="system_webview">WebView</string>

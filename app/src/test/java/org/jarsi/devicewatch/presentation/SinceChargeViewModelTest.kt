@@ -15,6 +15,7 @@ import org.jarsi.devicewatch.data.SystemStats
 import org.jarsi.devicewatch.data.SystemStatsRepository
 import org.jarsi.devicewatch.data.DataBreakdown
 import org.jarsi.devicewatch.data.StorageBreakdown
+import org.jarsi.devicewatch.data.DeviceState
 import org.jarsi.devicewatch.data.AppScreenTime
 import org.jarsi.devicewatch.data.UNAVAILABLE_INT
 import org.jarsi.devicewatch.data.AppUsageRepository
@@ -61,6 +62,7 @@ class SinceChargeViewModelTest {
     ) : SystemStatsRepository {
         override suspend fun dataBreakdown(startMillis: Long): DataBreakdown = DataBreakdown.NONE
         override suspend fun storageBreakdown(): StorageBreakdown? = null
+        override suspend fun deviceState(): DeviceState = DeviceState()
 
         override suspend fun getStats(): SystemStats = error("not used by SinceChargeViewModel")
         override suspend fun getDeviceInfo(): DeviceInfo = error("not used by SinceChargeViewModel")

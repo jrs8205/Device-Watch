@@ -10,6 +10,7 @@ import org.jarsi.devicewatch.data.DATA_QUOTA_MAX_GB
 import org.jarsi.devicewatch.data.DATA_QUOTA_MIN_GB
 import org.jarsi.devicewatch.data.DataBreakdown
 import org.jarsi.devicewatch.data.StorageBreakdown
+import org.jarsi.devicewatch.data.DeviceState
 import org.jarsi.devicewatch.data.DataCounterMode
 import org.jarsi.devicewatch.data.DataPeriodCalculator
 import org.jarsi.devicewatch.data.DeviceInfo
@@ -78,6 +79,8 @@ data class DashboardUiState(
     val dataBreakdown: DataBreakdown? = null,
     /** What the used storage holds; null until read or when unavailable. */
     val storageBreakdown: StorageBreakdown? = null,
+    /** Settings and states that change while the app runs; null until read. */
+    val deviceState: DeviceState? = null,
 )
 
 @HiltViewModel
@@ -233,7 +236,10 @@ class DashboardViewModel @Inject constructor(
             periodStart.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
         )
         val storage = repository.storageBreakdown()
-        _uiState.update { it.copy(dataBreakdown = breakdown, storageBreakdown = storage) }
+        val deviceState = repository.deviceState()
+        _uiState.update {
+            it.copy(dataBreakdown = breakdown, storageBreakdown = storage, deviceState = deviceState)
+        }
     }
 
     /** Loads the static, root-free device facts once (build, SoC, display, memory). */

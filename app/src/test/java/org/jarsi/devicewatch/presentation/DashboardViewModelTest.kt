@@ -13,6 +13,7 @@ import org.jarsi.devicewatch.data.SystemStatsRepository
 import org.jarsi.devicewatch.data.DataBreakdown
 import org.jarsi.devicewatch.data.TrafficSplit
 import org.jarsi.devicewatch.data.StorageBreakdown
+import org.jarsi.devicewatch.data.DeviceState
 import org.jarsi.devicewatch.data.UNAVAILABLE_INT
 import org.jarsi.devicewatch.data.UsageHistory
 import org.jarsi.devicewatch.data.UsageTotals
@@ -201,6 +202,19 @@ class DashboardViewModelTest {
             advanceUntilIdle()
 
             assertThat(viewModel.uiState.value.storageBreakdown).isEqualTo(storage)
+        }
+
+    @Test
+    fun `given a refresh, then the device state reaches the screen`() =
+        runTest(dispatcher) {
+            val state = DeviceState(powerSaveMode = "Yes", deviceIdle = "No")
+            val repository = FakeSystemStatsRepository(sampleStats(), state = state)
+            val viewModel = buildViewModel(repository = repository)
+
+            viewModel.refresh()
+            advanceUntilIdle()
+
+            assertThat(viewModel.uiState.value.deviceState).isEqualTo(state)
         }
 
     @Test
@@ -645,7 +659,10 @@ private class FakeSystemStatsRepository(
     private val stats: SystemStats,
     private val breakdown: DataBreakdown = DataBreakdown.NONE,
     private val storage: StorageBreakdown? = null,
+    private val state: DeviceState = DeviceState(),
 ) : SystemStatsRepository {
+    override suspend fun deviceState(): DeviceState = state
+
     override suspend fun storageBreakdown(): StorageBreakdown? = storage
 
     var callCount = 0
