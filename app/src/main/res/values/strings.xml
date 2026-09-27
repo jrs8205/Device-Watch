@@ -26,6 +26,10 @@
     <string name="widget_opacity_title">Widget background opacity</string>
     <string name="widget_opacity_description" formatted="false">Adjust the home screen widget background opacity. 100% is fully opaque.</string>
     <string name="data_counter_section">DATA COUNTER</string>
+    <string name="traffic_section">TRAFFIC NOW</string>
+    <string name="traffic_down">↓ Download</string>
+    <string name="traffic_up">↑ Upload</string>
+    <string name="traffic_peak">Peak in the last minute: ↓ %1$s · ↑ %2$s</string>
     <string name="data_counter_mode_day">Per day</string>
     <string name="data_counter_mode_cycle">Billing cycle</string>
     <string name="data_counter_cycle_start">Cycle starts on day %1$d</string>

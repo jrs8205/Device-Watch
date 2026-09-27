@@ -25,6 +25,10 @@
     <string name="widget_opacity_title">Widgetin taustan peittävyys</string>
     <string name="widget_opacity_description" formatted="false">Säädä kotinäytön widgetin taustan läpinäkyvyyttä. 100% on täysin kiinteä tausta.</string>
     <string name="data_counter_section">DATALASKURI</string>
+    <string name="traffic_section">LIIKENNE NYT</string>
+    <string name="traffic_down">↓ Lataus</string>
+    <string name="traffic_up">↑ Lähetys</string>
+    <string name="traffic_peak">Minuutin huippu: ↓ %1$s · ↑ %2$s</string>
     <string name="data_counter_mode_day">Päivä</string>
     <string name="data_counter_mode_cycle">Kausi</string>
     <string name="data_counter_cycle_start">Kausi alkaa päivänä %1$d</string>

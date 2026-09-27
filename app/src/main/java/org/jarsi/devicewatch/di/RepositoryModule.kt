@@ -22,6 +22,8 @@ import org.jarsi.devicewatch.system.IntentMonitorServiceRelay
 import org.jarsi.devicewatch.system.MonitorServiceRelay
 import org.jarsi.devicewatch.widget.GlanceWidgetController
 import org.jarsi.devicewatch.widget.WidgetController
+import org.jarsi.devicewatch.data.TrafficCounterSource
+import org.jarsi.devicewatch.data.TrafficStatsCounterSource
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -75,4 +77,7 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindMonitorServiceRelay(impl: IntentMonitorServiceRelay): MonitorServiceRelay
+
+    @Binds
+    abstract fun bindTrafficCounterSource(impl: TrafficStatsCounterSource): TrafficCounterSource
 }

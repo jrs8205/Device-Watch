@@ -455,6 +455,8 @@ internal fun OverviewTab(
             }
         }
 
+        LiveTrafficSection()
+
         // Resources (RAM, CPU, storage) — widget parity for people without the widget
         SettingsSectionCard(titleRes = R.string.system_resources_section) {
             Spacer(modifier = Modifier.height(4.dp))
