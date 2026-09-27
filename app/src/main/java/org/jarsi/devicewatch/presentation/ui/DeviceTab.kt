@@ -104,6 +104,13 @@ internal fun DeviceTab(uiState: DashboardUiState) {
                 DeviceFact(R.string.system_auto_time_zone, state.automaticTimeZone)
             }
 
+            SettingsSectionCard(titleRes = R.string.security_section) {
+                DeviceFact(R.string.security_screen_lock, state.screenLock)
+                DeviceFact(R.string.security_biometrics, state.biometrics)
+                DeviceFact(R.string.security_strongbox, state.strongBox)
+                DeviceFact(R.string.security_nfc, state.nfc)
+            }
+
             SettingsSectionCard(titleRes = R.string.external_section) {
                 if (state.removableVolumes.isEmpty()) {
                     DeviceFact(R.string.external_volumes, stringResource(R.string.external_volumes_none))

@@ -10,6 +10,12 @@ import java.util.Locale
 /** Where the charge comes from, as `BatteryManager.EXTRA_PLUGGED` reports it. */
 enum class ChargeSource { NONE, AC, USB, WIRELESS, DOCK }
 
+/** A biometric sensor the device has, per its system features. */
+enum class BiometricSensor { FINGERPRINT, FACE, IRIS }
+
+/** The NFC controller: missing, switched off or on. */
+enum class NfcState { NONE, OFF, ON }
+
 /** One `MediaCodecInfo`, reduced to what the decoder list needs. */
 data class CodecRecord(val types: List<String>, val hardware: Boolean, val encoder: Boolean)
 
@@ -305,6 +311,23 @@ object ExtraStatsLogic {
         "video/x-vnd.on2.vp9" to "VP9",
         "video/dolby-vision" to "Dolby Vision",
     )
+
+    /**
+     * The biometric sensors the device declares (FEATURE_FINGERPRINT, and from
+     * Android 10 FEATURE_FACE and FEATURE_IRIS). Whether one is enrolled would take
+     * the USE_BIOMETRIC permission, which a read-only monitor does not ask for.
+     */
+    fun biometricSensors(fingerprint: Boolean, face: Boolean, iris: Boolean): List<BiometricSensor> = buildList {
+        if (fingerprint) add(BiometricSensor.FINGERPRINT)
+        if (face) add(BiometricSensor.FACE)
+        if (iris) add(BiometricSensor.IRIS)
+    }
+
+    fun nfcState(present: Boolean, enabled: Boolean): NfcState = when {
+        !present -> NfcState.NONE
+        enabled -> NfcState.ON
+        else -> NfcState.OFF
+    }
 
     /** SD cards and USB storage; the primary (internal) volume has its own row. */
     fun removableVolumes(volumes: List<VolumeInfo>): List<VolumeInfo> =

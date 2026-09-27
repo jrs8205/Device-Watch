@@ -3,6 +3,7 @@ package org.jarsi.devicewatch.data
 import android.Manifest
 import android.annotation.TargetApi
 import android.app.ActivityManager
+import android.app.KeyguardManager
 import android.app.AppOpsManager
 import android.app.usage.NetworkStats
 import android.app.usage.NetworkStatsManager
@@ -22,6 +23,7 @@ import android.hardware.usb.UsbManager
 import android.location.LocationManager
 import android.media.MediaCodecList
 import android.media.MediaDrm
+import android.nfc.NfcAdapter
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
@@ -217,6 +219,15 @@ class SystemStatsRepositoryImpl @Inject constructor(
             usbDebugging = globalFlag(Settings.Global.ADB_ENABLED, default = false),
             automaticTime = globalFlag(Settings.Global.AUTO_TIME, default = true),
             automaticTimeZone = globalFlag(Settings.Global.AUTO_TIME_ZONE, default = true),
+            screenLock = context.getSystemService(KeyguardManager::class.java)
+                ?.let { boolText(it.isDeviceSecure) } ?: UNAVAILABLE_TEXT,
+            biometrics = readBiometricSensors(),
+            strongBox = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                boolText(context.packageManager.hasSystemFeature(PackageManager.FEATURE_STRONGBOX_KEYSTORE))
+            } else {
+                UNAVAILABLE_TEXT
+            },
+            nfc = readNfc(),
             internetAccess = network.first,
             bandwidthEstimate = network.second,
             networkMetered = network.third,
@@ -317,6 +328,46 @@ class SystemStatsRepositoryImpl @Inject constructor(
             min to max
         }
         return ExtraStatsLogic.cpuClustersText(cores) ?: UNAVAILABLE_TEXT
+    }
+
+    private fun readBiometricSensors(): String {
+        val packageManager = context.packageManager
+        val q = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
+        val sensors = ExtraStatsLogic.biometricSensors(
+            fingerprint = packageManager.hasSystemFeature(PackageManager.FEATURE_FINGERPRINT),
+            face = q && packageManager.hasSystemFeature(PackageManager.FEATURE_FACE),
+            iris = q && packageManager.hasSystemFeature(PackageManager.FEATURE_IRIS),
+        )
+        if (sensors.isEmpty()) return context.getString(R.string.biometrics_none)
+        return sensors.joinToString(", ") { sensor ->
+            context.getString(
+                when (sensor) {
+                    BiometricSensor.FINGERPRINT -> R.string.biometrics_fingerprint
+                    BiometricSensor.FACE -> R.string.biometrics_face
+                    BiometricSensor.IRIS -> R.string.biometrics_iris
+                }
+            )
+        }
+    }
+
+    private fun readNfc(): String {
+        val adapter = try {
+            NfcAdapter.getDefaultAdapter(context)
+        } catch (_: Exception) {
+            null
+        }
+        val enabled = try {
+            adapter?.isEnabled == true
+        } catch (_: Exception) {
+            false
+        }
+        return context.getString(
+            when (ExtraStatsLogic.nfcState(present = adapter != null, enabled = enabled)) {
+                NfcState.NONE -> R.string.nfc_none
+                NfcState.OFF -> R.string.nfc_off
+                NfcState.ON -> R.string.nfc_on
+            }
+        )
     }
 
     /** The slider position Settings shows, and whether it follows the light. */

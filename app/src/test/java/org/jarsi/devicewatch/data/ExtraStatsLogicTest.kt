@@ -563,4 +563,20 @@ class ExtraStatsLogicTest {
 
         assertThat(ExtraStatsLogic.hardwareDecoders(codecs)).containsExactly("AV1", "HEVC").inOrder()
     }
+
+    @Test
+    fun `biometric sensors are listed from the system features`() {
+        // FEATURE_FINGERPRINT / FEATURE_FACE / FEATURE_IRIS need no permission,
+        // unlike asking BiometricManager whether they are enrolled.
+        assertThat(ExtraStatsLogic.biometricSensors(fingerprint = true, face = true, iris = false))
+            .containsExactly(BiometricSensor.FINGERPRINT, BiometricSensor.FACE).inOrder()
+        assertThat(ExtraStatsLogic.biometricSensors(fingerprint = false, face = false, iris = false)).isEmpty()
+    }
+
+    @Test
+    fun `NFC reads as missing, off or on`() {
+        assertThat(ExtraStatsLogic.nfcState(present = false, enabled = false)).isEqualTo(NfcState.NONE)
+        assertThat(ExtraStatsLogic.nfcState(present = true, enabled = false)).isEqualTo(NfcState.OFF)
+        assertThat(ExtraStatsLogic.nfcState(present = true, enabled = true)).isEqualTo(NfcState.ON)
+    }
 }

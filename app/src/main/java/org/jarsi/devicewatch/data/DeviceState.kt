@@ -23,6 +23,11 @@ data class DeviceState(
     val usbDebugging: String = UNAVAILABLE_TEXT,
     val automaticTime: String = UNAVAILABLE_TEXT,
     val automaticTimeZone: String = UNAVAILABLE_TEXT,
+    // Security
+    val screenLock: String = UNAVAILABLE_TEXT,
+    val biometrics: String = UNAVAILABLE_TEXT,
+    val strongBox: String = UNAVAILABLE_TEXT,
+    val nfc: String = UNAVAILABLE_TEXT,
     // Active network
     /** Whether the active network reaches the internet, or waits at a sign-in page. */
     val internetAccess: String = UNAVAILABLE_TEXT,
