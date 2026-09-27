@@ -25,6 +25,7 @@ import android.opengl.EGLConfig
 import android.opengl.GLES20
 import android.os.BatteryManager
 import android.os.Build
+import android.os.PowerManager
 import android.os.Environment
 import android.os.Process
 import android.os.StatFs
@@ -502,6 +503,7 @@ class SystemStatsRepositoryImpl @Inject constructor(
         val batteryCapacityPercent = readBatteryCapacityPercent()
 
         val timeRemainingText = buildBatteryTimeText(status, batteryManager)
+        val (systemEstimateText, systemEstimatePersonalized) = readSystemEstimate(status)
 
         val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
         val memoryInfo = ActivityManager.MemoryInfo()
@@ -715,6 +717,8 @@ class SystemStatsRepositoryImpl @Inject constructor(
             dataPeriodStartEpochDay = periodStartDay.toEpochDay(),
             dataSettingsGeneration = dataSettingsGeneration,
             chargeSource = chargeSource,
+            systemEstimateText = systemEstimateText,
+            systemEstimatePersonalized = systemEstimatePersonalized,
         )
     }
 
@@ -775,17 +779,37 @@ class SystemStatsRepositoryImpl @Inject constructor(
             val chargeCounter = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER)
             val currentNow = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW)
             val totalMinutes = SystemStatsParser.dischargeTimeRemainingMinutes(chargeCounter, currentNow)
-            if (totalMinutes != null) {
-                val hours = totalMinutes / 60
-                val minutes = totalMinutes % 60
-                if (hours > 0) {
-                    context.getString(R.string.battery_time_remaining_hours, hours, minutes)
-                } else {
-                    context.getString(R.string.battery_time_remaining_minutes, minutes)
-                }
-            } else {
-                UNAVAILABLE_TEXT
-            }
+            totalMinutes?.let(::remainingText) ?: UNAVAILABLE_TEXT
+        }
+    }
+
+    private fun remainingText(totalMinutes: Int): String {
+        val hours = totalMinutes / 60
+        val minutes = totalMinutes % 60
+        return if (hours > 0) {
+            context.getString(R.string.battery_time_remaining_hours, hours, minutes)
+        } else {
+            context.getString(R.string.battery_time_remaining_minutes, minutes)
+        }
+    }
+
+    /**
+     * The system's own discharge prediction (API 31), which Android fills from its
+     * battery-usage model — on Pixels learned from the user's habits. Only asked on
+     * battery: while charging the prediction is about discharge and says nothing.
+     */
+    private fun readSystemEstimate(status: Int): Pair<String, Boolean> {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return UNAVAILABLE_TEXT to false
+        if (status == BatteryManager.BATTERY_STATUS_CHARGING || status == BatteryManager.BATTERY_STATUS_FULL) {
+            return UNAVAILABLE_TEXT to false
+        }
+        val powerManager = context.getSystemService(PowerManager::class.java) ?: return UNAVAILABLE_TEXT to false
+        return try {
+            val minutes = ExtraStatsLogic.predictionMinutes(powerManager.batteryDischargePrediction?.toMillis())
+                ?: return UNAVAILABLE_TEXT to false
+            remainingText(minutes) to powerManager.isBatteryDischargePredictionPersonalized
+        } catch (_: RuntimeException) {
+            UNAVAILABLE_TEXT to false
         }
     }
 

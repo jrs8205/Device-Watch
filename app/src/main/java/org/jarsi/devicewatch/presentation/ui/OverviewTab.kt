@@ -191,6 +191,20 @@ internal fun OverviewTab(
                     valueSize = SECONDARY_VALUE_SP,
                     modifier = Modifier.weight(1f)
                 )
+                if (currentStats.systemEstimateText != UNAVAILABLE_TEXT) {
+                    StackedMetricRow(
+                        label = stringResource(
+                            if (currentStats.systemEstimatePersonalized) {
+                                R.string.system_estimate_personalized_label
+                            } else {
+                                R.string.system_estimate_label
+                            }
+                        ),
+                        value = currentStats.systemEstimateText,
+                        valueSize = SECONDARY_VALUE_SP,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
                 // Only while plugged in: on battery there is no source to name.
                 chargeSourceRes(currentStats.chargeSource)?.let { sourceRes ->
                     StackedMetricRow(

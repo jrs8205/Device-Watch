@@ -305,6 +305,8 @@
     <string name="battery_status_full">Full</string>
     <string name="battery_status_not_charging">Not charging</string>
     <string name="charge_source_label">Power source</string>
+    <string name="system_estimate_label">System estimate</string>
+    <string name="system_estimate_personalized_label">Learned estimate</string>
     <string name="charge_source_ac">Mains</string>
     <string name="charge_source_usb">USB</string>
     <string name="charge_source_wireless">Wireless</string>

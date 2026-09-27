@@ -22,4 +22,15 @@ object ExtraStatsLogic {
         8 -> ChargeSource.DOCK
         else -> ChargeSource.NONE
     }
+
+    /**
+     * `PowerManager.getBatteryDischargePrediction()` in whole minutes, or null when
+     * the system has no prediction or one under a minute (nothing worth showing).
+     */
+    fun predictionMinutes(millis: Long?): Int? {
+        if (millis == null || millis < MINUTE_MILLIS) return null
+        return (millis / MINUTE_MILLIS).toInt()
+    }
+
+    private const val MINUTE_MILLIS = 60_000L
 }
