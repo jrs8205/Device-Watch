@@ -255,7 +255,8 @@ object HtmlReportBuilder {
     private fun StringBuilder.appendBattery(data: HtmlReportData, labels: HtmlReportLabels) {
         appendSectionStart(labels.batterySection)
         val samples = data.batterySamples
-        if (samples.size < 2) {
+        // One sample is still a reading: it is drawn as a dot, like the in-app chart.
+        if (samples.isEmpty()) {
             appendEmpty(labels)
             append("</section>\n")
             return

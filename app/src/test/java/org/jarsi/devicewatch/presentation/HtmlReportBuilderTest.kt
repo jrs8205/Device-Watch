@@ -322,6 +322,19 @@ class HtmlReportBuilderTest {
     }
 
     @Test
+    fun `a report with exactly one battery sample draws it`() {
+        // Right after collection starts the export can hold a single reading, and
+        // the in-app chart already shows it.
+        val html = HtmlReportBuilder.build(
+            data(battery = listOf(BatterySample(1_786_700_000_000L, 80, false))),
+            labels,
+        )
+
+        assertThat(html).contains("<svg")
+        assertThat(Regex("<circle class=\"level-dot\"").findAll(html).count()).isEqualTo(1)
+    }
+
+    @Test
     fun `battery chart draws one polyline per uninterrupted run`() {
         val hour = 3_600_000L
         val start = 1_786_700_000_000L
