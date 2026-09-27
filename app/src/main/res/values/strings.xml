@@ -250,6 +250,11 @@
     <string name="wifi_data_period">Wi-Fi data this period</string>
     <string name="wifi_vpn">VPN active</string>
     <string name="wifi_dns">DNS servers</string>
+    <string name="wifi_private_dns">Private DNS</string>
+    <string name="private_dns_off">Off</string>
+    <string name="private_dns_automatic">Automatic</string>
+    <string name="wifi_interface">Network interface</string>
+    <string name="wifi_mtu">MTU</string>
 
     <string name="common_yes">Yes</string>
     <string name="common_no">No</string>

@@ -6,6 +6,11 @@ enum class ChargeSource { NONE, AC, USB, WIRELESS, DOCK }
 /** `PowerManager.getCurrentThermalStatus()` levels; [UNKNOWN] when unsupported. */
 enum class ThermalLevel { UNKNOWN, NONE, LIGHT, MODERATE, SEVERE, CRITICAL, EMERGENCY, SHUTDOWN }
 
+/** Android's private DNS setting as the active network applies it. */
+enum class PrivateDnsMode { OFF, AUTOMATIC, HOSTNAME }
+
+data class PrivateDns(val mode: PrivateDnsMode, val serverName: String?)
+
 /**
  * Pure rules behind the readings added in 1.6.0 on top of the original stats:
  * charge source, the system's own battery estimate, deep sleep, thermal state,
@@ -81,6 +86,25 @@ object ExtraStatsLogic {
     }
 
     const val HEADROOM_INTERVAL_MILLIS = 10_000L
+
+    /**
+     * `LinkProperties.isPrivateDnsActive` and `getPrivateDnsServerName` (API 28):
+     * active with a name is the "hostname" setting, active without one is
+     * "automatic" (opportunistic), and inactive is off whatever name is left.
+     */
+    fun privateDns(active: Boolean, serverName: String?): PrivateDns {
+        if (!active) return PrivateDns(PrivateDnsMode.OFF, null)
+        val name = serverName?.trim()?.takeIf { it.isNotEmpty() }
+            ?: return PrivateDns(PrivateDnsMode.AUTOMATIC, null)
+        return PrivateDns(PrivateDnsMode.HOSTNAME, name)
+    }
+
+    /**
+     * The network's MTU (`LinkProperties.getMtu()`, API 29), which is 0 unless the
+     * network configured one; the interface's own MTU fills in then.
+     */
+    fun mtu(networkMtu: Int, interfaceMtu: Int?): Int? =
+        networkMtu.takeIf { it > 0 } ?: interfaceMtu?.takeIf { it > 0 }
 
     private const val MINUTE_MILLIS = 60_000L
 }

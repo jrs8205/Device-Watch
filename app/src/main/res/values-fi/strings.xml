@@ -246,6 +246,11 @@
     <string name="wifi_data_period">Wi-Fi-data kaudella</string>
     <string name="wifi_vpn">VPN käytössä</string>
     <string name="wifi_dns">DNS-palvelimet</string>
+    <string name="wifi_private_dns">Yksityinen DNS</string>
+    <string name="private_dns_off">Pois</string>
+    <string name="private_dns_automatic">Automaattinen</string>
+    <string name="wifi_interface">Verkkoliitäntä</string>
+    <string name="wifi_mtu">MTU</string>
 
     <string name="common_yes">Kyllä</string>
     <string name="common_no">Ei</string>

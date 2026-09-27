@@ -89,4 +89,41 @@ class ExtraStatsLogicTest {
         // A clock that went backwards must not freeze the value forever.
         assertThat(ExtraStatsLogic.headroomDue(lastReadMillis = 50_000L, nowMillis = 1_000L)).isTrue()
     }
+
+    @Test
+    fun `private DNS with a named server is the strict mode`() {
+        assertThat(ExtraStatsLogic.privateDns(active = true, serverName = "dns.google"))
+            .isEqualTo(PrivateDns(PrivateDnsMode.HOSTNAME, "dns.google"))
+    }
+
+    @Test
+    fun `private DNS active without a name is the automatic mode`() {
+        assertThat(ExtraStatsLogic.privateDns(active = true, serverName = null))
+            .isEqualTo(PrivateDns(PrivateDnsMode.AUTOMATIC, null))
+        assertThat(ExtraStatsLogic.privateDns(active = true, serverName = " "))
+            .isEqualTo(PrivateDns(PrivateDnsMode.AUTOMATIC, null))
+    }
+
+    @Test
+    fun `inactive private DNS is off whatever name is left over`() {
+        assertThat(ExtraStatsLogic.privateDns(active = false, serverName = "dns.google"))
+            .isEqualTo(PrivateDns(PrivateDnsMode.OFF, null))
+    }
+
+    @Test
+    fun `the network's own MTU wins`() {
+        assertThat(ExtraStatsLogic.mtu(networkMtu = 1280, interfaceMtu = 1500)).isEqualTo(1280)
+    }
+
+    @Test
+    fun `the interface MTU fills in when the network sets none`() {
+        // LinkProperties.getMtu() is 0 unless the network configured one.
+        assertThat(ExtraStatsLogic.mtu(networkMtu = 0, interfaceMtu = 1500)).isEqualTo(1500)
+    }
+
+    @Test
+    fun `an unknown MTU reads as none`() {
+        assertThat(ExtraStatsLogic.mtu(networkMtu = 0, interfaceMtu = null)).isNull()
+        assertThat(ExtraStatsLogic.mtu(networkMtu = -1, interfaceMtu = 0)).isNull()
+    }
 }

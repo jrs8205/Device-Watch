@@ -52,4 +52,9 @@ data class DeviceInfo(
     // Network (snapshot)
     val vpnActive: String,
     val dnsServers: String,
+    /** Private DNS on the active network: off, automatic, or the server name. */
+    val privateDns: String = UNAVAILABLE_TEXT,
+    /** The active network's interface, e.g. "wlan0" or "rmnet_data0". */
+    val networkInterface: String = UNAVAILABLE_TEXT,
+    val mtu: String = UNAVAILABLE_TEXT,
 )

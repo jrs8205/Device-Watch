@@ -199,6 +199,32 @@ class SystemStatsRepositoryImpl @Inject constructor(
         val activeNetwork = connManager?.activeNetwork
         val vpnActive = readVpnActive(connManager, activeNetwork)
         val dnsServers = readDnsServers(connManager, activeNetwork)
+        val linkProperties = connManager?.getLinkProperties(activeNetwork)
+        val privateDns = if (linkProperties != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            val dns = ExtraStatsLogic.privateDns(
+                linkProperties.isPrivateDnsActive,
+                linkProperties.privateDnsServerName
+            )
+            when (dns.mode) {
+                PrivateDnsMode.OFF -> context.getString(R.string.private_dns_off)
+                PrivateDnsMode.AUTOMATIC -> context.getString(R.string.private_dns_automatic)
+                PrivateDnsMode.HOSTNAME -> dns.serverName ?: UNAVAILABLE_TEXT
+            }
+        } else {
+            UNAVAILABLE_TEXT
+        }
+        val networkInterface = linkProperties?.interfaceName?.takeIf { it.isNotBlank() } ?: UNAVAILABLE_TEXT
+        val networkMtu = if (linkProperties != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            linkProperties.mtu
+        } else {
+            0
+        }
+        val interfaceMtu = try {
+            linkProperties?.interfaceName?.let { java.net.NetworkInterface.getByName(it)?.mtu }
+        } catch (_: Exception) {
+            null
+        }
+        val mtu = ExtraStatsLogic.mtu(networkMtu, interfaceMtu)?.toString() ?: UNAVAILABLE_TEXT
 
         return DeviceInfo(
             manufacturer = manufacturer,
@@ -237,6 +263,9 @@ class SystemStatsRepositoryImpl @Inject constructor(
             bootCountTotal = bootCountTotal,
             vpnActive = vpnActive,
             dnsServers = dnsServers,
+            privateDns = privateDns,
+            networkInterface = networkInterface,
+            mtu = mtu,
         )
     }
 

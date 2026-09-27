@@ -11,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import org.jarsi.devicewatch.R
+import org.jarsi.devicewatch.data.UNAVAILABLE_TEXT
 import org.jarsi.devicewatch.presentation.DashboardUiState
 
 /** Device tab: static device facts plus the live SIM and Wi-Fi sections. */
@@ -93,6 +94,11 @@ internal fun DeviceTab(uiState: DashboardUiState) {
             uiState.deviceInfo?.let { info ->
                 DeviceFact(R.string.wifi_vpn, info.vpnActive)
                 DeviceFact(R.string.wifi_dns, info.dnsServers)
+                DeviceFact(R.string.wifi_private_dns, info.privateDns)
+                DeviceFact(R.string.wifi_interface, info.networkInterface)
+                // Wi-Fi rarely sets an MTU and apps cannot read the interface's
+                // own since Android 11, so an unknown one is left out, not dashed.
+                if (info.mtu != UNAVAILABLE_TEXT) DeviceFact(R.string.wifi_mtu, info.mtu)
             }
         }
     }
