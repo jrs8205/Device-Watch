@@ -1,6 +1,7 @@
 package org.jarsi.devicewatch.presentation
 
 import kotlinx.coroutines.CompletableDeferred
+import org.jarsi.devicewatch.data.AppLastUse
 import org.jarsi.devicewatch.data.AppPackageFacts
 import org.jarsi.devicewatch.data.InstallSource
 import org.jarsi.devicewatch.data.PermissionCategory
@@ -232,6 +233,66 @@ class AppsViewModelTest {
             advanceUntilIdle()
 
             assertThat(viewModel.uiState.value.selectedDetail!!.facts).isEqualTo(facts("1.5.0"))
+        }
+
+    @Test
+    fun `an app without a launcher icon gets its last opening from Android's usage history`() =
+        runTest(dispatcher) {
+            // Opened from the largest-apps list, a system app read "never opened":
+            // only today's screen time and the launcher list were consulted.
+            val repository = FakeAppUsageRepository(
+                storage = listOf(AppStorageUsage("sys", "System app", 900L)),
+                facts = mapOf("sys" to facts("1.0")),
+                lastUse = mapOf("sys" to AppLastUse(openedMillis = 8_000L, foregroundServiceMillis = null)),
+            )
+            val viewModel = AppsViewModel(repository, FakeAppSettingsRepository(), FakeNotificationStats())
+            viewModel.refresh()
+            advanceUntilIdle()
+
+            viewModel.onAppSelected("sys")
+            advanceUntilIdle()
+
+            assertThat(viewModel.uiState.value.selectedDetail!!.lastOpenedEpochMillis).isEqualTo(8_000L)
+        }
+
+    @Test
+    fun `the sheet shows when the app last ran in the background, after it was last opened`() =
+        runTest(dispatcher) {
+            val opened = 1_000_000L
+            val service = opened + 30 * 60_000L
+            val repository = FakeAppUsageRepository(
+                apps = listOf(app("a", opened)),
+                facts = mapOf("a" to facts("1.0")),
+                lastUse = mapOf("a" to AppLastUse(openedMillis = opened, foregroundServiceMillis = service)),
+            )
+            val viewModel = AppsViewModel(repository, FakeAppSettingsRepository(), FakeNotificationStats())
+            viewModel.refresh()
+            advanceUntilIdle()
+
+            viewModel.onAppSelected("a")
+            advanceUntilIdle()
+
+            val detail = viewModel.uiState.value.selectedDetail!!
+            assertThat(detail.lastOpenedEpochMillis).isEqualTo(opened)
+            assertThat(detail.lastBackgroundMillis).isEqualTo(service)
+        }
+
+    @Test
+    fun `an opening seen today is not replaced by an older one from the usage history`() =
+        runTest(dispatcher) {
+            val repository = FakeAppUsageRepository(
+                screenTimes = listOf(screenTime("a", 6_000, lastUsed = 9_000L)),
+                facts = mapOf("a" to facts("1.0")),
+                lastUse = mapOf("a" to AppLastUse(openedMillis = 7_000L, foregroundServiceMillis = null)),
+            )
+            val viewModel = AppsViewModel(repository, FakeAppSettingsRepository(), FakeNotificationStats())
+            viewModel.refresh()
+            advanceUntilIdle()
+
+            viewModel.onAppSelected("a")
+            advanceUntilIdle()
+
+            assertThat(viewModel.uiState.value.selectedDetail!!.lastOpenedEpochMillis).isEqualTo(9_000L)
         }
 
     @Test

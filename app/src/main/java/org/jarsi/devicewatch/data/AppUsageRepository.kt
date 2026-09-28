@@ -74,4 +74,10 @@ interface AppUsageRepository {
 
     /** Version, install, source and permission facts of [packageName]; null when it is not installed. */
     suspend fun packageFacts(packageName: String): AppPackageFacts?
+
+    /**
+     * The latest use of [packageName] over the same range as [launchableAppsByLastUse],
+     * for any app, launcher icon or not; null without usage access.
+     */
+    suspend fun lastUseOf(packageName: String): AppLastUse?
 }

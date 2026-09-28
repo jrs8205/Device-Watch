@@ -100,6 +100,12 @@ internal fun AppDetailSheet(
                 label = stringResource(R.string.app_detail_last_opened),
                 value = lastUsedText(detail.lastOpenedEpochMillis)
             )
+            detail.lastBackgroundMillis?.let { background ->
+                StackedMetricRow(
+                    label = stringResource(R.string.app_detail_last_background),
+                    value = lastUsedText(background)
+                )
+            }
             StackedMetricRow(
                 label = stringResource(R.string.app_detail_data),
                 value = bytesText(detail.dataBytesToday)

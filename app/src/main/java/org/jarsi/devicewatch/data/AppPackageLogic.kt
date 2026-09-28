@@ -155,6 +155,20 @@ object AppPackageLogic {
         35 to "15", 36 to "16", 37 to "17",
     )
 
+    /** A foreground service that stops within this of leaving the app was part of using it. */
+    private const val BACKGROUND_MARGIN_MS = 60_000L
+
+    /**
+     * When the app last ran in the background: its foreground service's last use,
+     * if that came clearly after it was last opened. The only background use
+     * Android tells an app about; widget updates, receivers and other component
+     * use are system API.
+     */
+    fun backgroundUseMillis(openedMillis: Long?, foregroundServiceMillis: Long?): Long? {
+        val service = foregroundServiceMillis ?: return null
+        return service.takeIf { openedMillis == null || it - openedMillis > BACKGROUND_MARGIN_MS }
+    }
+
     /** The Android release an API [level] shipped with, or null for one this build does not know. */
     fun androidRelease(level: Int): String? = releases[level]
 }

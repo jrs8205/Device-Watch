@@ -3,6 +3,7 @@ package org.jarsi.devicewatch.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import org.jarsi.devicewatch.data.AppDataUsage
+import org.jarsi.devicewatch.data.AppPackageLogic
 import org.jarsi.devicewatch.data.AppStorageUsage
 import org.jarsi.devicewatch.data.AppScreenTime
 import org.jarsi.devicewatch.data.AppSettingsRepository
@@ -159,14 +160,28 @@ class AppsViewModel @Inject constructor(
         loadFacts(packageName)
     }
 
+    /**
+     * Reads the package facts and the latest use for the open sheet. The lists
+     * know when an app was opened only if it has a launcher icon or was used
+     * today; Android's usage history knows it for any app.
+     */
     private fun loadFacts(packageName: String) {
         factsJob?.cancel()
         factsJob = viewModelScope.launch {
             val facts = appUsageRepository.packageFacts(packageName) ?: return@launch
+            val lastUse = appUsageRepository.lastUseOf(packageName)
             // The sheet may have closed, or moved on to another app, while this read ran.
             _uiState.update { state ->
                 val open = state.selectedDetail
-                if (open?.packageName == packageName) state.copy(selectedDetail = open.copy(facts = facts)) else state
+                if (open?.packageName != packageName) return@update state
+                val opened = listOfNotNull(open.lastOpenedEpochMillis, lastUse?.openedMillis).maxOrNull()
+                state.copy(
+                    selectedDetail = open.copy(
+                        facts = facts,
+                        lastOpenedEpochMillis = opened,
+                        lastBackgroundMillis = AppPackageLogic.backgroundUseMillis(opened, lastUse?.foregroundServiceMillis),
+                    )
+                )
             }
         }
     }

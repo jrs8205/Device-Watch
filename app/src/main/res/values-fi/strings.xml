@@ -212,6 +212,7 @@
     <string name="usage_access_needed_body">Myönnä käyttötietojen oikeus, jotta sovellus voi näyttää ruutuajan, sovellusten datankäytön ja viimeksi avatut sovellukset.</string>
     <string name="app_detail_screen_time">Ruutuaika tänään</string>
     <string name="app_detail_last_opened">Viimeksi avattu</string>
+    <string name="app_detail_last_background">Viimeksi käynnissä taustalla</string>
     <string name="app_detail_launches">Avauskerrat tänään</string>
     <string name="app_detail_data">Data tänään</string>
     <string name="app_detail_notifications">Ilmoitukset tänään</string>

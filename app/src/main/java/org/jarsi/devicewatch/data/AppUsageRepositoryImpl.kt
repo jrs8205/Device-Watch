@@ -5,6 +5,7 @@ import android.app.usage.NetworkStats
 import android.app.usage.NetworkStatsManager
 import android.app.usage.StorageStatsManager
 import android.app.usage.UsageEvents
+import android.app.usage.UsageStats
 import android.app.usage.UsageStatsManager
 import android.content.Context
 import android.content.Intent
@@ -152,7 +153,19 @@ class AppUsageRepositoryImpl @Inject constructor(
      * monthly, weekly and daily buckets returns whatever the platform actually has.
      */
     private fun queryLastUsedByPackage(): Map<String, Long> {
-        val usageStatsManager = usageStatsManager() ?: return emptyMap()
+        val lastUsedByPackage = mutableMapOf<String, Long>()
+        forEachUsageBucket { bucket, end ->
+            val lastUsed = bucket.lastTimeUsed
+            if (lastUsed in 1..end) {
+                lastUsedByPackage.merge(bucket.packageName, lastUsed, ::maxOf)
+            }
+        }
+        return lastUsedByPackage
+    }
+
+    /** Every usage bucket of the last-use range, over all four intervals (see [queryLastUsedByPackage]). */
+    private fun forEachUsageBucket(action: (bucket: UsageStats, endMillis: Long) -> Unit) {
+        val usageStatsManager = usageStatsManager() ?: return
         val end = System.currentTimeMillis()
         val start = end - LAST_USE_RANGE_MS
         val intervals = intArrayOf(
@@ -161,21 +174,27 @@ class AppUsageRepositoryImpl @Inject constructor(
             UsageStatsManager.INTERVAL_WEEKLY,
             UsageStatsManager.INTERVAL_DAILY,
         )
-
-        val lastUsedByPackage = mutableMapOf<String, Long>()
         for (interval in intervals) {
             try {
-                usageStatsManager.queryUsageStats(interval, start, end)?.forEach { bucket ->
-                    val lastUsed = bucket.lastTimeUsed
-                    if (lastUsed in 1..end) {
-                        lastUsedByPackage.merge(bucket.packageName, lastUsed, ::maxOf)
-                    }
-                }
+                usageStatsManager.queryUsageStats(interval, start, end)?.forEach { action(it, end) }
             } catch (_: Exception) {
                 // One interval failing shouldn't hide the others.
             }
         }
-        return lastUsedByPackage
+    }
+
+    override suspend fun lastUseOf(packageName: String): AppLastUse? = withContext(dispatcher) {
+        if (!hasUsageAccess()) return@withContext null
+        var opened: Long? = null
+        var service: Long? = null
+        forEachUsageBucket { bucket, end ->
+            if (bucket.packageName != packageName) return@forEachUsageBucket
+            bucket.lastTimeUsed.takeIf { it in 1..end }?.let { opened = maxOf(opened ?: it, it) }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                bucket.lastTimeForegroundServiceUsed.takeIf { it in 1..end }?.let { service = maxOf(service ?: it, it) }
+            }
+        }
+        AppLastUse(openedMillis = opened, foregroundServiceMillis = service)
     }
 
     override fun supportsUnlockCounting(): Boolean =

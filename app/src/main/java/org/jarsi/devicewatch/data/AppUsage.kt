@@ -52,4 +52,13 @@ data class AppUsageDetail(
     val notificationsToday: Int,
     /** Read after the sheet opens; null until then, or when the package is gone. */
     val facts: AppPackageFacts? = null,
+    /** When a foreground service of the app last ran after it was last opened; null for none. */
+    val lastBackgroundMillis: Long? = null,
 )
+
+/**
+ * The latest use of one app in Android's usage buckets: when an activity of it
+ * was last in front, and when a foreground service of it (music, navigation, a
+ * sync) last ran. Null for none on record.
+ */
+data class AppLastUse(val openedMillis: Long?, val foregroundServiceMillis: Long?)

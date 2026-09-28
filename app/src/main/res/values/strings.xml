@@ -216,6 +216,7 @@
     <string name="usage_access_needed_body">Grant usage access so the app can show screen time, app data usage and last-opened dates.</string>
     <string name="app_detail_screen_time">Screen time today</string>
     <string name="app_detail_last_opened">Last opened</string>
+    <string name="app_detail_last_background">Last running in the background</string>
     <string name="app_detail_launches">Times opened today</string>
     <string name="app_detail_data">Data today</string>
     <string name="app_detail_notifications">Notifications today</string>

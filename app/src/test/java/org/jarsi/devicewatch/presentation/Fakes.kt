@@ -3,6 +3,7 @@ package org.jarsi.devicewatch.presentation
 import org.jarsi.devicewatch.system.AlertNotifications
 import org.jarsi.devicewatch.data.HealthAlert
 import kotlinx.coroutines.CompletableDeferred
+import org.jarsi.devicewatch.data.AppLastUse
 import org.jarsi.devicewatch.data.AppPackageFacts
 import org.jarsi.devicewatch.data.AppDataUsage
 import org.jarsi.devicewatch.data.AppScreenTime
@@ -170,6 +171,7 @@ internal class FakeAppUsageRepository(
     var facts: Map<String, AppPackageFacts> = emptyMap(),
     /** When set, packageFacts waits for it: a slow PackageManager read. */
     var factsGate: CompletableDeferred<Unit>? = null,
+    var lastUse: Map<String, AppLastUse> = emptyMap(),
 ) : AppUsageRepository {
     override fun hasUsageAccess(): Boolean = hasAccess
 
@@ -216,6 +218,9 @@ internal class FakeAppUsageRepository(
         factsGate?.await()
         return facts[packageName]
     }
+
+    override suspend fun lastUseOf(packageName: String): AppLastUse? =
+        if (hasAccess) lastUse[packageName] else null
 }
 
 internal class FakeNotificationStats(

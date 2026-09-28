@@ -51,6 +51,24 @@ class AppPackageLogicTest {
     }
 
     @Test
+    fun `a foreground service running on after the app was left is background use`() {
+        // WhatsApp on the 8a: opened yesterday, its service ran this morning.
+        val opened = 1_000_000L
+        assertThat(AppPackageLogic.backgroundUseMillis(opened, foregroundServiceMillis = opened + 10 * 60_000L))
+            .isEqualTo(opened + 10 * 60_000L)
+        assertThat(AppPackageLogic.backgroundUseMillis(openedMillis = null, foregroundServiceMillis = 5_000L))
+            .isEqualTo(5_000L)
+    }
+
+    @Test
+    fun `a foreground service that stopped with the app's own use is not background use`() {
+        // Vivaldi on the 8a: its service stopped three seconds after the app was left.
+        assertThat(AppPackageLogic.backgroundUseMillis(10_000L, foregroundServiceMillis = 13_000L)).isNull()
+        assertThat(AppPackageLogic.backgroundUseMillis(10_000L, foregroundServiceMillis = 5_000L)).isNull()
+        assertThat(AppPackageLogic.backgroundUseMillis(10_000L, foregroundServiceMillis = null)).isNull()
+    }
+
+    @Test
     fun `an app with no installer on record is unknown`() {
         // Android 10 has only the installer, and an app can be installed without one.
         assertThat(source(installer = null, initiator = null, packageSource = null)).isEqualTo(InstallSource.Unknown)
