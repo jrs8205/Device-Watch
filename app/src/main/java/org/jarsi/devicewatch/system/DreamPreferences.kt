@@ -11,6 +11,9 @@ object DreamPreferences {
     const val KEY_FORCE_PORTRAIT = "force_portrait"
     const val KEY_DIM_SCREENSAVER = "dim_screensaver"
 
+    // Icons of the unread notifications under the clock (needs notification access).
+    const val KEY_SHOW_NOTIFICATIONS = "show_notifications"
+
     // Automatic night dim: dim the screensaver between the selected times of day.
     const val KEY_NIGHT_DIM = "night_dim"
     const val KEY_NIGHT_DIM_START_MINUTES = "night_dim_start_minutes"

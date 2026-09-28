@@ -259,6 +259,13 @@
     <string name="dim_screensaver_title">Dim the screensaver</string>
     <string name="dim_screensaver_description">Lower the screen brightness while the screensaver is showing (easier on the eyes overnight).</string>
     <string name="night_dim_title">Dim at night</string>
+    <string name="dream_notifications_title">Show notification icons</string>
+    <string name="dream_notifications_description">Show the icons of unread notifications under the clock and pulse them when a new one arrives. Needs notification access.</string>
+    <string name="dream_notifications_access_missing">Notification access is not granted, so the screensaver cannot see notifications. Grant it under Special access below.</string>
+    <plurals name="dream_unread_notifications">
+        <item quantity="one">%d unread notification</item>
+        <item quantity="other">%d unread notifications</item>
+    </plurals>
     <string name="night_dim_description">Dim the screensaver automatically between the selected times.</string>
     <string name="night_dim_start_label">Starts %1$s</string>
     <string name="night_dim_end_label">Ends %1$s</string>

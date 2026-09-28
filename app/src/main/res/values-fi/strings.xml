@@ -255,6 +255,13 @@
     <string name="dim_screensaver_title">Himmennä näytönsäästäjä</string>
     <string name="dim_screensaver_description">Laske näytön kirkkautta näytönsäästäjän aikana (miellyttävämpi silmille yöllä).</string>
     <string name="night_dim_title">Himmennä yöllä</string>
+    <string name="dream_notifications_title">Näytä ilmoitusten kuvakkeet</string>
+    <string name="dream_notifications_description">Näyttää kuittaamattomien ilmoitusten kuvakkeet kellon alla ja sykäyttää niitä, kun uusi ilmoitus saapuu. Vaatii ilmoitusten käyttöoikeuden.</string>
+    <string name="dream_notifications_access_missing">Ilmoitusten käyttöoikeutta ei ole myönnetty, joten näytönsäästäjä ei näe ilmoituksia. Myönnä se alla kohdassa Erityisoikeudet.</string>
+    <plurals name="dream_unread_notifications">
+        <item quantity="one">%d kuittaamaton ilmoitus</item>
+        <item quantity="other">%d kuittaamatonta ilmoitusta</item>
+    </plurals>
     <string name="night_dim_description">Himmennä näytönsäästäjä automaattisesti valitulla aikavälillä.</string>
     <string name="night_dim_start_label">Alkaa %1$s</string>
     <string name="night_dim_end_label">Päättyy %1$s</string>

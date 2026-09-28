@@ -132,6 +132,9 @@ internal fun SettingsTab(
     var nightDimScreensaver by remember {
         mutableStateOf(dreamPrefs.getBoolean(DreamPreferences.KEY_NIGHT_DIM, false))
     }
+    var showDreamNotifications by remember {
+        mutableStateOf(dreamPrefs.getBoolean(DreamPreferences.KEY_SHOW_NOTIFICATIONS, true))
+    }
     var nightDimStartMinutes by remember {
         mutableIntStateOf(
             dreamPrefs.getInt(
@@ -502,6 +505,29 @@ internal fun SettingsTab(
                         )
                     }
                 }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            SettingsToggleRow(
+                titleRes = R.string.dream_notifications_title,
+                descriptionRes = R.string.dream_notifications_description,
+                checked = showDreamNotifications,
+                onCheckedChange = { checked ->
+                    showDreamNotifications = checked
+                    dreamPrefs.edit()
+                        .putBoolean(DreamPreferences.KEY_SHOW_NOTIFICATIONS, checked)
+                        .apply()
+                }
+            )
+
+            if (showDreamNotifications && !uiState.notificationAccessEnabled) {
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = stringResource(R.string.dream_notifications_access_missing),
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.error
+                )
             }
 
             Spacer(modifier = Modifier.height(16.dp))

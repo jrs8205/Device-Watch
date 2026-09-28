@@ -23,6 +23,8 @@ import javax.inject.Inject
  * believable — unlike raw post counts, which inflate quickly. Counting starts
  * when the user grants notification access; the listener cannot see the past.
  * Counted notifications are also appended to the on-device NotificationLog with title and text.
+ * The set of active notifications is also mirrored into [ActiveNotificationsStore] so the
+ * screensaver can show their icons.
  */
 @AndroidEntryPoint
 class NotificationCounterService : NotificationListenerService() {
@@ -45,11 +47,18 @@ class NotificationCounterService : NotificationListenerService() {
         try {
             // Seeding from the already-showing notifications prevents recounting them
             // after every listener reconnect (reboot, access toggled off/on).
-            activeNotifications?.forEach { activeKeys.add(it.key) }
+            val showing = activeNotifications.orEmpty()
+            showing.forEach { activeKeys.add(it.key) }
+            ActiveNotificationsStore.replaceAll(showing.map { it.toActiveNotification() })
         } catch (_: SecurityException) {
             // Binder not fully connected yet; the set just starts empty.
         }
         notificationStats.purge(LocalDate.now())
+    }
+
+    override fun onListenerDisconnected() {
+        ActiveNotificationsStore.clear()
+        super.onListenerDisconnected()
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
@@ -61,6 +70,7 @@ class NotificationCounterService : NotificationListenerService() {
             keyAlreadyActive = sbn.key in activeKeys,
         )
         activeKeys.add(sbn.key)
+        ActiveNotificationsStore.put(sbn.toActiveNotification())
         if (shouldCount) {
             notificationStats.increment(sbn.packageName, LocalDate.now())
             val entry = NotificationLogEntry(
@@ -75,13 +85,25 @@ class NotificationCounterService : NotificationListenerService() {
     }
 
     override fun onNotificationRemoved(sbn: StatusBarNotification?) {
-        sbn?.let { activeKeys.remove(it.key) }
+        sbn ?: return
+        activeKeys.remove(sbn.key)
+        ActiveNotificationsStore.remove(sbn.key)
     }
 
     override fun onDestroy() {
         ioScope.cancel()
         super.onDestroy()
     }
+
+    private fun StatusBarNotification.toActiveNotification() = ActiveNotification(
+        key = key,
+        packageName = packageName,
+        postTime = postTime,
+        isOngoing = isOngoing,
+        isGroupSummary = notification.flags and Notification.FLAG_GROUP_SUMMARY != 0,
+        isClearable = isClearable,
+        smallIcon = notification.smallIcon,
+    )
 
     private fun appLabel(packageName: String): String = try {
         packageManager.getApplicationLabel(

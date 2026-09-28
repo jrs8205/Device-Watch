@@ -9,11 +9,13 @@ import android.content.SharedPreferences
 import android.content.pm.ActivityInfo
 import android.os.BatteryManager
 import android.service.dreams.DreamService
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -27,12 +29,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFontFamilyResolver
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
@@ -40,6 +49,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.graphics.drawable.toBitmap
 import org.jarsi.devicewatch.R
 import org.jarsi.devicewatch.ui.theme.ProvideBoundedDensity
 import androidx.lifecycle.Lifecycle
@@ -210,6 +220,28 @@ fun ScreensaverContent(context: Context) {
     var amPmText by remember { mutableStateOf("") }
     var dateText by remember { mutableStateOf("") }
     var alarmText by remember { mutableStateOf("") }
+
+    // Unread notifications under the clock, from the listener's snapshot. The user setting
+    // is read once per dream: it is changed in the app, never while the dream is up.
+    val showNotificationIcons = remember(preferences) {
+        preferences.getBoolean(DreamPreferences.KEY_SHOW_NOTIFICATIONS, true)
+    }
+    val activeNotifications by ActiveNotificationsStore.notifications.collectAsState()
+    val notificationGroups = remember(activeNotifications, showNotificationIcons) {
+        if (showNotificationIcons) visibleNotificationGroups(activeNotifications) else emptyList()
+    }
+    // Notifications already waiting when the dream starts show quietly; the row pulses
+    // only for the ones that arrive while it is up.
+    var seenNotificationKeys by remember { mutableStateOf(visibleNotificationKeys(activeNotifications)) }
+    var notificationPulseToken by remember { mutableIntStateOf(0) }
+    LaunchedEffect(activeNotifications) {
+        val current = visibleNotificationKeys(activeNotifications)
+        if (showNotificationIcons && newArrivalKeys(seenNotificationKeys, current).isNotEmpty()) {
+            notificationPulseToken++
+        }
+        seenNotificationKeys = current
+    }
+
     var isLayoutSwapped by remember {
         mutableStateOf(preferences.getBoolean(DreamPreferences.KEY_LAYOUT_SWAPPED, false))
     }
@@ -389,7 +421,9 @@ fun ScreensaverContent(context: Context) {
                         secondsSize = secondsSize,
                         dateSize = if (clockSize < 100) 22 else 30,
                         amPmText = amPmText,
-                        alarmText = alarmText
+                        alarmText = alarmText,
+                        notificationGroups = notificationGroups,
+                        notificationPulseToken = notificationPulseToken,
                     )
 
                     Box(
@@ -430,7 +464,9 @@ fun ScreensaverContent(context: Context) {
                         secondsSize = secondsSize,
                         dateSize = if (clockSize < 100) 22 else 28,
                         amPmText = amPmText,
-                        alarmText = alarmText
+                        alarmText = alarmText,
+                        notificationGroups = notificationGroups,
+                        notificationPulseToken = notificationPulseToken,
                     )
 
                     Spacer(modifier = Modifier.weight(1f))
@@ -493,7 +529,9 @@ fun ClockBlock(
     secondsSize: Int,
     dateSize: Int,
     amPmText: String = "",
-    alarmText: String = ""
+    alarmText: String = "",
+    notificationGroups: List<NotificationIconGroup> = emptyList(),
+    notificationPulseToken: Int = 0,
 ) {
     Column(
         modifier = modifier,
@@ -553,6 +591,110 @@ fun ClockBlock(
                 style = TextStyle(fontFeatureSettings = "tnum")
             )
         }
+        if (notificationGroups.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(12.dp))
+            NotificationIconRow(
+                groups = notificationGroups,
+                pulseToken = notificationPulseToken,
+                iconSize = dateSize.dp,
+            )
+        }
+    }
+}
+
+/** How many apps the notification row shows before it folds the rest into "+N". */
+private const val MAX_NOTIFICATION_ICONS = 8
+
+/** The row's alpha between pulses: present, but quieter than the clock. */
+private const val NOTIFICATION_ROW_RESTING_ALPHA = 0.6f
+
+/**
+ * One small icon per app with unread notifications, tinted like the status bar, with a count
+ * when the app has several. A new arrival breathes the row three times (dim → bright → dim)
+ * before it settles back; a row that was already showing when the dream started stays quiet.
+ */
+@Composable
+private fun NotificationIconRow(
+    groups: List<NotificationIconGroup>,
+    pulseToken: Int,
+    iconSize: Dp,
+    modifier: Modifier = Modifier,
+) {
+    val context = LocalContext.current
+    val iconSizePx = with(LocalDensity.current) { iconSize.roundToPx() }
+    val rowAlpha = remember { Animatable(NOTIFICATION_ROW_RESTING_ALPHA) }
+    LaunchedEffect(pulseToken) {
+        if (pulseToken == 0) return@LaunchedEffect
+        repeat(3) {
+            rowAlpha.animateTo(1f, tween(durationMillis = 600))
+            rowAlpha.animateTo(0.3f, tween(durationMillis = 600))
+        }
+        rowAlpha.animateTo(NOTIFICATION_ROW_RESTING_ALPHA, tween(durationMillis = 400))
+    }
+    val shown = groups.take(MAX_NOTIFICATION_ICONS)
+    val overflow = groups.size - shown.size
+    val total = groups.sumOf { it.count }
+    val description = pluralStringResource(R.plurals.dream_unread_notifications, total, total)
+    val countStyle = TextStyle(fontFeatureSettings = "tnum")
+    val countSize = (iconSize.value * 0.6f).sp
+    Row(
+        modifier = modifier
+            .graphicsLayer { alpha = rowAlpha.value }
+            .semantics { contentDescription = description },
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        shown.forEach { group ->
+            key(group.packageName) {
+                val bitmap = remember(group.newestPostTime, iconSizePx) {
+                    loadNotificationIcon(context, group.smallIcon, iconSizePx)
+                }
+                if (bitmap != null) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Image(
+                            bitmap = bitmap,
+                            contentDescription = null,
+                            modifier = Modifier.size(iconSize),
+                            colorFilter = ColorFilter.tint(Color(0xFFEDEDED)),
+                        )
+                        if (group.count > 1) {
+                            Spacer(modifier = Modifier.width(3.dp))
+                            Text(
+                                text = group.count.toString(),
+                                fontSize = countSize,
+                                fontWeight = FontWeight.Medium,
+                                color = Color(0xFF8B929C),
+                                style = countStyle,
+                            )
+                        }
+                    }
+                }
+            }
+        }
+        if (overflow > 0) {
+            Text(
+                text = "+$overflow",
+                fontSize = countSize,
+                fontWeight = FontWeight.Medium,
+                color = Color(0xFF8B929C),
+                style = countStyle,
+            )
+        }
+    }
+}
+
+/**
+ * Renders a notification's small icon at [sizePx]. Icons of other packages resolve through
+ * their own resources, which can fail for an app that was just uninstalled or updated; then
+ * nothing is drawn for that app rather than a broken placeholder.
+ */
+private fun loadNotificationIcon(context: Context, icon: android.graphics.drawable.Icon?, sizePx: Int): ImageBitmap? {
+    icon ?: return null
+    if (sizePx <= 0) return null
+    return try {
+        icon.loadDrawable(context)?.toBitmap(sizePx, sizePx)?.asImageBitmap()
+    } catch (_: Exception) {
+        null
     }
 }
 
