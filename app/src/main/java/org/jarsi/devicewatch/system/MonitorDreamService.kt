@@ -10,8 +10,10 @@ import android.content.pm.ActivityInfo
 import android.os.BatteryManager
 import android.service.dreams.DreamService
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
@@ -47,7 +49,9 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -73,6 +77,7 @@ import kotlin.math.abs
 class MonitorDreamService : DreamService(), LifecycleOwner, ViewModelStoreOwner, SavedStateRegistryOwner {
 
     private val lifecycleRegistry = LifecycleRegistry(this)
+    private val lifecycleDriver = DreamLifecycleDriver(lifecycleRegistry)
     private val store = ViewModelStore()
     private val controller = SavedStateRegistryController.create(this)
 
@@ -83,7 +88,7 @@ class MonitorDreamService : DreamService(), LifecycleOwner, ViewModelStoreOwner,
     override fun onCreate() {
         super.onCreate()
         controller.performRestore(null)
-        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_CREATE)
+        lifecycleDriver.onCreate()
     }
 
     override fun onAttachedToWindow() {
@@ -115,28 +120,27 @@ class MonitorDreamService : DreamService(), LifecycleOwner, ViewModelStoreOwner,
             setViewTreeLifecycleOwner(this@MonitorDreamService)
             setViewTreeViewModelStoreOwner(this@MonitorDreamService)
             setViewTreeSavedStateRegistryOwner(this@MonitorDreamService)
-            
+
             setContent {
                 ProvideBoundedDensity {
                     ScreensaverContent(this@MonitorDreamService)
                 }
             }
         }
-        
+
         setContentView(composeView)
-        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_START)
-        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_RESUME)
+        lifecycleDriver.onAttachedToWindow()
     }
 
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
-        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_PAUSE)
-        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_STOP)
+        // GitHub #4: may arrive after onDestroy() on Android 14+; the driver skips it then.
+        lifecycleDriver.onDetachedFromWindow()
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY)
+        lifecycleDriver.onDestroy()
         store.clear()
     }
 }
@@ -162,7 +166,7 @@ fun ScreensaverContent(context: Context) {
                 if (level != -1 && scale != -1) {
                     batteryLevel = (level * 100) / scale
                 }
-                
+
                 val status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1)
                 val charging = status == BatteryManager.BATTERY_STATUS_CHARGING ||
                                status == BatteryManager.BATTERY_STATUS_FULL
@@ -216,7 +220,7 @@ fun ScreensaverContent(context: Context) {
             context.unregisterReceiver(receiver)
         }
     }
-    
+
     var timeText by remember { mutableStateOf("") }
     var secondsText by remember { mutableStateOf("") }
     var amPmText by remember { mutableStateOf("") }
@@ -286,10 +290,25 @@ fun ScreensaverContent(context: Context) {
             kotlinx.coroutines.delay(1000L - (System.currentTimeMillis() % 1000L))
         }
     }
-    
+
+    // OLED burn-in protection: once a minute the whole content moves to a new spot within
+    // ±15 dp. GitHub #5: the move used to be a single jump that people noticed from the
+    // corner of their eye; it now glides there over a few seconds.
     var offsetX by remember { mutableFloatStateOf(0f) }
     var offsetY by remember { mutableFloatStateOf(0f) }
-    
+    val glideX by animateFloatAsState(
+        targetValue = offsetX,
+        animationSpec = tween(durationMillis = BURN_IN_GLIDE_MS, easing = LinearOutSlowInEasing),
+        label = "burnInGlideX",
+    )
+    val glideY by animateFloatAsState(
+        targetValue = offsetY,
+        animationSpec = tween(durationMillis = BURN_IN_GLIDE_MS, easing = LinearOutSlowInEasing),
+        label = "burnInGlideY",
+    )
+    // Read in the layout phase through the lambda overload, so a glide frame only re-lays out.
+    val glideOffset: Density.() -> IntOffset = { IntOffset(glideX.dp.roundToPx(), glideY.dp.roundToPx()) }
+
     LaunchedEffect(Unit) {
         while (true) {
             kotlinx.coroutines.delay(60000)
@@ -400,7 +419,7 @@ fun ScreensaverContent(context: Context) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .offset(x = offsetX.dp, y = offsetY.dp)
+                .offset(glideOffset)
                 .graphicsLayer {
                     rotationZ = if (isLayoutSwapped) 180f else 0f
                 },
@@ -492,7 +511,7 @@ fun ScreensaverContent(context: Context) {
         Box(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .offset(x = offsetX.dp, y = offsetY.dp)
+                .offset(glideOffset)
                 .padding(12.dp)
                 .size(112.dp)
                 .clickable {
@@ -603,6 +622,9 @@ fun ClockBlock(
         }
     }
 }
+
+/** How long the burn-in shift takes to glide to its new spot. */
+private const val BURN_IN_GLIDE_MS = 4000
 
 /** How many apps the notification row shows before it folds the rest into "+N". */
 private const val MAX_NOTIFICATION_ICONS = 8
@@ -901,9 +923,9 @@ fun BatteryBlockPortrait(
                 color = Color(0xFF34D399)
             )
         }
-        
+
         Spacer(modifier = Modifier.height(10.dp))
-        
+
         Text(
             text = "$batteryLevel%",
             fontSize = 64.sp,
@@ -913,7 +935,7 @@ fun BatteryBlockPortrait(
         )
 
         Spacer(modifier = Modifier.height(14.dp))
-        
+
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -939,7 +961,7 @@ fun BatteryBlockPortrait(
                     )
             )
         }
-        
+
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
@@ -951,7 +973,7 @@ fun BatteryBlockPortrait(
             color = Color(0xFF9AA0A8),
             style = TextStyle(fontFeatureSettings = "tnum")
         )
-        
+
         if (fullTimeStr.isNotEmpty()) {
             Spacer(modifier = Modifier.height(6.dp))
             Text(
