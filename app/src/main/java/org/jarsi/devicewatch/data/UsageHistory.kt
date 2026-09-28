@@ -67,6 +67,17 @@ interface UsageHistory {
 internal val HISTORY_PREFIXES = setOf("unlocks", "screen", "boots", "charges", "screenon", "storage")
 
 /**
+ * Stores [day]'s [totals]. The monitor service calls this about once a minute and
+ * the Home refresh on every refresh, so the counters are collected while the
+ * service runs even if the app is not opened for longer than Android keeps events.
+ */
+fun UsageHistory.recordTotals(day: LocalDate, totals: UsageTotals) {
+    recordScreenTime(day, totals.screenTimeMillis)
+    recordUnlocks(day, totals.unlockCount)
+    totals.screenOnMillis?.let { recordScreenOn(day, it) }
+}
+
+/**
  * The used storage of a stats reading ([usedGb] in GiB, as the stats compute it)
  * in bytes; null for an unknown or impossible reading, which is not recorded.
  */

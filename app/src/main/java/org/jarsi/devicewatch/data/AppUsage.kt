@@ -36,6 +36,8 @@ data class LaunchableApp(
 data class UsageTotals(
     val screenTimeMillis: Long,
     val unlockCount: Int,
+    /** Time the display was on today; null before Android 9 or when the pass saw no screen events. */
+    val screenOnMillis: Long? = null,
 )
 
 /** Detail-sheet content for one app, assembled from the already-loaded tab data. */

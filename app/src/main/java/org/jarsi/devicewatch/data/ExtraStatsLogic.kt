@@ -508,6 +508,17 @@ object ExtraStatsLogic {
     }
 
     /**
+     * The part of [screenOnByDay] that falls on the day of [endMillis]: the window
+     * may open before midnight so the state at midnight is known. Null when the
+     * window has no screen events, as the state is then unknown.
+     */
+    fun screenOnToday(events: List<ScreenEvent>, startMillis: Long, endMillis: Long, zone: ZoneId): Long? {
+        if (events.none { it.timeMillis in startMillis..endMillis }) return null
+        val today = Instant.ofEpochMilli(endMillis).atZone(zone).toLocalDate()
+        return screenOnByDay(events, startMillis, endMillis, zone)[today] ?: 0L
+    }
+
+    /**
      * `PowerManager.getBatteryDischargePrediction()` in whole minutes, or null when
      * the system has no prediction or one under a minute (nothing worth showing).
      */

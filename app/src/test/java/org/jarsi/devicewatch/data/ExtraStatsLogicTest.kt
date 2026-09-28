@@ -382,6 +382,34 @@ class ExtraStatsLogicTest {
     }
 
     @Test
+    fun `today's screen-on from a pass reaching back before midnight counts only today`() {
+        // Codex round 10: the monitor service now records screen-on from its usage
+        // pass, which starts 12 hours before midnight.
+        val events = listOf(
+            ScreenEvent(at(20, 23), on = true),
+            ScreenEvent(at(21, 1), on = false),
+            ScreenEvent(at(21, 8), on = true),
+        )
+
+        assertThat(ExtraStatsLogic.screenOnToday(events, startMillis = at(20, 12), endMillis = at(21, 8, 30), zone = utc))
+            .isEqualTo(90 * 60_000L)
+    }
+
+    @Test
+    fun `a screen turned off before midnight gives today no screen-on`() {
+        val events = listOf(ScreenEvent(at(20, 22), on = true), ScreenEvent(at(20, 23), on = false))
+
+        assertThat(ExtraStatsLogic.screenOnToday(events, startMillis = at(20, 12), endMillis = at(21, 6), zone = utc))
+            .isEqualTo(0L)
+    }
+
+    @Test
+    fun `a pass without screen events leaves today's screen-on unknown`() {
+        assertThat(ExtraStatsLogic.screenOnToday(emptyList(), startMillis = at(20, 12), endMillis = at(21, 6), zone = utc))
+            .isNull()
+    }
+
+    @Test
     fun `a shutdown ends the interval even without a screen-off event`() {
         // Codex round 6: use 10-11, shutdown, next-day use 12-13 read as 27 hours.
         val events = listOf(

@@ -291,20 +291,21 @@ class AppUsageRepositoryImpl @Inject constructor(
             val event = UsageEvents.Event()
             while (events.hasNextEvent()) {
                 events.getNextEvent(event)
-                val kind = when (event.eventType) {
-                    UsageEvents.Event.SCREEN_INTERACTIVE -> ScreenEventKind.ON
-                    UsageEvents.Event.SCREEN_NON_INTERACTIVE -> ScreenEventKind.OFF
-                    // A screen on before a power-off may never log its "off".
-                    EVENT_DEVICE_SHUTDOWN -> ScreenEventKind.SHUTDOWN
-                    EVENT_DEVICE_STARTUP -> ScreenEventKind.STARTUP
-                    else -> null
-                }
-                if (kind != null) screenEvents += ScreenEvent(event.timeStamp, kind)
+                screenEventKind(event.eventType)?.let { screenEvents += ScreenEvent(event.timeStamp, it) }
             }
         } catch (_: Exception) {
             return@withContext emptyMap()
         }
         ExtraStatsLogic.screenOnByDay(screenEvents, startMillis, end, zone)
+    }
+
+    private fun screenEventKind(eventType: Int): ScreenEventKind? = when (eventType) {
+        UsageEvents.Event.SCREEN_INTERACTIVE -> ScreenEventKind.ON
+        UsageEvents.Event.SCREEN_NON_INTERACTIVE -> ScreenEventKind.OFF
+        // A screen on before a power-off may never log its "off".
+        EVENT_DEVICE_SHUTDOWN -> ScreenEventKind.SHUTDOWN
+        EVENT_DEVICE_STARTUP -> ScreenEventKind.STARTUP
+        else -> null
     }
 
     override suspend fun usageTotalsToday(): UsageTotals? = withContext(dispatcher) {
@@ -314,11 +315,15 @@ class AppUsageRepositoryImpl @Inject constructor(
         val startOfToday = startOfTodayMillis()
 
         val samples = mutableListOf<UsageEventSample>()
+        val screenEvents = mutableListOf<ScreenEvent>()
         var unlockCount = 0
+        val windowStart = startOfToday - SESSION_LOOKBACK_MS
         try {
             // Same lookback as screenTimeSince, so a session spanning midnight
-            // contributes its today-part here too; unlocks stay today-only.
-            val events = usageStatsManager.queryEvents(startOfToday - SESSION_LOOKBACK_MS, end)
+            // contributes its today-part here too; unlocks stay today-only. The
+            // screen events ride along: the monitor service records today's
+            // screen-on from this pass without a query of its own.
+            val events = usageStatsManager.queryEvents(windowStart, end)
                 ?: return@withContext null
             val event = UsageEvents.Event()
             while (events.hasNextEvent()) {
@@ -326,6 +331,7 @@ class AppUsageRepositoryImpl @Inject constructor(
                 if (event.eventType == UsageEvents.Event.KEYGUARD_HIDDEN) {
                     if (event.timeStamp >= startOfToday) unlockCount++
                 } else {
+                    screenEventKind(event.eventType)?.let { screenEvents += ScreenEvent(event.timeStamp, it) }
                     usageEventSample(event)?.let { samples += it }
                 }
             }
@@ -336,7 +342,12 @@ class AppUsageRepositoryImpl @Inject constructor(
         val screenTimeMillis = UsageEventAggregator
             .aggregateForegroundTime(samples, end, windowStartMillis = startOfToday)
             .values.sumOf { it.foregroundMillis }
-        UsageTotals(screenTimeMillis, unlockCount)
+        val screenOnMillis = if (supportsScreenOnTracking()) {
+            ExtraStatsLogic.screenOnToday(screenEvents, windowStart, end, ZoneId.systemDefault())
+        } else {
+            null
+        }
+        UsageTotals(screenTimeMillis, unlockCount, screenOnMillis)
     }
 
     override fun launcherPackages(): Set<String> = try {

@@ -1,10 +1,36 @@
 package org.jarsi.devicewatch.data
 
 import com.google.common.truth.Truth.assertThat
+import org.jarsi.devicewatch.presentation.FakeUsageHistory
 import org.junit.Test
 import java.time.LocalDate
 
 class UsageHistoryLogicTest {
+
+    @Test
+    fun `today's totals record the screen-on time along with screen time and unlocks`() {
+        // Codex round 10: only the Home refresh recorded screen-on, so a week without
+        // opening the app left days of it uncollected while the service kept running.
+        val history = FakeUsageHistory()
+        val day = LocalDate.of(2026, 9, 28)
+
+        history.recordTotals(day, UsageTotals(screenTimeMillis = 3_000L, unlockCount = 4, screenOnMillis = 5_000L))
+
+        assertThat(history.screen).containsExactly(day, 3_000L)
+        assertThat(history.unlocks).containsExactly(day, 4)
+        assertThat(history.screenOn).containsExactly(day, 5_000L)
+    }
+
+    @Test
+    fun `an unknown screen-on time leaves the stored one alone`() {
+        val history = FakeUsageHistory()
+        val day = LocalDate.of(2026, 9, 28)
+        history.recordScreenOn(day, 7_000L)
+
+        history.recordTotals(day, UsageTotals(screenTimeMillis = 3_000L, unlockCount = 4, screenOnMillis = null))
+
+        assertThat(history.screenOn).containsExactly(day, 7_000L)
+    }
 
     @Test
     fun `given no baseline, when computing boot delta, then zero`() {

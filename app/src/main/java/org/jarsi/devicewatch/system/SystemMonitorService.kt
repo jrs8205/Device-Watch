@@ -37,6 +37,7 @@ import org.jarsi.devicewatch.data.QuotaSettingsStamp
 import org.jarsi.devicewatch.data.SystemStats
 import org.jarsi.devicewatch.data.SystemStatsRepository
 import org.jarsi.devicewatch.data.UsageHistory
+import org.jarsi.devicewatch.data.recordTotals
 import org.jarsi.devicewatch.presentation.ui.durationText
 import org.jarsi.devicewatch.widget.WidgetStateUpdater
 import dagger.hilt.android.AndroidEntryPoint
@@ -220,7 +221,7 @@ class SystemMonitorService : Service() {
     }
 
     /**
-     * Computes today's screen time + unlock count, pushes the screen-time text to the
+     * Records today's screen time, unlock count and screen-on time, pushes the screen-time text to the
      * widget and checks the data quota against [stats] (the reading the widget was just
      * updated with; null when that read failed). Throttled to about once a minute: it
      * needs a usage-events pass, which must never run at the 5-second stats cadence.
@@ -239,9 +240,7 @@ class SystemMonitorService : Service() {
         }
         try {
             val totals = appUsageRepository.usageTotalsToday() ?: return
-            val today = LocalDate.now()
-            usageHistory.recordScreenTime(today, totals.screenTimeMillis)
-            usageHistory.recordUnlocks(today, totals.unlockCount)
+            usageHistory.recordTotals(LocalDate.now(), totals)
             WidgetStateUpdater.updateScreenTimeText(
                 applicationContext,
                 durationText(applicationContext, totals.screenTimeMillis)

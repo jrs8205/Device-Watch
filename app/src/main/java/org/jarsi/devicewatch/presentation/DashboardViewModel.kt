@@ -21,6 +21,7 @@ import org.jarsi.devicewatch.data.SystemStats
 import org.jarsi.devicewatch.data.SystemStatsRepository
 import org.jarsi.devicewatch.data.UNAVAILABLE_INT
 import org.jarsi.devicewatch.data.UsageHistory
+import org.jarsi.devicewatch.data.recordTotals
 import org.jarsi.devicewatch.system.AlertNotifications
 import org.jarsi.devicewatch.system.MonitorServiceRelay
 import java.time.LocalDate
@@ -192,10 +193,7 @@ class DashboardViewModel @Inject constructor(
                 .forEach { (day, count) -> usageHistory.recordUnlocks(day, count) }
             appUsageRepository.screenOnByDay(HISTORY_BACKFILL_DAYS)
                 .forEach { (day, millis) -> usageHistory.recordScreenOn(day, millis) }
-            appUsageRepository.usageTotalsToday()?.let { totals ->
-                usageHistory.recordScreenTime(today, totals.screenTimeMillis)
-                usageHistory.recordUnlocks(today, totals.unlockCount)
-            }
+            appUsageRepository.usageTotalsToday()?.let { totals -> usageHistory.recordTotals(today, totals) }
         }
         storageUsedBytes(stats.usedStorageGb)?.let { usageHistory.recordStorageUsed(today, it, stats.readAtElapsedMillis) }
         usageHistory.purge(today)
