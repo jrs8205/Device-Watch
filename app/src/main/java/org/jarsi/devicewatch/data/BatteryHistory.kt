@@ -94,16 +94,15 @@ object BatteryHistoryCodec {
     /**
      * A plug or unplug too soon after [previous] to store yet: it may be charger
      * bounce. The store holds it and writes it, with its own time and level, once
-     * a later sample in the same state comes a full bounce window after it.
+     * a later sample comes a full bounce window after it.
      */
     fun isHeldFlip(previous: BatterySample?, candidate: BatterySample): Boolean {
         if (previous == null || candidate.level < 0 || previous.charging == candidate.charging) return false
         return candidate.timeMillis - previous.timeMillis in 0 until MIN_FLIP_INTERVAL_MS
     }
 
-    /** True once [later], in the same state as the held flip, comes a full bounce window after it. */
-    fun flipHasHeld(held: BatterySample, later: BatterySample): Boolean =
-        later.timeMillis - held.timeMillis >= MIN_FLIP_INTERVAL_MS
+    /** True once a held flip has lasted a full bounce window, [heldForMillis] on the monotonic clock. */
+    fun flipHasHeld(heldForMillis: Long): Boolean = heldForMillis >= MIN_FLIP_INTERVAL_MS
 
     /** True when [candidate] should be stored given the [previous] stored sample (null = always). */
     fun shouldSample(previous: BatterySample?, candidate: BatterySample): Boolean {

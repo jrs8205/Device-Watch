@@ -1,6 +1,7 @@
 package org.jarsi.devicewatch.data
 
 import android.content.Context
+import android.os.SystemClock
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import java.time.LocalDate
@@ -16,11 +17,12 @@ import javax.inject.Singleton
 class BatteryHistoryImpl internal constructor(
     private val baseDir: File,
     private val clock: () -> LocalDate,
+    private val elapsedMillis: () -> Long,
 ) : BatteryHistory {
 
     @Inject
     constructor(@ApplicationContext context: Context) :
-        this(File(context.filesDir, "battery_log"), LocalDate::now)
+        this(File(context.filesDir, "battery_log"), LocalDate::now, SystemClock::elapsedRealtime)
 
     /** Latest stored sample; null until the first record reads it back from disk. */
     private var lastSample: BatterySample? = null
@@ -33,6 +35,13 @@ class BatteryHistoryImpl internal constructor(
      */
     private var heldFlip: BatterySample? = null
 
+    /**
+     * When [heldFlip] was held, on the monotonic clock. The bounce window is timed
+     * on it: set back, the wall clock put every later sample before the held one,
+     * and nothing was stored until the clock caught up.
+     */
+    private var heldAtElapsed = 0L
+
     @Synchronized
     override fun record(sample: BatterySample) {
         if (sample.level < 0) return
@@ -43,14 +52,15 @@ class BatteryHistoryImpl internal constructor(
         val held = heldFlip
         if (held != null) {
             when {
-                // Flipped back: it was bounce, however many updates came in between.
-                sample.charging != held.charging -> heldFlip = null
-                // The new state has lasted the bounce window: a real plug or unplug.
-                BatteryHistoryCodec.flipHasHeld(held, sample) -> {
+                // The new state has lasted the bounce window: a real plug or unplug,
+                // even if this update already flips it back.
+                BatteryHistoryCodec.flipHasHeld(elapsedMillis() - heldAtElapsed) -> {
                     heldFlip = null
                     append(today, held)
                     previous = held
                 }
+                // Flipped back inside the window: it was bounce, however many updates came in between.
+                sample.charging != held.charging -> heldFlip = null
                 // Still inside the window: keep holding, store nothing yet.
                 else -> return
             }
@@ -59,6 +69,7 @@ class BatteryHistoryImpl internal constructor(
             append(today, sample)
         } else if (BatteryHistoryCodec.isHeldFlip(previous, sample)) {
             heldFlip = sample
+            heldAtElapsed = elapsedMillis()
         }
     }
 
