@@ -19,6 +19,18 @@ enum class PermissionCategory {
 
 data class InstallDates(val installedMillis: Long?, val updatedMillis: Long?)
 
+/** Where an installed app came from. */
+sealed interface InstallSource {
+    /** A store, or another app that installed it itself, by its label. */
+    data class App(val label: String) : InstallSource
+    /** `adb install` from a computer. */
+    data object Adb : InstallSource
+    /** An APK file opened with the package installer, or installed from a file by another app. */
+    data object ApkFile : InstallSource
+    data object Preinstalled : InstallSource
+    data object Unknown : InstallSource
+}
+
 /** Facts about one installed package, read from its PackageInfo. */
 data class AppPackageFacts(
     val versionName: String?,
@@ -30,8 +42,7 @@ data class AppPackageFacts(
     val targetSdk: Int,
     /** Null before Android 7, where ApplicationInfo has no minSdkVersion. */
     val minSdk: Int?,
-    /** The installing store or installer app by its label; null when Android does not say. */
-    val installerLabel: String?,
+    val installSource: InstallSource,
     val systemApp: Boolean,
     val grantedCategories: List<PermissionCategory>,
     val requestedPermissionCount: Int,
@@ -40,6 +51,34 @@ data class AppPackageFacts(
 object AppPackageLogic {
 
     private const val REQUESTED_PERMISSION_GRANTED = 2
+
+    private const val SHELL = "com.android.shell"
+    private val PACKAGE_INSTALLERS = setOf("com.google.android.packageinstaller", "com.android.packageinstaller")
+
+    /** PackageInstaller.PACKAGE_SOURCE_LOCAL_FILE and PACKAGE_SOURCE_DOWNLOADED_FILE (API 33). */
+    private val FILE_SOURCES = setOf(3, 4)
+
+    /**
+     * Where an app came from, from its install source record. [installer] is the
+     * installing package, [initiator] the one that started the install (API 30+,
+     * else null) and [packageSource] the PackageInstaller.PACKAGE_SOURCE_* value
+     * (API 33+, else null). `adb install` leaves no installer and the shell as the
+     * initiator; the package installer, which installs any APK a user opens, is
+     * an APK file rather than a store. [labelOf] names any other installer.
+     */
+    fun installSource(
+        installer: String?,
+        initiator: String?,
+        packageSource: Int?,
+        systemApp: Boolean,
+        labelOf: (String) -> String,
+    ): InstallSource = when {
+        installer in PACKAGE_INSTALLERS || packageSource in FILE_SOURCES -> InstallSource.ApkFile
+        installer != null && installer != SHELL -> InstallSource.App(labelOf(installer))
+        installer == SHELL || initiator == SHELL -> InstallSource.Adb
+        systemApp -> InstallSource.Preinstalled
+        else -> InstallSource.Unknown
+    }
 
     private val categories: Map<String, PermissionCategory> = buildMap {
         fun put(category: PermissionCategory, vararg names: String) =

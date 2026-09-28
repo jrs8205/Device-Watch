@@ -36,6 +36,7 @@ import org.jarsi.devicewatch.R
 import org.jarsi.devicewatch.data.AppPackageFacts
 import org.jarsi.devicewatch.data.AppPackageLogic
 import org.jarsi.devicewatch.data.AppUsageDetail
+import org.jarsi.devicewatch.data.InstallSource
 import org.jarsi.devicewatch.data.PermissionCategory
 import org.jarsi.devicewatch.data.UNAVAILABLE_INT
 import org.jarsi.devicewatch.data.UNAVAILABLE_TEXT
@@ -157,9 +158,13 @@ private fun AppFactsSection(packageName: String, facts: AppPackageFacts) {
     facts.updatedMillis?.let { AppFact(R.string.app_detail_updated, dateText(it)) }
     AppFact(
         R.string.app_detail_source,
-        facts.installerLabel ?: stringResource(
-            if (facts.systemApp) R.string.app_detail_source_preinstalled else R.string.app_detail_source_unknown
-        ),
+        when (val source = facts.installSource) {
+            is InstallSource.App -> source.label
+            InstallSource.Adb -> stringResource(R.string.app_detail_source_adb)
+            InstallSource.ApkFile -> stringResource(R.string.app_detail_source_apk)
+            InstallSource.Preinstalled -> stringResource(R.string.app_detail_source_preinstalled)
+            InstallSource.Unknown -> stringResource(R.string.app_detail_source_unknown)
+        },
     )
     AppFact(R.string.app_detail_target_android, androidLevelText(facts.targetSdk))
     facts.minSdk?.let { AppFact(R.string.app_detail_min_android, androidLevelText(it)) }

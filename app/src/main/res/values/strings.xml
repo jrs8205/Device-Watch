@@ -225,6 +225,8 @@
     <string name="app_detail_updated">Updated</string>
     <string name="app_detail_source">Installed from</string>
     <string name="app_detail_source_preinstalled">Preinstalled</string>
+    <string name="app_detail_source_adb">ADB (from a computer)</string>
+    <string name="app_detail_source_apk">APK file</string>
     <string name="app_detail_source_unknown">Not known</string>
     <string name="app_detail_target_android">Target Android</string>
     <string name="app_detail_min_android">Needs at least</string>

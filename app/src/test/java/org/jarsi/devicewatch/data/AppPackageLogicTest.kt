@@ -7,6 +7,55 @@ class AppPackageLogicTest {
 
     private val granted = 2 // PackageInfo.REQUESTED_PERMISSION_GRANTED
 
+    // Values as `dumpsys package` showed them on a Pixel 8a (Android 16).
+    private fun source(
+        installer: String?,
+        initiator: String? = installer,
+        packageSource: Int? = 0,
+        systemApp: Boolean = false,
+    ) = AppPackageLogic.installSource(installer, initiator, packageSource, systemApp) { "label:$it" }
+
+    @Test
+    fun `an app installed over adb reads as installed from a computer`() {
+        // The app sheet said "unknown" for these: no installer, the shell initiated it.
+        assertThat(source(installer = null, initiator = "com.android.shell", packageSource = 1))
+            .isEqualTo(InstallSource.Adb)
+    }
+
+    @Test
+    fun `an app installed by the package installer reads as an APK file`() {
+        // Was shown as the package installer's own label.
+        assertThat(source("com.google.android.packageinstaller", packageSource = 3)).isEqualTo(InstallSource.ApkFile)
+        assertThat(source("com.android.packageinstaller", packageSource = 3)).isEqualTo(InstallSource.ApkFile)
+    }
+
+    @Test
+    fun `an app another app installed from a file reads as an APK file`() {
+        assertThat(source("com.example.files", packageSource = 3)).isEqualTo(InstallSource.ApkFile)
+        assertThat(source("com.example.files", packageSource = 4)).isEqualTo(InstallSource.ApkFile)
+    }
+
+    @Test
+    fun `a store or other installing app is named by its label`() {
+        assertThat(source("com.android.vending")).isEqualTo(InstallSource.App("label:com.android.vending"))
+        assertThat(source("org.fdroid.fdroid", packageSource = 2)).isEqualTo(InstallSource.App("label:org.fdroid.fdroid"))
+        // A web app Chrome installed on Play's behalf.
+        assertThat(source("com.android.chrome", initiator = "com.android.vending"))
+            .isEqualTo(InstallSource.App("label:com.android.chrome"))
+    }
+
+    @Test
+    fun `a preinstalled app keeps its store once the store has updated it`() {
+        assertThat(source(installer = null, systemApp = true)).isEqualTo(InstallSource.Preinstalled)
+        assertThat(source("com.android.vending", systemApp = true)).isEqualTo(InstallSource.App("label:com.android.vending"))
+    }
+
+    @Test
+    fun `an app with no installer on record is unknown`() {
+        // Android 10 has only the installer, and an app can be installed without one.
+        assertThat(source(installer = null, initiator = null, packageSource = null)).isEqualTo(InstallSource.Unknown)
+    }
+
     @Test
     fun `runtime permissions fall into the groups Android's own settings show`() {
         assertThat(AppPackageLogic.permissionCategory("android.permission.ACCESS_FINE_LOCATION"))

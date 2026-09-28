@@ -221,6 +221,8 @@
     <string name="app_detail_updated">Päivitetty</string>
     <string name="app_detail_source">Asennuslähde</string>
     <string name="app_detail_source_preinstalled">Esiasennettu</string>
+    <string name="app_detail_source_adb">ADB (tietokoneelta)</string>
+    <string name="app_detail_source_apk">APK-tiedosto</string>
     <string name="app_detail_source_unknown">Ei tiedossa</string>
     <string name="app_detail_target_android">Kohdeversio</string>
     <string name="app_detail_min_android">Vaatii vähintään</string>

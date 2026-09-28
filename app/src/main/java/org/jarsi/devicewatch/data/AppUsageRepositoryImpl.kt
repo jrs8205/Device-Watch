@@ -445,7 +445,7 @@ class AppUsageRepositoryImpl @Inject constructor(
             updatedMillis = dates.updatedMillis,
             targetSdk = application.targetSdkVersion,
             minSdk = application.minSdkVersion,
-            installerLabel = installerLabel(packageName),
+            installSource = installSource(packageName, systemApp),
             systemApp = systemApp,
             grantedCategories = AppPackageLogic.grantedCategories(
                 info.requestedPermissions,
@@ -455,23 +455,31 @@ class AppUsageRepositoryImpl @Inject constructor(
         )
     }
 
-    /** The store or installer app responsible for [packageName], by its label. */
-    private fun installerLabel(packageName: String): String? {
+    /** Where [packageName] came from: its install source record, as far as this Android version keeps one. */
+    private fun installSource(packageName: String, systemApp: Boolean): InstallSource {
         val packageManager = context.packageManager
-        val installer = try {
+        var installer: String? = null
+        var initiator: String? = null
+        var packageSource: Int? = null
+        try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                packageManager.getInstallSourceInfo(packageName).installingPackageName
+                val info = packageManager.getInstallSourceInfo(packageName)
+                installer = info.installingPackageName
+                initiator = info.initiatingPackageName
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) packageSource = info.packageSource
             } else {
                 @Suppress("DEPRECATION")
-                packageManager.getInstallerPackageName(packageName)
+                installer = packageManager.getInstallerPackageName(packageName)
             }
         } catch (_: Exception) {
-            null
-        } ?: return null
-        return try {
-            packageManager.getApplicationLabel(packageManager.getApplicationInfo(installer, 0)).toString()
-        } catch (_: Exception) {
-            installer
+            // Not installed any more, or not visible: nothing is known.
+        }
+        return AppPackageLogic.installSource(installer, initiator, packageSource, systemApp) { installerPackage ->
+            try {
+                packageManager.getApplicationLabel(packageManager.getApplicationInfo(installerPackage, 0)).toString()
+            } catch (_: Exception) {
+                installerPackage
+            }
         }
     }
 

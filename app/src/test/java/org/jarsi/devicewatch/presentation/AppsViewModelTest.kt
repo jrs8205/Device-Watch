@@ -2,6 +2,7 @@ package org.jarsi.devicewatch.presentation
 
 import kotlinx.coroutines.CompletableDeferred
 import org.jarsi.devicewatch.data.AppPackageFacts
+import org.jarsi.devicewatch.data.InstallSource
 import org.jarsi.devicewatch.data.PermissionCategory
 import org.jarsi.devicewatch.data.AppDataUsage
 import org.jarsi.devicewatch.data.AppScreenTime
@@ -210,7 +211,7 @@ class AppsViewModelTest {
         updatedMillis = 2_000L,
         targetSdk = 36,
         minSdk = 29,
-        installerLabel = "F-Droid",
+        installSource = InstallSource.App("F-Droid"),
         systemApp = false,
         grantedCategories = listOf(PermissionCategory.CAMERA),
         requestedPermissionCount = 9,
