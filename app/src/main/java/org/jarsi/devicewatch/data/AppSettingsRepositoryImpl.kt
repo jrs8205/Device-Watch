@@ -19,6 +19,23 @@ class AppSettingsRepositoryImpl @Inject constructor(
 ) : AppSettingsRepository {
 
     private val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    // Delivery on this phone is not a user setting. Neither backup rule file
+    // includes this file, so a new phone can deliver its own first alerts.
+    private val alertState = context.getSharedPreferences(ALERT_STATE_PREFS_NAME, Context.MODE_PRIVATE)
+
+    init {
+        // Older 1.6.0 candidates stored latches in the backed-up settings. We
+        // cannot tell an in-place update from a restore of that file, so discard
+        // those latches instead of migrating them. This may re-alert once after
+        // updating a candidate, but cannot silence a new phone's first alert.
+        val legacyLatches = prefs.all.keys.filter {
+            it.startsWith("$KEY_ALERT_LATCHED_PREFIX:") ||
+                it.startsWith("$KEY_DATA_QUOTA_NOTIFIED_PREFIX:")
+        }
+        if (legacyLatches.isNotEmpty()) {
+            prefs.edit().apply { legacyLatches.forEach(::remove) }.apply()
+        }
+    }
 
     override fun dataCounterMode(): DataCounterMode {
         val stored = prefs.getString(KEY_DATA_COUNTER_MODE, null) ?: return DataCounterMode.DAY
@@ -60,15 +77,18 @@ class AppSettingsRepositoryImpl @Inject constructor(
     override fun dataQuotaGb(): Double =
         coerceDataQuota(prefs.getFloat(KEY_DATA_QUOTA_GB, 0f).toDouble())
 
+    @Synchronized
     override fun setDataQuotaGb(value: Double) {
         val coerced = coerceDataQuota(value)
         val editor = prefs.edit().putFloat(KEY_DATA_QUOTA_GB, coerced.toFloat()).nextDataSettingsGeneration()
         if (coerced != dataQuotaGb()) {
             // A changed quota makes the 80 %/100 % crossings new events — re-arm
             // both latches instead of staying silent for the rest of the period.
-            prefs.all.keys
+            val latchEditor = alertState.edit()
+            alertState.all.keys
                 .filter { it.startsWith("$KEY_DATA_QUOTA_NOTIFIED_PREFIX:") }
-                .forEach(editor::remove)
+                .forEach(latchEditor::remove)
+            latchEditor.apply()
         }
         editor.apply()
     }
@@ -77,18 +97,20 @@ class AppSettingsRepositoryImpl @Inject constructor(
     private fun coerceDataQuota(value: Double): Double =
         if (value <= 0.0) 0.0 else value.coerceIn(DATA_QUOTA_MIN_GB, DATA_QUOTA_MAX_GB)
 
+    @Synchronized
     override fun dataQuotaNotified(periodStartEpochDay: Long, quotaGb: Double, threshold: Int): Boolean =
-        prefs.getBoolean(quotaNotifiedKey(periodStartEpochDay, quotaGb, threshold), false)
+        alertState.getBoolean(quotaNotifiedKey(periodStartEpochDay, quotaGb, threshold), false)
 
+    @Synchronized
     override fun setDataQuotaNotified(periodStartEpochDay: Long, quotaGb: Double, threshold: Int) {
         // The keys are scoped to a period and a quota, so every period would
         // otherwise leave booleans behind forever; latches for any other period or
         // quota are pruned as this one is written.
         val currentPrefix = quotaNotifiedPrefix(periodStartEpochDay, quotaGb)
-        val stale = prefs.all.keys.filter {
+        val stale = alertState.all.keys.filter {
             it.startsWith("$KEY_DATA_QUOTA_NOTIFIED_PREFIX:") && !it.startsWith(currentPrefix)
         }
-        val editor = prefs.edit()
+        val editor = alertState.edit()
         stale.forEach { editor.remove(it) }
         editor.putBoolean(quotaNotifiedKey(periodStartEpochDay, quotaGb, threshold), true).apply()
     }
@@ -139,12 +161,12 @@ class AppSettingsRepositoryImpl @Inject constructor(
         val editor = prefs.edit()
             .putBoolean(alertKey(KEY_ALERT_ENABLED_PREFIX, alert), enabled)
             .putLong(alertKey(KEY_ALERT_GENERATION_PREFIX, alert), alertGeneration(alert) + 1)
-        if (!enabled) editor.remove(alertKey(KEY_ALERT_LATCHED_PREFIX, alert))
+        if (!enabled) alertState.edit().remove(alertKey(KEY_ALERT_LATCHED_PREFIX, alert)).apply()
         editor.apply()
     }
 
     override fun alertLatched(alert: HealthAlert): Boolean =
-        prefs.getBoolean(alertKey(KEY_ALERT_LATCHED_PREFIX, alert), false)
+        alertState.getBoolean(alertKey(KEY_ALERT_LATCHED_PREFIX, alert), false)
 
     override fun alertGeneration(alert: HealthAlert): Long =
         prefs.getLong(alertKey(KEY_ALERT_GENERATION_PREFIX, alert), 0L)
@@ -152,19 +174,20 @@ class AppSettingsRepositoryImpl @Inject constructor(
     @Synchronized
     override fun latchAlert(alert: HealthAlert, generation: Long): Boolean {
         if (!alertEnabled(alert) || alertGeneration(alert) != generation) return false
-        prefs.edit().putBoolean(alertKey(KEY_ALERT_LATCHED_PREFIX, alert), true).apply()
+        alertState.edit().putBoolean(alertKey(KEY_ALERT_LATCHED_PREFIX, alert), true).apply()
         return true
     }
 
     @Synchronized
     override fun unlatchAlert(alert: HealthAlert) {
-        prefs.edit().remove(alertKey(KEY_ALERT_LATCHED_PREFIX, alert)).apply()
+        alertState.edit().remove(alertKey(KEY_ALERT_LATCHED_PREFIX, alert)).apply()
     }
 
     private fun alertKey(prefix: String, alert: HealthAlert): String = "$prefix:${alert.name.lowercase()}"
 
     companion object {
         const val PREFS_NAME = "app_settings"
+        private const val ALERT_STATE_PREFS_NAME = "alert_delivery"
         const val KEY_DATA_COUNTER_MODE = "data_counter_mode"
         const val KEY_CYCLE_START_DAY = "cycle_start_day"
         const val KEY_APPS_OLDEST_FIRST = "apps_oldest_first"

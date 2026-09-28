@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
     Android 11 and older: the same rule as data_extraction_rules.xml, the settings
-    only. An include list backs up nothing else. Checked by BackupRulesTest.
+    only. An include list backs up nothing else: device_local.xml and
+    alert_delivery.xml (delivered alert/quota latches) stay on this phone.
+    Checked by BackupRulesTest and AlertStateBackupTest.
 -->
 <full-backup-content>
     <include domain="sharedpref" path="app_settings.xml" />

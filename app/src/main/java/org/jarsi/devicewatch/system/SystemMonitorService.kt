@@ -405,7 +405,7 @@ class SystemMonitorService : Service() {
 
     /**
      * Data-quota alerts: 80 % and the limit itself, each at most once per counting
-     * period. The latch lives in settings and is keyed by the period start and the
+     * period. The latch stays on this device and is keyed by the period start and the
      * quota, so a new day (or billing cycle) re-arms both, a latch written just after
      * the user changed the quota belongs to the old quota only — and a quota switched
      * on mid-period only alerts for what the period has actually used. Synchronized because the
