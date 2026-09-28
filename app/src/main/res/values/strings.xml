@@ -25,6 +25,8 @@
     <string name="widget_settings_section">WIDGET SETTINGS</string>
     <string name="widget_opacity_title">Widget background opacity</string>
     <string name="widget_opacity_description" formatted="false">Adjust the home screen widget background opacity. 100% is fully opaque.</string>
+    <string name="widget_black_background_title">Black widget background</string>
+    <string name="widget_black_background_description">Pure black instead of the dark blue-grey, in both themes, so the widgets match black neighbours.</string>
     <string name="data_counter_section">DATA COUNTER</string>
     <string name="traffic_section">TRAFFIC NOW</string>
     <string name="traffic_down">↓ Download</string>

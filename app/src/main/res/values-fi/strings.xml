@@ -24,6 +24,8 @@
     <string name="widget_settings_section">WIDGETIN ASETUKSET</string>
     <string name="widget_opacity_title">Widgetin taustan peittävyys</string>
     <string name="widget_opacity_description" formatted="false">Säädä kotinäytön widgetin taustan läpinäkyvyyttä. 100% on täysin kiinteä tausta.</string>
+    <string name="widget_black_background_title">Musta widgetin tausta</string>
+    <string name="widget_black_background_description">Puhdas musta tumman sinertävän sijaan, molemmissa teemoissa, jotta widgetit sopivat mustien naapureidensa viereen.</string>
     <string name="data_counter_section">DATALASKURI</string>
     <string name="traffic_section">LIIKENNE NYT</string>
     <string name="traffic_down">↓ Lataus</string>

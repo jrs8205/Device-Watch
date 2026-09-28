@@ -136,7 +136,8 @@ fun CompactWidgetContent() {
 
     val prefs = currentState<Preferences>()
     val opacity = prefs[RefreshStatsAction.BACKGROUND_OPACITY] ?: (if (isDark) 0.86f else 0.94f)
-    val colors = getWidgetColors(isDark, opacity)
+    val blackBackground = prefs[RefreshStatsAction.BLACK_BACKGROUND] ?: false
+    val colors = getWidgetColors(isDark, opacity, blackBackground)
 
     val batteryLevel = prefs[RefreshStatsAction.BATTERY_LEVEL] ?: UNAVAILABLE_INT
     val uptimeMillis = prefs[RefreshStatsAction.UPTIME_MILLIS] ?: -1L

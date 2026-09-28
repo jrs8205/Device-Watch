@@ -424,7 +424,7 @@ class DashboardViewModelTest {
         val viewModel = buildViewModel(widget = widget)
 
         // When
-        viewModel.loadWidgetOpacity()
+        viewModel.loadWidgetAppearance()
         advanceUntilIdle()
 
         // Then
@@ -438,11 +438,41 @@ class DashboardViewModelTest {
         val viewModel = buildViewModel(widget = widget)
 
         // When
-        viewModel.loadWidgetOpacity()
+        viewModel.loadWidgetAppearance()
         advanceUntilIdle()
 
         // Then
         assertThat(viewModel.uiState.value.widgetOpacity).isEqualTo(DEFAULT_WIDGET_OPACITY)
+    }
+
+    @Test
+    fun `given a saved black background, when loading, then state adopts it`() = runTest(dispatcher) {
+        // Given (GitHub #2)
+        val widget = FakeWidgetController(installed = true, savedBlackBackground = true)
+        val viewModel = buildViewModel(widget = widget)
+
+        // When
+        viewModel.loadWidgetAppearance()
+        advanceUntilIdle()
+
+        // Then
+        assertThat(viewModel.uiState.value.widgetBlackBackground).isTrue()
+    }
+
+    @Test
+    fun `when the black background is switched, then it is persisted and shown`() = runTest(dispatcher) {
+        // Given
+        val widget = FakeWidgetController(installed = true)
+        val viewModel = buildViewModel(widget = widget)
+        assertThat(viewModel.uiState.value.widgetBlackBackground).isFalse()
+
+        // When
+        viewModel.onWidgetBlackBackgroundChange(true)
+        advanceUntilIdle()
+
+        // Then
+        assertThat(viewModel.uiState.value.widgetBlackBackground).isTrue()
+        assertThat(widget.committedBlackBackground).isTrue()
     }
 
     @Test
@@ -843,10 +873,19 @@ private fun sampleDeviceInfo(): DeviceInfo = DeviceInfo(
 private class FakeWidgetController(
     private val installed: Boolean,
     private val savedOpacity: Float? = null,
+    private val savedBlackBackground: Boolean? = null,
 ) : WidgetController {
     val pushedStats = mutableListOf<SystemStats>()
     var committedOpacity: Float? = null
         private set
+    var committedBlackBackground: Boolean? = null
+        private set
+
+    override suspend fun currentBlackBackground(): Boolean? = savedBlackBackground
+
+    override suspend fun setBlackBackground(black: Boolean) {
+        committedBlackBackground = black
+    }
 
     override suspend fun pushStats(stats: SystemStats): Boolean {
         pushedStats += stats

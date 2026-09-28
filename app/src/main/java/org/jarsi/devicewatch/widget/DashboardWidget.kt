@@ -74,10 +74,24 @@ enum class MetricTileKind {
     BatteryHealth
 }
 
-fun getWidgetColors(isDark: Boolean, opacity: Float): WidgetColors {
-    return if (isDark) {
+/**
+ * The widget's card colour. GitHub #2: the fixed dark blue-grey did not sit well next to
+ * black widgets, so [blackBackground] turns it pure black in both themes, at [opacity].
+ */
+fun widgetCardBackground(isDark: Boolean, opacity: Float, blackBackground: Boolean): Color = when {
+    blackBackground -> Color.Black.copy(alpha = opacity)
+    isDark -> Color(0xFF12151A).copy(alpha = opacity)
+    else -> Color(0xFFFFFFFF).copy(alpha = opacity)
+}
+
+/** A black card needs the dark palette's text even when the system theme is light. */
+fun widgetPaletteIsDark(isDark: Boolean, blackBackground: Boolean): Boolean = isDark || blackBackground
+
+fun getWidgetColors(isDark: Boolean, opacity: Float, blackBackground: Boolean = false): WidgetColors {
+    val cardBackground = ColorProvider(widgetCardBackground(isDark, opacity, blackBackground))
+    return if (widgetPaletteIsDark(isDark, blackBackground)) {
         WidgetColors(
-            cardBackground = ColorProvider(Color(0xFF12151A).copy(alpha = opacity)),
+            cardBackground = cardBackground,
             tileBackground = ColorProvider(Color(0x0AFFFFFF)), // rgba(255,255,255,0.04)
             progressTrack = ColorProvider(Color(0x14FFFFFF)),
             textPrimary = ColorProvider(Color(0xFFFFFFFF)),
@@ -99,7 +113,7 @@ fun getWidgetColors(isDark: Boolean, opacity: Float): WidgetColors {
         )
     } else {
         WidgetColors(
-            cardBackground = ColorProvider(Color(0xFFFFFFFF).copy(alpha = opacity)),
+            cardBackground = cardBackground,
             tileBackground = ColorProvider(Color(0x09000000)), // rgba(0,0,0,0.035)
             progressTrack = ColorProvider(Color(0x17000000)),  // rgba(0,0,0,0.09)
             textPrimary = ColorProvider(Color(0xFF1A1D21)),
@@ -145,7 +159,8 @@ fun WidgetContent() {
 
     val prefs = currentState<Preferences>()
     val opacity = prefs[RefreshStatsAction.BACKGROUND_OPACITY] ?: (if (isDark) 0.86f else 0.94f)
-    val colors = getWidgetColors(isDark, opacity)
+    val blackBackground = prefs[RefreshStatsAction.BLACK_BACKGROUND] ?: false
+    val colors = getWidgetColors(isDark, opacity, blackBackground)
 
     val batteryLevel = prefs[RefreshStatsAction.BATTERY_LEVEL] ?: UNAVAILABLE_INT
     val batteryStatus = prefs[RefreshStatsAction.BATTERY_STATUS] ?: UNAVAILABLE_TEXT

@@ -58,6 +58,8 @@ data class DashboardUiState(
     val isWidgetInstalled: Boolean = false,
     val lastUpdated: String = "--:--",
     val widgetOpacity: Float = DEFAULT_WIDGET_OPACITY,
+    /** GitHub #2: pure black widget card instead of the theme's dark blue-grey. */
+    val widgetBlackBackground: Boolean = false,
     val dataCounterMode: DataCounterMode = DataCounterMode.DAY,
     val cycleStartDay: Int = 1,
     /** Charge-reminder level in percent; 0 = reminder off. */
@@ -290,12 +292,23 @@ class DashboardViewModel @Inject constructor(
         }
     }
 
-    /** Loads the saved widget opacity from the first installed widget, if any. */
-    fun loadWidgetOpacity() {
+    /** Loads the saved widget opacity and black-background switch from the first installed widget, if any. */
+    fun loadWidgetAppearance() {
         viewModelScope.launch {
             widgetController.currentOpacity()?.let { saved ->
                 _uiState.update { it.copy(widgetOpacity = saved) }
             }
+            widgetController.currentBlackBackground()?.let { saved ->
+                _uiState.update { it.copy(widgetBlackBackground = saved) }
+            }
+        }
+    }
+
+    /** Persists the black-background switch to every installed widget and re-renders them. */
+    fun onWidgetBlackBackgroundChange(black: Boolean) {
+        _uiState.update { it.copy(widgetBlackBackground = black) }
+        viewModelScope.launch {
+            widgetController.setBlackBackground(black)
         }
     }
 

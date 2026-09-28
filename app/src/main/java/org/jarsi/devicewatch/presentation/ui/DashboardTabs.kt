@@ -135,7 +135,7 @@ fun SystemDashboardScreen(
         // whether the intro is still open, or nothing collects while it is.
         startSystemMonitorService()
         viewModel.refresh()
-        viewModel.loadWidgetOpacity()
+        viewModel.loadWidgetAppearance()
         viewModel.loadDataCounterSettings()
         viewModel.loadDeviceInfo()
     }
@@ -306,6 +306,7 @@ fun SystemDashboardScreen(
                             uiState = uiState,
                             onWidgetOpacityChange = viewModel::onWidgetOpacityChange,
                             onCommitWidgetOpacity = viewModel::commitWidgetOpacity,
+                            onWidgetBlackBackgroundChange = viewModel::onWidgetBlackBackgroundChange,
                             onDataCounterModeSelected = viewModel::onDataCounterModeSelected,
                             onCycleStartDayChange = viewModel::onCycleStartDayChange,
                             onCommitCycleStartDay = viewModel::commitCycleStartDay,

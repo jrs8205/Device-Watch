@@ -2,6 +2,7 @@ package org.jarsi.devicewatch.widget
 
 import android.content.Context
 import androidx.datastore.preferences.core.doublePreferencesKey
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
@@ -33,22 +34,22 @@ class RefreshStatsAction : ActionCallback {
         val TIME_REMAINING = stringPreferencesKey("time_remaining")
         val BATTERY_CYCLE_COUNT = intPreferencesKey("battery_cycle_count")
         val BATTERY_CAPACITY = intPreferencesKey("battery_capacity")
-        
+
         val TOTAL_RAM = doublePreferencesKey("total_ram")
         val USED_RAM = doublePreferencesKey("used_ram")
         val RAM_PERCENT = intPreferencesKey("ram_percent")
-        
+
         val CPU_CORES = intPreferencesKey("cpu_cores")
         val CPU_ABI = stringPreferencesKey("cpu_abi")
         val CPU_FREQ = doublePreferencesKey("cpu_freq")
         val CPU_LOAD = intPreferencesKey("cpu_load")
         val CPU_LOAD_LABEL = stringPreferencesKey("cpu_load_label")
         val CPU_TEMP = doublePreferencesKey("cpu_temp")
-        
+
         val TOTAL_STORAGE = doublePreferencesKey("total_storage")
         val USED_STORAGE = doublePreferencesKey("used_storage")
         val STORAGE_PERCENT = intPreferencesKey("storage_percent")
-        
+
         val WIFI_SSID = stringPreferencesKey("wifi_ssid")
         val WIFI_BAND = stringPreferencesKey("wifi_band")
         val WIFI_SPEED_DOWN = intPreferencesKey("wifi_speed_down")
@@ -57,7 +58,7 @@ class RefreshStatsAction : ActionCallback {
         val WIFI_DATA_LABEL = stringPreferencesKey("wifi_data_label")
         /** A [org.jarsi.devicewatch.data.DataSpan] name: the compact widget heads its Wi-Fi cell with it. */
         val WIFI_DATA_SPAN = stringPreferencesKey("wifi_data_span")
-        
+
         val OPERATOR_NAME = stringPreferencesKey("operator_name")
         val MOBILE_NETWORK_TYPE = stringPreferencesKey("mobile_network_type")
         val MOBILE_SIGNAL_DBM = intPreferencesKey("mobile_signal_dbm")
@@ -65,13 +66,15 @@ class RefreshStatsAction : ActionCallback {
         val MOBILE_DATA_TOTAL = doublePreferencesKey("mobile_data_total")
         val MOBILE_DATA_LABEL = stringPreferencesKey("mobile_data_label")
         val MOBILE_DATA_SPAN = stringPreferencesKey("mobile_data_span")
-        
+
         val UPTIME = stringPreferencesKey("uptime")
 
         /** Raw uptime for the compact widget, which has no room for "523h 45m". */
         val UPTIME_MILLIS = longPreferencesKey("uptime_millis")
         val LAST_UPDATED = stringPreferencesKey("last_updated")
         val BACKGROUND_OPACITY = floatPreferencesKey("background_opacity")
+        /** GitHub #2: pure black widget card instead of the theme colour. */
+        val BLACK_BACKGROUND = booleanPreferencesKey("black_background")
 
         /** Pre-formatted screen-time text written by SystemMonitorService (~1/min). */
         val SCREEN_TIME_TODAY = stringPreferencesKey("screen_time_today")

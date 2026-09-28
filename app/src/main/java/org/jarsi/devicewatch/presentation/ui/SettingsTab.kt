@@ -76,6 +76,7 @@ internal fun SettingsTab(
     uiState: DashboardUiState,
     onWidgetOpacityChange: (Float) -> Unit,
     onCommitWidgetOpacity: () -> Unit,
+    onWidgetBlackBackgroundChange: (Boolean) -> Unit,
     onDataCounterModeSelected: (DataCounterMode) -> Unit,
     onCycleStartDayChange: (Int) -> Unit,
     onCommitCycleStartDay: () -> Unit,
@@ -407,6 +408,15 @@ internal fun SettingsTab(
                     modifier = Modifier.width(42.dp)
                 )
             }
+
+            SettingsToggleRow(
+                titleRes = R.string.widget_black_background_title,
+                descriptionRes = R.string.widget_black_background_description,
+                checked = uiState.widgetBlackBackground,
+                onCheckedChange = onWidgetBlackBackgroundChange,
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
 
             Text(
                 text = stringResource(R.string.widget_opacity_description),

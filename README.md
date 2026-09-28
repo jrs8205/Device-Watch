@@ -30,6 +30,7 @@ The default app language is English. Finnish users get a localized app name and 
 
 - Home screen widget for battery, memory, CPU, storage, Wi-Fi, mobile network, data usage, uptime, today's screen time, and last update time
 - Compact 2×2 widget for battery, uptime and mobile/Wi-Fi data, with the counting period shown above each data amount
+- Widget background opacity slider, and a black-background switch for people whose other widgets are black
 - Tapping the widget anywhere opens the app
 - Data counters per calendar day or per one-month billing cycle with a configurable start day (month lengths handled automatically); the selection applies to the widget and the in-app data rows
 - Tabbed dashboard UI with swipe navigation between tabs: Home (live battery ring, usage counters, data counters and RAM/CPU/storage meters — full widget parity for people who skip the widget), Apps (usage insights), Device (hardware, SIM and Wi-Fi details), and Settings
@@ -62,6 +63,7 @@ The default app language is English. Finnish users get a localized app name and 
 - Screensaver clock follows the device 12/24-hour setting, with a second-aligned tick
 - Battery-level-tinted background gradient and a softly pulsing charge indicator in the screensaver
 - Optional screensaver dimming: manual, or automatic on a configurable night schedule (default 22:00–07:00)
+- OLED burn-in protection: the screensaver content glides to a new spot within 15 dp once a minute
 - Icons of unread notifications under the screensaver clock (one per app, with a count), pulsing when a new one arrives; needs notification access and can be turned off in Settings
 - Remembered screensaver rotation setting for repeated charging sessions; the background gradient mirrors with the 180° layout swap
 - Larger screensaver rotation touch target for easier use
