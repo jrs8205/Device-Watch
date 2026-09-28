@@ -1,5 +1,6 @@
 package org.jarsi.devicewatch.data
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.SharedPreferences
 
@@ -20,6 +21,7 @@ internal object DeviceLocalFlags {
         AppSettingsRepositoryImpl.KEY_RUNTIME_PERMISSIONS_REQUESTED,
     )
 
+    @SuppressLint("ApplySharedPref") // the copy must be on disk before the original goes
     @Synchronized
     fun prefs(context: Context): SharedPreferences {
         val local = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
