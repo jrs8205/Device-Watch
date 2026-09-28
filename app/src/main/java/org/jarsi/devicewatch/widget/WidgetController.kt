@@ -26,10 +26,10 @@ interface WidgetController {
     /** Persists [opacity] to every installed widget and re-renders them. */
     suspend fun setOpacity(opacity: Float)
 
-    /** Saved black-background switch of the first widget, or null when no widget is installed. */
+    /** Shared black-background setting, migrating an existing widget's choice if needed. */
     suspend fun currentBlackBackground(): Boolean?
 
-    /** Persists the black-background switch to every installed widget and re-renders them. */
+    /** Saves the shared default and applies it to every installed widget. */
     suspend fun setBlackBackground(black: Boolean)
 }
 
@@ -45,23 +45,32 @@ class GlanceWidgetController @Inject constructor(
 
     override suspend fun setOpacity(opacity: Float) = writeAll(RefreshStatsAction.BACKGROUND_OPACITY, opacity)
 
-    override suspend fun currentBlackBackground(): Boolean? = readFirst(RefreshStatsAction.BLACK_BACKGROUND)
+    override suspend fun currentBlackBackground(): Boolean? =
+        WidgetAppearanceSettings.blackBackground(context)
+            ?: readFirst(RefreshStatsAction.BLACK_BACKGROUND)?.let {
+                WidgetAppearanceSettings.migrateBlackBackground(context, it)
+            }
 
-    override suspend fun setBlackBackground(black: Boolean) = writeAll(RefreshStatsAction.BLACK_BACKGROUND, black)
+    override suspend fun setBlackBackground(black: Boolean) {
+        WidgetAppearanceSettings.setBlackBackground(context, black)
+        writeAll(RefreshStatsAction.BLACK_BACKGROUND, black)
+    }
 
-    /** The saved [key] of the first installed widget, or null without a widget or on a read failure. */
+    /** First stored [key], skipping new instances that do not have a value yet. */
     private suspend fun <T> readFirst(key: Preferences.Key<T>): T? {
         val manager = GlanceAppWidgetManager(context)
-        val glanceId = manager.getGlanceIds(DashboardWidget::class.java).firstOrNull()
-            ?: manager.getGlanceIds(CompactWidget::class.java).firstOrNull()
-            ?: return null
-        return try {
-            getAppWidgetState(context, PreferencesGlanceStateDefinition, glanceId)[key]
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            null
+        val ids = manager.getGlanceIds(DashboardWidget::class.java) +
+            manager.getGlanceIds(CompactWidget::class.java)
+        for (glanceId in ids) {
+            try {
+                getAppWidgetState(context, PreferencesGlanceStateDefinition, glanceId)[key]?.let { return it }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                // A newly added or unreadable instance must not hide an existing choice.
+            }
         }
+        return null
     }
 
     /** Writes [value] under [key] to every installed widget and re-renders them. */

@@ -68,6 +68,7 @@ class CompactWidget : GlanceAppWidget() {
     override val sizeMode: SizeMode = SizeMode.Exact
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
+        WidgetStateUpdater.initializeAppearance(context, id)
         provideContent {
             GlanceTheme {
                 CompactWidgetContent()

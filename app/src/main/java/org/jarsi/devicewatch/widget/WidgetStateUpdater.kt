@@ -4,9 +4,11 @@ import android.content.Context
 import androidx.datastore.preferences.core.MutablePreferences
 import androidx.glance.GlanceId
 import androidx.glance.appwidget.GlanceAppWidgetManager
+import androidx.glance.appwidget.state.getAppWidgetState
 import androidx.glance.appwidget.state.updateAppWidgetState
 import androidx.glance.state.PreferencesGlanceStateDefinition
 import org.jarsi.devicewatch.data.SystemStats
+import kotlinx.coroutines.CancellationException
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -17,6 +19,26 @@ import java.util.Locale
  * object only serializes them into DataStore and asks Glance to re-render.
  */
 object WidgetStateUpdater {
+
+    /**
+     * Gives a widget instance the shared black-background choice before its first render, so a
+     * widget added after the switch was set looks like the others (Codex round 11, GitHub #2).
+     * Runs on every render, so it writes only when the instance's stored value differs.
+     */
+    internal suspend fun initializeAppearance(context: Context, glanceId: GlanceId) {
+        val black = GlanceWidgetController(context).currentBlackBackground() ?: return
+        val stored = try {
+            getAppWidgetState(context, PreferencesGlanceStateDefinition, glanceId)[RefreshStatsAction.BLACK_BACKGROUND]
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            null
+        }
+        if (stored == black) return
+        updateAppWidgetState(context, PreferencesGlanceStateDefinition, glanceId) { prefs ->
+            prefs.toMutablePreferences().apply { this[RefreshStatsAction.BLACK_BACKGROUND] = black }
+        }
+    }
 
     /** Writes [stats] to every installed widget (both sizes); returns whether any widget exists. */
     suspend fun updateAll(context: Context, stats: SystemStats): Boolean {
@@ -65,12 +87,20 @@ object WidgetStateUpdater {
         stats: SystemStats,
         timestamp: String
     ) {
+        val black = GlanceWidgetController(context).currentBlackBackground()
         updateAppWidgetState(context, PreferencesGlanceStateDefinition, glanceId) { prefs ->
             prefs.toMutablePreferences().apply {
                 writeStats(stats, timestamp)
+                writeAppearance(context, black)
             }
         }
         widget.update(context, glanceId)
+    }
+
+    private fun MutablePreferences.writeAppearance(context: Context, fallback: Boolean?) {
+        (WidgetAppearanceSettings.blackBackground(context) ?: fallback)?.let {
+            this[RefreshStatsAction.BLACK_BACKGROUND] = it
+        }
     }
 
     private fun MutablePreferences.writeStats(stats: SystemStats, timestamp: String) {
