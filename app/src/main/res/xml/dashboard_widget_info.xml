@@ -8,6 +8,7 @@
     android:minResizeHeight="320dp"
     android:updatePeriodMillis="0"
     android:initialLayout="@layout/glance_default_layout"
+    android:previewImage="@drawable/widget_preview_dashboard"
     android:resizeMode="horizontal|vertical"
     android:widgetCategory="home_screen"
     android:description="@string/widget_description">
