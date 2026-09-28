@@ -32,6 +32,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -120,6 +121,19 @@ class DashboardViewModel @Inject constructor(
                 enabledAlerts = HealthAlert.entries.filter(settings::alertEnabled).toSet(),
             )
         }
+        // The service already samples every five seconds, even without a widget.
+        // Observe those readings instead of repeating the costly usage/storage scans.
+        viewModelScope.launch {
+            repository.latestStats.filterNotNull().collect(::publishStats)
+        }
+    }
+
+    private fun publishStats(stats: SystemStats) {
+        if (stats.dataSettingsGeneration != settings.dataSettingsGeneration()) return
+        _uiState.update { state ->
+            if (stats.readAtElapsedMillis < (state.stats?.readAtElapsedMillis ?: -1L)) state
+            else state.copy(stats = stats, lastUpdated = currentTime())
+        }
     }
 
     /** Marks the first-run intro completed (or skipped). */
@@ -174,6 +188,7 @@ class DashboardViewModel @Inject constructor(
     private suspend fun refreshInternal() {
         val generation = ++refreshGeneration
         val stats = repository.getStats()
+        publishStats(stats)
         val widgetInstalled = widgetController.pushStats(stats)
 
         // Usage counters cover the same period as the data counters. Android keeps
@@ -238,9 +253,7 @@ class DashboardViewModel @Inject constructor(
         if (generation != refreshGeneration) return
         _uiState.update {
             it.copy(
-                stats = stats,
                 isWidgetInstalled = widgetInstalled,
-                lastUpdated = currentTime(),
                 usageAccessEnabled = hasUsageAccess,
                 unlockCountingSupported = supportsUnlocks,
                 screenTimeMillis = if (hasUsageAccess) {
@@ -292,7 +305,7 @@ class DashboardViewModel @Inject constructor(
         }
     }
 
-    /** Loads the saved widget opacity and black-background switch from the first installed widget, if any. */
+    /** Loads widget opacity and the shared black-background setting. */
     fun loadWidgetAppearance() {
         viewModelScope.launch {
             widgetController.currentOpacity()?.let { saved ->

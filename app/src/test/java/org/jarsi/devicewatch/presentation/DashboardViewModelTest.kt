@@ -60,6 +60,67 @@ class DashboardViewModelTest {
     ) = DashboardViewModel(repository, widget, settings, appUsage, notifications, history, relay, alertNotifications)
 
     @Test
+    fun `service readings update live resources without a manual refresh or widget`() = runTest(dispatcher) {
+        val repository = FakeSystemStatsRepository(sampleStats())
+        val widget = FakeWidgetController(installed = false)
+        val viewModel = buildViewModel(repository = repository, widget = widget)
+        val first = sampleStats().copy(cpuLoadPercent = 12, usedRamGb = 3.0, readAtElapsedMillis = 1_000)
+        repository.latestStats.value = first
+        advanceUntilIdle()
+        assertThat(viewModel.uiState.value.stats).isEqualTo(first)
+
+        val next = first.copy(cpuLoadPercent = 79, usedRamGb = 4.5, cpuTemp = 42.0, readAtElapsedMillis = 6_000)
+        repository.latestStats.value = next
+        advanceUntilIdle()
+        assertThat(viewModel.uiState.value.stats).isEqualTo(next)
+        assertThat(viewModel.uiState.value.lastUpdated).isNotEqualTo("--:--")
+        assertThat(repository.callCount).isEqualTo(0)
+        assertThat(repository.breakdownStartMillis).isNull()
+        assertThat(widget.pushedStats).isEmpty()
+    }
+
+    @Test
+    fun `a slow full refresh cannot roll live stats back to its older reading`() = runTest(dispatcher) {
+        val pushed = kotlinx.coroutines.CompletableDeferred<Unit>()
+        val old = sampleStats().copy(readAtElapsedMillis = 1_000)
+        val repository = FakeSystemStatsRepository(old)
+        val widget = object : WidgetController by FakeWidgetController(installed = true) {
+            override suspend fun pushStats(stats: SystemStats): Boolean {
+                pushed.await()
+                return true
+            }
+        }
+        val viewModel = buildViewModel(repository = repository, widget = widget)
+        viewModel.refresh()
+        advanceUntilIdle()
+        val latest = old.copy(cpuLoadPercent = 85, readAtElapsedMillis = 6_000)
+        repository.latestStats.value = latest
+        advanceUntilIdle()
+        pushed.complete(Unit)
+        advanceUntilIdle()
+        assertThat(viewModel.uiState.value.stats).isEqualTo(latest)
+        assertThat(viewModel.uiState.value.isWidgetInstalled).isTrue()
+    }
+
+    @Test
+    fun `late or obsolete-period readings do not replace current live stats`() = runTest(dispatcher) {
+        val repository = FakeSystemStatsRepository(sampleStats())
+        val settings = FakeAppSettingsRepository()
+        val viewModel = buildViewModel(repository = repository, settings = settings)
+        val latest = sampleStats().copy(readAtElapsedMillis = 6_000)
+        repository.latestStats.value = latest
+        advanceUntilIdle()
+        repository.latestStats.value = latest.copy(cpuLoadPercent = 99, readAtElapsedMillis = 1_000)
+        advanceUntilIdle()
+        assertThat(viewModel.uiState.value.stats).isEqualTo(latest)
+
+        settings.setDataCounterMode(DataCounterMode.BILLING_CYCLE)
+        repository.latestStats.value = latest.copy(readAtElapsedMillis = 11_000)
+        advanceUntilIdle()
+        assertThat(viewModel.uiState.value.stats).isEqualTo(latest)
+    }
+
+    @Test
     fun `given fresh stats, when refreshing, then state reflects repository and widget flag`() =
         runTest(dispatcher) {
             // Given
@@ -802,6 +863,8 @@ private class FakeSystemStatsRepository(
     /** Overrides [breakdown] per call, so a test can hold one read back. */
     private val breakdownProvider: (suspend (Long) -> DataBreakdown)? = null,
 ) : SystemStatsRepository {
+    override val latestStats = kotlinx.coroutines.flow.MutableStateFlow<SystemStats?>(null)
+
     override suspend fun deviceState(): DeviceState = state
 
     override suspend fun storageBreakdown(): StorageBreakdown? = storage
@@ -820,6 +883,7 @@ private class FakeSystemStatsRepository(
 
     override suspend fun getStats(): SystemStats {
         callCount++
+        latestStats.value = stats
         return stats
     }
 

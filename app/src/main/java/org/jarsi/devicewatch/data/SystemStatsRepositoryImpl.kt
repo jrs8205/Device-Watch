@@ -69,6 +69,8 @@ import org.jarsi.devicewatch.di.DefaultDispatcher
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -104,9 +106,13 @@ class SystemStatsRepositoryImpl @Inject constructor(
     private var skipThermalRead = false
 
     private val statsMutex = Mutex()
+    private val _latestStats = MutableStateFlow<SystemStats?>(null)
+    override val latestStats = _latestStats.asStateFlow()
 
     override suspend fun getStats(): SystemStats = withContext(dispatcher) {
-        statsMutex.withLock { computeStats() }
+        statsMutex.withLock {
+            computeStats().also { _latestStats.value = it }
+        }
     }
 
     override suspend fun getDeviceInfo(): DeviceInfo = withContext(dispatcher) {

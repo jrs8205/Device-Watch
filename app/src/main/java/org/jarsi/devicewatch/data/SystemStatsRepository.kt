@@ -1,6 +1,7 @@
 package org.jarsi.devicewatch.data
 
 import java.time.YearMonth
+import kotlinx.coroutines.flow.StateFlow
 
 /**
  * Single source of truth for live device statistics.
@@ -16,6 +17,9 @@ data class DataUsageSince(val wifiGb: Double, val mobileGb: Double)
 data class MonthlyDataUsage(val month: YearMonth, val mobileGb: Double, val wifiGb: Double)
 
 interface SystemStatsRepository {
+    /** Latest reading from any caller, including the widget service; observing performs no I/O. */
+    val latestStats: StateFlow<SystemStats?>
+
     suspend fun getStats(): SystemStats
 
     /** Static, root-free device facts (build, SoC, display, memory). Safe to read once. */

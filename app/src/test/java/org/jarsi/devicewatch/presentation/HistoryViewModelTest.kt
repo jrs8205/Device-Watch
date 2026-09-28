@@ -85,6 +85,7 @@ class HistoryViewModelTest {
     }
 
     private class FakeStatsRepository : SystemStatsRepository {
+        override val latestStats = kotlinx.coroutines.flow.MutableStateFlow<SystemStats?>(null)
         override suspend fun dataBreakdown(startMillis: Long): DataBreakdown = DataBreakdown.NONE
         override suspend fun storageBreakdown(): StorageBreakdown? = null
         override suspend fun deviceState(): DeviceState = DeviceState()
