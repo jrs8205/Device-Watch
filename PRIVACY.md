@@ -1,6 +1,6 @@
 # Privacy Policy — Device Watch
 
-**Last updated: 12 July 2026**
+**Last updated: 28 September 2026**
 
 Device Watch (`org.jarsi.devicewatch`) is a device monitoring app developed by Jarsi Sode.
 
@@ -24,6 +24,8 @@ To show its statistics, Device Watch reads the following information **locally o
 ## Where the data lives
 
 All statistics (usage history up to 62 days including the daily used storage, notification log up to 7 days, battery and charge history) are stored in the app's private storage on your device. They are deleted when you uninstall the app or clear its data. Nothing is uploaded, synced, or backed up to any server by the app.
+
+Android's own backup (Google's cloud backup and the transfer to a new phone, where you use them) may include the app's **settings only**: the counting period, data quota, charge limit, alert switches, look and screensaver options. The statistics, the battery and charge history and the notification log are excluded from it and never leave the device.
 
 ## Changes
 

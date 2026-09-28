@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Android 11 and older: the same rule as data_extraction_rules.xml, the settings
+    only. An include list backs up nothing else. Checked by BackupRulesTest.
+-->
+<full-backup-content>
+    <include domain="sharedpref" path="app_settings.xml" />
+    <include domain="sharedpref" path="monitor_dream_preferences.xml" />
+</full-backup-content>
