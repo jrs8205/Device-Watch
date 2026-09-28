@@ -27,6 +27,13 @@ selected. Turn AOD off (or set it to tap-to-show) to let the screensaver run.
 The Settings tab has an optional dim toggle, plus an automatic night dim with a configurable
 schedule (default 22:00–07:00).
 
+### No notification icons show on the screensaver
+
+The row of icons under the clock needs the **Notification access** special permission, the same
+one the notification counter uses; the Settings tab's *Special access* section has the shortcut.
+Only notifications you can still clear are shown (nothing ongoing, no group summaries), one icon
+per app with a count, and the row can be turned off with *Show notification icons* in Settings.
+
 ## Data usage
 
 ### Mobile data shows zero, or far less than my carrier reports
@@ -73,11 +80,11 @@ differs per metric, and the History page states "collected since" for each one:
 
 ## Installation and updates
 
-### F-Droid or the GitHub APK?
+### F-Droid, Aptoide or the GitHub APK?
 
-Either. Releases are built reproducibly and F-Droid verifies its own build against the
-developer-signed APK, so both sources ship an APK signed with the same key — you can install from
-one and later update from the other. F-Droid additionally delivers updates automatically.
+Any of them. Releases are built reproducibly and F-Droid verifies its own build against the
+developer-signed APK, so every source ships an APK signed with the same key — you can install from
+one and later update from another. F-Droid and Aptoide additionally deliver updates automatically.
 
 ### Updating from v1.3.1 or older
 

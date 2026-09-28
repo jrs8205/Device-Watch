@@ -107,22 +107,29 @@ history retention — are answered in the [FAQ](FAQ.md).
 The app follows an MVVM + repository structure with Hilt dependency injection.
 
 ```
-presentation/   DashboardViewModel, AppsViewModel, HistoryViewModel and
-                SinceChargeViewModel (StateFlow UI state)
+presentation/   DashboardViewModel, AppsViewModel, HistoryViewModel, SinceChargeViewModel
+                and LiveTrafficViewModel (StateFlow UI state); CsvExporter,
+                HtmlReportBuilder and PeriodComparison behind the History page
 presentation/ui Compose-only screen code: SystemDashboardScreen scaffold with a
-                Material 3 NavigationBar, Home/Apps/Device/Settings tabs and
-                shared components (SettingsSectionCard, DeviceInfoRow, AppIcon,
-                ScreenTimeDonut, AppDetailSheet)
+                Material 3 NavigationBar, Home/Apps/Device/Settings tabs, the
+                History and Since-charge pages, the first-run intro, BatteryChart,
+                LiveTrafficMeter and shared components (SettingsSectionCard,
+                DeviceInfoRow, AppIcon, ScreenTimeDonut, AppDetailSheet, MetricText)
+ui/theme/       The two looks (high-contrast and classic) as full Material 3 schemes
 data/           SystemStatsRepository + AppUsageRepository (per-app usage, on demand)
-                AppSettingsRepository (data-counter mode, cycle start day, sort order)
-                NotificationStats + UsageHistory (own daily tallies, 62-day retention)
+                AppSettingsRepository (data-counter mode, cycle start day, alert switches)
+                NotificationStats, UsageHistory, BatteryHistory (own tallies: 62-day
+                daily history, 14-day battery log, charge sessions)
                 SystemStatsParser, DataPeriodCalculator, UsageEventAggregator,
-                NotificationCounting (pure, unit-tested calculations)
-                SystemStats / AppUsage models (+ UNAVAILABLE_* sentinels)
-widget/         Glance DashboardWidget, WidgetStateUpdater (DataStore writes),
-                WidgetController (port the ViewModel talks to), receiver and actions
-system/         SystemMonitorService (foreground), MonitorDreamService (screensaver),
-                NotificationCounterService (notification listener)
+                NotificationCounting, ChargeSessions, AlertLogic, DataQuotaLogic,
+                Camera/Audio/AppPackage logic (pure, unit-tested calculations)
+                SystemStats / AppUsage / DeviceInfo models (+ UNAVAILABLE_* sentinels)
+widget/         Glance DashboardWidget and CompactWidget, WidgetStateUpdater (DataStore
+                writes), WidgetController (port the ViewModel talks to), receivers,
+                actions and the font-scale cap (WidgetTextScale)
+system/         SystemMonitorService (foreground) with the charge-limit, data-quota and
+                health-alert notifiers, MonitorDreamService (screensaver) with
+                DreamNotifications, NotificationCounterService (notification listener)
 di/             Hilt modules and entry points
 ```
 
@@ -183,28 +190,35 @@ Release builds are minified with R8 and resource shrinking. The release APK is u
 
 ## Testing
 
-JVM unit tests cover the pure parsing/maths and the ViewModel:
+562 JVM unit tests (JUnit 4 + Truth; Robolectric only for the Glance render, backup-rule and
+settings-store tests) cover the pure logic behind every screen, service and widget:
 
 ```powershell
 .\gradlew.bat :app:testDebugUnitTest
 ```
 
-- `SystemStatsParserTest` — CPU-load deltas, frequency residency/pressure, battery wear, mobile-generation mapping, Wi-Fi SSID/band, signal filtering
-- `DataPeriodCalculatorTest` — billing-cycle period math (start-day clamping across month lengths, leap February, year rollover)
-- `UsageEventAggregatorTest` — foreground-session folding (in-app activity switches, unclosed sessions), donut segments, last-use sorting, day math, staleness tiers and launch-count ranking
-- `NotificationCountingTest` — the "real notification" filter and count retention/purging
-- `UsageHistoryLogicTest` — BOOT_COUNT delta dedup and history-key retention
-- `WidgetFormattingTest` — widget display formatters (locale-pinned), adaptive MB/GB data amounts
-- `ChargeAnchorLogicTest` — the since-charge anchor state machine (full-charge vs unplug anchors, reboot persistence)
-- `NotificationLogCodecTest` / `NotificationLogImplTest` — notification-log line escaping, retention and ordering
-- `HistoryListLogicTest` — per-metric history trimming and "collected since" labels
-- `SinceChargeNoticesTest` — visibility of the usage-access and stale-period notices
-- `DashboardViewModelTest` — refresh, opacity load/commit, data-counter settings, daily counters, widget-installed flag (hand-written fakes)
-- `AppsViewModelTest` — Apps-tab loading, empty state without usage access, detail assembly, sort toggle persistence
-- `HistoryViewModelTest` — history-page loading and silent refresh
-- `SinceChargeViewModelTest` — since-charge window queries, empty state, non-overlapping refreshes
-- `ClockFitTest` — screensaver clock width-fit math
-- `DreamLogicTest` — night-dim window (incl. crossing midnight) and charging-wattage normalization
+- **Parsing and maths** — `SystemStatsParserTest`, `CpuWindowTest`, `DataPeriodCalculatorTest`,
+  `UsageEventAggregatorTest`, `ExtraStatsLogicTest`, `AppPackageLogicTest`, `CameraLogicTest`,
+  `AudioLogicTest`, `TrafficMeterTest`
+- **Own history and stores** — `UsageHistoryLogicTest`, `UsageHistoryImplTest`,
+  `NotificationCountingTest`, `NotificationLogCodecTest`, `NotificationLogImplTest`,
+  `BatteryHistoryCodecTest`, `BatteryHistoryImplTest`, `ChargeSessionsTest`,
+  `ChargeAnchorLogicTest`, `AppSettingsRepositoryImplTest`, `DeviceLocalFlagsTest`,
+  `AlertStateBackupTest`, `BackupRulesTest`
+- **Alerts and notifications** — `AlertLogicTest`, `DataQuotaLogicTest`,
+  `DataQuotaSettingsChangeTest`, `ChargeLimitLogicTest`, `HealthAlertControllerTest`,
+  `NotificationDeliveryTest`
+- **ViewModels and exports** — `DashboardViewModelTest`, `AppsViewModelTest`,
+  `HistoryViewModelTest`, `SinceChargeViewModelTest`, `LiveTrafficViewModelTest`,
+  `PeriodComparisonTest`, `CsvExporterTest`, `HtmlReportBuilderTest`, `ReportPaletteTest`
+  (hand-written fakes in `Fakes.kt`)
+- **UI logic** — `HistoryListLogicTest`, `SinceChargeNoticesTest`, `BatteryChartLogicTest`,
+  `LabelValueRowTest`, `AppScaleTest`, `AppPaletteTest` (the WCAG AAA contrast of both looks)
+- **Widgets** — `WidgetFormattingTest`, `WidgetTextScaleTest`, `CompactFitTest`,
+  `CompactUptimeTest`, `CompactWidgetRenderTest`
+- **Screensaver** — `ClockFitTest`, `DreamLogicTest` (night-dim window, charging watts),
+  `DreamNotificationLogicTest` (which notifications show, grouping, arrivals, row fit),
+  `ActiveNotificationsStoreTest`
 
 ## Build Outputs
 
@@ -222,15 +236,27 @@ app/src/main/java/org/jarsi/devicewatch/
   MainActivity.kt
   MonitorApp.kt
   data/
+    AlertLogic.kt
+    AppPackageLogic.kt
     AppSettingsRepository.kt
     AppSettingsRepositoryImpl.kt
     AppUsage.kt
     AppUsageRepository.kt
     AppUsageRepositoryImpl.kt
+    AudioLogic.kt
+    BatteryHistory.kt
+    BatteryHistoryImpl.kt
     BatteryStatusReader.kt
+    CameraLogic.kt
     ChargeAnchor.kt
     ChargeAnchorStoreImpl.kt
+    ChargeSessions.kt
     DataPeriod.kt
+    DataQuotaLogic.kt
+    DeviceInfo.kt
+    DeviceLocalFlags.kt
+    DeviceState.kt
+    ExtraStatsLogic.kt
     NotificationCounting.kt
     NotificationLog.kt
     NotificationLogImpl.kt
@@ -240,63 +266,133 @@ app/src/main/java/org/jarsi/devicewatch/
     SystemStatsParser.kt
     SystemStatsRepository.kt
     SystemStatsRepositoryImpl.kt
+    TrafficMeter.kt
     UsageEventAggregator.kt
     UsageHistory.kt
     UsageHistoryImpl.kt
   di/
     DispatchersModule.kt
-    RepositoryModule.kt
     RepositoryEntryPoint.kt
+    RepositoryModule.kt
   presentation/
     AppsViewModel.kt
+    CsvExporter.kt
     DashboardViewModel.kt
+    HistoryCoverage.kt
     HistoryViewModel.kt
+    HtmlReportBuilder.kt
+    LiveTrafficViewModel.kt
+    PeriodComparison.kt
     SinceChargeViewModel.kt
     ui/
       AppDetailSheet.kt
+      AppScale.kt
       AppsTab.kt
+      BatteryChart.kt
+      BatteryChartLogic.kt
       DashboardComponents.kt
       DashboardTabs.kt
       DeviceTab.kt
+      Haptics.kt
       HistoryListLogic.kt
       HistoryPage.kt
+      LiveTrafficMeter.kt
+      MetricText.kt
+      OnboardingPage.kt
       OverviewTab.kt
       ScreenTimeDonut.kt
       SettingsTab.kt
       SinceChargeNotices.kt
       SinceChargePage.kt
   system/
+    AlertNotifications.kt
     BatteryFullNotifier.kt
+    ChargeLimitLogic.kt
+    ChargeLimitNotifier.kt
+    DataQuotaNotifier.kt
+    DreamNotifications.kt
     DreamPreferences.kt
+    HealthAlertController.kt
+    HealthAlertNotifier.kt
     MonitorDreamService.kt
+    MonitorServiceRelay.kt
     NotificationCounterService.kt
+    NotificationDelivery.kt
     SystemMonitorService.kt
+  ui/
+    theme/
+      Color.kt
+      Theme.kt
   widget/
+    CompactWidget.kt
     DashboardWidget.kt
     DashboardWidgetReceiver.kt
     RefreshStatsAction.kt
     WidgetController.kt
     WidgetStateUpdater.kt
+    WidgetTextScale.kt
 
 app/src/test/java/org/jarsi/devicewatch/
-  data/ChargeAnchorLogicTest.kt
-  data/DataPeriodCalculatorTest.kt
-  data/NotificationCountingTest.kt
-  data/NotificationLogCodecTest.kt
-  data/NotificationLogImplTest.kt
-  data/SystemStatsParserTest.kt
-  data/UsageEventAggregatorTest.kt
-  data/UsageHistoryLogicTest.kt
-  presentation/AppsViewModelTest.kt
-  presentation/DashboardViewModelTest.kt
-  presentation/Fakes.kt
-  presentation/HistoryViewModelTest.kt
-  presentation/SinceChargeViewModelTest.kt
-  presentation/ui/HistoryListLogicTest.kt
-  presentation/ui/SinceChargeNoticesTest.kt
-  system/ClockFitTest.kt
-  system/DreamLogicTest.kt
-  widget/WidgetFormattingTest.kt
+  data/
+    AlertLogicTest.kt
+    AlertStateBackupTest.kt
+    AppPackageLogicTest.kt
+    AppSettingsRepositoryImplTest.kt
+    AudioLogicTest.kt
+    BackupRulesTest.kt
+    BatteryHistoryCodecTest.kt
+    BatteryHistoryImplTest.kt
+    CameraLogicTest.kt
+    ChargeAnchorLogicTest.kt
+    ChargeSessionsTest.kt
+    CpuWindowTest.kt
+    DataPeriodCalculatorTest.kt
+    DataQuotaLogicTest.kt
+    DeviceLocalFlagsTest.kt
+    ExtraStatsLogicTest.kt
+    NotificationCountingTest.kt
+    NotificationLogCodecTest.kt
+    NotificationLogImplTest.kt
+    SystemStatsParserTest.kt
+    TrafficMeterTest.kt
+    UsageEventAggregatorTest.kt
+    UsageHistoryImplTest.kt
+    UsageHistoryLogicTest.kt
+  presentation/
+    AppsViewModelTest.kt
+    CsvExporterTest.kt
+    DashboardViewModelTest.kt
+    Fakes.kt
+    HistoryViewModelTest.kt
+    HtmlReportBuilderTest.kt
+    LiveTrafficViewModelTest.kt
+    PeriodComparisonTest.kt
+    ReportPaletteTest.kt
+    SinceChargeViewModelTest.kt
+    ui/
+      AppScaleTest.kt
+      BatteryChartLogicTest.kt
+      HistoryListLogicTest.kt
+      LabelValueRowTest.kt
+      SinceChargeNoticesTest.kt
+  system/
+    ActiveNotificationsStoreTest.kt
+    ChargeLimitLogicTest.kt
+    ClockFitTest.kt
+    DataQuotaSettingsChangeTest.kt
+    DreamLogicTest.kt
+    DreamNotificationLogicTest.kt
+    HealthAlertControllerTest.kt
+    NotificationDeliveryTest.kt
+  ui/
+    theme/
+      AppPaletteTest.kt
+  widget/
+    CompactFitTest.kt
+    CompactUptimeTest.kt
+    CompactWidgetRenderTest.kt
+    WidgetFormattingTest.kt
+    WidgetTextScaleTest.kt
 ```
 
 ## License
