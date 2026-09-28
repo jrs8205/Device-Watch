@@ -394,6 +394,32 @@ class HtmlReportBuilderTest {
     }
 
     @Test
+    fun `charging shading runs from the plug-in reading to the unplug reading`() {
+        // Codex release review: shaded 10.00–10.20 for a charge from 10.10 to 10.30.
+        // The store writes a plug or unplug with its own time, so those readings are
+        // the moments, as ChargeSessions and the in-app chart already read them.
+        val minute = 60_000L
+        val start = 1_786_700_000_000L
+        val html = HtmlReportBuilder.build(
+            data(
+                battery = listOf(
+                    BatterySample(start, 50, false),
+                    BatterySample(start + 10 * minute, 50, true),
+                    BatterySample(start + 20 * minute, 55, true),
+                    BatterySample(start + 30 * minute, 58, false),
+                ),
+            ),
+            labels,
+        )
+
+        // 720 wide over 30 minutes: 10.10 is at 240, and 10.10–10.30 is 480 wide.
+        val rect = Regex("<rect class=\"charging\" x=\"([0-9.]+)\" y=\"[0-9.]+\" width=\"([0-9.]+)\"")
+            .find(html)!!.groupValues
+        assertThat(rect[1]).isEqualTo("240.00")
+        assertThat(rect[2]).isEqualTo("480.00")
+    }
+
+    @Test
     fun `charging shading breaks at a collection gap like the line does`() {
         val hour = 3_600_000L
         val start = 1_786_700_000_000L

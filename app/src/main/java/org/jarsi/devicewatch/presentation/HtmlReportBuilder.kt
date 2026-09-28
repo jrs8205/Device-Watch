@@ -283,27 +283,18 @@ object HtmlReportBuilder {
         append("preserveAspectRatio=\"none\" role=\"img\" aria-label=\"")
         append(escape(labels.batterySection)).append("\">\n")
 
-        // Charging runs are shaded behind the line so the discharge slopes read cleanly.
-        // A run ends at a collection gap exactly as the line does: charging on both
-        // sides of a gap says nothing about the hours in between.
+        // Charging runs are shaded behind the line so the discharge slopes read cleanly,
+        // from the plug-in reading to the unplug reading: the battery store writes a
+        // plug or unplug with its own time, so those readings are the moments, as
+        // ChargeSessions and the in-app chart read them. A run ends at a collection
+        // gap exactly as the line does, at its last reading: charging on both sides
+        // of a gap says nothing about the hours in between.
         var runStart: Int? = null
-        fun closeRun(endIndex: Int) {
+        fun closeRun(endMillis: Long) {
             val startIndex = runStart ?: return
             runStart = null
-            // The charger went in somewhere between the last discharging sample and
-            // the first charging one, so the shading starts at the former — unless
-            // that sample sits on the far side of a gap.
-            val anchor = startIndex - 1
-            val startMillis = if (
-                anchor >= 0 &&
-                samples[startIndex].timeMillis - samples[anchor].timeMillis <= CHART_GAP_MILLIS
-            ) {
-                samples[anchor].timeMillis
-            } else {
-                samples[startIndex].timeMillis
-            }
-            val startX = x(startMillis)
-            val endX = x(samples[endIndex].timeMillis)
+            val startX = x(samples[startIndex].timeMillis)
+            val endX = x(endMillis)
             val width = (endX - startX).coerceAtLeast(3.0)
             append("<rect class=\"charging\" x=\"").append(coord(startX))
             append("\" y=\"$CHART_TOP\" width=\"").append(coord(width))
@@ -318,13 +309,13 @@ object HtmlReportBuilder {
         samples.forEachIndexed { index, sample ->
             val previous = samples.getOrNull(index - 1)
             if (previous != null && sample.timeMillis - previous.timeMillis > CHART_GAP_MILLIS) {
-                closeRun(index - 1)
+                closeRun(previous.timeMillis)
             }
             if (!sample.charging) {
-                closeRun(index - 1)
+                closeRun(sample.timeMillis)
             } else {
                 if (runStart == null) runStart = index
-                if (index == samples.lastIndex) closeRun(index)
+                if (index == samples.lastIndex) closeRun(sample.timeMillis)
             }
         }
 
