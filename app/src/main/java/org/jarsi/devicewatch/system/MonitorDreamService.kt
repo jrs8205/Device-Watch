@@ -20,6 +20,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.Text
@@ -621,7 +623,8 @@ private fun NotificationIconRow(
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
-    val iconSizePx = with(LocalDensity.current) { iconSize.roundToPx() }
+    val density = LocalDensity.current
+    val iconSizePx = with(density) { iconSize.roundToPx() }
     val rowAlpha = remember { Animatable(NOTIFICATION_ROW_RESTING_ALPHA) }
     LaunchedEffect(pulseToken) {
         if (pulseToken == 0) return@LaunchedEffect
@@ -631,38 +634,93 @@ private fun NotificationIconRow(
         }
         rowAlpha.animateTo(NOTIFICATION_ROW_RESTING_ALPHA, tween(durationMillis = 400))
     }
-    val shown = groups.take(MAX_NOTIFICATION_ICONS)
-    val overflow = groups.size - shown.size
     val total = groups.sumOf { it.count }
     val description = pluralStringResource(R.plurals.dream_unread_notifications, total, total)
-    val countStyle = TextStyle(fontFeatureSettings = "tnum")
     val countSize = (iconSize.value * 0.6f).sp
+    val countTextStyle = TextStyle(
+        fontSize = countSize,
+        fontWeight = FontWeight.Medium,
+        fontFeatureSettings = "tnum",
+    )
+    val measurer = rememberTextMeasurer()
+    val resolver = LocalFontFamilyResolver.current
+    // Codex round 10: eight groups with two-digit counts overflow a 344 dp clock block, so
+    // the row keeps only the groups whose measured widths fit, "+N" included.
+    BoxWithConstraints(modifier = modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+        val fit = remember(groups, maxWidth, iconSizePx, countTextStyle, density, resolver) {
+            fun labelWidth(text: String): Float = measurer.measure(
+                text = text,
+                style = countTextStyle,
+                softWrap = false,
+                maxLines = 1,
+                density = density,
+                fontFamilyResolver = resolver,
+            ).size.width.toFloat()
+            fitNotificationRow(
+                groups = groups,
+                availableWidth = with(density) { maxWidth.toPx() },
+                iconWidth = iconSizePx.toFloat(),
+                spacing = with(density) { NOTIFICATION_ROW_SPACING.toPx() },
+                countGap = with(density) { NOTIFICATION_COUNT_GAP.toPx() },
+                countWidth = { count -> labelWidth(count.toString()) },
+                overflowWidth = { hidden -> labelWidth("+$hidden") },
+                maxGroups = MAX_NOTIFICATION_ICONS,
+            )
+        }
+        NotificationIconRowContent(
+            fit = fit,
+            iconSize = iconSize,
+            iconSizePx = iconSizePx,
+            countStyle = countTextStyle,
+            modifier = Modifier
+                .graphicsLayer { alpha = rowAlpha.value }
+                .semantics { contentDescription = description },
+        )
+    }
+}
+
+/** Gap between the groups on the notification row, and between an icon and its count. */
+private val NOTIFICATION_ROW_SPACING = 10.dp
+private val NOTIFICATION_COUNT_GAP = 3.dp
+
+@Composable
+private fun NotificationIconRowContent(
+    fit: NotificationRowFit,
+    iconSize: Dp,
+    iconSizePx: Int,
+    countStyle: TextStyle,
+    modifier: Modifier = Modifier,
+) {
+    val context = LocalContext.current
     Row(
-        modifier = modifier
-            .graphicsLayer { alpha = rowAlpha.value }
-            .semantics { contentDescription = description },
+        modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        horizontalArrangement = Arrangement.spacedBy(NOTIFICATION_ROW_SPACING),
     ) {
-        shown.forEach { group ->
+        fit.shown.forEach { group ->
             key(group.packageName) {
-                val bitmap = remember(group.newestPostTime, iconSizePx) {
-                    loadNotificationIcon(context, group.smallIcon, iconSizePx)
+                // Codex round 10: a URI-backed icon reads a content provider, so the decode
+                // runs off the main thread and the icon appears when it is ready.
+                val bitmap by produceState<ImageBitmap?>(null, group.newestPostTime, iconSizePx) {
+                    value = withContext(Dispatchers.IO) {
+                        loadNotificationIcon(context, group.smallIcon, iconSizePx)
+                    }
                 }
-                if (bitmap != null) {
+                val ready = bitmap
+                if (ready != null) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Image(
-                            bitmap = bitmap,
+                            bitmap = ready,
                             contentDescription = null,
                             modifier = Modifier.size(iconSize),
                             colorFilter = ColorFilter.tint(Color(0xFFEDEDED)),
                         )
                         if (group.count > 1) {
-                            Spacer(modifier = Modifier.width(3.dp))
+                            Spacer(modifier = Modifier.width(NOTIFICATION_COUNT_GAP))
                             Text(
                                 text = group.count.toString(),
-                                fontSize = countSize,
-                                fontWeight = FontWeight.Medium,
+                                maxLines = 1,
+                                softWrap = false,
                                 color = Color(0xFF8B929C),
                                 style = countStyle,
                             )
@@ -671,11 +729,11 @@ private fun NotificationIconRow(
                 }
             }
         }
-        if (overflow > 0) {
+        if (fit.hidden > 0) {
             Text(
-                text = "+$overflow",
-                fontSize = countSize,
-                fontWeight = FontWeight.Medium,
+                text = "+${fit.hidden}",
+                maxLines = 1,
+                softWrap = false,
                 color = Color(0xFF8B929C),
                 style = countStyle,
             )
@@ -686,7 +744,8 @@ private fun NotificationIconRow(
 /**
  * Renders a notification's small icon at [sizePx]. Icons of other packages resolve through
  * their own resources, which can fail for an app that was just uninstalled or updated; then
- * nothing is drawn for that app rather than a broken placeholder.
+ * nothing is drawn for that app rather than a broken placeholder. Called off the main
+ * thread: a URI icon opens a content provider.
  */
 private fun loadNotificationIcon(context: Context, icon: android.graphics.drawable.Icon?, sizePx: Int): ImageBitmap? {
     icon ?: return null
