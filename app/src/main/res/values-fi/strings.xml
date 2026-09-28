@@ -600,5 +600,7 @@
     <string name="dream_charging">Latautuu</string>
     <string name="dream_on_battery">Akkuvirralla</string>
     <string name="dream_full_time_estimate">Täynnä, arviolta noin klo %1$s</string>
+    <string name="dream_full_time_tomorrow">Täynnä, arviolta huomenna klo %1$s</string>
+    <string name="dream_full_time_date">Täynnä, arviolta %1$s klo %2$s</string>
     <string name="dream_full_time_unknown">Täynnä, arviolta noin --:--</string>
 </resources>

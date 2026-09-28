@@ -152,6 +152,7 @@ fun ScreensaverContent(context: Context) {
     var batteryTemp by remember { mutableDoubleStateOf(25.6) }
     var batteryVoltage by remember { mutableDoubleStateOf(3.88) }
     var chargeFullAtMs by remember { mutableLongStateOf(-1L) }
+    var clockMillis by remember { mutableLongStateOf(System.currentTimeMillis()) }
     var chargeWatts by remember { mutableStateOf<Double?>(null) }
     var hasSentFullBatteryNotification by remember { mutableStateOf(false) }
     val preferences = remember(context) {
@@ -269,6 +270,7 @@ fun ScreensaverContent(context: Context) {
 
         while (true) {
             val now = Date()
+            clockMillis = now.time
             timeText = timeFormat.format(now)
             secondsText = secondsFormat.format(now)
             amPmText = if (is24Hour) "" else amPmFormat.format(now)
@@ -321,8 +323,7 @@ fun ScreensaverContent(context: Context) {
 
     val fullTimeStr = if (isCharging && batteryLevel < 100) {
         if (chargeFullAtMs > 0L) {
-            val format = SimpleDateFormat("HH:mm", currentLocale)
-            context.getString(R.string.dream_full_time_estimate, format.format(Date(chargeFullAtMs)))
+            chargeCompletionText(context, chargeFullAtMs, clockMillis, currentLocale, is24Hour)
         } else {
             context.getString(R.string.dream_full_time_unknown)
         }

@@ -605,5 +605,7 @@
     <string name="dream_charging">Charging</string>
     <string name="dream_on_battery">On battery</string>
     <string name="dream_full_time_estimate">Full, estimated around %1$s</string>
+    <string name="dream_full_time_tomorrow">Full, estimated tomorrow around %1$s</string>
+    <string name="dream_full_time_date">Full, estimated %1$s around %2$s</string>
     <string name="dream_full_time_unknown">Full, estimated around --:--</string>
 </resources>
