@@ -19,7 +19,8 @@ const val UNAVAILABLE_DOUBLE = -1.0
  * Note on naming: the `*TodayGb`/`*UsedGb` data-usage fields cover the current
  * counting period selected in [AppSettingsRepository] — a calendar day by default,
  * or a one-month billing cycle. [wifiDataLabel] and [mobileDataLabel] carry the
- * matching, already-localized widget label.
+ * matching, already-localized widget label, and [wifiDataSpan] and
+ * [mobileDataSpan] the span alone, for the compact widget's short headings.
  */
 data class SystemStats(
     val batteryLevel: Int,
@@ -51,12 +52,14 @@ data class SystemStats(
     val wifiSpeedUp: Int,
     val wifiBytesTodayGb: Double,
     val wifiDataLabel: String,
+    val wifiDataSpan: DataSpan = DataSpan.UNKNOWN,
     val operatorName: String,
     val mobileNetworkType: String,
     val mobileSignalDbm: Int,
     val mobileDataUsedGb: Double,
     val mobileDataTotalGb: Double,
     val mobileDataLabel: String,
+    val mobileDataSpan: DataSpan = DataSpan.UNKNOWN,
     val simOperator: String,
     val simState: String,
     val simSlots: Int,
@@ -100,3 +103,6 @@ data class SystemStats(
     /** Share of the severe-throttling threshold reached (Android 11+); [UNAVAILABLE_INT] when unknown. */
     val thermalHeadroomPercent: Int = UNAVAILABLE_INT,
 )
+
+/** The span a data figure covers; UNKNOWN when there is no figure to cover one. */
+enum class DataSpan { TODAY, PERIOD, SINCE_BOOT, UNKNOWN }

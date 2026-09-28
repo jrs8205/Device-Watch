@@ -554,6 +554,9 @@
     <string name="widget_tile_uptime">KÄYNNISSÄ</string>
     <string name="widget_tile_mobile">MOBIILI</string>
     <string name="widget_tile_wifi">WI-FI</string>
+    <string name="widget_span_today">TÄNÄÄN</string>
+    <string name="widget_span_period">KAUDELLA</string>
+    <string name="widget_span_since_boot">KÄYNN.</string>
     <string name="unit_day_short">pv</string>
     <string name="unit_hour_short">t</string>
     <string name="unit_minute_short">min</string>

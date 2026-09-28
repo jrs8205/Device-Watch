@@ -121,6 +121,7 @@ dependencies {
     testImplementation(libs.androidx.test.core)
     testImplementation(libs.androidx.test.ext.junit)
     testImplementation(libs.androidx.arch.core.testing)
+    testImplementation(libs.androidx.glance.appwidget.testing)
 
     // Instrumented / Compose UI testing
     androidTestImplementation(platform(libs.androidx.compose.bom))

@@ -1442,8 +1442,9 @@ class SystemStatsRepositoryImpl @Inject constructor(
             .atStartOfDay(ZoneId.systemDefault())
             .toInstant()
             .toEpochMilli()
+        val periodSpan = if (counterMode == DataCounterMode.DAY) DataSpan.TODAY else DataSpan.PERIOD
         val periodLabel = context.getString(
-            if (counterMode == DataCounterMode.DAY) {
+            if (periodSpan == DataSpan.TODAY) {
                 R.string.mobile_data_today_label
             } else {
                 R.string.data_period_label
@@ -1501,10 +1502,15 @@ class SystemStatsRepositoryImpl @Inject constructor(
         }
         // The TrafficStats fallback always counts since boot, so it keeps its own label
         // regardless of the selected counter mode.
-        val mobileDataLabel = when {
-            mobileDataTodayGb >= 0.0 -> periodLabel
-            mobileTrafficSinceBootGb >= 0.0 -> context.getString(R.string.mobile_data_since_boot_label)
-            else -> context.getString(R.string.mobile_data_label)
+        val mobileDataSpan = when {
+            mobileDataTodayGb >= 0.0 -> periodSpan
+            mobileTrafficSinceBootGb >= 0.0 -> DataSpan.SINCE_BOOT
+            else -> DataSpan.UNKNOWN
+        }
+        val mobileDataLabel = when (mobileDataSpan) {
+            DataSpan.TODAY, DataSpan.PERIOD -> periodLabel
+            DataSpan.SINCE_BOOT -> context.getString(R.string.mobile_data_since_boot_label)
+            DataSpan.UNKNOWN -> context.getString(R.string.mobile_data_label)
         }
 
         // SIM facts that need no runtime permission.
@@ -1563,12 +1569,14 @@ class SystemStatsRepositoryImpl @Inject constructor(
             wifiSpeedUp = wifiSpeedUp,
             wifiBytesTodayGb = wifiBytesTodayGb,
             wifiDataLabel = periodLabel,
+            wifiDataSpan = periodSpan,
             operatorName = operatorName,
             mobileNetworkType = mobileNetworkType,
             mobileSignalDbm = mobileSignalDbm,
             mobileDataUsedGb = mobileDataUsedGb,
             mobileDataTotalGb = mobileDataTotalGb,
             mobileDataLabel = mobileDataLabel,
+            mobileDataSpan = mobileDataSpan,
             simOperator = simOperator,
             simState = simState,
             simSlots = simSlots,

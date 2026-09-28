@@ -55,6 +55,8 @@ class RefreshStatsAction : ActionCallback {
         val WIFI_SPEED_UP = intPreferencesKey("wifi_speed_up")
         val WIFI_BYTES_TODAY = doublePreferencesKey("wifi_bytes_today")
         val WIFI_DATA_LABEL = stringPreferencesKey("wifi_data_label")
+        /** A [org.jarsi.devicewatch.data.DataSpan] name: the compact widget heads its Wi-Fi cell with it. */
+        val WIFI_DATA_SPAN = stringPreferencesKey("wifi_data_span")
         
         val OPERATOR_NAME = stringPreferencesKey("operator_name")
         val MOBILE_NETWORK_TYPE = stringPreferencesKey("mobile_network_type")
@@ -62,6 +64,7 @@ class RefreshStatsAction : ActionCallback {
         val MOBILE_DATA_USED = doublePreferencesKey("mobile_data_used")
         val MOBILE_DATA_TOTAL = doublePreferencesKey("mobile_data_total")
         val MOBILE_DATA_LABEL = stringPreferencesKey("mobile_data_label")
+        val MOBILE_DATA_SPAN = stringPreferencesKey("mobile_data_span")
         
         val UPTIME = stringPreferencesKey("uptime")
 

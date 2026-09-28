@@ -100,12 +100,14 @@ object WidgetStateUpdater {
         this[RefreshStatsAction.WIFI_SPEED_UP] = stats.wifiSpeedUp
         this[RefreshStatsAction.WIFI_BYTES_TODAY] = stats.wifiBytesTodayGb
         this[RefreshStatsAction.WIFI_DATA_LABEL] = stats.wifiDataLabel
+        this[RefreshStatsAction.WIFI_DATA_SPAN] = stats.wifiDataSpan.name
         this[RefreshStatsAction.OPERATOR_NAME] = stats.operatorName
         this[RefreshStatsAction.MOBILE_NETWORK_TYPE] = stats.mobileNetworkType
         this[RefreshStatsAction.MOBILE_SIGNAL_DBM] = stats.mobileSignalDbm
         this[RefreshStatsAction.MOBILE_DATA_USED] = stats.mobileDataUsedGb
         this[RefreshStatsAction.MOBILE_DATA_TOTAL] = stats.mobileDataTotalGb
         this[RefreshStatsAction.MOBILE_DATA_LABEL] = stats.mobileDataLabel
+        this[RefreshStatsAction.MOBILE_DATA_SPAN] = stats.mobileDataSpan.name
         this[RefreshStatsAction.UPTIME] = stats.uptimeText
         this[RefreshStatsAction.UPTIME_MILLIS] = stats.uptimeMillis
         this[RefreshStatsAction.LAST_UPDATED] = timestamp

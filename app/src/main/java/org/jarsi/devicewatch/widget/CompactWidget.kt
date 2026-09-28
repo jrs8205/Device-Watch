@@ -46,6 +46,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.jarsi.devicewatch.MainActivity
 import org.jarsi.devicewatch.R
+import org.jarsi.devicewatch.data.DataSpan
 import org.jarsi.devicewatch.data.SystemStatsRepository
 import org.jarsi.devicewatch.data.UNAVAILABLE_DOUBLE
 import org.jarsi.devicewatch.data.UNAVAILABLE_INT
@@ -120,7 +121,10 @@ class CompactWidgetReceiver : GlanceAppWidgetReceiver() {
 /**
  * Four labelled quadrants: battery, uptime, mobile data and Wi-Fi data. Every
  * figure carries its own heading, because a 2×2 widget read at arm's length has
- * no room for the reader to infer what a bare number means. The layout holds
+ * no room for the reader to infer what a bare number means. The data cells are
+ * headed with the span their figure covers (today, the billing period, since
+ * boot) and leave the network to their icon, which also names it to a screen
+ * reader: a cell has no room for both words. The layout holds
  * exactly four short lines so it survives a raised system font size — see
  * [widgetSp] for the cap that keeps it from clipping.
  */
@@ -138,6 +142,8 @@ fun CompactWidgetContent() {
     val uptimeMillis = prefs[RefreshStatsAction.UPTIME_MILLIS] ?: -1L
     val mobileDataUsed = prefs[RefreshStatsAction.MOBILE_DATA_USED] ?: UNAVAILABLE_DOUBLE
     val wifiBytes = prefs[RefreshStatsAction.WIFI_BYTES_TODAY] ?: UNAVAILABLE_DOUBLE
+    val mobileSpan = dataSpanOf(prefs[RefreshStatsAction.MOBILE_DATA_SPAN])
+    val wifiSpan = dataSpanOf(prefs[RefreshStatsAction.WIFI_DATA_SPAN])
     val cellWidthDp = (LocalSize.current.width - widgetDp(12f) * 2 - widgetDp(8f)).value / 2
 
     Column(
@@ -184,22 +190,24 @@ fun CompactWidgetContent() {
         Spacer(modifier = GlanceModifier.height(widgetDp(8f)))
         Row(modifier = GlanceModifier.fillMaxWidth().defaultWeight()) {
             CompactCell(
-                label = context.getString(R.string.widget_tile_mobile),
+                label = context.getString(compactDataHeading(mobileSpan, R.string.widget_tile_mobile)),
                 value = compactDataAmountText(mobileDataUsed),
                 valueColor = colors.textPrimary,
                 iconRes = R.drawable.ic_widget_cellular,
                 iconColor = colors.mobileAccent,
+                iconDescription = context.getString(R.string.widget_tile_mobile),
                 colors = colors,
                 widthDp = cellWidthDp,
                 modifier = GlanceModifier.defaultWeight()
             )
             Spacer(modifier = GlanceModifier.width(widgetDp(8f)))
             CompactCell(
-                label = context.getString(R.string.widget_tile_wifi),
+                label = context.getString(compactDataHeading(wifiSpan, R.string.widget_tile_wifi)),
                 value = compactDataAmountText(wifiBytes),
                 valueColor = colors.textPrimary,
                 iconRes = R.drawable.ic_widget_wifi,
                 iconColor = colors.networkAccent,
+                iconDescription = context.getString(R.string.widget_tile_wifi),
                 colors = colors,
                 widthDp = cellWidthDp,
                 modifier = GlanceModifier.defaultWeight()
@@ -218,6 +226,8 @@ private fun CompactCell(
     colors: WidgetColors,
     widthDp: Float,
     modifier: GlanceModifier = GlanceModifier,
+    /** Needed when the heading does not name what the icon shows. */
+    iconDescription: String? = null,
 ) {
     val iconDp = 11f
     val labelWidthDp = widthDp - widgetDp(iconDp + 4f).value
@@ -225,7 +235,7 @@ private fun CompactCell(
         Row(verticalAlignment = Alignment.CenterVertically) {
             Image(
                 provider = ImageProvider(iconRes),
-                contentDescription = null,
+                contentDescription = iconDescription,
                 colorFilter = ColorFilter.tint(iconColor),
                 modifier = GlanceModifier.size(widgetDp(iconDp))
             )
@@ -250,6 +260,17 @@ private fun CompactCell(
             maxLines = 1
         )
     }
+}
+
+/** A stored [DataSpan] name; UNKNOWN for none (state written before 1.6.0) or a name no longer known. */
+fun dataSpanOf(name: String?): DataSpan = DataSpan.entries.firstOrNull { it.name == name } ?: DataSpan.UNKNOWN
+
+/** The heading of a compact data cell: the span its figure covers, or [networkHeading] when that is unknown. */
+fun compactDataHeading(span: DataSpan, networkHeading: Int): Int = when (span) {
+    DataSpan.TODAY -> R.string.widget_span_today
+    DataSpan.PERIOD -> R.string.widget_span_period
+    DataSpan.SINCE_BOOT -> R.string.widget_span_since_boot
+    DataSpan.UNKNOWN -> networkHeading
 }
 
 /**
