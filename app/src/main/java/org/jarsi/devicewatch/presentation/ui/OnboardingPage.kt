@@ -61,6 +61,7 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import kotlinx.coroutines.launch
 import org.jarsi.devicewatch.R
 import org.jarsi.devicewatch.data.AppSettingsRepositoryImpl
+import org.jarsi.devicewatch.data.DeviceLocalFlags
 
 /**
  * Runtime permissions the app asks for, minus those already granted. COARSE must
@@ -91,8 +92,8 @@ internal fun missingRuntimePermissions(context: Context): Array<String> {
     return missing.toTypedArray()
 }
 
-private fun Context.appSettingsPrefs() =
-    getSharedPreferences(AppSettingsRepositoryImpl.PREFS_NAME, Context.MODE_PRIVATE)
+/** Where the flag lives: with this phone, outside the backed-up settings. */
+private fun Context.deviceLocalPrefs() = DeviceLocalFlags.prefs(this)
 
 /**
  * Records that the runtime-permission dialog has been launched at least once.
@@ -100,7 +101,7 @@ private fun Context.appSettingsPrefs() =
  * recreations, or the first tap after one is a silent no-op request.
  */
 internal fun Context.markRuntimePermissionsRequested() {
-    appSettingsPrefs().edit()
+    deviceLocalPrefs().edit()
         .putBoolean(AppSettingsRepositoryImpl.KEY_RUNTIME_PERMISSIONS_REQUESTED, true)
         .apply()
 }
@@ -113,7 +114,7 @@ internal fun Context.markRuntimePermissionsRequested() {
 internal fun Context.runtimePermissionsPermanentlyDenied(missing: Array<String>): Boolean {
     val activity = this as? Activity ?: return false
     if (missing.isEmpty()) return false
-    val requestedBefore = appSettingsPrefs()
+    val requestedBefore = deviceLocalPrefs()
         .getBoolean(AppSettingsRepositoryImpl.KEY_RUNTIME_PERMISSIONS_REQUESTED, false)
     if (!requestedBefore) return false
     return missing.all { !activity.shouldShowRequestPermissionRationale(it) }

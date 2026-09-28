@@ -15,7 +15,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class AppSettingsRepositoryImpl @Inject constructor(
-    @ApplicationContext context: Context,
+    @ApplicationContext private val context: Context,
 ) : AppSettingsRepository {
 
     private val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -112,11 +112,12 @@ class AppSettingsRepositoryImpl @Inject constructor(
         prefs.edit().putBoolean(KEY_APPS_OLDEST_FIRST, oldestFirst).apply()
     }
 
+    /** A flag about this phone, kept out of the backed-up settings ([DeviceLocalFlags]). */
     override fun onboardingShown(): Boolean =
-        prefs.getBoolean(KEY_ONBOARDING_SHOWN, false)
+        DeviceLocalFlags.prefs(context).getBoolean(KEY_ONBOARDING_SHOWN, false)
 
     override fun setOnboardingShown() {
-        prefs.edit().putBoolean(KEY_ONBOARDING_SHOWN, true).apply()
+        DeviceLocalFlags.prefs(context).edit().putBoolean(KEY_ONBOARDING_SHOWN, true).apply()
     }
 
     override fun classicLook(): Boolean =
