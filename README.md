@@ -7,7 +7,7 @@
 [![Built with Jetpack Compose](https://img.shields.io/badge/Built%20with-Jetpack%20Compose-4285F4)](https://developer.android.com/jetpack/compose)
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](LICENSE)
 
-Device Watch is an Android device monitoring app with a Jetpack Glance home screen widget, per-app usage insights (screen time, data, notifications and more), and an interactive screensaver for charging or docked use.
+Device Watch is an Android device monitoring app with Jetpack Glance home screen widgets, per-app usage insights (screen time, data, notifications and more), and an interactive screensaver for charging or docked use.
 
 The default app language is English. Finnish users get a localized app name and UI through Android's `values-fi` resources.
 
@@ -29,6 +29,7 @@ The default app language is English. Finnish users get a localized app name and 
 ## Features
 
 - Home screen widget for battery, memory, CPU, storage, Wi-Fi, mobile network, data usage, uptime, today's screen time, and last update time
+- Compact 2×2 widget for battery, uptime and mobile/Wi-Fi data, with the counting period shown above each data amount
 - Tapping the widget anywhere opens the app
 - Data counters per calendar day or per one-month billing cycle with a configurable start day (month lengths handled automatically); the selection applies to the widget and the in-app data rows
 - Tabbed dashboard UI with swipe navigation between tabs: Home (live battery ring, usage counters, data counters and RAM/CPU/storage meters — full widget parity for people who skip the widget), Apps (usage insights), Device (hardware, SIM and Wi-Fi details), and Settings
@@ -45,6 +46,10 @@ The default app language is English. Finnish users get a localized app name and 
 - History page (opened from the usage card) listing exact daily values for the retained 62 days — screen time, unlocks, notifications, device restarts, and charging sessions; each metric states since when it has been collected, and the page refreshes itself while open
 - Charges on the History page: every charge in the retained 14 days of battery history, with its start and end level, duration, charging rate and peak battery temperature
 - Used storage per day on the History page, with the change from the previous reading, and in the CSV and HTML exports
+- Screen-on time alongside app screen time, collected by the monitor service even when the dashboard stays closed (Android 9+)
+- Battery chart with 14 days of history, charging intervals and visible collection gaps
+- Export usage history and the notification log as CSV, or share a self-contained HTML report with charts, daily and monthly tables, search and date filters
+- Optional charging reminder at a chosen battery level from 50 to 95 %, and mobile-data quota alerts at 80 % and 100 % of the selected day or billing-cycle allowance
 - Optional alerts, all off by default: a hot battery (45 °C), low storage (under 10 % free) and a fast-draining battery (20 % an hour or more); each comes once and again only after things have returned to normal
 - Monthly data usage history on the History page: metered mobile and Wi-Fi totals per calendar month, served straight from Android's own statistics for up to 12 months back (no local storage needed)
 - Since-charge page (opened from the battery card): the period since the battery was last charged full — or since the charger was unplugged, when charging stopped short of full — with elapsed time, battery drop and average drain, unlocks, notifications, Wi-Fi/mobile data, and a per-app screen-time donut over that window (Android does not expose real per-app battery percentages to third-party apps, so the page shows honest usage numbers instead)
@@ -57,6 +62,7 @@ The default app language is English. Finnish users get a localized app name and 
 - Screensaver clock follows the device 12/24-hour setting, with a second-aligned tick
 - Battery-level-tinted background gradient and a softly pulsing charge indicator in the screensaver
 - Optional screensaver dimming: manual, or automatic on a configurable night schedule (default 22:00–07:00)
+- Icons of unread notifications under the screensaver clock (one per app, with a count), pulsing when a new one arrives; needs notification access and can be turned off in Settings
 - Remembered screensaver rotation setting for repeated charging sessions; the background gradient mirrors with the 180° layout swap
 - Larger screensaver rotation touch target for easier use
 - Battery full notification while the screensaver is active
@@ -66,6 +72,8 @@ The default app language is English. Finnish users get a localized app name and 
 - Release build configured with R8 minification and resource shrinking
 
 Every metric is real data read from Android and kernel sources. When a value is not available with the permissions granted, the UI shows a dash (`—`) instead of a fabricated value.
+
+Android backup and phone transfer carry user settings only. History, notification texts and delivered-alert flags stay on the device; a new phone can show its own first alerts. Exports leave the app only when you choose to share them.
 
 ## Download
 

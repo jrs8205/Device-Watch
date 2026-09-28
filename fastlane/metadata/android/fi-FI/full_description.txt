@@ -2,13 +2,16 @@ Laitevahti on Android-laitemonitori, jossa on kotinäytön widget, sovelluskohta
 
 Ominaisuudet:
 
-* Kotinäytön widget: akku, muisti, suoritin, tallennustila, Wi-Fi, mobiiliverkko, datankäyttö, käyttöaika, päivän ruutuaika ja viimeisin päivityshetki
+* Muunneltava kotinäytön widget: akku, muisti, suoritin, tallennustila, Wi-Fi, mobiiliverkko, datankäyttö, käyttöaika, päivän ruutuaika ja viimeisin päivityshetki; lisäksi pieni 2×2-widget datalukujen jaksomerkinnöillä
 * Datalaskurit kalenteripäivittäin tai kuukauden laskutusjaksoittain valittavalla alkupäivällä
-* Välilehtinäkymä: Yleiskuva (akkurengas, käyttölaskurit, järjestelmämittarit), Sovellukset (käyttötilastot), Laite (laitteisto-, SIM- ja Wi-Fi-tiedot) ja Asetukset
+* Välilehtinäkymä: Etusivu (akkurengas, käyttölaskurit, järjestelmämittarit ja verkkoliikennemittari), Sovellukset (käyttötilastot), Laite (laitteisto-, SIM-, Wi-Fi-, kamera- ja äänitiedot) ja Asetukset
 * Ruutuaika-donitsi eniten käytetyistä sovelluksista, suurimmat datankuluttajat ja viimeksi avatut -lista sovellusten poistolla
-* Käyttölaskurit ja laitteella pysyvä 62 päivän historia: ruutuaika, avaukset, suodatettu ilmoitusmäärä, uudelleenkäynnistykset ja latauskerrat
+* Käyttölaskurit ja laitteella pysyvä 62 päivän historia: sovellusten ruutuaika, näyttö päällä -aika, avaukset, suodatettu ilmoitusmäärä, uudelleenkäynnistykset, latauskerrat ja käytetty tallennustila
+* Akkuhistoria ja latausjaksot 14 päivältä lämpötiloineen ja latausnopeuksineen
+* Valinnaiset latausmuistutukset, datakiintiövaroitukset ja hälytykset kuumasta akusta, vähäisestä tallennustilasta ja nopeasta akun kulutuksesta
+* CSV-viennit ja HTML-raportti, jossa on kaaviot, haku ja päivämäärärajaus
 * Laitteella pysyvä ilmoitusloki 7 päivän säilytyksellä
 * Latauksesta lähtien -näkymä: kulunut aika, akun pudotus, keskikulutus ja sovelluskohtainen ruutuaika edellisestä täydestä latauksesta tai laturin irrotuksesta
-* Interaktiivinen näytönsäästäjä: iso kello, seuraava herätys, latausteho watteina, akun mukaan sävyttyvä tausta, valinnainen yöhimmennys ja akku täynnä -ilmoitus
+* Interaktiivinen näytönsäästäjä: iso kello, seuraava herätys, kuittaamattomien ilmoitusten kuvakkeet, latausteho watteina, akun mukaan sävyttyvä tausta, valinnainen yöhimmennys ja akku täynnä -ilmoitus
 
-Kaikki tilastot pysyvät laitteella. Mitään ei lähetetä minnekään.
+Sovellus ei lähetä tietoja verkkoon. Android-varmuuskopioon sisältyvät vain asetukset: historia, ilmoitusten sisältö ja hälytyslukot jäävät laitteelle. Voit halutessasi jakaa CSV- ja HTML-vientejä, myös ilmoitustekstejä, toisen sovelluksen kautta.

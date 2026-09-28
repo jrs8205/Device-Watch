@@ -2,13 +2,16 @@ Device Watch is an Android device monitor with a home-screen widget, per-app usa
 
 Features:
 
-* Home-screen widget: battery, memory, CPU, storage, Wi-Fi, mobile network, data usage, uptime, today's screen time and last update time
+* Resizable home-screen widget: battery, memory, CPU, storage, Wi-Fi, mobile network, data usage, uptime, today's screen time and last update time; compact 2×2 widget with data-period labels
 * Data counters per calendar day or per one-month billing cycle with a configurable start day
-* Tabbed dashboard: Overview (live battery ring, usage counters, system meters), Apps (usage insights), Device (hardware, SIM and Wi-Fi details) and Settings
+* Tabbed dashboard: Home (live battery ring, usage counters, system meters and live network traffic), Apps (usage insights), Device (hardware, SIM, Wi-Fi, camera and audio details) and Settings
 * Screen-time donut of your most-used apps, top data consumers and a last-opened list with per-app uninstall
-* Usage counters with a private 62-day daily history kept on the device: screen time, unlocks, filtered notification count, restarts and charging sessions
+* Usage counters with a private 62-day daily history kept on the device: app screen time, screen-on time, unlocks, filtered notification count, restarts, charging sessions and used storage
+* Battery history and charging sessions for 14 days, with temperatures and charging rates
+* Optional charge reminders, mobile-data quota warnings and alerts for a hot battery, low storage or fast battery drain
+* CSV exports and a self-contained HTML report with charts, search and date filters
 * On-device notification log with 7-day retention
 * Since-charge view: elapsed time, battery drop, average drain and per-app screen time since the battery was last charged full or unplugged
-* Interactive screensaver with a large clock, next alarm, charging power in watts, battery-tinted background, optional night dimming and a battery-full notification
+* Interactive screensaver with a large clock, next alarm, icons of unread notifications, charging power in watts, battery-tinted background, optional night dimming and a battery-full notification
 
-All statistics stay on the device. Nothing is uploaded anywhere.
+The app uploads nothing. Android backup carries settings only, excluding history, notification content and delivered-alert flags. You can choose to share CSV/HTML exports, including notification text, through another app.
