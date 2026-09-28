@@ -48,11 +48,24 @@ class NotificationCountingTest {
 
         val retained = NotificationCounting.retainedDays(today)
 
-        assertThat(retained).hasSize(62)
+        assertThat(retained).hasSize(64) // the last 62 days, and the next two
         assertThat(retained).contains(today)
         assertThat(retained).contains(today.minusDays(1))
         assertThat(retained).contains(today.minusDays(61))
         assertThat(retained).doesNotContain(today.minusDays(62))
+    }
+
+    @Test
+    fun `a day dated after today survives a timezone change`() {
+        // Found while writing the release review, as in the battery and notification
+        // logs: a move west turns the counts of the last hours into "tomorrow's".
+        // Two days cover any move, the date line included.
+        val today = LocalDate.of(2026, 7, 4)
+
+        val retained = NotificationCounting.retainedDays(today)
+
+        assertThat(retained).containsAtLeast(today.plusDays(1), today.plusDays(2))
+        assertThat(retained).doesNotContain(today.plusDays(3))
     }
 
     @Test

@@ -20,11 +20,15 @@ object NotificationCounting {
 
     /**
      * The days whose counts are kept: the last [RETENTION_DAYS] days, so that a
-     * full 31-day billing cycle can always be summed from stored daily counts.
+     * full 31-day billing cycle can always be summed from stored daily counts,
+     * and the next [FUTURE_DAYS]: a timezone change can move the date backwards,
+     * and purging "tomorrow" would throw away the hours just counted.
      */
     fun retainedDays(today: LocalDate): Set<LocalDate> {
-        return (0L until RETENTION_DAYS).map { today.minusDays(it) }.toSet()
+        return (-FUTURE_DAYS until RETENTION_DAYS).map { today.minusDays(it) }.toSet()
     }
+
+    private const val FUTURE_DAYS = 2L
 
     private const val RETENTION_DAYS = 62L
 

@@ -36,6 +36,19 @@ class NotificationLogImplTest {
     }
 
     @Test
+    fun `a day file dated after today survives a timezone change`() {
+        // Found while writing the release review: the battery log kept such a file
+        // since 62490c3, this log still purged it. A move west turns the file
+        // written an hour ago into "tomorrow's".
+        log(today.plusDays(1)).append(entry(1L, "before the move"))
+        val afterMove = log(today)
+        afterMove.append(entry(2L, "after the move"))
+
+        assertThat(afterMove.entriesNewestFirst().map { it.title })
+            .containsExactly("after the move", "before the move").inOrder()
+    }
+
+    @Test
     fun `read skips corrupted lines`() {
         tmp.newFile(NotificationLogCodec.fileNameFor(today))
             .writeText("garbage\n" + NotificationLogCodec.encode(entry(5L, "ok")) + "\n")
