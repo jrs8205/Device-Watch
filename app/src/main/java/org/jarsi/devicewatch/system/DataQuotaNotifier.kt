@@ -69,6 +69,10 @@ object DataQuotaNotifier {
         }
     }
 
+    fun cancel(context: Context) {
+        NotificationManagerCompat.from(context).cancel(NOTIFICATION_ID)
+    }
+
     private fun canPostNotifications(context: Context): Boolean {
         return Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
             ContextCompat.checkSelfPermission(
@@ -100,4 +104,15 @@ object DataQuotaNotifier {
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         manager.createNotificationChannel(channel)
     }
+}
+
+/**
+ * The quota, the counter mode or the cycle start day changed. An alert on screen
+ * spoke of the old settings: a quota since removed or raised, or another period.
+ * It goes first, then [recheck] posts whatever the new settings call for; the
+ * other order could take down the new settings' own alert.
+ */
+internal fun onDataSettingsChanged(context: Context, recheck: () -> Unit) {
+    DataQuotaNotifier.cancel(context)
+    recheck()
 }

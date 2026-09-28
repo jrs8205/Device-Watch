@@ -115,9 +115,11 @@ class SystemMonitorService : Service() {
      * screen-on check — possibly hours away with the screen off.
      */
     private fun onDataQuotaChanged() {
-        serviceScope.launch {
-            val stats = updateWidgetStats(applicationContext)
-            if (stats != null) maybeNotifyDataQuota(stats)
+        onDataSettingsChanged(applicationContext) {
+            serviceScope.launch {
+                val stats = updateWidgetStats(applicationContext)
+                if (stats != null) maybeNotifyDataQuota(stats)
+            }
         }
     }
 
