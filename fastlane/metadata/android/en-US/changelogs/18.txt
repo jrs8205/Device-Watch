@@ -1,0 +1,10 @@
+• New high-contrast look; classic look as a switch in Settings
+• Compact 2×2 widget, widget previews in the picker
+• Battery history, charging sessions and temperature
+• Screen-on time and used storage per day
+• CSV exports and a searchable HTML report
+• Charge reminder, data quota, optional alerts
+• Live traffic meter, more app and device details
+• Notification icons on the screensaver
+• Android backup takes the settings only
+• New permission USE_BIOMETRIC: checks only that a biometric exists

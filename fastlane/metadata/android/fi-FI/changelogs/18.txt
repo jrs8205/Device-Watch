@@ -1,0 +1,10 @@
+• Uusi korkeakontrastinen ulkoasu, klassinen kytkimenä asetuksissa
+• Pieni 2×2-widget, esikatselut widget-valitsimeen
+• Akkuhistoria, latauskerrat ja lämpötila
+• Näyttö päällä -aika ja tallennustila päivittäin
+• CSV-viennit ja haettava HTML-raportti
+• Latausmuistutus, datakiintiö ja valinnaiset hälytykset
+• Liikennemittari, lisää sovellus- ja laitetietoja
+• Ilmoitusten kuvakkeet näytönsäästäjään
+• Varmuuskopioon vain asetukset
+• Uusi lupa USE_BIOMETRIC: tarkistaa vain, onko biometria käytössä
