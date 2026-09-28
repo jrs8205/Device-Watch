@@ -3,8 +3,10 @@ package org.jarsi.devicewatch.data
 import android.content.Context
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.time.LocalDate
+import java.time.temporal.ChronoUnit
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.math.abs
 
 /**
  * SharedPreferences-backed daily tallies ("usage_history"). Tiny dataset
@@ -34,7 +36,9 @@ class UsageHistoryImpl @Inject constructor(
      * The monotonic read time of the latest storage reading stored, per day. In
      * memory only: the monotonic clock starts over at boot, and a reading taken in
      * an earlier process can no longer arrive late. The wall clock is no use here,
-     * since setting it back would refuse every reading until it caught up.
+     * since setting it back would refuse every reading until it caught up. The
+     * neighbouring days are kept too: a refresh that read before midnight can
+     * arrive after the service's first reading of the new day.
      */
     private val storageReadAt = mutableMapOf<LocalDate, Long>()
 
@@ -42,7 +46,7 @@ class UsageHistoryImpl @Inject constructor(
     override fun recordStorageUsed(day: LocalDate, bytes: Long, readAtElapsedMillis: Long) {
         val latest = storageReadAt[day]
         if (latest != null && readAtElapsedMillis < latest) return
-        storageReadAt.keys.retainAll { it == day }
+        storageReadAt.keys.retainAll { abs(ChronoUnit.DAYS.between(it, day)) <= 1 }
         storageReadAt[day] = readAtElapsedMillis
         prefs.edit().putLong(key(PREFIX_STORAGE, day), bytes).apply()
     }

@@ -40,6 +40,18 @@ class UsageHistoryImplTest {
     }
 
     @Test
+    fun `a late reading from before midnight cannot replace the day's last one`() {
+        // Codex release review: the service's first reading of the new day forgot
+        // the old day's order, and a Home refresh that had read before midnight
+        // then put its older figure back as the old day's last.
+        history.recordStorageUsed(day, 80 * gib, readAtElapsedMillis = 2_000L)
+        history.recordStorageUsed(day.plusDays(1), 81 * gib, readAtElapsedMillis = 3_000L)
+        history.recordStorageUsed(day, 64 * gib, readAtElapsedMillis = 1_000L)
+
+        assertThat(storedBytes()).isEqualTo(80 * gib)
+    }
+
+    @Test
     fun `a newer storage reading replaces the day's value`() {
         history.recordStorageUsed(day, 64 * gib, readAtElapsedMillis = 1_000L)
         history.recordStorageUsed(day, 80 * gib, readAtElapsedMillis = 2_000L)
