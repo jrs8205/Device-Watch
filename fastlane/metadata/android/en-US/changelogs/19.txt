@@ -1,0 +1,5 @@
+• Black widget background switch for both widgets
+• Fixed a screensaver crash on Android 14+ when the phone locked right after plugging in
+• The screensaver's burn-in shift now glides instead of jumping
+• Home tab values update live from the monitor's readings
+• Screensaver says "tomorrow" when the full-charge estimate passes midnight

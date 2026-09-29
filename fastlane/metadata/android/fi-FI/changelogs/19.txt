@@ -1,0 +1,5 @@
+• Musta widgetin tausta -kytkin molempiin widgeteihin
+• Korjattu näytönsäästäjän kaatuminen Android 14+:lla, kun puhelin lukittui heti latauksen alettua
+• Näytönsäästäjän burn-in-siirto liukuu hyppäämisen sijaan
+• Etusivun arvot päivittyvät suoraan monitorin lukemista
+• Näytönsäästäjä sanoo ”huomenna”, kun täynnä-arvio menee yli puolenyön
