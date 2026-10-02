@@ -171,7 +171,14 @@
     <string name="onboarding_done_body">You can reopen this intro any time from the Settings tab.</string>
     <string name="settings_show_intro">Show intro again</string>
     <string name="appearance_section">APPEARANCE</string>
-    <string name="root_section">ROOT</string>
+    <string name="privileged_section">EXTENDED ACCESS</string>
+    <string name="shizuku_mode_title">Shizuku</string>
+    <string name="shizuku_mode_description">Without root, reads through the Shizuku app what Android hides from ordinary apps: the real processor load and the battery\'s own wear figures. Shizuku must be installed and running.</string>
+    <string name="shizuku_status_requesting">Waiting for Shizuku\'s permission…</string>
+    <string name="shizuku_status_on">Shizuku access in use.</string>
+    <string name="shizuku_status_waiting">Shizuku is not running. The readings return once you start it.</string>
+    <string name="shizuku_status_denied">Shizuku refused the permission. Allow Device Watch in the Shizuku app and try again.</string>
+    <string name="shizuku_status_not_running">Shizuku is not running. Install Shizuku, start it and try again.</string>
     <string name="root_mode_title">Root mode</string>
     <string name="root_mode_description">On a rooted phone, reads what Android hides from ordinary apps: the real processor load, chip temperatures and the battery\'s own wear figures. Your root manager asks for permission.</string>
     <string name="root_status_requesting">Waiting for your root manager\'s permission…</string>

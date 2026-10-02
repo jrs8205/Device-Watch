@@ -119,6 +119,16 @@
                 android:resource="@xml/file_paths" />
         </provider>
 
+        <!-- How a running Shizuku service hands the app its binder. Only that
+             service holds the permission, so no other app can reach this. -->
+        <provider
+            android:name="rikka.shizuku.ShizukuProvider"
+            android:authorities="${applicationId}.shizuku"
+            android:enabled="true"
+            android:exported="true"
+            android:multiprocess="false"
+            android:permission="android.permission.INTERACT_ACROSS_USERS_FULL" />
+
     </application>
 
 </manifest>

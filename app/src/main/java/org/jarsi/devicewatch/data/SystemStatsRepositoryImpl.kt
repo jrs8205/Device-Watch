@@ -89,7 +89,7 @@ class SystemStatsRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context,
     @DefaultDispatcher private val dispatcher: CoroutineDispatcher,
     private val settings: AppSettingsRepository,
-    private val rootShell: RootShell,
+    private val privilegedShell: PrivilegedShell,
 ) : SystemStatsRepository {
 
     // CPU load needs to compare two samples over time. These snapshots persist across
@@ -104,9 +104,9 @@ class SystemStatsRepositoryImpl @Inject constructor(
     private var previousResidencySampleMillis = 0L
     private var lastResidencyLoadPercent = UNAVAILABLE_INT
     private val unavailableFilePaths = mutableSetOf<String>()
-    private val rootOnlyFilePaths = mutableSetOf<String>()
+    private val appDeniedFilePaths = mutableSetOf<String>()
     private var skipThermalRead = false
-    private var rootModeSeen = false
+    private var accessSeen = PrivilegedAccess.OFF
 
     private val statsMutex = Mutex()
     private val _latestStats = MutableStateFlow<SystemStats?>(null)
@@ -1750,12 +1750,12 @@ class SystemStatsRepositoryImpl @Inject constructor(
     }
 
     private fun readCpuTemperature(): Double {
-        syncRootMode()
+        syncPrivilegedAccess()
         val direct = readCpuTemperatureDirect()
-        if (direct != UNAVAILABLE_DOUBLE || !rootModeSeen) return direct
+        if (direct != UNAVAILABLE_DOUBLE || accessSeen == PrivilegedAccess.OFF) return direct
         // One command for every zone: phones have dozens, and most zones an app
         // may list it may not read.
-        val zones = rootShell.run("cat /sys/class/thermal/thermal_zone*/temp") ?: return UNAVAILABLE_DOUBLE
+        val zones = privilegedShell.run("cat /sys/class/thermal/thermal_zone*/temp") ?: return UNAVAILABLE_DOUBLE
         return SystemStatsParser.hottestThermalZone(zones.lineSequence()) ?: UNAVAILABLE_DOUBLE
     }
 
@@ -2160,32 +2160,32 @@ class SystemStatsRepositoryImpl @Inject constructor(
      * stats mutex, so the cache needs no extra synchronization.
      */
     private fun readFileTextOnce(path: String): String? {
-        syncRootMode()
+        syncPrivilegedAccess()
         if (path in unavailableFilePaths) return null
-        if (path !in rootOnlyFilePaths) {
+        if (path !in appDeniedFilePaths) {
             try {
                 return File(path).readText()
             } catch (_: Exception) {
-                // Denied to the app; root mode may still read it below.
+                // Denied to the app; the privileged shell may still read it below.
             }
         }
-        if (!rootModeSeen) {
+        if (accessSeen == PrivilegedAccess.OFF) {
             unavailableFilePaths.add(path)
             return null
         }
+        appDeniedFilePaths.add(path)
         // Null is the shell failing, which says nothing about the file: try again
         // next time. An empty answer is the file itself being missing or unreadable.
-        val viaRoot = rootShell.run("cat ${RootShellProtocol.quote(path)}") ?: return null
-        if (viaRoot.isEmpty()) {
-            rootOnlyFilePaths.remove(path)
+        val viaShell = privilegedShell.run("cat ${ShellProtocol.quote(path)}") ?: return null
+        if (viaShell.isEmpty()) {
+            appDeniedFilePaths.remove(path)
             unavailableFilePaths.add(path)
             return null
         }
-        rootOnlyFilePaths.add(path)
-        return viaRoot
+        return viaShell
     }
 
-    /** As [readFileTextOnce], but never through root: for reads that have a batched root path. */
+    /** As [readFileTextOnce], but never through the shell: for reads that have a batched shell path. */
     private fun readDirectOnce(path: String): String? {
         if (path in unavailableFilePaths) return null
         return try {
@@ -2197,16 +2197,16 @@ class SystemStatsRepositoryImpl @Inject constructor(
     }
 
     /**
-     * Forgets what was learned about unreadable paths whenever root mode is
-     * switched, so a path denied to the app is retried through root, and one that
-     * only root could read stops being asked for once root is off.
+     * Forgets what was learned about unreadable paths whenever privileged access
+     * is switched, so a path denied to the app is retried through the new shell,
+     * and one only a shell could read stops being asked for once access is off.
      */
-    private fun syncRootMode() {
-        val enabled = settings.rootModeEnabled()
-        if (enabled == rootModeSeen) return
-        rootModeSeen = enabled
+    private fun syncPrivilegedAccess() {
+        val access = settings.privilegedAccess()
+        if (access == accessSeen) return
+        accessSeen = access
         unavailableFilePaths.clear()
-        rootOnlyFilePaths.clear()
+        appDeniedFilePaths.clear()
         skipThermalRead = false
     }
 

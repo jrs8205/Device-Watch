@@ -1,0 +1,198 @@
+package org.jarsi.devicewatch.data
+
+import android.content.ComponentName
+import android.content.ServiceConnection
+import android.content.pm.PackageManager
+import android.os.IBinder
+import android.os.ParcelFileDescriptor
+import android.os.RemoteException
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.suspendCancellableCoroutine
+import org.jarsi.devicewatch.BuildConfig
+import rikka.shizuku.Shizuku
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import javax.inject.Inject
+import javax.inject.Singleton
+import kotlin.coroutines.resume
+
+/** How a request for Shizuku's permission ended. */
+enum class ShizukuAccess { GRANTED, DENIED, NOT_RUNNING }
+
+/**
+ * A shell run as the ADB shell user by Shizuku, on a phone that is not rooted;
+ * used only while [PrivilegedAccess.SHIZUKU] is selected.
+ */
+interface ShizukuShell : PrivilegedShell {
+    /**
+     * Whether the Shizuku service is up. It stops at every reboot until the user
+     * starts it again, while the permission it granted stays.
+     */
+    val alive: StateFlow<Boolean>
+
+    /** Asks Shizuku for its permission; the caller selects Shizuku only after GRANTED. */
+    suspend fun requestAccess(): ShizukuAccess
+}
+
+/**
+ * Talks to [ShellUserService], which Shizuku runs as the shell user, and keeps one
+ * [ShellSession] over the pipes it hands back.
+ */
+@Singleton
+class ShizukuUserShell @Inject constructor() : ShizukuShell {
+
+    private val _alive = MutableStateFlow(false)
+    override val alive: StateFlow<Boolean> = _alive
+
+    /** Serializes commands; never held by [close], which must not wait for one. */
+    private val lock = Any()
+
+    @Volatile
+    private var session: ShellSession? = null
+
+    @Volatile
+    private var service: IShellService? = null
+
+    @Volatile
+    private var bound = CountDownLatch(1)
+
+    private val serviceArgs = Shizuku.UserServiceArgs(
+        ComponentName(BuildConfig.APPLICATION_ID, ShellUserService::class.java.name)
+    )
+        .daemon(false)
+        .processNameSuffix("shell")
+        .debuggable(BuildConfig.DEBUG)
+        .version(BuildConfig.VERSION_CODE)
+
+    private val connection = object : ServiceConnection {
+        override fun onServiceConnected(name: ComponentName, binder: IBinder) {
+            service = IShellService.Stub.asInterface(binder)
+            bound.countDown()
+        }
+
+        override fun onServiceDisconnected(name: ComponentName) {
+            forgetService()
+        }
+    }
+
+    init {
+        // Sticky: says so at once when the service was already up before this object.
+        Shizuku.addBinderReceivedListenerSticky { _alive.value = true }
+        Shizuku.addBinderDeadListener {
+            _alive.value = false
+            forgetService()
+        }
+    }
+
+    override fun run(command: String, timeoutMillis: Long): String? {
+        synchronized(lock) {
+            val current = session?.takeIf { it.isOpen } ?: open() ?: return null
+            val output = current.exec(command, timeoutMillis)
+            // An unanswered command leaves the stream in an unknown state.
+            if (output == null) {
+                current.close()
+                if (session === current) session = null
+            }
+            return output
+        }
+    }
+
+    override suspend fun requestAccess(): ShizukuAccess {
+        try {
+            if (!Shizuku.pingBinder() || Shizuku.isPreV11()) return ShizukuAccess.NOT_RUNNING
+            if (Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED) return ShizukuAccess.GRANTED
+            // Refused with "don't ask again": Shizuku would not show its dialog.
+            if (Shizuku.shouldShowRequestPermissionRationale()) return ShizukuAccess.DENIED
+        } catch (_: RuntimeException) {
+            // The service went away between the ping and the call.
+            return ShizukuAccess.NOT_RUNNING
+        }
+        return suspendCancellableCoroutine { continuation ->
+            val listener = object : Shizuku.OnRequestPermissionResultListener {
+                override fun onRequestPermissionResult(requestCode: Int, grantResult: Int) {
+                    if (requestCode != PERMISSION_REQUEST_CODE) return
+                    Shizuku.removeRequestPermissionResultListener(this)
+                    val granted = grantResult == PackageManager.PERMISSION_GRANTED
+                    if (continuation.isActive) {
+                        continuation.resume(if (granted) ShizukuAccess.GRANTED else ShizukuAccess.DENIED)
+                    }
+                }
+            }
+            Shizuku.addRequestPermissionResultListener(listener)
+            continuation.invokeOnCancellation { Shizuku.removeRequestPermissionResultListener(listener) }
+            try {
+                Shizuku.requestPermission(PERMISSION_REQUEST_CODE)
+            } catch (_: RuntimeException) {
+                Shizuku.removeRequestPermissionResultListener(listener)
+                if (continuation.isActive) continuation.resume(ShizukuAccess.NOT_RUNNING)
+            }
+        }
+    }
+
+    /** Not under [lock]: ending the shell is what releases a command in flight. */
+    override fun close() {
+        session?.close()
+        session = null
+        if (service != null) {
+            try {
+                Shizuku.unbindUserService(serviceArgs, connection, true)
+            } catch (_: RuntimeException) {
+                // Shizuku is gone, and its service with it.
+            }
+        }
+        forgetService()
+    }
+
+    private fun forgetService() {
+        service = null
+        session?.close()
+        session = null
+        bound = CountDownLatch(1)
+    }
+
+    private fun open(): ShellSession? {
+        val remote = service ?: bind() ?: return null
+        val pipes = try {
+            remote.openShell()
+        } catch (_: RemoteException) {
+            null
+        } catch (_: RuntimeException) {
+            null
+        }
+        if (pipes == null || pipes.size != 2) {
+            forgetService()
+            return null
+        }
+        return ShellSession(
+            ParcelFileDescriptor.AutoCloseInputStream(pipes[1]),
+            ParcelFileDescriptor.AutoCloseOutputStream(pipes[0]),
+        ).also { session = it }
+    }
+
+    /**
+     * Has Shizuku start the service and waits for it. The connection arrives on
+     * the main thread, which is why [run] must never be called there.
+     */
+    private fun bind(): IShellService? {
+        val waiting = bound
+        try {
+            if (!Shizuku.pingBinder() || Shizuku.isPreV11()) return null
+            if (Shizuku.checkSelfPermission() != PackageManager.PERMISSION_GRANTED) return null
+            Shizuku.bindUserService(serviceArgs, connection)
+        } catch (_: RuntimeException) {
+            return null
+        }
+        try {
+            waiting.await(BIND_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)
+        } catch (_: InterruptedException) {
+            Thread.currentThread().interrupt()
+        }
+        return service
+    }
+
+    private companion object {
+        const val PERMISSION_REQUEST_CODE = 7301
+        const val BIND_TIMEOUT_MILLIS = 5_000L
+    }
+}

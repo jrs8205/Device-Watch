@@ -64,6 +64,7 @@ import org.jarsi.devicewatch.data.DEFAULT_DATA_QUOTA_GB
 import org.jarsi.devicewatch.data.DataCounterMode
 import org.jarsi.devicewatch.presentation.DashboardUiState
 import org.jarsi.devicewatch.presentation.RootStatus
+import org.jarsi.devicewatch.presentation.ShizukuStatus
 import org.jarsi.devicewatch.system.DreamPreferences
 import kotlin.math.roundToInt
 
@@ -87,6 +88,7 @@ internal fun SettingsTab(
     onCommitChargeLimit: () -> Unit,
     onClassicLookChange: (Boolean) -> Unit,
     onRootModeChange: (Boolean) -> Unit,
+    onShizukuModeChange: (Boolean) -> Unit,
     onAlertToggle: (HealthAlert, Boolean) -> Unit,
     onShowIntro: () -> Unit,
 ) {
@@ -438,9 +440,39 @@ internal fun SettingsTab(
             )
         }
 
-        // Root mode
-        SettingsSectionCard(titleRes = R.string.root_section) {
+        // Privileged access: Shizuku or root
+        SettingsSectionCard(titleRes = R.string.privileged_section) {
             Spacer(modifier = Modifier.height(4.dp))
+            SettingsToggleRow(
+                titleRes = R.string.shizuku_mode_title,
+                descriptionRes = R.string.shizuku_mode_description,
+                checked = when (uiState.shizukuStatus) {
+                    ShizukuStatus.ON, ShizukuStatus.REQUESTING, ShizukuStatus.WAITING -> true
+                    else -> false
+                },
+                onCheckedChange = onShizukuModeChange,
+            )
+            val shizukuStatusRes = when (uiState.shizukuStatus) {
+                ShizukuStatus.OFF -> null
+                ShizukuStatus.REQUESTING -> R.string.shizuku_status_requesting
+                ShizukuStatus.ON -> R.string.shizuku_status_on
+                ShizukuStatus.WAITING -> R.string.shizuku_status_waiting
+                ShizukuStatus.DENIED -> R.string.shizuku_status_denied
+                ShizukuStatus.NOT_RUNNING -> R.string.shizuku_status_not_running
+            }
+            if (shizukuStatusRes != null) {
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = stringResource(shizukuStatusRes),
+                    fontSize = 11.sp,
+                    color = when (uiState.shizukuStatus) {
+                        ShizukuStatus.WAITING, ShizukuStatus.DENIED, ShizukuStatus.NOT_RUNNING ->
+                            MaterialTheme.colorScheme.error
+                        else -> MaterialTheme.colorScheme.primary
+                    }
+                )
+            }
+            Spacer(modifier = Modifier.height(10.dp))
             SettingsToggleRow(
                 titleRes = R.string.root_mode_title,
                 descriptionRes = R.string.root_mode_description,

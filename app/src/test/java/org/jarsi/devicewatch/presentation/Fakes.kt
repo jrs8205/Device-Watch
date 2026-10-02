@@ -2,9 +2,13 @@ package org.jarsi.devicewatch.presentation
 
 import org.jarsi.devicewatch.system.AlertNotifications
 import org.jarsi.devicewatch.data.HealthAlert
+import org.jarsi.devicewatch.data.PrivilegedAccess
 import org.jarsi.devicewatch.data.RootAccess
 import org.jarsi.devicewatch.data.RootShell
+import org.jarsi.devicewatch.data.ShizukuAccess
+import org.jarsi.devicewatch.data.ShizukuShell
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.flow.MutableStateFlow
 import org.jarsi.devicewatch.data.AppLastUse
 import org.jarsi.devicewatch.data.AppPackageFacts
 import org.jarsi.devicewatch.data.AppDataUsage
@@ -47,6 +51,23 @@ internal class FakeRootShell(var access: RootAccess = RootAccess.GRANTED) : Root
     }
 }
 
+internal class FakeShizukuShell(
+    var access: ShizukuAccess = ShizukuAccess.GRANTED,
+    alive: Boolean = true,
+) : ShizukuShell {
+    var closedCount = 0
+
+    override val alive = MutableStateFlow(alive)
+
+    override fun run(command: String, timeoutMillis: Long): String? = null
+
+    override suspend fun requestAccess(): ShizukuAccess = access
+
+    override fun close() {
+        closedCount++
+    }
+}
+
 internal class FakeMonitorServiceRelay : MonitorServiceRelay {
     var chargeLimitChangedCount = 0
     var dataQuotaChangedCount = 0
@@ -71,7 +92,7 @@ internal class FakeAppSettingsRepository(
     var onboardingShown: Boolean = false,
     /** Short name for the same reason as [chargeLimit]. */
     var classic: Boolean = false,
-    var rootMode: Boolean = false,
+    var access: PrivilegedAccess = PrivilegedAccess.OFF,
 ) : AppSettingsRepository {
 
     /** Fired quota alerts as "periodStartEpochDay:quotaGb:threshold", mirroring the real key scoping. */
@@ -141,10 +162,10 @@ internal class FakeAppSettingsRepository(
         classic = enabled
     }
 
-    override fun rootModeEnabled(): Boolean = rootMode
+    override fun privilegedAccess(): PrivilegedAccess = access
 
-    override fun setRootModeEnabled(enabled: Boolean) {
-        rootMode = enabled
+    override fun setPrivilegedAccess(access: PrivilegedAccess) {
+        this.access = access
     }
 
     val alertsOn = mutableSetOf<HealthAlert>()

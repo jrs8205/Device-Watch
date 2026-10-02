@@ -23,6 +23,20 @@ class AppSettingsRepositoryImplTest {
     }
 
     @Test
+    fun `privileged access is off until granted and stays on this phone`() {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        assertThat(settings.privilegedAccess()).isEqualTo(PrivilegedAccess.OFF)
+
+        settings.setPrivilegedAccess(PrivilegedAccess.SHIZUKU)
+
+        assertThat(settings.privilegedAccess()).isEqualTo(PrivilegedAccess.SHIZUKU)
+        // app_settings is what a backup carries to another phone, which must not
+        // start asking that phone for Shizuku or root.
+        val backedUp = context.getSharedPreferences(AppSettingsRepositoryImpl.PREFS_NAME, android.content.Context.MODE_PRIVATE)
+        assertThat(backedUp.all.keys).doesNotContain(AppSettingsRepositoryImpl.KEY_PRIVILEGED_ACCESS)
+    }
+
+    @Test
     fun `switching an alert off forgets that it was already posted`() {
         // Switched back on later, it must be able to alert for a condition still present.
         settings.setAlertEnabled(HealthAlert.HOT_BATTERY, true)

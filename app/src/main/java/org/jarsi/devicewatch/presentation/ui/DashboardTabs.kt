@@ -316,6 +316,7 @@ fun SystemDashboardScreen(
                             onCommitChargeLimit = viewModel::onCommitChargeLimit,
                             onClassicLookChange = viewModel::onClassicLookChange,
                             onRootModeChange = viewModel::onRootModeChange,
+                            onShizukuModeChange = viewModel::onShizukuModeChange,
                             onAlertToggle = viewModel::onAlertToggle,
                             onShowIntro = { replayOnboarding = true }
                         )

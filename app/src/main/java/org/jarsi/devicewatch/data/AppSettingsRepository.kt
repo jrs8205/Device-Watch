@@ -75,12 +75,12 @@ interface AppSettingsRepository {
     fun setClassicLook(enabled: Boolean)
 
     /**
-     * Whether readings Android denies an ordinary app are fetched through a root
-     * shell ([RootShell]). Set only after the user's root manager granted access.
+     * Through which shell, if any, readings Android denies an ordinary app are
+     * fetched ([PrivilegedShell]). Set only after that route granted access.
      */
-    fun rootModeEnabled(): Boolean
+    fun privilegedAccess(): PrivilegedAccess
 
-    fun setRootModeEnabled(enabled: Boolean)
+    fun setPrivilegedAccess(access: PrivilegedAccess)
 
     /** Whether the user switched [alert] on; every alert is off by default. */
     fun alertEnabled(alert: HealthAlert): Boolean

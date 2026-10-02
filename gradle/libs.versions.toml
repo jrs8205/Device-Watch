@@ -13,6 +13,7 @@ composeBom = "2026.06.00"
 glance = "1.1.1"
 work = "2.11.2"
 datastore = "1.2.1"
+shizuku = "13.1.5"
 
 # Testing
 junit = "4.13.2"
@@ -51,6 +52,9 @@ hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref
 hilt-compiler = { group = "com.google.dagger", name = "hilt-compiler", version.ref = "hilt" }
 androidx-hilt-navigation-compose = { group = "androidx.hilt", name = "hilt-navigation-compose", version.ref = "hiltNavigationCompose" }
 errorprone-annotations = { group = "com.google.errorprone", name = "error_prone_annotations", version.ref = "errorprone" }
+
+shizuku-api = { group = "dev.rikka.shizuku", name = "api", version.ref = "shizuku" }
+shizuku-provider = { group = "dev.rikka.shizuku", name = "provider", version.ref = "shizuku" }
 
 # Testing
 junit = { group = "junit", name = "junit", version.ref = "junit" }

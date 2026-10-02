@@ -68,6 +68,7 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+        aidl = true
     }
     testOptions {
         unitTests {
@@ -111,6 +112,10 @@ dependencies {
     implementation(libs.androidx.hilt.navigation.compose)
     // Hilt's generated code references these annotations (Dagger ships them compileOnly).
     compileOnly(libs.errorprone.annotations)
+
+    // Shizuku: an optional shell as the ADB shell user, for readings Android denies an app
+    implementation(libs.shizuku.api)
+    implementation(libs.shizuku.provider)
 
     // Unit testing
     testImplementation(libs.junit)

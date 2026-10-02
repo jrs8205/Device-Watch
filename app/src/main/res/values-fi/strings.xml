@@ -167,7 +167,14 @@
     <string name="onboarding_done_body">Voit avata tämän esittelyn uudelleen milloin vain Asetukset-välilehdeltä.</string>
     <string name="settings_show_intro">Näytä esittely uudelleen</string>
     <string name="appearance_section">ULKOASU</string>
-    <string name="root_section">ROOT</string>
+    <string name="privileged_section">LAAJENNETTU KÄYTTÖ</string>
+    <string name="shizuku_mode_title">Shizuku</string>
+    <string name="shizuku_mode_description">Lukee ilman rootia Shizuku-sovelluksen kautta tiedot, jotka Android piilottaa tavallisilta sovelluksilta: suorittimen todellisen kuorman ja akun omat kulumislukemat. Shizukun pitää olla asennettu ja käynnissä.</string>
+    <string name="shizuku_status_requesting">Odotetaan Shizukun lupaa…</string>
+    <string name="shizuku_status_on">Shizuku-oikeudet käytössä.</string>
+    <string name="shizuku_status_waiting">Shizuku ei ole käynnissä. Tiedot palaavat, kun käynnistät sen.</string>
+    <string name="shizuku_status_denied">Shizuku epäsi luvan. Salli Device Watch Shizuku-sovelluksessa ja yritä uudelleen.</string>
+    <string name="shizuku_status_not_running">Shizuku ei ole käynnissä. Asenna Shizuku, käynnistä se ja yritä uudelleen.</string>
     <string name="root_mode_title">Root-tila</string>
     <string name="root_mode_description">Rootatussa puhelimessa lukee tiedot, jotka Android piilottaa tavallisilta sovelluksilta: suorittimen todellisen kuorman, piirien lämpötilat ja akun omat kulumislukemat. Root-hallintasi kysyy luvan.</string>
     <string name="root_status_requesting">Odotetaan root-hallinnan lupaa…</string>

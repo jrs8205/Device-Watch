@@ -1,7 +1,9 @@
 package org.jarsi.devicewatch.presentation
 
 import org.jarsi.devicewatch.data.HealthAlert
+import org.jarsi.devicewatch.data.PrivilegedAccess
 import org.jarsi.devicewatch.data.RootAccess
+import org.jarsi.devicewatch.data.ShizukuAccess
 import org.jarsi.devicewatch.data.AppSettingsRepository
 import org.jarsi.devicewatch.data.AppUsageRepository
 import org.jarsi.devicewatch.data.DATA_QUOTA_MAX_GB
@@ -59,8 +61,10 @@ class DashboardViewModelTest {
         relay: FakeMonitorServiceRelay = FakeMonitorServiceRelay(),
         alertNotifications: FakeAlertNotifications = FakeAlertNotifications(),
         rootShell: FakeRootShell = FakeRootShell(),
+        shizukuShell: FakeShizukuShell = FakeShizukuShell(),
     ) = DashboardViewModel(
         repository, widget, settings, appUsage, notifications, history, relay, alertNotifications, rootShell,
+        shizukuShell,
     )
 
     @Test
@@ -494,7 +498,7 @@ class DashboardViewModelTest {
             advanceUntilIdle()
 
             // Then
-            assertThat(settings.rootMode).isTrue()
+            assertThat(settings.access).isEqualTo(PrivilegedAccess.ROOT)
             assertThat(viewModel.uiState.value.rootStatus).isEqualTo(RootStatus.ON)
         }
 
@@ -510,7 +514,7 @@ class DashboardViewModelTest {
             advanceUntilIdle()
 
             // Then
-            assertThat(settings.rootMode).isFalse()
+            assertThat(settings.access).isEqualTo(PrivilegedAccess.OFF)
             assertThat(viewModel.uiState.value.rootStatus).isEqualTo(RootStatus.DENIED)
         }
 
@@ -518,7 +522,7 @@ class DashboardViewModelTest {
     fun `given root mode on, when it is switched off, then the shell is closed`() =
         runTest(dispatcher) {
             // Given
-            val settings = FakeAppSettingsRepository(rootMode = true)
+            val settings = FakeAppSettingsRepository(access = PrivilegedAccess.ROOT)
             val rootShell = FakeRootShell()
             val viewModel = buildViewModel(settings = settings, rootShell = rootShell)
             assertThat(viewModel.uiState.value.rootStatus).isEqualTo(RootStatus.ON)
@@ -527,9 +531,136 @@ class DashboardViewModelTest {
             viewModel.onRootModeChange(false)
 
             // Then
-            assertThat(settings.rootMode).isFalse()
+            assertThat(settings.access).isEqualTo(PrivilegedAccess.OFF)
             assertThat(rootShell.closedCount).isEqualTo(1)
             assertThat(viewModel.uiState.value.rootStatus).isEqualTo(RootStatus.OFF)
+        }
+
+    @Test
+    fun `given Shizuku granted, when Shizuku is switched on, then it is persisted`() =
+        runTest(dispatcher) {
+            // Given
+            val settings = FakeAppSettingsRepository()
+            val viewModel = buildViewModel(settings = settings, shizukuShell = FakeShizukuShell(ShizukuAccess.GRANTED))
+
+            // When
+            viewModel.onShizukuModeChange(true)
+            advanceUntilIdle()
+
+            // Then
+            assertThat(settings.access).isEqualTo(PrivilegedAccess.SHIZUKU)
+            assertThat(viewModel.uiState.value.shizukuStatus).isEqualTo(ShizukuStatus.ON)
+        }
+
+    @Test
+    fun `given Shizuku refuses or is down, when it is switched on, then it stays off with the reason`() =
+        runTest(dispatcher) {
+            // Given
+            val settings = FakeAppSettingsRepository()
+            val shizukuShell = FakeShizukuShell(ShizukuAccess.DENIED)
+            val viewModel = buildViewModel(settings = settings, shizukuShell = shizukuShell)
+
+            // When
+            viewModel.onShizukuModeChange(true)
+            advanceUntilIdle()
+
+            // Then
+            assertThat(settings.access).isEqualTo(PrivilegedAccess.OFF)
+            assertThat(viewModel.uiState.value.shizukuStatus).isEqualTo(ShizukuStatus.DENIED)
+
+            // When
+            shizukuShell.access = ShizukuAccess.NOT_RUNNING
+            viewModel.onShizukuModeChange(true)
+            advanceUntilIdle()
+
+            // Then
+            assertThat(settings.access).isEqualTo(PrivilegedAccess.OFF)
+            assertThat(viewModel.uiState.value.shizukuStatus).isEqualTo(ShizukuStatus.NOT_RUNNING)
+        }
+
+    @Test
+    fun `given root mode on, when Shizuku is granted, then it takes over and the root shell is closed`() =
+        runTest(dispatcher) {
+            // Given
+            val settings = FakeAppSettingsRepository(access = PrivilegedAccess.ROOT)
+            val rootShell = FakeRootShell()
+            val viewModel = buildViewModel(settings = settings, rootShell = rootShell)
+
+            // When
+            viewModel.onShizukuModeChange(true)
+            advanceUntilIdle()
+
+            // Then
+            assertThat(settings.access).isEqualTo(PrivilegedAccess.SHIZUKU)
+            assertThat(rootShell.closedCount).isEqualTo(1)
+            assertThat(viewModel.uiState.value.rootStatus).isEqualTo(RootStatus.OFF)
+            assertThat(viewModel.uiState.value.shizukuStatus).isEqualTo(ShizukuStatus.ON)
+        }
+
+    @Test
+    fun `given Shizuku on, when root is refused, then Shizuku stays selected`() =
+        runTest(dispatcher) {
+            // Given
+            val settings = FakeAppSettingsRepository(access = PrivilegedAccess.SHIZUKU)
+            val shizukuShell = FakeShizukuShell()
+            val viewModel = buildViewModel(
+                settings = settings,
+                rootShell = FakeRootShell(RootAccess.NO_SU),
+                shizukuShell = shizukuShell,
+            )
+
+            // When
+            viewModel.onRootModeChange(true)
+            advanceUntilIdle()
+            viewModel.onRootModeChange(false)
+
+            // Then
+            assertThat(settings.access).isEqualTo(PrivilegedAccess.SHIZUKU)
+            assertThat(shizukuShell.closedCount).isEqualTo(0)
+            assertThat(viewModel.uiState.value.shizukuStatus).isEqualTo(ShizukuStatus.ON)
+        }
+
+    @Test
+    fun `given Shizuku on, when its service stops and returns, then the switch waits and recovers`() =
+        runTest(dispatcher) {
+            // Given
+            val settings = FakeAppSettingsRepository(access = PrivilegedAccess.SHIZUKU)
+            val shizukuShell = FakeShizukuShell()
+            val viewModel = buildViewModel(settings = settings, shizukuShell = shizukuShell)
+            advanceUntilIdle()
+            assertThat(viewModel.uiState.value.shizukuStatus).isEqualTo(ShizukuStatus.ON)
+
+            // When
+            shizukuShell.alive.value = false
+            advanceUntilIdle()
+
+            // Then
+            assertThat(viewModel.uiState.value.shizukuStatus).isEqualTo(ShizukuStatus.WAITING)
+            assertThat(settings.access).isEqualTo(PrivilegedAccess.SHIZUKU)
+
+            // When
+            shizukuShell.alive.value = true
+            advanceUntilIdle()
+
+            // Then
+            assertThat(viewModel.uiState.value.shizukuStatus).isEqualTo(ShizukuStatus.ON)
+        }
+
+    @Test
+    fun `given Shizuku on, when it is switched off, then the shell is closed`() =
+        runTest(dispatcher) {
+            // Given
+            val settings = FakeAppSettingsRepository(access = PrivilegedAccess.SHIZUKU)
+            val shizukuShell = FakeShizukuShell()
+            val viewModel = buildViewModel(settings = settings, shizukuShell = shizukuShell)
+
+            // When
+            viewModel.onShizukuModeChange(false)
+
+            // Then
+            assertThat(settings.access).isEqualTo(PrivilegedAccess.OFF)
+            assertThat(shizukuShell.closedCount).isEqualTo(1)
+            assertThat(viewModel.uiState.value.shizukuStatus).isEqualTo(ShizukuStatus.OFF)
         }
 
     @Test

@@ -17,8 +17,11 @@ import org.jarsi.devicewatch.data.DataCounterMode
 import org.jarsi.devicewatch.data.DataPeriodCalculator
 import org.jarsi.devicewatch.data.DeviceInfo
 import org.jarsi.devicewatch.data.NotificationStats
+import org.jarsi.devicewatch.data.PrivilegedAccess
 import org.jarsi.devicewatch.data.RootAccess
 import org.jarsi.devicewatch.data.RootShell
+import org.jarsi.devicewatch.data.ShizukuAccess
+import org.jarsi.devicewatch.data.ShizukuShell
 import org.jarsi.devicewatch.data.SystemStats
 import org.jarsi.devicewatch.data.SystemStatsRepository
 import org.jarsi.devicewatch.data.UNAVAILABLE_INT
@@ -89,6 +92,7 @@ data class DashboardUiState(
     /** The pre-1.6 look: wallpaper colours and the regular number font. */
     val classicLook: Boolean = false,
     val rootStatus: RootStatus = RootStatus.OFF,
+    val shizukuStatus: ShizukuStatus = ShizukuStatus.OFF,
     /** The optional alerts the user has switched on. */
     val enabledAlerts: Set<HealthAlert> = emptySet(),
     /** Foreground/background shares and roaming for the counting period; null until read. */
@@ -102,6 +106,12 @@ data class DashboardUiState(
 /** Where the root switch stands; DENIED and NO_SU are off with a reason to show. */
 enum class RootStatus { OFF, REQUESTING, ON, DENIED, NO_SU }
 
+/**
+ * Where the Shizuku switch stands. DENIED and NOT_RUNNING are off with a reason
+ * to show; WAITING is on, with the Shizuku service itself down.
+ */
+enum class ShizukuStatus { OFF, REQUESTING, ON, WAITING, DENIED, NOT_RUNNING }
+
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
     private val repository: SystemStatsRepository,
@@ -113,6 +123,7 @@ class DashboardViewModel @Inject constructor(
     private val monitorRelay: MonitorServiceRelay,
     private val alertNotifications: AlertNotifications,
     private val rootShell: RootShell,
+    private val shizukuShell: ShizukuShell,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DashboardUiState())
@@ -121,13 +132,18 @@ class DashboardViewModel @Inject constructor(
     init {
         // Synchronous prefs reads so the first composition already knows whether
         // to show the intro and which look to draw — no flash of the other one.
+        val access = settings.privilegedAccess()
         _uiState.update {
             it.copy(
                 onboardingCompleted = settings.onboardingShown(),
                 classicLook = settings.classicLook(),
-                rootStatus = if (settings.rootModeEnabled()) RootStatus.ON else RootStatus.OFF,
+                rootStatus = if (access == PrivilegedAccess.ROOT) RootStatus.ON else RootStatus.OFF,
+                shizukuStatus = if (access == PrivilegedAccess.SHIZUKU) ShizukuStatus.ON else ShizukuStatus.OFF,
                 enabledAlerts = HealthAlert.entries.filter(settings::alertEnabled).toSet(),
             )
+        }
+        viewModelScope.launch {
+            shizukuShell.alive.collect(::onShizukuAlive)
         }
         // The service already samples every five seconds, even without a widget.
         // Observe those readings instead of repeating the costly usage/storage scans.
@@ -162,7 +178,7 @@ class DashboardViewModel @Inject constructor(
      */
     fun onRootModeChange(enabled: Boolean) {
         if (!enabled) {
-            settings.setRootModeEnabled(false)
+            if (settings.privilegedAccess() == PrivilegedAccess.ROOT) settings.setPrivilegedAccess(PrivilegedAccess.OFF)
             rootShell.close()
             _uiState.update { it.copy(rootStatus = RootStatus.OFF) }
             return
@@ -180,8 +196,59 @@ class DashboardViewModel @Inject constructor(
                 rootShell.close()
                 return@launch
             }
-            if (status == RootStatus.ON) settings.setRootModeEnabled(true)
-            _uiState.update { it.copy(rootStatus = status) }
+            if (status != RootStatus.ON) {
+                _uiState.update { it.copy(rootStatus = status) }
+                return@launch
+            }
+            // One shell at a time: root reads everything Shizuku does.
+            settings.setPrivilegedAccess(PrivilegedAccess.ROOT)
+            shizukuShell.close()
+            _uiState.update { it.copy(rootStatus = RootStatus.ON, shizukuStatus = ShizukuStatus.OFF) }
+        }
+    }
+
+    /**
+     * As [onRootModeChange], through Shizuku: the setting is persisted only once
+     * Shizuku granted its permission.
+     */
+    fun onShizukuModeChange(enabled: Boolean) {
+        if (!enabled) {
+            if (settings.privilegedAccess() == PrivilegedAccess.SHIZUKU) settings.setPrivilegedAccess(PrivilegedAccess.OFF)
+            shizukuShell.close()
+            _uiState.update { it.copy(shizukuStatus = ShizukuStatus.OFF) }
+            return
+        }
+        if (_uiState.value.shizukuStatus == ShizukuStatus.REQUESTING) return
+        _uiState.update { it.copy(shizukuStatus = ShizukuStatus.REQUESTING) }
+        viewModelScope.launch {
+            val status = when (shizukuShell.requestAccess()) {
+                ShizukuAccess.GRANTED -> ShizukuStatus.ON
+                ShizukuAccess.DENIED -> ShizukuStatus.DENIED
+                ShizukuAccess.NOT_RUNNING -> ShizukuStatus.NOT_RUNNING
+            }
+            // Switched off while Shizuku was still asking: off wins.
+            if (_uiState.value.shizukuStatus != ShizukuStatus.REQUESTING) return@launch
+            if (status != ShizukuStatus.ON) {
+                _uiState.update { it.copy(shizukuStatus = status) }
+                return@launch
+            }
+            settings.setPrivilegedAccess(PrivilegedAccess.SHIZUKU)
+            rootShell.close()
+            _uiState.update { it.copy(shizukuStatus = ShizukuStatus.ON, rootStatus = RootStatus.OFF) }
+        }
+    }
+
+    /**
+     * Shizuku stops at every reboot and stays down until the user starts it; the
+     * switch stays on meanwhile and says what it is waiting for.
+     */
+    private fun onShizukuAlive(alive: Boolean) {
+        _uiState.update { state ->
+            when {
+                state.shizukuStatus == ShizukuStatus.ON && !alive -> state.copy(shizukuStatus = ShizukuStatus.WAITING)
+                state.shizukuStatus == ShizukuStatus.WAITING && alive -> state.copy(shizukuStatus = ShizukuStatus.ON)
+                else -> state
+            }
         }
     }
 
