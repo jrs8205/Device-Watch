@@ -1,6 +1,6 @@
 # Privacy Policy — Device Watch
 
-**Last updated: 28 September 2026**
+**Last updated: 2 October 2026**
 
 Device Watch (`org.jarsi.devicewatch`) is a device monitoring app developed by Jarsi Sode.
 
@@ -20,6 +20,7 @@ To show its statistics, Device Watch reads the following information **locally o
 - **Battery temperature** — stored with each battery-history sample (14 days) to show the warmest point of each charge, and compared with 45 °C when you switch the hot-battery alert on.
 - **Camera and audio hardware facts** — lens details from the camera service and the list of connected audio devices, read without opening a camera or a microphone.
 - **Device settings and hardware facts** — brightness, screen timeout, font and display size, developer options, power modes, screen lock, biometric sensors, NFC and similar read-only facts shown on the Device tab. `USE_BIOMETRIC` is used only to ask Android whether a strong biometric is enrolled (a yes/no); the app never authenticates you and never sees biometric data.
+- **Extended access, only if you switch it on** (Shizuku or root; both off by default) — the app then runs read-only commands in a shell with the ADB user's or root's rights: it reads kernel values (processor and graphics load, temperatures, battery wear and dates) and Android's own battery statistics, which name the apps that used the battery and the wake locks they held. These are shown on screen; apart from the latest values the widget displays, they are not stored: nothing from them is written to the history, the exports or a backup. The app changes no system setting through this access, and the switch itself stays on this phone: it is not included in Android's backup or a transfer to a new phone.
 
 ## Where the data lives
 

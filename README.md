@@ -53,7 +53,8 @@ The default app language is English. Finnish users get a localized app name and 
 - Optional charging reminder at a chosen battery level from 50 to 95 %, and mobile-data quota alerts at 80 % and 100 % of the selected day or billing-cycle allowance
 - Optional alerts, all off by default: a hot battery (45 °C), low storage (under 10 % free) and a fast-draining battery (20 % an hour or more); each comes once and again only after things have returned to normal
 - Monthly data usage history on the History page: metered mobile and Wi-Fi totals per calendar month, served straight from Android's own statistics for up to 12 months back (no local storage needed)
-- Since-charge page (opened from the battery card): the period since the battery was last charged full — or since the charger was unplugged, when charging stopped short of full — with elapsed time, battery drop and average drain, unlocks, notifications, Wi-Fi/mobile data, and a per-app screen-time donut over that window (Android does not expose real per-app battery percentages to third-party apps, so the page shows honest usage numbers instead)
+- Since-charge page (opened from the battery card): the period since the battery was last charged full — or since the charger was unplugged, when charging stopped short of full — with elapsed time, battery drop and average drain, unlocks, notifications, Wi-Fi/mobile data, and a per-app screen-time donut over that window (Android does not expose real per-app battery percentages to third-party apps, so without extended access the page shows honest usage numbers instead)
+- Optional extended access through [Shizuku](https://shizuku.rikka.app/) (no root needed) or root, both off by default, for what Android hides from ordinary apps: Android's own battery statistics on the since-charge page (drain per hour with the screen on and off and how long a full battery would last at that pace, each app's share, and what kept the phone awake, explained in plain words), the real processor load, graphics load, processor/graphics/surface temperatures, and the battery's wear, charge cycles and dates where the phone keeps them
 - Today's screen time also appears in the widget footer, refreshed at most once a minute so the 5-second widget loop stays untouched
 - Most-opened-today list on the Apps tab, and last-opened rows show the clock time for apps used today (following the system 12/24-hour setting) with two-tier staleness colors: amber after 1 month unused, red after 3 months (Google's app-hibernation threshold) or never used
 - Special-access buttons show a green/red status dot for granted/missing access
@@ -173,6 +174,9 @@ The app requests only permissions that are used by the current feature set:
 - `QUERY_ALL_PACKAGES` (resolve names/icons for the per-app data list; the app is distributed outside Google Play)
 - `REQUEST_DELETE_PACKAGES` (uninstall from the last-opened list via the system dialog)
 - `USE_BIOMETRIC` (a normal permission, granted on install: only to show on the Device tab whether a strong biometric is enrolled — the app never authenticates anyone)
+- `moe.shizuku.manager.permission.API_V23` (declared by the Shizuku library; it does nothing unless you install Shizuku yourself, switch Shizuku on in Settings and approve Device Watch in Shizuku's own dialog)
+
+Root mode needs no permission: it is off by default, and the app starts `su` only after you switch it on and your root manager grants it.
 
 Notification counting additionally uses the optional Notification access special permission (a `NotificationListenerService`); counting starts when access is granted. Do Not Disturb and Bluetooth control permissions are not requested.
 
@@ -192,7 +196,7 @@ Release builds are minified with R8 and resource shrinking. The release APK is u
 
 ## Testing
 
-562 JVM unit tests (JUnit 4 + Truth; Robolectric only for the Glance render, backup-rule and
+641 JVM unit tests (JUnit 4 + Truth; Robolectric only for the Glance render, backup-rule and
 settings-store tests) cover the pure logic behind every screen, service and widget:
 
 ```powershell
@@ -202,6 +206,10 @@ settings-store tests) cover the pure logic behind every screen, service and widg
 - **Parsing and maths** — `SystemStatsParserTest`, `CpuWindowTest`, `DataPeriodCalculatorTest`,
   `UsageEventAggregatorTest`, `ExtraStatsLogicTest`, `AppPackageLogicTest`, `CameraLogicTest`,
   `AudioLogicTest`, `TrafficMeterTest`
+- **Extended access (Shizuku and root)** — `ShellSessionTest` (the shell conversation, driven
+  through a real `sh`; on Windows through Git's), `PrivilegedShellTest`,
+  `BatteryStatsDumpParserTest`, `PrivilegedDumpParsersTest` (parsers written against dumps from
+  real phones)
 - **Own history and stores** — `UsageHistoryLogicTest`, `UsageHistoryImplTest`,
   `NotificationCountingTest`, `NotificationLogCodecTest`, `NotificationLogImplTest`,
   `BatteryHistoryCodecTest`, `BatteryHistoryImplTest`, `ChargeSessionsTest`,
@@ -249,6 +257,7 @@ app/src/main/java/org/jarsi/devicewatch/
     BatteryHistory.kt
     BatteryHistoryImpl.kt
     BatteryStatusReader.kt
+    BatteryUsage.kt
     CameraLogic.kt
     ChargeAnchor.kt
     ChargeAnchorStoreImpl.kt
@@ -264,6 +273,12 @@ app/src/main/java/org/jarsi/devicewatch/
     NotificationLogImpl.kt
     NotificationStats.kt
     NotificationStatsImpl.kt
+    PrivilegedDumpParsers.kt
+    PrivilegedShell.kt
+    RootShell.kt
+    ShellBatteryUsageSource.kt
+    ShellUserService.kt
+    ShizukuShell.kt
     SystemStats.kt
     SystemStatsParser.kt
     SystemStatsRepository.kt
@@ -292,6 +307,7 @@ app/src/main/java/org/jarsi/devicewatch/
       AppsTab.kt
       BatteryChart.kt
       BatteryChartLogic.kt
+      BatteryUsageCards.kt
       DashboardComponents.kt
       DashboardTabs.kt
       DeviceTab.kt
@@ -344,6 +360,7 @@ app/src/test/java/org/jarsi/devicewatch/
     BackupRulesTest.kt
     BatteryHistoryCodecTest.kt
     BatteryHistoryImplTest.kt
+    BatteryStatsDumpParserTest.kt
     CameraLogicTest.kt
     ChargeAnchorLogicTest.kt
     ChargeSessionsTest.kt
@@ -355,6 +372,9 @@ app/src/test/java/org/jarsi/devicewatch/
     NotificationCountingTest.kt
     NotificationLogCodecTest.kt
     NotificationLogImplTest.kt
+    PrivilegedDumpParsersTest.kt
+    PrivilegedShellTest.kt
+    ShellSessionTest.kt
     SystemStatsParserTest.kt
     TrafficMeterTest.kt
     UsageEventAggregatorTest.kt

@@ -55,6 +55,53 @@ Android does not expose per-app battery consumption to third-party apps (it requ
 system permission). Rather than invent percentages, the since-charge page shows real usage over
 the period: per-app screen time, data, unlocks and notifications.
 
+With extended access switched on (Shizuku or root, see below), the same page also shows Android's
+own battery statistics: each app's share, the drain with the screen on and off, and what kept the
+phone awake.
+
+## Extended access (Shizuku and root)
+
+### What is it, and do I need it?
+
+No. Everything else in the app works without it. It is an optional switch in Settings for
+readings Android hides from ordinary apps: Android's own battery statistics (per-app drain,
+drain per hour with the screen on and off, wake locks), the real processor load, the graphics
+load, temperatures by part, and the battery's wear, charge cycles and dates where the phone
+keeps them.
+
+### How do I use it without root?
+
+Install [Shizuku](https://shizuku.rikka.app/), start it as its own instructions say (through
+wireless debugging on Android 11 and newer), then switch **Shizuku** on in Device Watch's Settings
+and allow Device Watch in the dialog Shizuku shows. Shizuku gives the app the same rights the
+`adb shell` command has; nothing on the phone is modified.
+
+### The extended readings disappeared after a restart
+
+Without root, Shizuku stops whenever the phone restarts and has to be started again from the
+Shizuku app. The switch in Device Watch stays on and says it is waiting; the readings return once
+Shizuku runs. The permission you gave is remembered.
+
+### What does root mode add?
+
+On a rooted phone the **Root mode** switch reads the same things through `su`, plus the few
+kernel values even Shizuku is denied on some phones. Your root manager asks for permission once.
+The app keeps one root shell open instead of starting a new one for every reading, so the root
+manager is not flooded with requests.
+
+### Why do some rows not appear on my phone?
+
+Each maker exposes different things. A Samsung, for example, hides the battery's kernel values
+even from Shizuku but tells its wear and cycle count through its battery service; a Pixel does
+the opposite. A row is shown only when the phone gives a real value.
+
+### Is the drain per hour reliable?
+
+It is Android's own measurement, counted in whole mAh steps, so a pace is shown only for a
+stretch of at least ten minutes. With the screen off, under about 1 % an hour means the phone
+sleeps well; clearly more than 2.5 % an hour means something keeps it awake, and the list of
+what kept the phone awake usually names it.
+
 ### The since-charge page is empty
 
 The page starts tracking from the first charge event after installation — either the battery
