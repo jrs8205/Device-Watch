@@ -171,6 +171,13 @@
     <string name="onboarding_done_body">You can reopen this intro any time from the Settings tab.</string>
     <string name="settings_show_intro">Show intro again</string>
     <string name="appearance_section">APPEARANCE</string>
+    <string name="root_section">ROOT</string>
+    <string name="root_mode_title">Root mode</string>
+    <string name="root_mode_description">On a rooted phone, reads what Android hides from ordinary apps: the real processor load, chip temperatures and the battery\'s own wear figures. Your root manager asks for permission.</string>
+    <string name="root_status_requesting">Waiting for your root manager\'s permission…</string>
+    <string name="root_status_on">Root access in use.</string>
+    <string name="root_status_denied">Root access was refused. Allow Device Watch in your root manager and try again.</string>
+    <string name="root_status_no_su">This phone is not rooted: no su command was found.</string>
     <string name="classic_look_title">Original look</string>
     <string name="classic_look_description">The colours and number font from before version 1.6: on Android 12 and newer the colours follow your wallpaper.</string>
     <string name="alert_channel_name">Device alerts</string>

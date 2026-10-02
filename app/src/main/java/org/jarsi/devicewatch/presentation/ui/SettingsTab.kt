@@ -63,6 +63,7 @@ import org.jarsi.devicewatch.data.DEFAULT_CHARGE_LIMIT_PERCENT
 import org.jarsi.devicewatch.data.DEFAULT_DATA_QUOTA_GB
 import org.jarsi.devicewatch.data.DataCounterMode
 import org.jarsi.devicewatch.presentation.DashboardUiState
+import org.jarsi.devicewatch.presentation.RootStatus
 import org.jarsi.devicewatch.system.DreamPreferences
 import kotlin.math.roundToInt
 
@@ -85,6 +86,7 @@ internal fun SettingsTab(
     onChargeLimitChange: (Int) -> Unit,
     onCommitChargeLimit: () -> Unit,
     onClassicLookChange: (Boolean) -> Unit,
+    onRootModeChange: (Boolean) -> Unit,
     onAlertToggle: (HealthAlert, Boolean) -> Unit,
     onShowIntro: () -> Unit,
 ) {
@@ -434,6 +436,35 @@ internal fun SettingsTab(
                 checked = uiState.classicLook,
                 onCheckedChange = onClassicLookChange,
             )
+        }
+
+        // Root mode
+        SettingsSectionCard(titleRes = R.string.root_section) {
+            Spacer(modifier = Modifier.height(4.dp))
+            SettingsToggleRow(
+                titleRes = R.string.root_mode_title,
+                descriptionRes = R.string.root_mode_description,
+                checked = uiState.rootStatus == RootStatus.ON || uiState.rootStatus == RootStatus.REQUESTING,
+                onCheckedChange = onRootModeChange,
+            )
+            val rootStatusRes = when (uiState.rootStatus) {
+                RootStatus.OFF -> null
+                RootStatus.REQUESTING -> R.string.root_status_requesting
+                RootStatus.ON -> R.string.root_status_on
+                RootStatus.DENIED -> R.string.root_status_denied
+                RootStatus.NO_SU -> R.string.root_status_no_su
+            }
+            if (rootStatusRes != null) {
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = stringResource(rootStatusRes),
+                    fontSize = 11.sp,
+                    color = when (uiState.rootStatus) {
+                        RootStatus.DENIED, RootStatus.NO_SU -> MaterialTheme.colorScheme.error
+                        else -> MaterialTheme.colorScheme.primary
+                    }
+                )
+            }
         }
 
         // Screensaver settings

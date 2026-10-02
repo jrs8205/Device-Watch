@@ -167,6 +167,13 @@
     <string name="onboarding_done_body">Voit avata tämän esittelyn uudelleen milloin vain Asetukset-välilehdeltä.</string>
     <string name="settings_show_intro">Näytä esittely uudelleen</string>
     <string name="appearance_section">ULKOASU</string>
+    <string name="root_section">ROOT</string>
+    <string name="root_mode_title">Root-tila</string>
+    <string name="root_mode_description">Rootatussa puhelimessa lukee tiedot, jotka Android piilottaa tavallisilta sovelluksilta: suorittimen todellisen kuorman, piirien lämpötilat ja akun omat kulumislukemat. Root-hallintasi kysyy luvan.</string>
+    <string name="root_status_requesting">Odotetaan root-hallinnan lupaa…</string>
+    <string name="root_status_on">Root-oikeudet käytössä.</string>
+    <string name="root_status_denied">Root-oikeus evättiin. Salli Device Watch root-hallinnassa ja yritä uudelleen.</string>
+    <string name="root_status_no_su">Puhelinta ei ole rootattu: su-komentoa ei löytynyt.</string>
     <string name="classic_look_title">Alkuperäinen ulkoasu</string>
     <string name="classic_look_description">Versiota 1.6 edeltävät värit ja numerofontti: Android 12:sta alkaen värit tulevat taustakuvasta.</string>
     <string name="alert_channel_name">Laitehälytykset</string>

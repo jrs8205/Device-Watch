@@ -149,6 +149,14 @@ class AppSettingsRepositoryImpl @Inject constructor(
         prefs.edit().putBoolean(KEY_CLASSIC_LOOK, enabled).apply()
     }
 
+    /** About this phone ([DeviceLocalFlags]): a restore onto another phone must not start asking it for root. */
+    override fun rootModeEnabled(): Boolean =
+        DeviceLocalFlags.prefs(context).getBoolean(KEY_ROOT_MODE, false)
+
+    override fun setRootModeEnabled(enabled: Boolean) {
+        DeviceLocalFlags.prefs(context).edit().putBoolean(KEY_ROOT_MODE, enabled).apply()
+    }
+
     override fun alertEnabled(alert: HealthAlert): Boolean =
         prefs.getBoolean(alertKey(KEY_ALERT_ENABLED_PREFIX, alert), false)
 
@@ -200,6 +208,7 @@ class AppSettingsRepositoryImpl @Inject constructor(
         /** Written from the UI helpers in OnboardingPage.kt (permanent-denial detection). */
         const val KEY_RUNTIME_PERMISSIONS_REQUESTED = "runtime_permissions_requested"
         const val KEY_CLASSIC_LOOK = "classic_look"
+        const val KEY_ROOT_MODE = "root_mode"
         /** Full keys: "alert_enabled:hot_battery", "alert_latched:low_storage" and so on. */
         const val KEY_ALERT_ENABLED_PREFIX = "alert_enabled"
         const val KEY_ALERT_LATCHED_PREFIX = "alert_latched"

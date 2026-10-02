@@ -2,6 +2,8 @@ package org.jarsi.devicewatch.presentation
 
 import org.jarsi.devicewatch.system.AlertNotifications
 import org.jarsi.devicewatch.data.HealthAlert
+import org.jarsi.devicewatch.data.RootAccess
+import org.jarsi.devicewatch.data.RootShell
 import kotlinx.coroutines.CompletableDeferred
 import org.jarsi.devicewatch.data.AppLastUse
 import org.jarsi.devicewatch.data.AppPackageFacts
@@ -33,6 +35,18 @@ internal class FakeAlertNotifications : AlertNotifications {
     }
 }
 
+internal class FakeRootShell(var access: RootAccess = RootAccess.GRANTED) : RootShell {
+    var closedCount = 0
+
+    override fun run(command: String, timeoutMillis: Long): String? = null
+
+    override suspend fun requestAccess(): RootAccess = access
+
+    override fun close() {
+        closedCount++
+    }
+}
+
 internal class FakeMonitorServiceRelay : MonitorServiceRelay {
     var chargeLimitChangedCount = 0
     var dataQuotaChangedCount = 0
@@ -57,6 +71,7 @@ internal class FakeAppSettingsRepository(
     var onboardingShown: Boolean = false,
     /** Short name for the same reason as [chargeLimit]. */
     var classic: Boolean = false,
+    var rootMode: Boolean = false,
 ) : AppSettingsRepository {
 
     /** Fired quota alerts as "periodStartEpochDay:quotaGb:threshold", mirroring the real key scoping. */
@@ -124,6 +139,12 @@ internal class FakeAppSettingsRepository(
 
     override fun setClassicLook(enabled: Boolean) {
         classic = enabled
+    }
+
+    override fun rootModeEnabled(): Boolean = rootMode
+
+    override fun setRootModeEnabled(enabled: Boolean) {
+        rootMode = enabled
     }
 
     val alertsOn = mutableSetOf<HealthAlert>()

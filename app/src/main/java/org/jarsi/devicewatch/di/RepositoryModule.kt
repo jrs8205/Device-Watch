@@ -14,6 +14,8 @@ import org.jarsi.devicewatch.data.NotificationLog
 import org.jarsi.devicewatch.data.NotificationLogImpl
 import org.jarsi.devicewatch.data.NotificationStats
 import org.jarsi.devicewatch.data.NotificationStatsImpl
+import org.jarsi.devicewatch.data.RootShell
+import org.jarsi.devicewatch.data.SuRootShell
 import org.jarsi.devicewatch.data.SystemStatsRepository
 import org.jarsi.devicewatch.data.SystemStatsRepositoryImpl
 import org.jarsi.devicewatch.data.UsageHistory
@@ -75,6 +77,10 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindBatteryHistory(impl: BatteryHistoryImpl): BatteryHistory
+
+    @Binds
+    @Singleton
+    abstract fun bindRootShell(impl: SuRootShell): RootShell
 
     @Binds
     @Singleton

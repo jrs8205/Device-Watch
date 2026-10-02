@@ -169,6 +169,18 @@ internal object SystemStatsParser {
         }
     }
 
+    /**
+     * The hottest plausible reading among the raw `temp` values of the thermal zones, in °C;
+     * null when none is plausible. Kernels report milli-degrees or whole degrees,
+     * and unused zones report zero or a wild sentinel.
+     */
+    fun hottestThermalZone(rawValues: Sequence<String>): Double? =
+        rawValues
+            .mapNotNull { it.trim().toDoubleOrNull() }
+            .map { if (it > 1000) it / 1000.0 else it }
+            .filter { it in 1.0..125.0 }
+            .maxOrNull()
+
     /** Battery wear: full charge capacity as a percentage of the design capacity. */
     fun batteryCapacityPercent(chargeFull: Long?, chargeFullDesign: Long?): Int {
         return if (chargeFull != null && chargeFullDesign != null && chargeFullDesign > 0L) {

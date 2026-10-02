@@ -213,4 +213,16 @@ class SystemStatsParserTest {
         assertThat(SystemStatsParser.densityBucketLabel(640)).isEqualTo("xxxhdpi")
         assertThat(SystemStatsParser.densityBucketLabel(0)).isEqualTo(UNAVAILABLE_TEXT)
     }
+
+    @Test
+    fun `the hottest plausible thermal zone wins, in whole degrees`() {
+        // Milli-degrees, whole degrees, an unused zone, a sentinel and an error line.
+        val raw = sequenceOf("41500", "38", "0", "-274000", "cat: read error", "")
+        assertThat(SystemStatsParser.hottestThermalZone(raw)).isEqualTo(41.5)
+    }
+
+    @Test
+    fun `no plausible thermal zone gives no temperature`() {
+        assertThat(SystemStatsParser.hottestThermalZone(sequenceOf("0", "-40000", "x"))).isNull()
+    }
 }

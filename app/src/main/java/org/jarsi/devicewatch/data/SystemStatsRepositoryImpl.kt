@@ -89,6 +89,7 @@ class SystemStatsRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context,
     @DefaultDispatcher private val dispatcher: CoroutineDispatcher,
     private val settings: AppSettingsRepository,
+    private val rootShell: RootShell,
 ) : SystemStatsRepository {
 
     // CPU load needs to compare two samples over time. These snapshots persist across
@@ -103,7 +104,9 @@ class SystemStatsRepositoryImpl @Inject constructor(
     private var previousResidencySampleMillis = 0L
     private var lastResidencyLoadPercent = UNAVAILABLE_INT
     private val unavailableFilePaths = mutableSetOf<String>()
+    private val rootOnlyFilePaths = mutableSetOf<String>()
     private var skipThermalRead = false
+    private var rootModeSeen = false
 
     private val statsMutex = Mutex()
     private val _latestStats = MutableStateFlow<SystemStats?>(null)
@@ -1747,6 +1750,16 @@ class SystemStatsRepositoryImpl @Inject constructor(
     }
 
     private fun readCpuTemperature(): Double {
+        syncRootMode()
+        val direct = readCpuTemperatureDirect()
+        if (direct != UNAVAILABLE_DOUBLE || !rootModeSeen) return direct
+        // One command for every zone: phones have dozens, and most zones an app
+        // may list it may not read.
+        val zones = rootShell.run("cat /sys/class/thermal/thermal_zone*/temp") ?: return UNAVAILABLE_DOUBLE
+        return SystemStatsParser.hottestThermalZone(zones.lineSequence()) ?: UNAVAILABLE_DOUBLE
+    }
+
+    private fun readCpuTemperatureDirect(): Double {
         if (skipThermalRead) return UNAVAILABLE_DOUBLE
 
         return try {
@@ -1757,20 +1770,14 @@ class SystemStatsRepositoryImpl @Inject constructor(
                     return UNAVAILABLE_DOUBLE
                 }
 
-            val values = zones
-                .asSequence()
-                .mapNotNull { zone ->
-                    val raw = readFileTextOnce(File(zone, "temp").absolutePath)?.trim()?.toDoubleOrNull()
-                    raw?.let { if (it > 1000) it / 1000.0 else it }
-                }
-                .filter { it in 1.0..125.0 }
-                .toList()
-
-            if (values.isEmpty()) {
+            val hottest = SystemStatsParser.hottestThermalZone(
+                zones.asSequence().mapNotNull { zone -> readDirectOnce(File(zone, "temp").absolutePath) }
+            )
+            if (hottest == null) {
                 skipThermalRead = true
                 UNAVAILABLE_DOUBLE
             } else {
-                values.maxOrNull() ?: UNAVAILABLE_DOUBLE
+                hottest
             }
         } catch (_: Exception) {
             skipThermalRead = true
@@ -2153,14 +2160,54 @@ class SystemStatsRepositoryImpl @Inject constructor(
      * stats mutex, so the cache needs no extra synchronization.
      */
     private fun readFileTextOnce(path: String): String? {
+        syncRootMode()
         if (path in unavailableFilePaths) return null
+        if (path !in rootOnlyFilePaths) {
+            try {
+                return File(path).readText()
+            } catch (_: Exception) {
+                // Denied to the app; root mode may still read it below.
+            }
+        }
+        if (!rootModeSeen) {
+            unavailableFilePaths.add(path)
+            return null
+        }
+        // Null is the shell failing, which says nothing about the file: try again
+        // next time. An empty answer is the file itself being missing or unreadable.
+        val viaRoot = rootShell.run("cat ${RootShellProtocol.quote(path)}") ?: return null
+        if (viaRoot.isEmpty()) {
+            rootOnlyFilePaths.remove(path)
+            unavailableFilePaths.add(path)
+            return null
+        }
+        rootOnlyFilePaths.add(path)
+        return viaRoot
+    }
 
+    /** As [readFileTextOnce], but never through root: for reads that have a batched root path. */
+    private fun readDirectOnce(path: String): String? {
+        if (path in unavailableFilePaths) return null
         return try {
             File(path).readText()
         } catch (_: Exception) {
             unavailableFilePaths.add(path)
             null
         }
+    }
+
+    /**
+     * Forgets what was learned about unreadable paths whenever root mode is
+     * switched, so a path denied to the app is retried through root, and one that
+     * only root could read stops being asked for once root is off.
+     */
+    private fun syncRootMode() {
+        val enabled = settings.rootModeEnabled()
+        if (enabled == rootModeSeen) return
+        rootModeSeen = enabled
+        unavailableFilePaths.clear()
+        rootOnlyFilePaths.clear()
+        skipThermalRead = false
     }
 
     private companion object {

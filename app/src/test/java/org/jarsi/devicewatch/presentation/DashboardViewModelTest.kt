@@ -1,6 +1,7 @@
 package org.jarsi.devicewatch.presentation
 
 import org.jarsi.devicewatch.data.HealthAlert
+import org.jarsi.devicewatch.data.RootAccess
 import org.jarsi.devicewatch.data.AppSettingsRepository
 import org.jarsi.devicewatch.data.AppUsageRepository
 import org.jarsi.devicewatch.data.DATA_QUOTA_MAX_GB
@@ -57,7 +58,10 @@ class DashboardViewModelTest {
         history: UsageHistory = FakeUsageHistory(),
         relay: FakeMonitorServiceRelay = FakeMonitorServiceRelay(),
         alertNotifications: FakeAlertNotifications = FakeAlertNotifications(),
-    ) = DashboardViewModel(repository, widget, settings, appUsage, notifications, history, relay, alertNotifications)
+        rootShell: FakeRootShell = FakeRootShell(),
+    ) = DashboardViewModel(
+        repository, widget, settings, appUsage, notifications, history, relay, alertNotifications, rootShell,
+    )
 
     @Test
     fun `service readings update live resources without a manual refresh or widget`() = runTest(dispatcher) {
@@ -476,6 +480,56 @@ class DashboardViewModelTest {
             // Then
             assertThat(settings.classic).isTrue()
             assertThat(viewModel.uiState.value.classicLook).isTrue()
+        }
+
+    @Test
+    fun `given root granted, when root mode is switched on, then it is persisted`() =
+        runTest(dispatcher) {
+            // Given
+            val settings = FakeAppSettingsRepository()
+            val viewModel = buildViewModel(settings = settings, rootShell = FakeRootShell(RootAccess.GRANTED))
+
+            // When
+            viewModel.onRootModeChange(true)
+            advanceUntilIdle()
+
+            // Then
+            assertThat(settings.rootMode).isTrue()
+            assertThat(viewModel.uiState.value.rootStatus).isEqualTo(RootStatus.ON)
+        }
+
+    @Test
+    fun `given root refused, when root mode is switched on, then it stays off with the reason`() =
+        runTest(dispatcher) {
+            // Given
+            val settings = FakeAppSettingsRepository()
+            val viewModel = buildViewModel(settings = settings, rootShell = FakeRootShell(RootAccess.DENIED))
+
+            // When
+            viewModel.onRootModeChange(true)
+            advanceUntilIdle()
+
+            // Then
+            assertThat(settings.rootMode).isFalse()
+            assertThat(viewModel.uiState.value.rootStatus).isEqualTo(RootStatus.DENIED)
+        }
+
+    @Test
+    fun `given root mode on, when it is switched off, then the shell is closed`() =
+        runTest(dispatcher) {
+            // Given
+            val settings = FakeAppSettingsRepository(rootMode = true)
+            val rootShell = FakeRootShell()
+            val viewModel = buildViewModel(settings = settings, rootShell = rootShell)
+            assertThat(viewModel.uiState.value.rootStatus).isEqualTo(RootStatus.ON)
+
+            // When
+            viewModel.onRootModeChange(false)
+
+            // Then
+            assertThat(settings.rootMode).isFalse()
+            assertThat(rootShell.closedCount).isEqualTo(1)
+            assertThat(viewModel.uiState.value.rootStatus).isEqualTo(RootStatus.OFF)
         }
 
     @Test

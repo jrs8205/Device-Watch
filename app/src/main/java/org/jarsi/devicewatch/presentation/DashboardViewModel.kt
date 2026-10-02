@@ -17,6 +17,8 @@ import org.jarsi.devicewatch.data.DataCounterMode
 import org.jarsi.devicewatch.data.DataPeriodCalculator
 import org.jarsi.devicewatch.data.DeviceInfo
 import org.jarsi.devicewatch.data.NotificationStats
+import org.jarsi.devicewatch.data.RootAccess
+import org.jarsi.devicewatch.data.RootShell
 import org.jarsi.devicewatch.data.SystemStats
 import org.jarsi.devicewatch.data.SystemStatsRepository
 import org.jarsi.devicewatch.data.UNAVAILABLE_INT
@@ -86,6 +88,7 @@ data class DashboardUiState(
     val onboardingCompleted: Boolean? = null,
     /** The pre-1.6 look: wallpaper colours and the regular number font. */
     val classicLook: Boolean = false,
+    val rootStatus: RootStatus = RootStatus.OFF,
     /** The optional alerts the user has switched on. */
     val enabledAlerts: Set<HealthAlert> = emptySet(),
     /** Foreground/background shares and roaming for the counting period; null until read. */
@@ -95,6 +98,9 @@ data class DashboardUiState(
     /** Settings and states that change while the app runs; null until read. */
     val deviceState: DeviceState? = null,
 )
+
+/** Where the root switch stands; DENIED and NO_SU are off with a reason to show. */
+enum class RootStatus { OFF, REQUESTING, ON, DENIED, NO_SU }
 
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
@@ -106,6 +112,7 @@ class DashboardViewModel @Inject constructor(
     private val usageHistory: UsageHistory,
     private val monitorRelay: MonitorServiceRelay,
     private val alertNotifications: AlertNotifications,
+    private val rootShell: RootShell,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DashboardUiState())
@@ -118,6 +125,7 @@ class DashboardViewModel @Inject constructor(
             it.copy(
                 onboardingCompleted = settings.onboardingShown(),
                 classicLook = settings.classicLook(),
+                rootStatus = if (settings.rootModeEnabled()) RootStatus.ON else RootStatus.OFF,
                 enabledAlerts = HealthAlert.entries.filter(settings::alertEnabled).toSet(),
             )
         }
@@ -146,6 +154,35 @@ class DashboardViewModel @Inject constructor(
     fun onClassicLookChange(enabled: Boolean) {
         settings.setClassicLook(enabled)
         _uiState.update { it.copy(classicLook = enabled) }
+    }
+
+    /**
+     * Switching root mode on asks the root manager first and persists the setting
+     * only once it said yes, so the monitor never polls a shell it was refused.
+     */
+    fun onRootModeChange(enabled: Boolean) {
+        if (!enabled) {
+            settings.setRootModeEnabled(false)
+            rootShell.close()
+            _uiState.update { it.copy(rootStatus = RootStatus.OFF) }
+            return
+        }
+        if (_uiState.value.rootStatus == RootStatus.REQUESTING) return
+        _uiState.update { it.copy(rootStatus = RootStatus.REQUESTING) }
+        viewModelScope.launch {
+            val status = when (rootShell.requestAccess()) {
+                RootAccess.GRANTED -> RootStatus.ON
+                RootAccess.DENIED -> RootStatus.DENIED
+                RootAccess.NO_SU -> RootStatus.NO_SU
+            }
+            // Switched off while the root manager was still asking: off wins.
+            if (_uiState.value.rootStatus != RootStatus.REQUESTING) {
+                rootShell.close()
+                return@launch
+            }
+            if (status == RootStatus.ON) settings.setRootModeEnabled(true)
+            _uiState.update { it.copy(rootStatus = status) }
+        }
     }
 
     fun onAlertToggle(alert: HealthAlert, enabled: Boolean) {
