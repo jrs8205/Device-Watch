@@ -14,7 +14,9 @@ import org.jarsi.devicewatch.data.NotificationLog
 import org.jarsi.devicewatch.data.NotificationLogImpl
 import org.jarsi.devicewatch.data.NotificationStats
 import org.jarsi.devicewatch.data.NotificationStatsImpl
+import org.jarsi.devicewatch.data.BatteryUsageSource
 import org.jarsi.devicewatch.data.PrivilegedShell
+import org.jarsi.devicewatch.data.ShellBatteryUsageSource
 import org.jarsi.devicewatch.data.RootShell
 import org.jarsi.devicewatch.data.SelectedPrivilegedShell
 import org.jarsi.devicewatch.data.ShizukuShell
@@ -93,6 +95,10 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindPrivilegedShell(impl: SelectedPrivilegedShell): PrivilegedShell
+
+    @Binds
+    @Singleton
+    abstract fun bindBatteryUsageSource(impl: ShellBatteryUsageSource): BatteryUsageSource
 
     @Binds
     @Singleton

@@ -2,6 +2,10 @@ package org.jarsi.devicewatch.presentation
 
 import org.jarsi.devicewatch.data.AppDataUsage
 import org.jarsi.devicewatch.data.BatteryStatusReader
+import org.jarsi.devicewatch.data.BatteryUsage
+import org.jarsi.devicewatch.data.BatteryUsageReport
+import org.jarsi.devicewatch.data.BatteryUsageSource
+import org.jarsi.devicewatch.data.UidPower
 import org.jarsi.devicewatch.data.ChargeAnchor
 import org.jarsi.devicewatch.data.ChargeAnchorLogic
 import org.jarsi.devicewatch.data.ChargeAnchorStore
@@ -95,7 +99,52 @@ class SinceChargeViewModelTest {
         stats: SystemStatsRepository = FakeStatsRepository(),
         notifications: FakeNotificationStats = FakeNotificationStats(enabled = true),
         log: NotificationLog = FakeLog(emptyList()),
-    ) = SinceChargeViewModel(store, battery, appUsage, stats, notifications, log, dispatcher)
+        batteryUsage: BatteryUsageSource = FakeBatteryUsage(null),
+    ) = SinceChargeViewModel(store, battery, appUsage, stats, notifications, log, batteryUsage, dispatcher)
+
+    private class FakeBatteryUsage(var report: BatteryUsageReport?) : BatteryUsageSource {
+        override fun sinceCharge(): BatteryUsageReport? = report
+    }
+
+    private fun usageReport() = BatteryUsageReport.from(
+        BatteryUsage(
+            capacityMah = 4000.0,
+            onBatteryMillis = 7_200_000L,
+            screenOffMillis = 3_600_000L,
+            dischargeMah = 500.0,
+            screenOnDischargeMah = 400.0,
+            screenOffDischargeMah = 100.0,
+            apps = listOf(UidPower(10001, 30.0), UidPower(1000, 10.0)),
+            kernelWakeLocks = emptyList(),
+            partialWakeLocks = emptyList(),
+            wakeupReasons = emptyList(),
+        ),
+        label = { "uid-$it" },
+    )
+
+    @Test
+    fun `the system's battery statistics are shown with or without an anchor`() = runTest {
+        val source = FakeBatteryUsage(usageReport())
+        val withAnchor = buildViewModel(batteryUsage = source)
+        val withoutAnchor = buildViewModel(store = FakeAnchorStore(ChargeAnchorLogic.State()), batteryUsage = source)
+
+        withAnchor.load()
+        withoutAnchor.load()
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertThat(withAnchor.uiState.value.batteryUsage).isEqualTo(source.report)
+        assertThat(withoutAnchor.uiState.value.batteryUsage).isEqualTo(source.report)
+    }
+
+    @Test
+    fun `without privileged access there are no battery statistics`() = runTest {
+        val viewModel = buildViewModel()
+
+        viewModel.load()
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertThat(viewModel.uiState.value.batteryUsage).isNull()
+    }
 
     /** Suspends every screen-time query on [gate] and counts the entries. */
     private class GatedAppUsageRepository(

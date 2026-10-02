@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import org.jarsi.devicewatch.data.AppScreenTime
 import org.jarsi.devicewatch.data.AppUsageRepository
 import org.jarsi.devicewatch.data.BatteryStatusReader
+import org.jarsi.devicewatch.data.BatteryUsageReport
+import org.jarsi.devicewatch.data.BatteryUsageSource
 import org.jarsi.devicewatch.data.ChargeAnchor
 import org.jarsi.devicewatch.data.ChargeAnchorStore
 import org.jarsi.devicewatch.data.DonutSegment
@@ -43,6 +45,8 @@ data class SinceChargeUiState(
     val screenTimes: List<AppScreenTime> = emptyList(),
     val screenTimeSegments: List<DonutSegment> = emptyList(),
     val totalScreenTimeMillis: Long = 0L,
+    /** Android's own battery statistics; null without privileged access (Shizuku or root). */
+    val batteryUsage: BatteryUsageReport? = null,
 )
 
 /**
@@ -58,6 +62,7 @@ class SinceChargeViewModel @Inject constructor(
     private val statsRepository: SystemStatsRepository,
     private val notificationStats: NotificationStats,
     private val notificationLog: NotificationLog,
+    private val batteryUsageSource: BatteryUsageSource,
     @DefaultDispatcher private val dispatcher: CoroutineDispatcher,
 ) : ViewModel() {
 
@@ -104,6 +109,9 @@ class SinceChargeViewModel @Inject constructor(
                     val anchor = chargeAnchorStore.load().anchor
                     val currentLevel = batteryStatus.currentLevel()
                     val isCharging = batteryStatus.isCharging()
+                    // The system's own statistics keep their own period, so they
+                    // are shown with or without an anchor of ours.
+                    val batteryUsage = batteryUsageSource.sinceCharge()
                     if (anchor == null) {
                         return@withContext SinceChargeUiState(
                             isLoading = false,
@@ -111,6 +119,7 @@ class SinceChargeViewModel @Inject constructor(
                             currentLevel = currentLevel,
                             isCharging = isCharging,
                             hasUsageAccess = appUsageRepository.hasUsageAccess(),
+                            batteryUsage = batteryUsage,
                         )
                     }
 
@@ -139,6 +148,7 @@ class SinceChargeViewModel @Inject constructor(
                         screenTimes = screenTimes,
                         screenTimeSegments = UsageEventAggregator.donutSegments(screenTimes),
                         totalScreenTimeMillis = screenTimes.sumOf { it.foregroundMillis },
+                        batteryUsage = batteryUsage,
                     )
                 }
                 // Preserve the pull flag across the whole-state write; the finally block

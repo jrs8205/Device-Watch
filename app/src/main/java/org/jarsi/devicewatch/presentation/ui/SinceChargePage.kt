@@ -62,8 +62,9 @@ private const val SINCE_CHARGE_REFRESH_MS = 15_000L
  * Full-screen "since charge" page reached from the Overview battery card:
  * a summary of the period since the battery was last charged full (or the
  * charger unplugged) plus per-app screen time over that window. Real per-app
- * battery attribution needs a privileged permission, so this page shows honest
- * usage numbers instead of invented percentages.
+ * battery attribution needs a privileged permission, so without Shizuku or root
+ * this page shows honest usage numbers instead of invented percentages; with
+ * either, Android's own battery statistics follow below ([BatteryDrainCard]).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -149,6 +150,19 @@ fun SinceChargePage(
                                 modifier = Modifier.padding(horizontal = BAND_INSET)
                             )
                         }
+                    }
+                }
+
+                // Android's own statistics, there only with Shizuku or root; they
+                // keep their own period, so they do not depend on the anchor above.
+                uiState.batteryUsage?.let { report ->
+                    item(key = "battery_drain") { BatteryDrainCard(report) }
+                    if (report.apps.isNotEmpty()) {
+                        item(key = "battery_apps") { BatteryAppsCard(report) }
+                    }
+                    val wakeEntries = report.appWakeLocks.size + report.kernelWakeLocks.size + report.wakeupReasons.size
+                    if (wakeEntries > 0) {
+                        item(key = "battery_wake") { BatteryWakeCard(report) }
                     }
                 }
             }
