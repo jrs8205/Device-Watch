@@ -91,7 +91,11 @@ internal object PrivilegedReadings {
 
     /** A date a kernel node gives as seconds since 1970, as Pixels do for the battery's dates. */
     fun epochSecondsDate(raw: String?): LocalDate? {
-        val seconds = raw?.trim()?.toLongOrNull()?.takeIf { it > 0L } ?: return null
-        return LocalDate.ofEpochDay(seconds / 86_400L).takeIf { it.year >= 2000 }
+        // Bounded to this century: a node holding garbage must not overflow the date.
+        val seconds = raw?.trim()?.toLongOrNull()?.takeIf { it in MIN_DATE_SECONDS..MAX_DATE_SECONDS } ?: return null
+        return LocalDate.ofEpochDay(seconds / 86_400L)
     }
+
+    private const val MIN_DATE_SECONDS = 946_684_800L // 2000-01-01
+    private const val MAX_DATE_SECONDS = 4_102_444_800L // 2100-01-01
 }

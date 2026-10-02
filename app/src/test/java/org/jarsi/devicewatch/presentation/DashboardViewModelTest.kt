@@ -537,6 +537,77 @@ class DashboardViewModelTest {
         }
 
     @Test
+    fun `given root mode on, when root turns out to be gone, then the switch goes off and says so`() =
+        runTest(dispatcher) {
+            // Given
+            val settings = FakeAppSettingsRepository(access = PrivilegedAccess.ROOT)
+            val rootShell = FakeRootShell()
+            val viewModel = buildViewModel(settings = settings, rootShell = rootShell)
+            advanceUntilIdle()
+            assertThat(viewModel.uiState.value.rootStatus).isEqualTo(RootStatus.ON)
+
+            // When: the monitor's reopen was refused for good (grant revoked).
+            rootShell.lost.value = true
+            advanceUntilIdle()
+
+            // Then
+            assertThat(viewModel.uiState.value.rootStatus).isEqualTo(RootStatus.DENIED)
+            assertThat(settings.access).isEqualTo(PrivilegedAccess.OFF)
+            assertThat(rootShell.closedCount).isEqualTo(1)
+        }
+
+    @Test
+    fun `given Shizuku selected, when root was lost earlier, then Shizuku is left alone`() =
+        runTest(dispatcher) {
+            // Given
+            val settings = FakeAppSettingsRepository(access = PrivilegedAccess.SHIZUKU)
+            val rootShell = FakeRootShell().apply { lost.value = true }
+
+            // When
+            val viewModel = buildViewModel(settings = settings, rootShell = rootShell)
+            advanceUntilIdle()
+
+            // Then
+            assertThat(settings.access).isEqualTo(PrivilegedAccess.SHIZUKU)
+            assertThat(viewModel.uiState.value.shizukuStatus).isEqualTo(ShizukuStatus.ON)
+            assertThat(viewModel.uiState.value.rootStatus).isEqualTo(RootStatus.OFF)
+        }
+
+    @Test
+    fun `given Shizuku on, when its binder arrives a moment after start, then the switch never says it is down`() =
+        runTest(dispatcher) {
+            // Given: the process has just started and the binder is not there yet.
+            val settings = FakeAppSettingsRepository(access = PrivilegedAccess.SHIZUKU)
+            val shizukuShell = FakeShizukuShell(alive = false)
+            val viewModel = buildViewModel(settings = settings, shizukuShell = shizukuShell)
+
+            // When
+            dispatcher.scheduler.advanceTimeBy(500L)
+            dispatcher.scheduler.runCurrent()
+            assertThat(viewModel.uiState.value.shizukuStatus).isEqualTo(ShizukuStatus.ON)
+            shizukuShell.alive.value = true
+            advanceUntilIdle()
+
+            // Then
+            assertThat(viewModel.uiState.value.shizukuStatus).isEqualTo(ShizukuStatus.ON)
+        }
+
+    @Test
+    fun `given Shizuku on, when it is still down after the start, then the switch says it is waiting`() =
+        runTest(dispatcher) {
+            // Given
+            val settings = FakeAppSettingsRepository(access = PrivilegedAccess.SHIZUKU)
+            val viewModel = buildViewModel(settings = settings, shizukuShell = FakeShizukuShell(alive = false))
+
+            // When
+            advanceUntilIdle()
+
+            // Then
+            assertThat(viewModel.uiState.value.shizukuStatus).isEqualTo(ShizukuStatus.WAITING)
+            assertThat(settings.access).isEqualTo(PrivilegedAccess.SHIZUKU)
+        }
+
+    @Test
     fun `given Shizuku granted, when Shizuku is switched on, then it is persisted`() =
         runTest(dispatcher) {
             // Given

@@ -112,14 +112,29 @@ class SystemStatsRepositoryImpl @Inject constructor(
     private var samsungBattery: SamsungBattery? = null
     private var samsungBatteryReadAtMillis = 0L
 
+    /** The privileged shell as this poll may use it; see [beginShellPass]. */
+    private var shellPass = ShellPass(privilegedShell, usable = false)
+
     private val statsMutex = Mutex()
     private val _latestStats = MutableStateFlow<SystemStats?>(null)
     override val latestStats = _latestStats.asStateFlow()
 
     override suspend fun getStats(): SystemStats = withContext(dispatcher) {
         statsMutex.withLock {
+            beginShellPass()
             computeStats().also { _latestStats.value = it }
         }
+    }
+
+    /**
+     * Gives the poll about to start its use of the privileged shell. Every battery
+     * broadcast polls too, the screen off included: nobody sees what the shell
+     * would read then, so it is left alone and the phone left to sleep.
+     */
+    private fun beginShellPass() {
+        syncPrivilegedAccess()
+        val screenOn = context.getSystemService(PowerManager::class.java)?.isInteractive != false
+        shellPass = ShellPass(privilegedShell, usable = accessSeen != PrivilegedAccess.OFF && screenOn)
     }
 
     override suspend fun getDeviceInfo(): DeviceInfo = withContext(dispatcher) {
@@ -571,6 +586,7 @@ class SystemStatsRepositoryImpl @Inject constructor(
 
     /** Under the stats mutex: it shares the file cache and Samsung's answer with the polls. */
     private suspend fun readBatteryWear(): BatteryWear = statsMutex.withLock {
+        beginShellPass()
         val batteryIntent = context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
         val samsung = readSamsungBattery()
         // A Pixel keeps the dates in the kernel, as seconds since 1970.
@@ -1811,7 +1827,7 @@ class SystemStatsRepositoryImpl @Inject constructor(
         if (direct != UNAVAILABLE_DOUBLE || accessSeen == PrivilegedAccess.OFF) return direct
         // One command for every zone: phones have dozens, and most zones an app
         // may list it may not read.
-        val zones = privilegedShell.run("cat /sys/class/thermal/thermal_zone*/temp")
+        val zones = shellPass.run("cat /sys/class/thermal/thermal_zone*/temp")
         return zones?.let { SystemStatsParser.hottestThermalZone(it.lineSequence()) }
             // A Pixel denies the zones to the shell as well; its thermal service answers.
             ?: ThermalServiceParser.hottest(halTemperatures, ThermalServiceParser.TYPE_CPU)
@@ -1822,7 +1838,7 @@ class SystemStatsRepositoryImpl @Inject constructor(
     private fun readHalTemperatures(): List<HalTemperature> {
         syncPrivilegedAccess()
         if (accessSeen == PrivilegedAccess.OFF) return emptyList()
-        return privilegedShell.run("dumpsys thermalservice")?.let(ThermalServiceParser::parse).orEmpty()
+        return shellPass.run("dumpsys thermalservice")?.let(ThermalServiceParser::parse).orEmpty()
     }
 
     private fun readGpuTemperature(halTemperatures: List<HalTemperature>): Double =
@@ -1854,7 +1870,7 @@ class SystemStatsRepositoryImpl @Inject constructor(
             return samsungBattery
         }
         // A shell that did not answer says nothing about the battery: ask again next time.
-        val dump = privilegedShell.run("dumpsys battery") ?: return samsungBattery
+        val dump = shellPass.run("dumpsys battery") ?: return samsungBattery
         samsungBattery = SamsungBatteryParser.parse(dump)
         samsungBatteryReadAtMillis = now
         return samsungBattery
@@ -2277,7 +2293,7 @@ class SystemStatsRepositoryImpl @Inject constructor(
         appDeniedFilePaths.add(path)
         // Null is the shell failing, which says nothing about the file: try again
         // next time. An empty answer is the file itself being missing or unreadable.
-        val viaShell = privilegedShell.run("cat ${ShellProtocol.quote(path)}") ?: return null
+        val viaShell = shellPass.run("cat ${ShellProtocol.quote(path)}") ?: return null
         if (viaShell.isEmpty()) {
             appDeniedFilePaths.remove(path)
             unavailableFilePaths.add(path)

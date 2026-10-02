@@ -180,7 +180,7 @@
     <string name="root_status_requesting">Odotetaan root-hallinnan lupaa…</string>
     <string name="root_status_on">Root-oikeudet käytössä.</string>
     <string name="root_status_denied">Root-oikeus evättiin. Salli Device Watch root-hallinnassa ja yritä uudelleen.</string>
-    <string name="root_status_no_su">Puhelinta ei ole rootattu: su-komentoa ei löytynyt.</string>
+    <string name="root_status_no_su">su-komentoa ei löytynyt. Puhelinta ei ole rootattu, tai sen root-hallinnassa (KernelSU, APatch) ei ole vielä sallittu Device Watchia.</string>
     <string name="classic_look_title">Alkuperäinen ulkoasu</string>
     <string name="classic_look_description">Versiota 1.6 edeltävät värit ja numerofontti: Android 12:sta alkaen värit tulevat taustakuvasta.</string>
     <string name="alert_channel_name">Laitehälytykset</string>

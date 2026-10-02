@@ -22,13 +22,31 @@ class ShellUserService : IShellService.Stub() {
     }
 
     override fun openShell(): Array<ParcelFileDescriptor> {
-        val process = ProcessBuilder("sh").redirectErrorStream(true).start()
+        // The pipes first: should one fail, there is no shell yet to leave behind.
         val toShell = ParcelFileDescriptor.createPipe()
-        val fromShell = ParcelFileDescriptor.createPipe()
+        val fromShell = try {
+            ParcelFileDescriptor.createPipe()
+        } catch (e: IOException) {
+            toShell.forEach(::closeQuietly)
+            throw e
+        }
+        val process = try {
+            ProcessBuilder("sh").redirectErrorStream(true).start()
+        } catch (e: IOException) {
+            (toShell + fromShell).forEach(::closeQuietly)
+            throw e
+        }
         // The app closing its end is the end of the shell.
         pump(ParcelFileDescriptor.AutoCloseInputStream(toShell[0]), process.outputStream, process::destroy)
         pump(process.inputStream, ParcelFileDescriptor.AutoCloseOutputStream(fromShell[1]))
         return arrayOf(toShell[1], fromShell[0])
+    }
+
+    private fun closeQuietly(descriptor: ParcelFileDescriptor) {
+        try {
+            descriptor.close()
+        } catch (_: IOException) {
+        }
     }
 
     private fun pump(from: InputStream, to: OutputStream, onEnd: () -> Unit = {}) {

@@ -137,6 +137,9 @@ class PrivilegedDumpParsersTest {
         assertThat(PrivilegedReadings.epochSecondsDate("1709164800")).isEqualTo(LocalDate.of(2024, 2, 29))
         assertThat(PrivilegedReadings.epochSecondsDate("0")).isNull()
         assertThat(PrivilegedReadings.epochSecondsDate("n/a")).isNull()
+        // Garbage in the node must not throw: this many seconds is past any date.
+        assertThat(PrivilegedReadings.epochSecondsDate("9223372036854775807")).isNull()
+        assertThat(PrivilegedReadings.epochSecondsDate("86400")).isNull()
     }
 
     @Test

@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.suspendCancellableCoroutine
 import org.jarsi.devicewatch.BuildConfig
 import rikka.shizuku.Shizuku
+import java.io.IOException
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
@@ -57,6 +58,14 @@ class ShizukuUserShell @Inject constructor() : ShizukuShell {
     @Volatile
     private var bound = CountDownLatch(1)
 
+    /** Moves on every [close], so a command that was already on its way can tell it is no longer wanted. */
+    @Volatile
+    private var generation = 0
+
+    /** Set after a shell that did not open or did not answer, so the next commands do not each wait it out again. */
+    @Volatile
+    private var retryAfterNanos = 0L
+
     private val serviceArgs = Shizuku.UserServiceArgs(
         ComponentName(BuildConfig.APPLICATION_ID, ShellUserService::class.java.name)
     )
@@ -78,7 +87,11 @@ class ShizukuUserShell @Inject constructor() : ShizukuShell {
 
     init {
         // Sticky: says so at once when the service was already up before this object.
-        Shizuku.addBinderReceivedListenerSticky { _alive.value = true }
+        Shizuku.addBinderReceivedListenerSticky {
+            _alive.value = true
+            // A Shizuku just started is a new chance at once.
+            retryAfterNanos = 0L
+        }
         Shizuku.addBinderDeadListener {
             _alive.value = false
             forgetService()
@@ -86,13 +99,20 @@ class ShizukuUserShell @Inject constructor() : ShizukuShell {
     }
 
     override fun run(command: String, timeoutMillis: Long): String? {
+        val wanted = generation
         synchronized(lock) {
-            val current = session?.takeIf { it.isOpen } ?: open() ?: return null
+            // Switched off while this command waited its turn: it must not bring
+            // the shell back.
+            if (generation != wanted) return null
+            val current = session?.takeIf { it.isOpen } ?: open(wanted) ?: return null
             val output = current.exec(command, timeoutMillis)
-            // An unanswered command leaves the stream in an unknown state.
             if (output == null) {
+                // An unanswered command leaves the stream in an unknown state, so
+                // the shell goes; a command that keeps timing out must not start
+                // a new one on every poll.
                 current.close()
                 if (session === current) session = null
+                retryAfter()
             }
             return output
         }
@@ -132,16 +152,23 @@ class ShizukuUserShell @Inject constructor() : ShizukuShell {
 
     /** Not under [lock]: ending the shell is what releases a command in flight. */
     override fun close() {
-        session?.close()
-        session = null
-        if (service != null) {
-            try {
-                Shizuku.unbindUserService(serviceArgs, connection, true)
-            } catch (_: RuntimeException) {
-                // Shizuku is gone, and its service with it.
-            }
-        }
+        generation++
+        retryAfterNanos = 0L
+        unbind()
         forgetService()
+    }
+
+    /**
+     * Ends the service process as well. Asked for even when no connection has
+     * arrived yet: a bind still on its way would otherwise leave the process
+     * running after the switch went off.
+     */
+    private fun unbind() {
+        try {
+            if (Shizuku.pingBinder()) Shizuku.unbindUserService(serviceArgs, connection, true)
+        } catch (_: RuntimeException) {
+            // Shizuku is gone, and its service with it.
+        }
     }
 
     private fun forgetService() {
@@ -151,8 +178,16 @@ class ShizukuUserShell @Inject constructor() : ShizukuShell {
         bound = CountDownLatch(1)
     }
 
-    private fun open(): ShellSession? {
-        val remote = service ?: bind() ?: return null
+    private fun open(wanted: Int): ShellSession? {
+        val now = System.nanoTime()
+        if (retryAfterNanos != 0L && now - retryAfterNanos < 0) return null
+        val remote = service ?: bind()
+        if (remote == null) {
+            // Shizuku being down answers at once and needs no pause; a service that
+            // never connected cost the whole wait, and would again on every command.
+            if (_alive.value) retryAfter()
+            return null
+        }
         val pipes = try {
             remote.openShell()
         } catch (_: RemoteException) {
@@ -161,13 +196,44 @@ class ShizukuUserShell @Inject constructor() : ShizukuShell {
             null
         }
         if (pipes == null || pipes.size != 2) {
+            pipes?.forEach(::closeQuietly)
+            unbind()
+            forgetService()
+            retryAfter()
+            return null
+        }
+        val input = ParcelFileDescriptor.AutoCloseInputStream(pipes[1])
+        // Closing the input as well: a child of the shell can outlive it and keep
+        // the pipe open, and the reader thread would wait on it for ever.
+        val opened = ShellSession(input, ParcelFileDescriptor.AutoCloseOutputStream(pipes[0])) {
+            try {
+                input.close()
+            } catch (_: IOException) {
+                // Already gone.
+            }
+        }
+        if (generation != wanted) {
+            // Switched off while the shell was being opened: off wins.
+            opened.close()
+            unbind()
             forgetService()
             return null
         }
-        return ShellSession(
-            ParcelFileDescriptor.AutoCloseInputStream(pipes[1]),
-            ParcelFileDescriptor.AutoCloseOutputStream(pipes[0]),
-        ).also { session = it }
+        session = opened
+        return opened
+    }
+
+    private fun closeQuietly(descriptor: ParcelFileDescriptor?) {
+        try {
+            descriptor?.close()
+        } catch (_: IOException) {
+            // Already gone.
+        }
+    }
+
+    private fun retryAfter() {
+        retryAfterNanos = (System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(RETRY_DELAY_MILLIS))
+            .let { if (it == 0L) 1L else it }
     }
 
     /**
@@ -194,5 +260,6 @@ class ShizukuUserShell @Inject constructor() : ShizukuShell {
     private companion object {
         const val PERMISSION_REQUEST_CODE = 7301
         const val BIND_TIMEOUT_MILLIS = 5_000L
+        const val RETRY_DELAY_MILLIS = 60_000L
     }
 }

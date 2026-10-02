@@ -89,6 +89,16 @@ kernel values even Shizuku is denied on some phones. Your root manager asks for 
 The app keeps one root shell open instead of starting a new one for every reading, so the root
 manager is not flooded with requests.
 
+### Root mode says access was refused, and no prompt appears
+
+Magisk remembers a refusal: pressing Back on its prompt, letting it time out or tapping Deny
+stores a lasting Deny for the app, and later attempts are refused without a prompt. Open
+Magisk's Superuser list, allow Device Watch there, then switch Root mode on again. KernelSU and
+APatch never prompt at all: allow Device Watch in their manager first.
+
+If a grant is revoked later, Device Watch tries a few more times over about ten minutes, then
+switches Root mode off and says so, rather than keep asking.
+
 ### Why do some rows not appear on my phone?
 
 Each maker exposes different things. A Samsung, for example, hides the battery's kernel values

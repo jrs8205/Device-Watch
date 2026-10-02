@@ -143,7 +143,13 @@ class DashboardViewModel @Inject constructor(
             )
         }
         viewModelScope.launch {
+            // Shizuku's binder arrives a moment after the process starts: that
+            // moment is not Shizuku being down.
+            if (!shizukuShell.alive.value) delay(SHIZUKU_STARTUP_GRACE_MILLIS)
             shizukuShell.alive.collect(::onShizukuAlive)
+        }
+        viewModelScope.launch {
+            rootShell.lost.collect { lost -> if (lost) onRootLost() }
         }
         // The service already samples every five seconds, even without a widget.
         // Observe those readings instead of repeating the costly usage/storage scans.
@@ -236,6 +242,25 @@ class DashboardViewModel @Inject constructor(
             rootShell.close()
             _uiState.update { it.copy(shizukuStatus = ShizukuStatus.ON, rootStatus = RootStatus.OFF) }
         }
+    }
+
+    /**
+     * Root that was granted is gone: revoked, run out, or the root manager removed.
+     * The switch goes off and says so, instead of claiming root while every
+     * reading has quietly fallen back.
+     */
+    private fun onRootLost() {
+        if (_uiState.value.rootStatus != RootStatus.ON) return
+        if (settings.privilegedAccess() == PrivilegedAccess.ROOT) settings.setPrivilegedAccess(PrivilegedAccess.OFF)
+        rootShell.close()
+        _uiState.update { it.copy(rootStatus = RootStatus.DENIED) }
+    }
+
+    override fun onCleared() {
+        // A request the root manager is still asking about must not turn into a
+        // root shell nobody is there to use.
+        if (_uiState.value.rootStatus == RootStatus.REQUESTING) rootShell.close()
+        super.onCleared()
     }
 
     /**
@@ -520,5 +545,8 @@ class DashboardViewModel @Inject constructor(
     private companion object {
         /** Android keeps detailed usage events for roughly a week. */
         private const val HISTORY_BACKFILL_DAYS = 7
+
+        /** How long Shizuku's binder may take to arrive after the process started. */
+        private const val SHIZUKU_STARTUP_GRACE_MILLIS = 2_000L
     }
 }

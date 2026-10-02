@@ -70,6 +70,7 @@ class SinceChargeViewModel @Inject constructor(
     val uiState: StateFlow<SinceChargeUiState> = _uiState.asStateFlow()
 
     private var loadJob: Job? = null
+    private var batteryUsageJob: Job? = null
     private var pullStartMillis = 0L
     private var pendingPullReload = false
 
@@ -84,6 +85,20 @@ class SinceChargeViewModel @Inject constructor(
         pullStartMillis = System.currentTimeMillis()
         pendingPullReload = true
         load()
+    }
+
+    /**
+     * Android's own battery statistics, which keep their own period and so do not
+     * depend on our anchor. Loaded apart from the rest: the dump takes a second,
+     * a shell that has to be reopened far longer, and the page's own figures must
+     * not wait for it.
+     */
+    private fun loadBatteryUsage() {
+        if (batteryUsageJob?.isActive == true) return
+        batteryUsageJob = viewModelScope.launch {
+            val batteryUsage = withContext(dispatcher) { batteryUsageSource.sinceCharge() }
+            _uiState.update { it.copy(batteryUsage = batteryUsage) }
+        }
     }
 
     fun load() {
@@ -101,6 +116,7 @@ class SinceChargeViewModel @Inject constructor(
             return
         }
         pendingPullReload = false
+        loadBatteryUsage()
         loadJob = viewModelScope.launch {
             try {
                 // No isLoading toggling here: the initial state already loads, and
@@ -109,9 +125,6 @@ class SinceChargeViewModel @Inject constructor(
                     val anchor = chargeAnchorStore.load().anchor
                     val currentLevel = batteryStatus.currentLevel()
                     val isCharging = batteryStatus.isCharging()
-                    // The system's own statistics keep their own period, so they
-                    // are shown with or without an anchor of ours.
-                    val batteryUsage = batteryUsageSource.sinceCharge()
                     if (anchor == null) {
                         return@withContext SinceChargeUiState(
                             isLoading = false,
@@ -119,7 +132,6 @@ class SinceChargeViewModel @Inject constructor(
                             currentLevel = currentLevel,
                             isCharging = isCharging,
                             hasUsageAccess = appUsageRepository.hasUsageAccess(),
-                            batteryUsage = batteryUsage,
                         )
                     }
 
@@ -148,12 +160,14 @@ class SinceChargeViewModel @Inject constructor(
                         screenTimes = screenTimes,
                         screenTimeSegments = UsageEventAggregator.donutSegments(screenTimes),
                         totalScreenTimeMillis = screenTimes.sumOf { it.foregroundMillis },
-                        batteryUsage = batteryUsage,
                     )
                 }
                 // Preserve the pull flag across the whole-state write; the finally block
-                // clears it after the indicator's minimum display time.
-                _uiState.update { current -> state.copy(isRefreshing = current.isRefreshing) }
+                // clears it after the indicator's minimum display time. The battery
+                // statistics are loaded on their own (below) and kept as they are.
+                _uiState.update { current ->
+                    state.copy(isRefreshing = current.isRefreshing, batteryUsage = current.batteryUsage)
+                }
             } finally {
                 // A pull queued behind this load keeps the indicator up — the
                 // chained follow-up load clears it when the pull actually ran.

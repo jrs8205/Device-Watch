@@ -17,29 +17,30 @@ class ShellBatteryUsageSource @Inject constructor(
 ) : BatteryUsageSource {
 
     private var cached: BatteryUsageReport? = null
-    private var cachedAtMillis = 0L
+    private var attemptedAtMillis = 0L
+    private var accessSeen = PrivilegedAccess.OFF
 
     @Synchronized
     override fun sinceCharge(): BatteryUsageReport? {
-        if (settings.privilegedAccess() == PrivilegedAccess.OFF) {
+        val access = settings.privilegedAccess()
+        if (access != accessSeen) {
+            // Switched: what the other shell did or could not do no longer counts.
+            accessSeen = access
             cached = null
-            return null
+            attemptedAtMillis = 0L
         }
+        if (access == PrivilegedAccess.OFF) return null
         val now = SystemClock.elapsedRealtime()
         // The dump holds the statistics lock in the system for most of a second:
-        // an open page polling every 15 s is answered from the last one.
-        cached?.let { if (now - cachedAtMillis < MAX_AGE_MILLIS) return it }
+        // an open page polling every 15 s is answered from the last one. A failed
+        // attempt is remembered as long, so a shell that cannot deliver is not
+        // asked for the whole dump again at every refresh.
+        if (attemptedAtMillis != 0L && now - attemptedAtMillis < MAX_AGE_MILLIS) return cached
+        attemptedAtMillis = now
         // --charged: since the last charge only, without the megabytes of history.
         val dump = shell.run("dumpsys batterystats --charged", DUMP_TIMEOUT_MILLIS)
-        val usage = dump?.let(BatteryStatsDumpParser::parse)
-        if (usage == null) {
-            cached = null
-            return null
-        }
-        return BatteryUsageReport.from(usage, ::label).also {
-            cached = it
-            cachedAtMillis = now
-        }
+        cached = dump?.let(BatteryStatsDumpParser::parse)?.let { BatteryUsageReport.from(it, ::label) }
+        return cached
     }
 
     private fun label(uid: Int): String {

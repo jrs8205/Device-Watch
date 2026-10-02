@@ -58,6 +58,25 @@ class SelectedPrivilegedShell @Inject constructor(
     }
 }
 
+/**
+ * One poll's use of the privileged shell. A shell that fails to answer once is
+ * not asked again for the rest of the poll: every further command would wait
+ * out its own timeout, and a poll that reads twenty things would hold up
+ * everything queued behind it for a minute.
+ */
+internal class ShellPass(private val shell: PrivilegedShell, usable: Boolean) {
+
+    var usable = usable
+        private set
+
+    fun run(command: String, timeoutMillis: Long = PrivilegedShell.DEFAULT_TIMEOUT_MILLIS): String? {
+        if (!usable) return null
+        val output = shell.run(command, timeoutMillis)
+        if (output == null) usable = false
+        return output
+    }
+}
+
 /** The pure half of the shell conversation: how a command is framed and its end found. */
 internal object ShellProtocol {
 

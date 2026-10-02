@@ -42,6 +42,8 @@ internal class FakeAlertNotifications : AlertNotifications {
 internal class FakeRootShell(var access: RootAccess = RootAccess.GRANTED) : RootShell {
     var closedCount = 0
 
+    override val lost = MutableStateFlow(false)
+
     override fun run(command: String, timeoutMillis: Long): String? = null
 
     override suspend fun requestAccess(): RootAccess = access

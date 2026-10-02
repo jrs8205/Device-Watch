@@ -184,7 +184,7 @@
     <string name="root_status_requesting">Waiting for your root manager\'s permission…</string>
     <string name="root_status_on">Root access in use.</string>
     <string name="root_status_denied">Root access was refused. Allow Device Watch in your root manager and try again.</string>
-    <string name="root_status_no_su">This phone is not rooted: no su command was found.</string>
+    <string name="root_status_no_su">No su command was found. The phone is not rooted, or its root manager (KernelSU, APatch) has not yet been told to allow Device Watch.</string>
     <string name="classic_look_title">Original look</string>
     <string name="classic_look_description">The colours and number font from before version 1.6: on Android 12 and newer the colours follow your wallpaper.</string>
     <string name="alert_channel_name">Device alerts</string>
