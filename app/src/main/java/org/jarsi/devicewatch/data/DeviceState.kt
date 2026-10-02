@@ -53,6 +53,12 @@ data class DeviceState(
     val cellBand: String = UNAVAILABLE_TEXT,
     /** What a full battery holds now, estimated from the charge counter and the level. */
     val batteryFullCapacity: String = UNAVAILABLE_TEXT,
+    /** The battery's capacity as a share of its design capacity, by the phone's own gauge. */
+    val batteryHealth: String = UNAVAILABLE_TEXT,
+    val batteryCycles: String = UNAVAILABLE_TEXT,
+    /** When the battery was first used and when the factory dated it; most phones tell only a privileged shell. */
+    val batteryFirstUse: String = UNAVAILABLE_TEXT,
+    val batteryManufactured: String = UNAVAILABLE_TEXT,
     // Attached storage and USB
     /** SD cards and USB storage, each as its name and a free/total or state text. */
     val removableVolumes: List<Pair<String, String>> = emptyList(),

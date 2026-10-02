@@ -102,6 +102,12 @@ data class SystemStats(
     val thermalLevel: ThermalLevel = ThermalLevel.UNKNOWN,
     /** Share of the severe-throttling threshold reached (Android 11+); [UNAVAILABLE_INT] when unknown. */
     val thermalHeadroomPercent: Int = UNAVAILABLE_INT,
+    /** The graphics processor's load; on most phones only a privileged shell can read it. */
+    val gpuLoadPercent: Int = UNAVAILABLE_INT,
+    /** Graphics processor temperature in °C, through a privileged shell. */
+    val gpuTemp: Double = UNAVAILABLE_DOUBLE,
+    /** The phone's surface ("skin") temperature in °C as its thermal service reckons it, through a privileged shell. */
+    val skinTemp: Double = UNAVAILABLE_DOUBLE,
 )
 
 /** The span a data figure covers; UNKNOWN when there is no figure to cover one. */

@@ -77,6 +77,8 @@ import java.io.File
 import java.net.Inet4Address
 import java.time.LocalDate
 import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 import java.util.Locale
 import java.util.TimeZone
 import javax.inject.Inject
@@ -107,6 +109,8 @@ class SystemStatsRepositoryImpl @Inject constructor(
     private val appDeniedFilePaths = mutableSetOf<String>()
     private var skipThermalRead = false
     private var accessSeen = PrivilegedAccess.OFF
+    private var samsungBattery: SamsungBattery? = null
+    private var samsungBatteryReadAtMillis = 0L
 
     private val statsMutex = Mutex()
     private val _latestStats = MutableStateFlow<SystemStats?>(null)
@@ -203,6 +207,7 @@ class SystemStatsRepositoryImpl @Inject constructor(
         val cellDetails = readCellDetails()
         val wifiConnection = readWifiConnection()
         val network = readActiveNetwork()
+        val batteryWear = readBatteryWear()
         DeviceState(
             powerSaveMode = powerManager?.let { boolText(it.isPowerSaveMode) } ?: UNAVAILABLE_TEXT,
             deviceIdle = powerManager?.let { boolText(it.isDeviceIdleMode) } ?: UNAVAILABLE_TEXT,
@@ -230,6 +235,10 @@ class SystemStatsRepositoryImpl @Inject constructor(
             developerOptions = developerFlag(Settings.Global.DEVELOPMENT_SETTINGS_ENABLED),
             usbDebugging = developerFlag(Settings.Global.ADB_ENABLED),
             batteryFullCapacity = readFullCapacityEstimate(),
+            batteryHealth = batteryWear.health,
+            batteryCycles = batteryWear.cycles,
+            batteryFirstUse = batteryWear.firstUse,
+            batteryManufactured = batteryWear.manufactured,
             automaticTime = globalFlag(Settings.Global.AUTO_TIME, default = true),
             automaticTimeZone = globalFlag(Settings.Global.AUTO_TIME_ZONE, default = true),
             screenLock = context.getSystemService(KeyguardManager::class.java)
@@ -552,6 +561,52 @@ class SystemStatsRepositoryImpl @Inject constructor(
         } else {
             context.getString(R.string.hidden_by_android)
         }
+
+    private data class BatteryWear(
+        val health: String,
+        val cycles: String,
+        val firstUse: String,
+        val manufactured: String,
+    )
+
+    /** Under the stats mutex: it shares the file cache and Samsung's answer with the polls. */
+    private suspend fun readBatteryWear(): BatteryWear = statsMutex.withLock {
+        val batteryIntent = context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+        val samsung = readSamsungBattery()
+        // A Pixel keeps the dates in the kernel, as seconds since 1970.
+        val firstUse = samsung?.firstUse ?: PrivilegedReadings.epochSecondsDate(
+            readFileTextOnce("/sys/class/power_supply/battery/first_usage_date")
+        )
+        val manufactured = samsung?.manufactured ?: PrivilegedReadings.epochSecondsDate(
+            readFileTextOnce("/sys/class/power_supply/battery/manufacturing_date")
+        )
+        val dateFormat = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
+            .withLocale(context.resources.configuration.locales[0])
+        BatteryWear(
+            health = readBatteryHealthPercent()?.let { "$it %" } ?: UNAVAILABLE_TEXT,
+            // Zero is what a phone says when it does not count them.
+            cycles = readBatteryCycleCount(batteryIntent)?.takeIf { it > 0 }?.toString() ?: UNAVAILABLE_TEXT,
+            firstUse = firstUse?.format(dateFormat) ?: UNAVAILABLE_TEXT,
+            manufactured = manufactured?.format(dateFormat) ?: UNAVAILABLE_TEXT,
+        )
+    }
+
+    private fun readBatteryCycleCount(batteryIntent: Intent?): Int? {
+        val reported = batteryIntent
+            ?.getIntExtra(BatteryManager.EXTRA_CYCLE_COUNT, UNAVAILABLE_INT)
+            ?.takeIf { it >= 0 }
+            ?: readIntFromFiles(
+                "/sys/class/power_supply/battery/cycle_count",
+                "/sys/class/power_supply/bms/cycle_count"
+            )
+        // A Samsung reports zero cycles there; its battery service keeps the real
+        // count, for a privileged shell to read.
+        return reported?.takeIf { it > 0 } ?: readSamsungBattery()?.cycles ?: reported
+    }
+
+    /** Full capacity as a share of the design capacity, by the kernel's gauge or Samsung's own figure. */
+    private fun readBatteryHealthPercent(): Int? =
+        readBatteryCapacityPercent().takeIf { it >= 0 } ?: readSamsungBattery()?.healthPercent
 
     private fun readFullCapacityEstimate(): String {
         val batteryManager = context.getSystemService(BatteryManager::class.java) ?: return UNAVAILABLE_TEXT
@@ -1353,15 +1408,8 @@ class SystemStatsRepositoryImpl @Inject constructor(
         }
 
         val batteryManager = context.getSystemService(Context.BATTERY_SERVICE) as? BatteryManager
-        val batteryCycleCount = batteryStatusIntent
-            ?.getIntExtra(BatteryManager.EXTRA_CYCLE_COUNT, UNAVAILABLE_INT)
-            ?.takeIf { it >= 0 }
-            ?: readIntFromFiles(
-                "/sys/class/power_supply/battery/cycle_count",
-                "/sys/class/power_supply/bms/cycle_count"
-            )
-            ?: UNAVAILABLE_INT
-        val batteryCapacityPercent = readBatteryCapacityPercent()
+        val batteryCycleCount = readBatteryCycleCount(batteryStatusIntent) ?: UNAVAILABLE_INT
+        val batteryCapacityPercent = readBatteryHealthPercent() ?: UNAVAILABLE_INT
 
         val timeRemainingText = buildBatteryTimeText(status, batteryManager)
         val (systemEstimateText, systemEstimatePersonalized) = readSystemEstimate(status)
@@ -1379,7 +1427,12 @@ class SystemStatsRepositoryImpl @Inject constructor(
         val cpuCores = Runtime.getRuntime().availableProcessors()
         val cpuAbi = Build.SUPPORTED_ABIS.firstOrNull() ?: UNAVAILABLE_TEXT
         val cpuFreqGhz = readCpuFreqGhz(cpuCores)
-        val cpuTemp = readCpuTemperature()
+        val halTemperatures = readHalTemperatures()
+        val cpuTemp = readCpuTemperature(halTemperatures)
+        val gpuTemp = readGpuTemperature(halTemperatures)
+        val skinTemp = ThermalServiceParser.hottest(halTemperatures, ThermalServiceParser.TYPE_SKIN)
+            ?: UNAVAILABLE_DOUBLE
+        val gpuLoadPercent = readGpuLoadPercent()
         val cpuLoad = readCpuLoad(cpuCores)
 
         val stat = StatFs(Environment.getDataDirectory().path)
@@ -1606,6 +1659,9 @@ class SystemStatsRepositoryImpl @Inject constructor(
             deepSleepText = deepSleepText,
             thermalLevel = thermalLevel,
             thermalHeadroomPercent = thermalHeadroomPercent,
+            gpuLoadPercent = gpuLoadPercent,
+            gpuTemp = gpuTemp,
+            skinTemp = skinTemp,
         )
     }
 
@@ -1749,14 +1805,59 @@ class SystemStatsRepositoryImpl @Inject constructor(
         return UNAVAILABLE_DOUBLE
     }
 
-    private fun readCpuTemperature(): Double {
+    private fun readCpuTemperature(halTemperatures: List<HalTemperature>): Double {
         syncPrivilegedAccess()
         val direct = readCpuTemperatureDirect()
         if (direct != UNAVAILABLE_DOUBLE || accessSeen == PrivilegedAccess.OFF) return direct
         // One command for every zone: phones have dozens, and most zones an app
         // may list it may not read.
-        val zones = privilegedShell.run("cat /sys/class/thermal/thermal_zone*/temp") ?: return UNAVAILABLE_DOUBLE
-        return SystemStatsParser.hottestThermalZone(zones.lineSequence()) ?: UNAVAILABLE_DOUBLE
+        val zones = privilegedShell.run("cat /sys/class/thermal/thermal_zone*/temp")
+        return zones?.let { SystemStatsParser.hottestThermalZone(it.lineSequence()) }
+            // A Pixel denies the zones to the shell as well; its thermal service answers.
+            ?: ThermalServiceParser.hottest(halTemperatures, ThermalServiceParser.TYPE_CPU)
+            ?: UNAVAILABLE_DOUBLE
+    }
+
+    /** What the thermal HAL reports, by sensor; empty without a privileged shell to ask it. */
+    private fun readHalTemperatures(): List<HalTemperature> {
+        syncPrivilegedAccess()
+        if (accessSeen == PrivilegedAccess.OFF) return emptyList()
+        return privilegedShell.run("dumpsys thermalservice")?.let(ThermalServiceParser::parse).orEmpty()
+    }
+
+    private fun readGpuTemperature(halTemperatures: List<HalTemperature>): Double =
+        ThermalServiceParser.hottest(halTemperatures, ThermalServiceParser.TYPE_GPU)
+            // Adreno's own sensor, in milli-degrees, where the HAL lists no GPU.
+            ?: readLongFromFiles("/sys/class/kgsl/kgsl-3d0/temp")
+                ?.let { SystemStatsParser.hottestThermalZone(sequenceOf(it.toString())) }
+            ?: UNAVAILABLE_DOUBLE
+
+    /** The graphics processor's load, from whichever driver's node the phone has. */
+    private fun readGpuLoadPercent(): Int {
+        for (path in GPU_LOAD_PATHS) {
+            PrivilegedReadings.gpuLoadPercent(readFileTextOnce(path))?.let { return it }
+        }
+        return UNAVAILABLE_INT
+    }
+
+    /**
+     * Samsung's own battery figures, which only a privileged shell can ask its
+     * battery service for. They move over weeks, so one answer serves for a while.
+     */
+    private fun readSamsungBattery(): SamsungBattery? {
+        syncPrivilegedAccess()
+        if (accessSeen == PrivilegedAccess.OFF || !Build.MANUFACTURER.equals("samsung", ignoreCase = true)) {
+            return null
+        }
+        val now = SystemClock.elapsedRealtime()
+        if (samsungBatteryReadAtMillis != 0L && now - samsungBatteryReadAtMillis < SAMSUNG_BATTERY_MAX_AGE_MILLIS) {
+            return samsungBattery
+        }
+        // A shell that did not answer says nothing about the battery: ask again next time.
+        val dump = privilegedShell.run("dumpsys battery") ?: return samsungBattery
+        samsungBattery = SamsungBatteryParser.parse(dump)
+        samsungBatteryReadAtMillis = now
+        return samsungBattery
     }
 
     private fun readCpuTemperatureDirect(): Double {
@@ -2208,11 +2309,21 @@ class SystemStatsRepositoryImpl @Inject constructor(
         unavailableFilePaths.clear()
         appDeniedFilePaths.clear()
         skipThermalRead = false
+        samsungBattery = null
+        samsungBatteryReadAtMillis = 0L
     }
 
     private companion object {
         private const val GB_BYTES = 1024.0 * 1024.0 * 1024.0
         private const val KB_PER_GB = 1024.0 * 1024.0
         private val WIDEVINE_UUID = java.util.UUID.fromString("edef8ba9-79d6-4ace-a3c8-27dcd51d21ed")
+        private const val SAMSUNG_BATTERY_MAX_AGE_MILLIS = 10 * 60_000L
+
+        /** Adreno (Qualcomm), Exynos, and Mali (Tensor, MediaTek), in that order. */
+        private val GPU_LOAD_PATHS = listOf(
+            "/sys/class/kgsl/kgsl-3d0/gpu_busy_percentage",
+            "/sys/kernel/gpu/gpu_busy",
+            "/sys/class/misc/mali0/device/utilization",
+        )
     }
 }

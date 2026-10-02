@@ -191,7 +191,23 @@ internal object WakeGlossary {
         val lower = name.lowercase()
         return rules.firstOrNull { (_, needles) -> needles.any(lower::contains) }?.first
     }
+
+    /**
+     * What an app was doing under a wake lock, from the tag Android itself gives
+     * the lock it takes on the app's behalf. An app's own tags are free text and
+     * say nothing reliable, hence null.
+     */
+    fun appWorkOf(tag: String): AppWork? = when {
+        tag.startsWith("*job*") -> AppWork.JOB
+        tag.startsWith("*alarm*") || tag.startsWith("*walarm*") -> AppWork.ALARM
+        tag.startsWith("*sync*") -> AppWork.SYNC
+        tag.startsWith("Audio") -> AppWork.AUDIO
+        else -> null
+    }
 }
+
+/** The kinds of background work Android labels a wake lock with. */
+enum class AppWork { JOB, ALARM, SYNC, AUDIO }
 
 /**
  * Android's built-in system users that own no package and so have no app name:

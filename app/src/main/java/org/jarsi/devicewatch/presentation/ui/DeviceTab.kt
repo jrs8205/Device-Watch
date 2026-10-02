@@ -61,6 +61,20 @@ internal fun DeviceTab(uiState: DashboardUiState) {
                 DeviceFact(R.string.device_info_battery_capacity, info.batteryCapacityMah)
                 uiState.deviceState?.let { state ->
                     DeviceFact(R.string.battery_full_capacity, state.batteryFullCapacity)
+                    // What the battery's own gauge knows of its wear. Most phones tell
+                    // only Shizuku or root, so the rows appear when there is something to say.
+                    if (state.batteryHealth != UNAVAILABLE_TEXT) {
+                        DeviceFact(R.string.battery_health_label, state.batteryHealth)
+                    }
+                    if (state.batteryCycles != UNAVAILABLE_TEXT) {
+                        DeviceFact(R.string.battery_cycles_label, state.batteryCycles)
+                    }
+                    if (state.batteryFirstUse != UNAVAILABLE_TEXT) {
+                        DeviceFact(R.string.battery_first_use_label, state.batteryFirstUse)
+                    }
+                    if (state.batteryManufactured != UNAVAILABLE_TEXT) {
+                        DeviceFact(R.string.battery_manufactured_label, state.batteryManufactured)
+                    }
                 }
             }
 

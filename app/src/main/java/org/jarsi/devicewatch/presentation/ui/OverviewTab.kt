@@ -514,6 +514,30 @@ internal fun OverviewTab(
                 trackColor = MaterialTheme.colorScheme.outlineVariant
             )
 
+            // The graphics processor and the temperatures by part: on most phones
+            // these exist only with Shizuku or root, so the rows appear with them.
+            if (currentStats.gpuLoadPercent >= 0) {
+                Spacer(modifier = Modifier.height(12.dp))
+                StackedMetricRow(
+                    label = stringResource(R.string.gpu_load_row),
+                    value = "${currentStats.gpuLoadPercent} %",
+                    valueSize = SECONDARY_VALUE_SP,
+                )
+            }
+            val temperatures = listOfNotNull(
+                currentStats.cpuTemp.takeIf { it > 0.0 }?.let { stringResource(R.string.temperature_cpu, celsiusText(it)) },
+                currentStats.gpuTemp.takeIf { it > 0.0 }?.let { stringResource(R.string.temperature_gpu, celsiusText(it)) },
+                currentStats.skinTemp.takeIf { it > 0.0 }?.let { stringResource(R.string.temperature_skin, celsiusText(it)) },
+            )
+            if (temperatures.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(12.dp))
+                StackedMetricRow(
+                    label = stringResource(R.string.temperatures_row),
+                    value = temperatures.joinToString(" · "),
+                    valueSize = SECONDARY_VALUE_SP,
+                )
+            }
+
             // How close the phone is to throttling itself for heat: the level the
             // system reports and, where available, the share of the threshold.
             thermalLevelRes(currentStats.thermalLevel)?.let { levelRes ->

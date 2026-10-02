@@ -23,11 +23,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.jarsi.devicewatch.R
+import org.jarsi.devicewatch.data.AppWork
 import org.jarsi.devicewatch.data.BatteryUsage
 import org.jarsi.devicewatch.data.BatteryUsageReport
 import org.jarsi.devicewatch.data.IdleDrain
 import org.jarsi.devicewatch.data.WakeCategory
 import org.jarsi.devicewatch.data.WakeEntry
+import org.jarsi.devicewatch.data.WakeGlossary
 import java.util.Locale
 
 /**
@@ -205,6 +207,20 @@ private fun WakeList(@StringRes titleRes: Int, entries: List<WakeEntry>) {
                     fontWeight = FontWeight.Bold
                 )
             }
+            // In plain words what this was: the part of the phone, or the kind of
+            // background work the app's longest lock was for.
+            val explanationRes = when {
+                entry.category != null -> wakeCategoryExplanationRes(entry.category)
+                entry.owner != null -> WakeGlossary.appWorkOf(entry.names.first())?.let(::appWorkRes)
+                else -> R.string.wake_unknown_explanation
+            }
+            if (explanationRes != null) {
+                Text(
+                    text = stringResource(explanationRes),
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
             // The technical names, for whoever wants to look one up.
             val technical = if (plainName != null) entry.names.take(TECHNICAL_NAMES_SHOWN).joinToString(", ") else null
             val times = if (entry.count > 0) {
@@ -216,6 +232,31 @@ private fun WakeList(@StringRes titleRes: Int, entries: List<WakeEntry>) {
             if (detail.isNotEmpty()) DetailText(detail)
         }
     }
+}
+
+@StringRes
+private fun wakeCategoryExplanationRes(category: WakeCategory): Int = when (category) {
+    WakeCategory.SLEEP_INTERRUPTED -> R.string.wake_sleep_interrupted_explanation
+    WakeCategory.APPS -> R.string.wake_apps_explanation
+    WakeCategory.SCREEN -> R.string.wake_screen_explanation
+    WakeCategory.SENSORS -> R.string.wake_sensors_explanation
+    WakeCategory.WIFI -> R.string.wake_wifi_explanation
+    WakeCategory.BLUETOOTH -> R.string.wake_bluetooth_explanation
+    WakeCategory.MODEM -> R.string.wake_modem_explanation
+    WakeCategory.ALARM -> R.string.wake_alarm_explanation
+    WakeCategory.CHARGING -> R.string.wake_charging_explanation
+    WakeCategory.NFC -> R.string.wake_nfc_explanation
+    WakeCategory.INPUT -> R.string.wake_input_explanation
+    WakeCategory.AUDIO -> R.string.wake_audio_explanation
+    WakeCategory.LOCATION -> R.string.wake_location_explanation
+}
+
+@StringRes
+private fun appWorkRes(work: AppWork): Int = when (work) {
+    AppWork.JOB -> R.string.wake_app_job
+    AppWork.ALARM -> R.string.wake_app_alarm
+    AppWork.SYNC -> R.string.wake_app_sync
+    AppWork.AUDIO -> R.string.wake_app_audio
 }
 
 @StringRes
@@ -268,6 +309,9 @@ internal fun mahText(mah: Double, locale: Locale): String = when {
 
 internal fun percentText(percent: Double, locale: Locale, decimals: Int = 1): String =
     String.format(locale, "%.${decimals}f %%", percent)
+
+/** Whole degrees: a part's temperature moves faster than a decimal can be read. */
+internal fun celsiusText(celsius: Double): String = "${Math.round(celsius)} °C"
 
 /** "13 h" from ten hours up, "7.5 h" below. */
 internal fun hoursText(hours: Double, locale: Locale): String =

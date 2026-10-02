@@ -248,6 +248,19 @@ class BatteryStatsDumpParserTest {
     }
 
     @Test
+    fun `Android's own wake lock tags say what the app was doing`() {
+        assertThat(
+            WakeGlossary.appWorkOf("*job*r/@eM_ADDR/androidx.work.impl.background.systemjob.SystemJobService")
+        ).isEqualTo(AppWork.JOB)
+        assertThat(WakeGlossary.appWorkOf("*alarm*")).isEqualTo(AppWork.ALARM)
+        assertThat(WakeGlossary.appWorkOf("*walarm*:com.example.ACTION")).isEqualTo(AppWork.ALARM)
+        assertThat(WakeGlossary.appWorkOf("*sync*/com.example.provider/com.example/Account")).isEqualTo(AppWork.SYNC)
+        assertThat(WakeGlossary.appWorkOf("AudioMix")).isEqualTo(AppWork.AUDIO)
+        // An app's own tag is free text.
+        assertThat(WakeGlossary.appWorkOf("VK_WakeLock")).isNull()
+    }
+
+    @Test
     fun `an app's wake locks are added up under its name`() {
         val held = usage.copy(
             partialWakeLocks = listOf(
