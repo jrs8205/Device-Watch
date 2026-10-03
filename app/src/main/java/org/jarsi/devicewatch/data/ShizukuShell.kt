@@ -8,7 +8,6 @@ import android.os.ParcelFileDescriptor
 import android.os.RemoteException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.suspendCancellableCoroutine
 import org.jarsi.devicewatch.BuildConfig
 import rikka.shizuku.Shizuku
 import java.io.IOException
@@ -16,7 +15,6 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlin.coroutines.resume
 
 /** How a request for Shizuku's permission ended. */
 enum class ShizukuAccess { GRANTED, DENIED, NOT_RUNNING }
@@ -41,7 +39,12 @@ interface ShizukuShell : PrivilegedShell {
  * [ShellSession] over the pipes it hands back.
  */
 @Singleton
-class ShizukuUserShell @Inject constructor() : ShizukuShell {
+class ShizukuUserShell internal constructor(
+    private val permissions: ShizukuPermissionApi,
+) : ShizukuShell {
+
+    @Inject
+    constructor() : this(StaticShizukuPermissionApi)
 
     private val _alive = MutableStateFlow(false)
     override val alive: StateFlow<Boolean> = _alive
@@ -118,37 +121,7 @@ class ShizukuUserShell @Inject constructor() : ShizukuShell {
         }
     }
 
-    override suspend fun requestAccess(): ShizukuAccess {
-        try {
-            if (!Shizuku.pingBinder() || Shizuku.isPreV11()) return ShizukuAccess.NOT_RUNNING
-            if (Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED) return ShizukuAccess.GRANTED
-            // Refused with "don't ask again": Shizuku would not show its dialog.
-            if (Shizuku.shouldShowRequestPermissionRationale()) return ShizukuAccess.DENIED
-        } catch (_: RuntimeException) {
-            // The service went away between the ping and the call.
-            return ShizukuAccess.NOT_RUNNING
-        }
-        return suspendCancellableCoroutine { continuation ->
-            val listener = object : Shizuku.OnRequestPermissionResultListener {
-                override fun onRequestPermissionResult(requestCode: Int, grantResult: Int) {
-                    if (requestCode != PERMISSION_REQUEST_CODE) return
-                    Shizuku.removeRequestPermissionResultListener(this)
-                    val granted = grantResult == PackageManager.PERMISSION_GRANTED
-                    if (continuation.isActive) {
-                        continuation.resume(if (granted) ShizukuAccess.GRANTED else ShizukuAccess.DENIED)
-                    }
-                }
-            }
-            Shizuku.addRequestPermissionResultListener(listener)
-            continuation.invokeOnCancellation { Shizuku.removeRequestPermissionResultListener(listener) }
-            try {
-                Shizuku.requestPermission(PERMISSION_REQUEST_CODE)
-            } catch (_: RuntimeException) {
-                Shizuku.removeRequestPermissionResultListener(listener)
-                if (continuation.isActive) continuation.resume(ShizukuAccess.NOT_RUNNING)
-            }
-        }
-    }
+    override suspend fun requestAccess(): ShizukuAccess = awaitShizukuPermission(permissions, PERMISSION_REQUEST_CODE)
 
     /** Not under [lock]: ending the shell is what releases a command in flight. */
     override fun close() {
@@ -261,5 +234,30 @@ class ShizukuUserShell @Inject constructor() : ShizukuShell {
         const val PERMISSION_REQUEST_CODE = 7301
         const val BIND_TIMEOUT_MILLIS = 5_000L
         const val RETRY_DELAY_MILLIS = 60_000L
+    }
+}
+
+/** Shizuku itself, as [awaitShizukuPermission] talks to it. */
+internal object StaticShizukuPermissionApi : ShizukuPermissionApi {
+    override val running: Boolean get() = Shizuku.pingBinder() && !Shizuku.isPreV11()
+
+    override val granted: Boolean get() = Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED
+
+    override val refusedForGood: Boolean get() = Shizuku.shouldShowRequestPermissionRationale()
+
+    override fun request(requestCode: Int) = Shizuku.requestPermission(requestCode)
+
+    override fun onResult(listener: (requestCode: Int, granted: Boolean) -> Unit): AutoCloseable {
+        val shizukuListener = Shizuku.OnRequestPermissionResultListener { requestCode, grantResult ->
+            listener(requestCode, grantResult == PackageManager.PERMISSION_GRANTED)
+        }
+        Shizuku.addRequestPermissionResultListener(shizukuListener)
+        return AutoCloseable { Shizuku.removeRequestPermissionResultListener(shizukuListener) }
+    }
+
+    override fun onBinderDead(listener: () -> Unit): AutoCloseable {
+        val shizukuListener = Shizuku.OnBinderDeadListener { listener() }
+        Shizuku.addBinderDeadListener(shizukuListener)
+        return AutoCloseable { Shizuku.removeBinderDeadListener(shizukuListener) }
     }
 }
