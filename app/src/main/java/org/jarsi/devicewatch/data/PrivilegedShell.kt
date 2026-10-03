@@ -70,8 +70,20 @@ class SelectedPrivilegedShell @Inject constructor(
         return when (settings.privilegedAccess()) {
             PrivilegedAccess.OFF -> null
             PrivilegedAccess.SHIZUKU -> shizuku.run(command, timeoutMillis, shizukuWanted)
-            PrivilegedAccess.ROOT -> root.run(command, timeoutMillis, rootWanted)
+            PrivilegedAccess.ROOT -> root.run(command, timeoutMillis, rootWanted).also { if (root.lost.value) giveUpRoot() }
         }
+    }
+
+    /**
+     * Root that had been granted is gone for good. The setting goes off here,
+     * where the monitor finds out, because there may be no screen to do it: a
+     * setting left on ROOT would have the next process start, after a reboot or
+     * a kill, begin asking the root manager all over again, three refusals at a
+     * time, with no one having asked for root. The switch on screen, if there is
+     * one, follows [RootShell.lost] and says why it went off.
+     */
+    private fun giveUpRoot() {
+        if (settings.privilegedAccess() == PrivilegedAccess.ROOT) settings.setPrivilegedAccess(PrivilegedAccess.OFF)
     }
 
     override fun close() {

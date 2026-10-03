@@ -247,11 +247,12 @@ class DashboardViewModel @Inject constructor(
     /**
      * Root that was granted is gone: revoked, run out, or the root manager removed.
      * The switch goes off and says so, instead of claiming root while every
-     * reading has quietly fallen back.
+     * reading has quietly fallen back. The setting itself is switched off where
+     * the loss is found ([org.jarsi.devicewatch.data.SelectedPrivilegedShell]),
+     * since the monitor runs without a screen.
      */
     private fun onRootLost() {
         if (_uiState.value.rootStatus != RootStatus.ON) return
-        if (settings.privilegedAccess() == PrivilegedAccess.ROOT) settings.setPrivilegedAccess(PrivilegedAccess.OFF)
         rootShell.close()
         _uiState.update { it.copy(rootStatus = RootStatus.DENIED) }
     }

@@ -14,12 +14,18 @@ class PrivilegedShellTest {
     private class RecordingRoot : RootShell {
         val commands = mutableListOf<String>()
         var closed = 0
+        /** Set to have the next command find root gone for good, as the third refused reopen does. */
+        var loseRootOnNextCommand = false
         override var generation = 0
         override val lost = MutableStateFlow(false)
         override fun run(command: String, timeoutMillis: Long): String? = run(command, timeoutMillis, generation)
         override fun run(command: String, timeoutMillis: Long, wanted: Int): String? {
             if (wanted != generation) return null
             commands += command
+            if (loseRootOnNextCommand) {
+                lost.value = true
+                return null
+            }
             return "root"
         }
         override suspend fun requestAccess() = RootAccess.GRANTED
@@ -120,6 +126,30 @@ class PrivilegedShellTest {
             assertThat(shizuku.commands).isEmpty()
             assertThat(settings.access).isEqualTo(PrivilegedAccess.OFF)
         }
+    }
+
+    @Test
+    fun `root found gone for good switches the setting off, with no screen there to do it`() {
+        // Only the monitor service may be running; the setting must not stay on
+        // ROOT for the next process start to begin asking the root manager anew.
+        val root = RecordingRoot().apply { loseRootOnNextCommand = true }
+        val settings = FakeAppSettingsRepository(access = PrivilegedAccess.ROOT)
+        val shell = SelectedPrivilegedShell(settings, root, RecordingShizuku())
+
+        assertThat(shell.run("id")).isNull()
+
+        assertThat(settings.access).isEqualTo(PrivilegedAccess.OFF)
+    }
+
+    @Test
+    fun `root lost earlier leaves a setting that has moved on to Shizuku alone`() {
+        val root = RecordingRoot().apply { lost.value = true }
+        val shizuku = RecordingShizuku()
+        val settings = FakeAppSettingsRepository(access = PrivilegedAccess.SHIZUKU)
+
+        assertThat(SelectedPrivilegedShell(settings, root, shizuku).run("id")).isEqualTo("shizuku")
+
+        assertThat(settings.access).isEqualTo(PrivilegedAccess.SHIZUKU)
     }
 
     @Test

@@ -550,9 +550,8 @@ class DashboardViewModelTest {
             rootShell.lost.value = true
             advanceUntilIdle()
 
-            // Then
+            // Then: the switch says so; the setting itself went off where the loss was found.
             assertThat(viewModel.uiState.value.rootStatus).isEqualTo(RootStatus.DENIED)
-            assertThat(settings.access).isEqualTo(PrivilegedAccess.OFF)
             assertThat(rootShell.closedCount).isEqualTo(1)
         }
 
