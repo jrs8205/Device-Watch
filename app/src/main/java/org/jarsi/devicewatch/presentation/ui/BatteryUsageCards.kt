@@ -42,41 +42,53 @@ import java.util.Locale
 @Composable
 internal fun BatteryDrainCard(report: BatteryUsageReport) {
     val context = LocalContext.current
-    val locale = LocalLocale.current.platformLocale
     val usage = report.usage
 
     SettingsSectionCard(titleRes = R.string.battery_usage_section) {
         SectionNote(stringResource(R.string.battery_usage_period, durationText(context, usage.onBatteryMillis)))
-        StackedMetricRow(
-            label = stringResource(R.string.battery_usage_drained),
-            value = listOfNotNull(
-                mahText(usage.dischargeMah, locale),
-                usage.dischargePercent?.let {
-                    stringResource(R.string.battery_usage_of_battery, percentText(it, locale))
-                },
-            ).joinToString(" · ")
-        )
-        DrainRow(
-            labelRes = R.string.battery_usage_screen_on,
-            mah = usage.screenOnDischargeMah,
-            percentPerHour = usage.screenOnPercentPerHour,
-            millis = usage.screenOnMillis,
-            verdictRes = null,
-        )
-        DrainRow(
-            labelRes = R.string.battery_usage_screen_off,
-            mah = usage.screenOffDischargeMah,
-            percentPerHour = usage.screenOffPercentPerHour,
-            millis = usage.screenOffMillis,
-            verdictRes = when (usage.idleDrain) {
-                IdleDrain.LOW -> R.string.battery_usage_idle_low
-                IdleDrain.NORMAL -> R.string.battery_usage_idle_normal
-                IdleDrain.HIGH -> R.string.battery_usage_idle_high
-                null -> null
-            },
-            verdictIsWarning = usage.idleDrain == IdleDrain.HIGH,
-        )
+        if (usage.dischargeMeasured) {
+            DrainRows(usage)
+        } else {
+            // Zeros from a phone without a charge counter: no amount, no pace, no verdict.
+            DetailText(stringResource(R.string.battery_usage_not_measured))
+        }
     }
+}
+
+/** The amount, the pace with the screen on and off, and what the latter says about the phone's sleep. */
+@Composable
+private fun DrainRows(usage: BatteryUsage) {
+    val locale = LocalLocale.current.platformLocale
+
+    StackedMetricRow(
+        label = stringResource(R.string.battery_usage_drained),
+        value = listOfNotNull(
+            usage.dischargeMah?.let { mahText(it, locale) },
+            usage.dischargePercent?.let {
+                stringResource(R.string.battery_usage_of_battery, percentText(it, locale))
+            },
+        ).joinToString(" · ")
+    )
+    DrainRow(
+        labelRes = R.string.battery_usage_screen_on,
+        mah = usage.screenOnDischargeMah,
+        percentPerHour = usage.screenOnPercentPerHour,
+        millis = usage.screenOnMillis,
+        verdictRes = null,
+    )
+    DrainRow(
+        labelRes = R.string.battery_usage_screen_off,
+        mah = usage.screenOffDischargeMah,
+        percentPerHour = usage.screenOffPercentPerHour,
+        millis = usage.screenOffMillis,
+        verdictRes = when (usage.idleDrain) {
+            IdleDrain.LOW -> R.string.battery_usage_idle_low
+            IdleDrain.NORMAL -> R.string.battery_usage_idle_normal
+            IdleDrain.HIGH -> R.string.battery_usage_idle_high
+            null -> null
+        },
+        verdictIsWarning = usage.idleDrain == IdleDrain.HIGH,
+    )
 }
 
 /**
@@ -86,12 +98,14 @@ internal fun BatteryDrainCard(report: BatteryUsageReport) {
 @Composable
 private fun DrainRow(
     @StringRes labelRes: Int,
-    mah: Double,
+    mah: Double?,
     percentPerHour: Double?,
     millis: Long,
     @StringRes verdictRes: Int?,
     verdictIsWarning: Boolean = false,
 ) {
+    // A dump that does not state this amount has no row for it.
+    if (mah == null) return
     val context = LocalContext.current
     val locale = LocalLocale.current.platformLocale
     val amount = mahText(mah, locale)

@@ -219,6 +219,7 @@
     <string name="battery_usage_period">Android\'s own measurement since the phone last left the charger: %1$s on battery.</string>
     <string name="battery_usage_drained">Used in total</string>
     <string name="battery_usage_of_battery">%1$s of the battery</string>
+    <string name="battery_usage_not_measured">This phone does not report how much charge has left the battery, so no amount or pace can be given.</string>
     <string name="battery_usage_screen_on">With the screen on</string>
     <string name="battery_usage_screen_off">With the screen off (at rest)</string>
     <string name="battery_usage_rate">%1$s per hour</string>

@@ -11,9 +11,10 @@ data class BatteryUsage(
     val capacityMah: Double?,
     val onBatteryMillis: Long,
     val screenOffMillis: Long,
-    val dischargeMah: Double,
-    val screenOnDischargeMah: Double,
-    val screenOffDischargeMah: Double,
+    /** What the battery's charge counter registered; null when the dump does not say. */
+    val dischargeMah: Double?,
+    val screenOnDischargeMah: Double?,
+    val screenOffDischargeMah: Double?,
     /** Estimated consumption per uid, largest first as the system lists it. */
     val apps: List<UidPower>,
     val kernelWakeLocks: List<WakeHold>,
@@ -21,6 +22,14 @@ data class BatteryUsage(
     val wakeupReasons: List<WakeHold>,
 ) {
     val screenOnMillis: Long get() = (onBatteryMillis - screenOffMillis).coerceAtLeast(0L)
+
+    /**
+     * Whether the discharge figures measure anything. A phone without a charge
+     * counter reports 0 for all of them however long it runs, while the system
+     * still estimates every app's share from its power profile; those zeros say
+     * nothing about the drain, least of all that there was none.
+     */
+    val dischargeMeasured: Boolean get() = (dischargeMah ?: 0.0) > 0.0
 
     /** Average current with the screen on, the "active drain"; null over too short a stretch. */
     val screenOnMilliamps: Double? get() = milliamps(screenOnDischargeMah, screenOnMillis)
@@ -34,7 +43,10 @@ data class BatteryUsage(
 
     /** How much of a full battery the period took, in percent. */
     val dischargePercent: Double?
-        get() = capacityMah?.takeIf { it > 0.0 }?.let { dischargeMah / it * 100.0 }
+        get() {
+            val discharge = dischargeMah?.takeIf { dischargeMeasured } ?: return null
+            return capacityMah?.takeIf { it > 0.0 }?.let { discharge / it * 100.0 }
+        }
 
     /** What the screen-off rate says about how well the phone sleeps. */
     val idleDrain: IdleDrain?
@@ -46,8 +58,10 @@ data class BatteryUsage(
             }
         }
 
-    private fun milliamps(mah: Double, millis: Long): Double? =
-        if (millis < MIN_RATE_MILLIS) null else mah / (millis / 3_600_000.0)
+    private fun milliamps(mah: Double?, millis: Long): Double? {
+        if (mah == null || !dischargeMeasured || millis < MIN_RATE_MILLIS) return null
+        return mah / (millis / 3_600_000.0)
+    }
 
     private fun percentPerHour(milliamps: Double?): Double? {
         val capacity = capacityMah ?: return null
@@ -268,9 +282,9 @@ internal object BatteryStatsDumpParser {
         var capacityMah: Double? = null
         var onBatteryMillis: Long? = null
         var screenOffMillis = 0L
-        var dischargeMah = 0.0
-        var screenOnMah = 0.0
-        var screenOffMah = 0.0
+        var dischargeMah: Double? = null
+        var screenOnMah: Double? = null
+        var screenOffMah: Double? = null
         val apps = ArrayList<UidPower>()
         val kernel = ArrayList<WakeHold>()
         val partial = ArrayList<WakeHold>()
@@ -293,9 +307,9 @@ internal object BatteryStatsDumpParser {
                     onBattery.find(line)?.let { onBatteryMillis = durationMillis(it.groupValues[1]) }
                     screenOff.find(line)?.let { screenOffMillis = durationMillis(it.groupValues[1]) ?: 0L }
                     capacity.find(line)?.let { capacityMah = number(it.groupValues[1]) }
-                    discharge.find(line)?.let { dischargeMah = number(it.groupValues[1]) ?: 0.0 }
-                    screenOffDischarge.find(line)?.let { screenOffMah = number(it.groupValues[1]) ?: 0.0 }
-                    screenOnDischarge.find(line)?.let { screenOnMah = number(it.groupValues[1]) ?: 0.0 }
+                    discharge.find(line)?.let { dischargeMah = number(it.groupValues[1]) }
+                    screenOffDischarge.find(line)?.let { screenOffMah = number(it.groupValues[1]) }
+                    screenOnDischarge.find(line)?.let { screenOnMah = number(it.groupValues[1]) }
                 }
                 Section.POWER -> uidPower.find(line)?.let { match ->
                     val uid = uid(match.groupValues[1])

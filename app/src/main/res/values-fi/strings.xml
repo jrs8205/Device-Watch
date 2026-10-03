@@ -215,6 +215,7 @@
     <string name="battery_usage_period">Androidin oma mittaus siitä lähtien, kun puhelin viimeksi irrotettiin laturista: %1$s akkukäyttöä.</string>
     <string name="battery_usage_drained">Kulunut yhteensä</string>
     <string name="battery_usage_of_battery">%1$s akusta</string>
+    <string name="battery_usage_not_measured">Tämä puhelin ei kerro, paljonko varausta akusta on kulunut, joten määrää tai tahtia ei voida näyttää.</string>
     <string name="battery_usage_screen_on">Näyttö päällä</string>
     <string name="battery_usage_screen_off">Näyttö pois (levossa)</string>
     <string name="battery_usage_rate">%1$s tunnissa</string>

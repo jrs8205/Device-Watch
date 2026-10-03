@@ -157,6 +157,47 @@ class BatteryStatsDumpParserTest {
     }
 
     @Test
+    fun `counters that never moved say nothing about the drain, not that there was none`() {
+        // A phone without a charge counter prints 0 for every discharge line, however
+        // long it has run; a working counter over an hour never does.
+        val unmeasured = usage.copy(
+            onBatteryMillis = 9 * 3_600_000L,
+            screenOffMillis = 8 * 3_600_000L,
+            dischargeMah = 0.0,
+            screenOnDischargeMah = 0.0,
+            screenOffDischargeMah = 0.0,
+        )
+
+        assertThat(unmeasured.dischargeMeasured).isFalse()
+        assertThat(unmeasured.dischargePercent).isNull()
+        assertThat(unmeasured.screenOnMilliamps).isNull()
+        assertThat(unmeasured.screenOffMilliamps).isNull()
+        assertThat(unmeasured.screenOnPercentPerHour).isNull()
+        assertThat(unmeasured.screenOffPercentPerHour).isNull()
+        assertThat(unmeasured.idleDrain).isNull()
+        assertThat(usage.dischargeMeasured).isTrue()
+    }
+
+    @Test
+    fun `a dump without discharge lines leaves the amounts unknown instead of zero`() {
+        val parsed = BatteryStatsDumpParser.parse(
+            """
+            Statistics since last charge:
+              Estimated battery capacity: 4000 mAh
+              Time on battery: 9h 0m 0s 0ms (96,6%) realtime, 8h 0m 0s 0ms (85,4%) uptime
+              Time on battery screen off: 8h 0m 0s 0ms (22,3%) realtime, 1m 43s 841ms (7,7%) uptime
+            """.trimIndent()
+        )!!
+
+        assertThat(parsed.dischargeMah).isNull()
+        assertThat(parsed.screenOnDischargeMah).isNull()
+        assertThat(parsed.screenOffDischargeMah).isNull()
+        assertThat(parsed.dischargeMeasured).isFalse()
+        assertThat(parsed.screenOffPercentPerHour).isNull()
+        assertThat(parsed.idleDrain).isNull()
+    }
+
+    @Test
     fun `a rate turns into the hours a full battery would last`() {
         assertThat(BatteryUsage.fullBatteryHours(10.0)).isEqualTo(10.0)
         assertThat(BatteryUsage.fullBatteryHours(0.5)).isEqualTo(200.0)
