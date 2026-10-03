@@ -179,6 +179,16 @@ class DashboardViewModel @Inject constructor(
     }
 
     /**
+     * Numbers the requests for root and for Shizuku. Switched off and on again
+     * while the first dialog was still up, both requests would otherwise share
+     * one REQUESTING state: the first one's late refusal would mark the second
+     * refused, and the second one's grant would then find the switch off and
+     * close the very shell it had just been given.
+     */
+    private var rootRequest = 0
+    private var shizukuRequest = 0
+
+    /**
      * Switching root mode on asks the root manager first and persists the setting
      * only once it said yes, so the monitor never polls a shell it was refused.
      */
@@ -191,12 +201,16 @@ class DashboardViewModel @Inject constructor(
         }
         if (_uiState.value.rootStatus == RootStatus.REQUESTING) return
         _uiState.update { it.copy(rootStatus = RootStatus.REQUESTING) }
+        val request = ++rootRequest
         viewModelScope.launch {
             val status = when (rootShell.requestAccess()) {
                 RootAccess.GRANTED -> RootStatus.ON
                 RootAccess.DENIED -> RootStatus.DENIED
                 RootAccess.NO_SU -> RootStatus.NO_SU
             }
+            // A later request has taken over: its answer is the one that counts,
+            // and this one must not touch the shell that request may hold.
+            if (request != rootRequest) return@launch
             // Switched off while the root manager was still asking: off wins.
             if (_uiState.value.rootStatus != RootStatus.REQUESTING) {
                 rootShell.close()
@@ -226,12 +240,15 @@ class DashboardViewModel @Inject constructor(
         }
         if (_uiState.value.shizukuStatus == ShizukuStatus.REQUESTING) return
         _uiState.update { it.copy(shizukuStatus = ShizukuStatus.REQUESTING) }
+        val request = ++shizukuRequest
         viewModelScope.launch {
             val status = when (shizukuShell.requestAccess()) {
                 ShizukuAccess.GRANTED -> ShizukuStatus.ON
                 ShizukuAccess.DENIED -> ShizukuStatus.DENIED
                 ShizukuAccess.NOT_RUNNING -> ShizukuStatus.NOT_RUNNING
             }
+            // A later request has taken over: its answer is the one that counts.
+            if (request != shizukuRequest) return@launch
             // Switched off while Shizuku was still asking: off wins.
             if (_uiState.value.shizukuStatus != ShizukuStatus.REQUESTING) return@launch
             if (status != ShizukuStatus.ON) {

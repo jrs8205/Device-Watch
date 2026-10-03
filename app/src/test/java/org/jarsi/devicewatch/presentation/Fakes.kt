@@ -42,6 +42,10 @@ internal class FakeAlertNotifications : AlertNotifications {
 internal class FakeRootShell(var access: RootAccess = RootAccess.GRANTED) : RootShell {
     var closedCount = 0
 
+    /** When set, requests wait in [pendingRequests] for the test to answer them, like a root manager's dialog. */
+    var holdRequests = false
+    val pendingRequests = mutableListOf<CompletableDeferred<RootAccess>>()
+
     override var generation = 0
 
     override val lost = MutableStateFlow(false)
@@ -50,7 +54,12 @@ internal class FakeRootShell(var access: RootAccess = RootAccess.GRANTED) : Root
 
     override fun run(command: String, timeoutMillis: Long, wanted: Int): String? = null
 
-    override suspend fun requestAccess(): RootAccess = access
+    override suspend fun requestAccess(): RootAccess {
+        if (!holdRequests) return access
+        val answer = CompletableDeferred<RootAccess>()
+        pendingRequests += answer
+        return answer.await()
+    }
 
     override fun close() {
         closedCount++
@@ -64,6 +73,10 @@ internal class FakeShizukuShell(
 ) : ShizukuShell {
     var closedCount = 0
 
+    /** When set, requests wait in [pendingRequests] for the test to answer them, like Shizuku's dialog. */
+    var holdRequests = false
+    val pendingRequests = mutableListOf<CompletableDeferred<ShizukuAccess>>()
+
     override var generation = 0
 
     override val alive = MutableStateFlow(alive)
@@ -72,7 +85,12 @@ internal class FakeShizukuShell(
 
     override fun run(command: String, timeoutMillis: Long, wanted: Int): String? = null
 
-    override suspend fun requestAccess(): ShizukuAccess = access
+    override suspend fun requestAccess(): ShizukuAccess {
+        if (!holdRequests) return access
+        val answer = CompletableDeferred<ShizukuAccess>()
+        pendingRequests += answer
+        return answer.await()
+    }
 
     override fun close() {
         closedCount++

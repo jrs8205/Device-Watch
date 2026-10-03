@@ -519,6 +519,60 @@ class DashboardViewModelTest {
         }
 
     @Test
+    fun `given root asked twice over, when the first request is refused late, then the second's grant still counts`() =
+        runTest(dispatcher) {
+            // Given: on, off and on again before the root manager answered the first time.
+            val settings = FakeAppSettingsRepository()
+            val rootShell = FakeRootShell().apply { holdRequests = true }
+            val viewModel = buildViewModel(settings = settings, rootShell = rootShell)
+            viewModel.onRootModeChange(true)
+            advanceUntilIdle()
+            viewModel.onRootModeChange(false)
+            viewModel.onRootModeChange(true)
+            advanceUntilIdle()
+            assertThat(rootShell.pendingRequests).hasSize(2)
+
+            // When: the first, superseded request is refused, and then the second granted.
+            rootShell.pendingRequests[0].complete(RootAccess.DENIED)
+            advanceUntilIdle()
+            assertThat(viewModel.uiState.value.rootStatus).isEqualTo(RootStatus.REQUESTING)
+            rootShell.pendingRequests[1].complete(RootAccess.GRANTED)
+            advanceUntilIdle()
+
+            // Then: root is on; only the off in between closed the shell, not the stale answer.
+            assertThat(viewModel.uiState.value.rootStatus).isEqualTo(RootStatus.ON)
+            assertThat(settings.access).isEqualTo(PrivilegedAccess.ROOT)
+            assertThat(rootShell.closedCount).isEqualTo(1)
+        }
+
+    @Test
+    fun `given Shizuku asked twice over, when the first request is refused late, then the second's grant still counts`() =
+        runTest(dispatcher) {
+            // Given
+            val settings = FakeAppSettingsRepository()
+            val shizukuShell = FakeShizukuShell().apply { holdRequests = true }
+            val viewModel = buildViewModel(settings = settings, shizukuShell = shizukuShell)
+            viewModel.onShizukuModeChange(true)
+            advanceUntilIdle()
+            viewModel.onShizukuModeChange(false)
+            viewModel.onShizukuModeChange(true)
+            advanceUntilIdle()
+            assertThat(shizukuShell.pendingRequests).hasSize(2)
+
+            // When
+            shizukuShell.pendingRequests[0].complete(ShizukuAccess.DENIED)
+            advanceUntilIdle()
+            assertThat(viewModel.uiState.value.shizukuStatus).isEqualTo(ShizukuStatus.REQUESTING)
+            shizukuShell.pendingRequests[1].complete(ShizukuAccess.GRANTED)
+            advanceUntilIdle()
+
+            // Then
+            assertThat(viewModel.uiState.value.shizukuStatus).isEqualTo(ShizukuStatus.ON)
+            assertThat(settings.access).isEqualTo(PrivilegedAccess.SHIZUKU)
+            assertThat(shizukuShell.closedCount).isEqualTo(1)
+        }
+
+    @Test
     fun `given root mode on, when it is switched off, then the shell is closed`() =
         runTest(dispatcher) {
             // Given
