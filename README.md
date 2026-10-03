@@ -196,7 +196,7 @@ Release builds are minified with R8 and resource shrinking. The release APK is u
 
 ## Testing
 
-648 JVM unit tests (JUnit 4 + Truth; Robolectric only for the Glance render, backup-rule and
+665 JVM unit tests (JUnit 4 + Truth; Robolectric only for the Glance render, backup-rule and
 settings-store tests) cover the pure logic behind every screen, service and widget:
 
 ```powershell
