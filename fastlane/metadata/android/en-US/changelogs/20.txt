@@ -1,0 +1,3 @@
+• Optional extended access through Shizuku or root, off by default: the real CPU load, chip temperatures, graphics load, battery health, cycle count and dates
+• Android's own battery statistics on the since-charge page: drain per hour with the screen on and off, each app's share, and what kept the phone awake
+• Nothing is read until you switch it on, and the app still has no internet permission

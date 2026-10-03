@@ -12,6 +12,7 @@ Features:
 * CSV exports and a self-contained HTML report with charts, search and date filters
 * On-device notification log with 7-day retention
 * Since-charge view: elapsed time, battery drop, average drain and per-app screen time since the battery was last charged full or unplugged
+* Optional extended access through Shizuku or root, off by default: the real CPU load, chip temperatures, graphics load, the battery's own wear figures, and Android's battery statistics since the last charge (drain with the screen on and off, each app's share, what kept the phone awake)
 * Interactive screensaver with a large clock, next alarm, icons of unread notifications, charging power in watts, battery-tinted background, optional night dimming and a battery-full notification
 
 The app uploads nothing. Android backup carries settings only, excluding history, notification content and delivered-alert flags. You can choose to share CSV/HTML exports, including notification text, through another app.

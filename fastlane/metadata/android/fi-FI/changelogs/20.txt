@@ -1,0 +1,3 @@
+• Valinnainen laajennettu käyttö Shizukun tai rootin kautta, oletuksena pois: suorittimen todellinen kuorma, piirien lämpötilat, grafiikkakuorma, akun kunto, syklit ja päivämäärät
+• Androidin omat akkutilastot Latauksesta lähtien -sivulla: kulutus tunnissa näyttö päällä ja pois, sovellusten osuudet ja mikä piti puhelimen hereillä
+• Mitään ei lueta ennen kuin kytket sen päälle, eikä sovelluksella ole edelleenkään internet-oikeutta

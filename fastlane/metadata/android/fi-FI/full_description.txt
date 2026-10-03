@@ -12,6 +12,7 @@ Ominaisuudet:
 * CSV-viennit ja HTML-raportti, jossa on kaaviot, haku ja päivämäärärajaus
 * Laitteella pysyvä ilmoitusloki 7 päivän säilytyksellä
 * Latauksesta lähtien -näkymä: kulunut aika, akun pudotus, keskikulutus ja sovelluskohtainen ruutuaika edellisestä täydestä latauksesta tai laturin irrotuksesta
+* Valinnainen laajennettu käyttö Shizukun tai rootin kautta, oletuksena pois: suorittimen todellinen kuorma, piirien lämpötilat, grafiikkakuorma, akun omat kulumisluvut ja Androidin akkutilastot edellisestä latauksesta (kulutus näyttö päällä ja pois, sovellusten osuudet, mikä piti puhelimen hereillä)
 * Interaktiivinen näytönsäästäjä: iso kello, seuraava herätys, kuittaamattomien ilmoitusten kuvakkeet, latausteho watteina, akun mukaan sävyttyvä tausta, valinnainen yöhimmennys ja akku täynnä -ilmoitus
 
 Sovellus ei lähetä tietoja verkkoon. Android-varmuuskopioon sisältyvät vain asetukset: historia, ilmoitusten sisältö ja hälytyslukot jäävät laitteelle. Voit halutessasi jakaa CSV- ja HTML-vientejä, myös ilmoitustekstejä, toisen sovelluksen kautta.
