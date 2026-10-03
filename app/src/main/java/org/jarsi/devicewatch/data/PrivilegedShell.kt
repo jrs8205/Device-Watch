@@ -34,6 +34,22 @@ interface PrivilegedShell {
 }
 
 /**
+ * A shell [SelectedPrivilegedShell] routes to. Its [generation] moves on at every
+ * [close], and a command can carry the generation its caller saw when it chose
+ * this route: after a close in between the two no longer match, and the command
+ * opens nothing. The guard has to reach back that far because the close comes
+ * after the setting went off, and a command routed in between would otherwise
+ * arrive to find a fresh generation and bring the shell back for a switch that
+ * is already off.
+ */
+interface PrivilegedBackend : PrivilegedShell {
+    val generation: Int
+
+    /** As [run], for a command decided on while [generation] was [wanted]. */
+    fun run(command: String, timeoutMillis: Long, wanted: Int): String?
+}
+
+/**
  * The shell [AppSettingsRepository.privilegedAccess] names. While that is off
  * nothing here starts a process or calls out, so a phone that never opted in sees
  * neither an `su` attempt nor a Shizuku request.
@@ -45,12 +61,18 @@ class SelectedPrivilegedShell @Inject constructor(
     private val shizuku: ShizukuShell,
 ) : PrivilegedShell {
 
-    override fun run(command: String, timeoutMillis: Long): String? =
-        when (settings.privilegedAccess()) {
+    override fun run(command: String, timeoutMillis: Long): String? {
+        // Read before the setting: a switch going off persists OFF first and
+        // closes its shell after, so a command that still saw the route on
+        // carries a generation that close has moved past.
+        val rootWanted = root.generation
+        val shizukuWanted = shizuku.generation
+        return when (settings.privilegedAccess()) {
             PrivilegedAccess.OFF -> null
-            PrivilegedAccess.SHIZUKU -> shizuku.run(command, timeoutMillis)
-            PrivilegedAccess.ROOT -> root.run(command, timeoutMillis)
+            PrivilegedAccess.SHIZUKU -> shizuku.run(command, timeoutMillis, shizukuWanted)
+            PrivilegedAccess.ROOT -> root.run(command, timeoutMillis, rootWanted)
         }
+    }
 
     override fun close() {
         root.close()

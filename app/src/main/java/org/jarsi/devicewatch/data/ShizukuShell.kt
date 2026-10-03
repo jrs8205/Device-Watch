@@ -23,7 +23,7 @@ enum class ShizukuAccess { GRANTED, DENIED, NOT_RUNNING }
  * A shell run as the ADB shell user by Shizuku, on a phone that is not rooted;
  * used only while [PrivilegedAccess.SHIZUKU] is selected.
  */
-interface ShizukuShell : PrivilegedShell {
+interface ShizukuShell : PrivilegedBackend {
     /**
      * Whether the Shizuku service is up. It stops at every reboot until the user
      * starts it again, while the permission it granted stays.
@@ -61,9 +61,9 @@ class ShizukuUserShell internal constructor(
     @Volatile
     private var bound = CountDownLatch(1)
 
-    /** Moves on every [close], so a command that was already on its way can tell it is no longer wanted. */
     @Volatile
-    private var generation = 0
+    override var generation = 0
+        private set
 
     /** Set after a shell that did not open or did not answer, so the next commands do not each wait it out again. */
     @Volatile
@@ -101,11 +101,12 @@ class ShizukuUserShell internal constructor(
         }
     }
 
-    override fun run(command: String, timeoutMillis: Long): String? {
-        val wanted = generation
+    override fun run(command: String, timeoutMillis: Long): String? = run(command, timeoutMillis, generation)
+
+    override fun run(command: String, timeoutMillis: Long, wanted: Int): String? {
         synchronized(lock) {
-            // Switched off while this command waited its turn: it must not bring
-            // the shell back.
+            // Switched off since this command was decided on, or while it waited
+            // its turn: it must not bring the shell back.
             if (generation != wanted) return null
             val current = session?.takeIf { it.isOpen } ?: open(wanted) ?: return null
             val output = current.exec(command, timeoutMillis)

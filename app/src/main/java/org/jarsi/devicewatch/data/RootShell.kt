@@ -13,7 +13,7 @@ import javax.inject.Singleton
 enum class RootAccess { GRANTED, DENIED, NO_SU }
 
 /** A root shell on a rooted phone; used only while [PrivilegedAccess.ROOT] is selected. */
-interface RootShell : PrivilegedShell {
+interface RootShell : PrivilegedBackend {
     /**
      * True once root that had been granted turned out to be gone: revoked, a
      * timed grant run out, the root manager removed. The shell then stops asking
@@ -52,8 +52,10 @@ class SuRootShell internal constructor(
     /** A shell still waiting for the root manager's answer. */
     private var opening: ShellSession? = null
 
-    /** Moves on every [close], so a command that was already on its way can tell it is no longer wanted. */
-    private var generation = 0
+    /** Written under [stateLock]; read anywhere. */
+    @Volatile
+    override var generation = 0
+        private set
 
     @Volatile
     private var retryAfterNanos = 0L
@@ -61,11 +63,12 @@ class SuRootShell internal constructor(
     @Volatile
     private var failedReopens = 0
 
-    override fun run(command: String, timeoutMillis: Long): String? {
-        val wanted = synchronized(stateLock) { generation }
+    override fun run(command: String, timeoutMillis: Long): String? = run(command, timeoutMillis, generation)
+
+    override fun run(command: String, timeoutMillis: Long, wanted: Int): String? {
         synchronized(commandLock) {
-            // Switched off while this command waited its turn: it must not bring
-            // the shell back.
+            // Switched off since this command was decided on, or while it waited
+            // its turn: it must not bring the shell back.
             val current = synchronized(stateLock) { if (generation == wanted) session?.takeIf { it.isOpen } else null }
                 ?: reopen(wanted)
                 ?: return null

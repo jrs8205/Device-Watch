@@ -42,14 +42,19 @@ internal class FakeAlertNotifications : AlertNotifications {
 internal class FakeRootShell(var access: RootAccess = RootAccess.GRANTED) : RootShell {
     var closedCount = 0
 
+    override var generation = 0
+
     override val lost = MutableStateFlow(false)
 
     override fun run(command: String, timeoutMillis: Long): String? = null
+
+    override fun run(command: String, timeoutMillis: Long, wanted: Int): String? = null
 
     override suspend fun requestAccess(): RootAccess = access
 
     override fun close() {
         closedCount++
+        generation++
     }
 }
 
@@ -59,14 +64,19 @@ internal class FakeShizukuShell(
 ) : ShizukuShell {
     var closedCount = 0
 
+    override var generation = 0
+
     override val alive = MutableStateFlow(alive)
 
     override fun run(command: String, timeoutMillis: Long): String? = null
+
+    override fun run(command: String, timeoutMillis: Long, wanted: Int): String? = null
 
     override suspend fun requestAccess(): ShizukuAccess = access
 
     override fun close() {
         closedCount++
+        generation++
     }
 }
 

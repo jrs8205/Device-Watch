@@ -14,28 +14,53 @@ class PrivilegedShellTest {
     private class RecordingRoot : RootShell {
         val commands = mutableListOf<String>()
         var closed = 0
+        override var generation = 0
         override val lost = MutableStateFlow(false)
-        override fun run(command: String, timeoutMillis: Long): String? {
+        override fun run(command: String, timeoutMillis: Long): String? = run(command, timeoutMillis, generation)
+        override fun run(command: String, timeoutMillis: Long, wanted: Int): String? {
+            if (wanted != generation) return null
             commands += command
             return "root"
         }
         override suspend fun requestAccess() = RootAccess.GRANTED
         override fun close() {
             closed++
+            generation++
         }
     }
 
     private class RecordingShizuku : ShizukuShell {
         val commands = mutableListOf<String>()
         var closed = 0
+        override var generation = 0
         override val alive = MutableStateFlow(true)
-        override fun run(command: String, timeoutMillis: Long): String? {
+        override fun run(command: String, timeoutMillis: Long): String? = run(command, timeoutMillis, generation)
+        override fun run(command: String, timeoutMillis: Long, wanted: Int): String? {
+            if (wanted != generation) return null
             commands += command
             return "shizuku"
         }
         override suspend fun requestAccess() = ShizukuAccess.GRANTED
         override fun close() {
             closed++
+            generation++
+        }
+    }
+
+    /**
+     * Settings the user switches off at the very moment the poll reads them: OFF
+     * is persisted and the shell closed, as the ViewModel does it, before the
+     * poll gets to act on the route it just read.
+     */
+    private class SwitchedOffWhenRead(
+        private val delegate: AppSettingsRepository,
+        private val shell: PrivilegedShell,
+    ) : AppSettingsRepository by delegate {
+        override fun privilegedAccess(): PrivilegedAccess {
+            val read = delegate.privilegedAccess()
+            delegate.setPrivilegedAccess(PrivilegedAccess.OFF)
+            shell.close()
+            return read
         }
     }
 
@@ -75,6 +100,26 @@ class PrivilegedShellTest {
 
         assertThat(shizuku.commands).containsExactly("id")
         assertThat(root.commands).containsExactly("id")
+    }
+
+    @Test
+    fun `a command routed as the switch went off reaches no backend`() {
+        // The backend's own guard cannot tell: a command that arrives after the
+        // close sees the new generation, and would open the shell anew for a
+        // setting that is already off.
+        for (access in listOf(PrivilegedAccess.ROOT, PrivilegedAccess.SHIZUKU)) {
+            val root = RecordingRoot()
+            val shizuku = RecordingShizuku()
+            val settings = FakeAppSettingsRepository(access = access)
+            val backend: PrivilegedShell = if (access == PrivilegedAccess.ROOT) root else shizuku
+            val shell = SelectedPrivilegedShell(SwitchedOffWhenRead(settings, backend), root, shizuku)
+
+            assertThat(shell.run("id")).isNull()
+
+            assertThat(root.commands).isEmpty()
+            assertThat(shizuku.commands).isEmpty()
+            assertThat(settings.access).isEqualTo(PrivilegedAccess.OFF)
+        }
     }
 
     @Test
@@ -134,6 +179,28 @@ class PrivilegedShellTest {
         assertThat(shell.requestAccess()).isEqualTo(RootAccess.DENIED)
         // Nothing was kept, so the next command has to reopen and is refused again.
         assertThat(shell.run("echo hi")).isNull()
+    }
+
+    @Test
+    fun `a command decided on before the shell was closed starts no su`() {
+        var now = 1L
+        val shell = SuRootShell("/nonexistent/su") { now }
+        val before = shell.generation
+        shell.close()
+
+        // With the generation the caller saw, none of these reaches su: no attempt, no refusal counted.
+        repeat(3) {
+            assertThat(shell.run("id", 1_000L, before)).isNull()
+            now += TimeUnit.MINUTES.toNanos(6)
+        }
+        assertThat(shell.lost.value).isFalse()
+
+        // The same three with the current one are attempts, and the third gives root up.
+        repeat(3) {
+            assertThat(shell.run("id")).isNull()
+            now += TimeUnit.MINUTES.toNanos(6)
+        }
+        assertThat(shell.lost.value).isTrue()
     }
 
     @Test
