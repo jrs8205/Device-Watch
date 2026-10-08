@@ -93,6 +93,10 @@ device to install. Releases are built reproducibly and F-Droid verifies each bui
 developer-signed APK, so every source ships an APK signed with the same key and later versions
 install cleanly as an update over an existing one — from any source.
 
+**Registered with Google.** The package name and signing key are registered in Google's Android
+Developer Console, so the app keeps installing as usual under Google's new [sideloading
+rules](https://developer.android.com/developer-verification).
+
 > **Upgrading from v1.3.1 or older:** the application ID changed in v1.4.0 from
 > `com.example.modernwidget` to `org.jarsi.devicewatch`, so Android treats it as a new app.
 > Install the new version, re-grant its permissions, re-add the widget and re-select the
