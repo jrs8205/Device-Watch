@@ -1,6 +1,5 @@
 package org.jarsi.devicewatch.system
 
-import android.app.KeyguardManager
 import android.content.ComponentName
 import android.content.Context
 import android.os.PowerManager
@@ -12,8 +11,8 @@ import org.jarsi.devicewatch.data.PrivilegedAccess
 import org.jarsi.devicewatch.data.PrivilegedShell
 
 /**
- * Brings the screensaver up as soon as charging begins on a phone nobody is using, when the
- * user asked for that (see [chargeStartAction] for why Android would otherwise wait).
+ * Brings the screensaver up as soon as charging begins on a phone whose screen is off, when
+ * the user asked for that (see [chargeStartAction] for why Android would otherwise wait).
  */
 class ChargeStartScreensaver @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -21,49 +20,50 @@ class ChargeStartScreensaver @Inject constructor(
     private val shell: PrivilegedShell,
 ) {
 
+    private val ourDream: String =
+        ComponentName(context, MonitorDreamService::class.java).flattenToString()
+
     /** Call off the main thread: the extended-access route waits on the shell. */
     fun onPowerConnected() {
         val prefs = context.getSharedPreferences(DreamPreferences.PREFS_NAME, Context.MODE_PRIVATE)
         if (!prefs.getBoolean(DreamPreferences.KEY_START_ON_CHARGE, false)) return
         val power = context.getSystemService(PowerManager::class.java) ?: return
-        val keyguard = context.getSystemService(KeyguardManager::class.java)
-        // A phone that is unlocked with its screen on is in someone's hands. A phone without
-        // a lock screen that Android itself woke for the plug-in looks the same; it then
-        // dreams at its own screen timeout, as before.
-        val inUse = power.isInteractive && keyguard?.isKeyguardLocked != true
+        // Interactive also covers a screensaver Android is just starting by itself.
+        fun busy() = power.isInteractive || MonitorDreamService.isDreaming
+        // Before the shell is touched at all: a busy shell can take seconds to answer.
+        if (busy()) return
 
         val shellSelection = if (appSettings.privilegedAccess() != PrivilegedAccess.OFF) {
             shell.run(READ_SELECTION)?.lines()?.let { lines ->
-                isOurDreamSelected(lines.getOrNull(0), lines.getOrNull(1), ourDream)
+                ourDreamStartsOnCharge(lines.getOrNull(0), lines.getOrNull(1), lines.getOrNull(2), ourDream)
             }
         } else {
             null
         }
-        // A shell that did not answer leaves the ordinary route.
-        val privileged = shellSelection != null
 
+        // Read again after the shell: someone may have picked the phone up meanwhile.
         val action = chargeStartAction(
             enabled = true,
-            inUse = inUse,
+            screenOn = power.isInteractive,
             dreamShowing = MonitorDreamService.isDreaming,
             ourDreamSelected = shellSelection ?: readSelectionDirectly(),
-            privileged = privileged,
+            // A shell that did not answer leaves the ordinary route.
+            privileged = shellSelection != null,
         )
         when (action) {
             ChargeStartAction.NONE -> Unit
-            ChargeStartAction.START_DREAM -> if (!dreamCallSucceeded(shell.run(START_DREAM))) wakeScreen(power)
+            ChargeStartAction.START_DREAM ->
+                if (!dreamCallSucceeded(shell.run(START_DREAM)) && !busy()) wakeScreen(power)
             ChargeStartAction.WAKE_SCREEN -> wakeScreen(power)
         }
     }
 
-    private val ourDream: String =
-        ComponentName(context, MonitorDreamService::class.java).flattenToString()
-
     /** Null when Android does not let an ordinary app read these settings. */
     private fun readSelectionDirectly(): Boolean? = try {
         val resolver = context.contentResolver
-        isOurDreamSelected(
+        ourDreamStartsOnCharge(
             Settings.Secure.getString(resolver, SCREENSAVER_ENABLED),
+            Settings.Secure.getString(resolver, SCREENSAVER_ACTIVATE_ON_SLEEP),
             Settings.Secure.getString(resolver, SCREENSAVER_COMPONENTS),
             ourDream,
         )
@@ -87,9 +87,11 @@ class ChargeStartScreensaver @Inject constructor(
 
     private companion object {
         const val SCREENSAVER_ENABLED = "screensaver_enabled"
+        const val SCREENSAVER_ACTIVATE_ON_SLEEP = "screensaver_activate_on_sleep"
         const val SCREENSAVER_COMPONENTS = "screensaver_components"
-        const val READ_SELECTION =
-            "settings get secure $SCREENSAVER_ENABLED; settings get secure $SCREENSAVER_COMPONENTS"
+        const val READ_SELECTION = "settings get secure $SCREENSAVER_ENABLED; " +
+            "settings get secure $SCREENSAVER_ACTIVATE_ON_SLEEP; " +
+            "settings get secure $SCREENSAVER_COMPONENTS"
 
         /**
          * IDreamManager.dream(), the first method of the interface since Android 4.2; the

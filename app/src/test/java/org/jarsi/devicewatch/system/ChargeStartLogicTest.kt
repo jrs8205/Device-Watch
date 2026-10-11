@@ -7,11 +7,11 @@ class ChargeStartLogicTest {
 
     private fun action(
         enabled: Boolean = true,
-        inUse: Boolean = false,
+        screenOn: Boolean = false,
         dreamShowing: Boolean = false,
         ourDreamSelected: Boolean? = true,
         privileged: Boolean = false,
-    ) = chargeStartAction(enabled, inUse, dreamShowing, ourDreamSelected, privileged)
+    ) = chargeStartAction(enabled, screenOn, dreamShowing, ourDreamSelected, privileged)
 
     @Test
     fun `nothing happens while the setting is off`() {
@@ -20,9 +20,11 @@ class ChargeStartLogicTest {
     }
 
     @Test
-    fun `a phone in use is never interrupted`() {
-        assertThat(action(inUse = true)).isEqualTo(ChargeStartAction.NONE)
-        assertThat(action(inUse = true, privileged = true)).isEqualTo(ChargeStartAction.NONE)
+    fun `a screen that is on is never taken over`() {
+        // Unlocked in use, a call or navigation over the lock screen, or the lock screen
+        // itself, which times out into the screensaver on its own now that it charges.
+        assertThat(action(screenOn = true)).isEqualTo(ChargeStartAction.NONE)
+        assertThat(action(screenOn = true, privileged = true)).isEqualTo(ChargeStartAction.NONE)
     }
 
     @Test
@@ -56,25 +58,33 @@ class ChargeStartLogicTest {
 
     @Test
     fun `our screensaver selected in full or short form counts`() {
-        assertThat(isOurDreamSelected("1", ours, ours)).isTrue()
-        assertThat(isOurDreamSelected("1", "org.jarsi.devicewatch/.system.MonitorDreamService", ours)).isTrue()
-        assertThat(isOurDreamSelected("1", "com.android.deskclock/com.android.deskclock.Screensaver,$ours", ours)).isTrue()
+        assertThat(ourDreamStartsOnCharge("1", "1", ours, ours)).isTrue()
+        assertThat(ourDreamStartsOnCharge("1", "1", "org.jarsi.devicewatch/.system.MonitorDreamService", ours)).isTrue()
+        assertThat(ourDreamStartsOnCharge("1", "1", "com.android.deskclock/com.android.deskclock.Screensaver,$ours", ours)).isTrue()
     }
 
     @Test
     fun `screensavers switched off or another one selected do not count`() {
-        assertThat(isOurDreamSelected("0", ours, ours)).isFalse()
-        assertThat(isOurDreamSelected("1", "com.android.deskclock/com.android.deskclock.Screensaver", ours)).isFalse()
+        assertThat(ourDreamStartsOnCharge("0", "1", ours, ours)).isFalse()
+        assertThat(ourDreamStartsOnCharge("1", "1", "com.android.deskclock/com.android.deskclock.Screensaver", ours)).isFalse()
+    }
+
+    @Test
+    fun `a screensaver set to start only when docked does not count`() {
+        assertThat(ourDreamStartsOnCharge("1", "0", ours, ours)).isFalse()
     }
 
     @Test
     fun `unset settings mean the system default`() {
         // An unset switch is on by default; an unset choice is the system's own screensaver.
-        assertThat(isOurDreamSelected(null, ours, ours)).isTrue()
-        assertThat(isOurDreamSelected("null", ours, ours)).isTrue()
-        assertThat(isOurDreamSelected("1", null, ours)).isFalse()
-        assertThat(isOurDreamSelected("1", "null", ours)).isFalse()
-        assertThat(isOurDreamSelected("1", "", ours)).isFalse()
+        assertThat(ourDreamStartsOnCharge(null, "1", ours, ours)).isTrue()
+        assertThat(ourDreamStartsOnCharge("null", "1", ours, ours)).isTrue()
+        // Whether an unset "while charging" is on varies by device; it is left to Android.
+        assertThat(ourDreamStartsOnCharge("1", null, ours, ours)).isTrue()
+        assertThat(ourDreamStartsOnCharge("1", "null", ours, ours)).isTrue()
+        assertThat(ourDreamStartsOnCharge("1", "1", null, ours)).isFalse()
+        assertThat(ourDreamStartsOnCharge("1", "1", "null", ours)).isFalse()
+        assertThat(ourDreamStartsOnCharge("1", "1", "", ours)).isFalse()
     }
 
     @Test

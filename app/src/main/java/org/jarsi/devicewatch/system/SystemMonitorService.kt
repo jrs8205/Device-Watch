@@ -356,7 +356,13 @@ class SystemMonitorService : Service() {
                         chargeAnchorStore.save(
                             ChargeAnchorLogic.onPowerConnected(chargeAnchorStore.load())
                         )
-                        serviceScope.launch(Dispatchers.IO) { chargeStartScreensaver.onPowerConnected() }
+                        serviceScope.launch(Dispatchers.IO) {
+                            // A convenience must never take the monitor down with it.
+                            try {
+                                chargeStartScreensaver.onPowerConnected()
+                            } catch (_: RuntimeException) {
+                            }
+                        }
                     }
                     Intent.ACTION_POWER_DISCONNECTED -> {
                         chargeLimitState = ChargeLimitLogic.onPowerDisconnected(chargeLimitState)
