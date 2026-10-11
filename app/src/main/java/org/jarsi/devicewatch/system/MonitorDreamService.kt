@@ -233,6 +233,22 @@ fun ScreensaverContent(context: Context) {
     val showNotificationIcons = remember(preferences) {
         preferences.getBoolean(DreamPreferences.KEY_SHOW_NOTIFICATIONS, true)
     }
+    // Read once per dream, like the other settings: a rename in Android's About phone
+    // shows at the next start.
+    val deviceName = remember(preferences) {
+        if (preferences.getBoolean(DreamPreferences.KEY_SHOW_DEVICE_NAME, true)) {
+            screensaverDeviceName(
+                deviceName = android.provider.Settings.Global.getString(
+                    context.contentResolver,
+                    android.provider.Settings.Global.DEVICE_NAME,
+                ),
+                model = android.os.Build.MODEL,
+                manufacturer = android.os.Build.MANUFACTURER,
+            )
+        } else {
+            null
+        }
+    }
     val activeNotifications by ActiveNotificationsStore.notifications.collectAsState()
     val notificationGroups = remember(activeNotifications, showNotificationIcons) {
         if (showNotificationIcons) visibleNotificationGroups(activeNotifications) else emptyList()
@@ -448,6 +464,7 @@ fun ScreensaverContent(context: Context) {
                         dateSize = if (clockSize < 100) 22 else 30,
                         amPmText = amPmText,
                         alarmText = alarmText,
+                        deviceName = deviceName,
                         notificationGroups = notificationGroups,
                         notificationPulseToken = notificationPulseToken,
                     )
@@ -491,6 +508,7 @@ fun ScreensaverContent(context: Context) {
                         dateSize = if (clockSize < 100) 22 else 28,
                         amPmText = amPmText,
                         alarmText = alarmText,
+                        deviceName = deviceName,
                         notificationGroups = notificationGroups,
                         notificationPulseToken = notificationPulseToken,
                     )
@@ -556,6 +574,7 @@ fun ClockBlock(
     dateSize: Int,
     amPmText: String = "",
     alarmText: String = "",
+    deviceName: String? = null,
     notificationGroups: List<NotificationIconGroup> = emptyList(),
     notificationPulseToken: Int = 0,
 ) {
@@ -564,6 +583,17 @@ fun ClockBlock(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
+        if (deviceName != null) {
+            Text(
+                text = deviceName,
+                autoSize = fitUpTo((dateSize * 0.72f).sp),
+                maxLines = 1,
+                softWrap = false,
+                fontWeight = FontWeight.Medium,
+                color = Color(0xFF8B929C),
+                letterSpacing = 1.5.sp,
+            )
+        }
         Row(verticalAlignment = Alignment.Bottom) {
             Text(
                 text = timeText,

@@ -340,6 +340,8 @@
     <string name="dream_notifications_access_missing">Notification access is not granted, so the screensaver cannot see notifications. Grant it under Special access below.</string>
     <string name="dream_vertical_shift_title">Move only up and down</string>
     <string name="dream_vertical_shift_description">The screensaver shifts a little once a minute so nothing burns into the screen. With this on it moves only up and down and stays centred sideways.</string>
+    <string name="dream_device_name_title">Show the device name</string>
+    <string name="dream_device_name_description">Show the phone\'s name above the clock, as set under About phone in Android\'s settings.</string>
     <plurals name="dream_unread_notifications">
         <item quantity="one">%d unread notification</item>
         <item quantity="other">%d unread notifications</item>

@@ -143,6 +143,9 @@ internal fun SettingsTab(
     var verticalShiftOnly by remember {
         mutableStateOf(dreamPrefs.getBoolean(DreamPreferences.KEY_VERTICAL_SHIFT_ONLY, false))
     }
+    var showDreamDeviceName by remember {
+        mutableStateOf(dreamPrefs.getBoolean(DreamPreferences.KEY_SHOW_DEVICE_NAME, true))
+    }
     var nightDimStartMinutes by remember {
         mutableIntStateOf(
             dreamPrefs.getInt(
@@ -616,6 +619,20 @@ internal fun SettingsTab(
                     verticalShiftOnly = checked
                     dreamPrefs.edit()
                         .putBoolean(DreamPreferences.KEY_VERTICAL_SHIFT_ONLY, checked)
+                        .apply()
+                }
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            SettingsToggleRow(
+                titleRes = R.string.dream_device_name_title,
+                descriptionRes = R.string.dream_device_name_description,
+                checked = showDreamDeviceName,
+                onCheckedChange = { checked ->
+                    showDreamDeviceName = checked
+                    dreamPrefs.edit()
+                        .putBoolean(DreamPreferences.KEY_SHOW_DEVICE_NAME, checked)
                         .apply()
                 }
             )
