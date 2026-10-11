@@ -313,6 +313,20 @@ class ExtraStatsLogicTest {
     }
 
     @Test
+    fun `android 14 at first compared in binary units and answered in decimal ones`() {
+        // FileUtils.roundStorageSize at android-14.0.0_r1: 1024ⁿ to compare, 1000ⁿ to return.
+        assertThat(ExtraStatsLogic.android14RoundedStorageSize(8_321_499_136L)).isEqualTo(8_000_000_000L)
+        assertThat(ExtraStatsLogic.androidRoundedStorageSize(8_321_499_136L)).isEqualTo(16_000_000_000L)
+        assertThat(ExtraStatsLogic.android14RoundedStorageSize(12_020_539_392L)).isEqualTo(16_000_000_000L)
+    }
+
+    @Test
+    fun `the first android 14 rounding is taken for a guess too`() {
+        assertThat(ExtraStatsLogic.advertisedRam(advertisedBytes = 8_000_000_000L, totalBytes = 8_321_499_136L))
+            .isEqualTo(AdvertisedRam(gb = 8, estimated = true))
+    }
+
+    @Test
     fun `a size the maker gave is shown as sold`() {
         // Pixel 8a: ro.boot.ddr_size is 8GiB; the kernel sees 7 754 796 kB.
         assertThat(ExtraStatsLogic.advertisedRam(advertisedBytes = 8L * 1024 * 1024 * 1024, totalBytes = 7_940_911_104L))

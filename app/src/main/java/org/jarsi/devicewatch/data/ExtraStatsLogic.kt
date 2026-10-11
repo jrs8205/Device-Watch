@@ -152,13 +152,15 @@ object ExtraStatsLogic {
     /**
      * The memory as sold. Android takes it from the maker's `ro.boot.ddr_size`; a phone
      * that sets none (Fairphone 6) gets Android's own guess, its total memory rounded up
-     * the way storage is ([androidRoundedStorageSize]: 11.2 GiB → 16 GB). That guess is
+     * the way storage is ([androidRoundedStorageSize]: 11.2 GiB → 16 GB; the first Android
+     * 14 rounded differently, [android14RoundedStorageSize]). That guess is
      * replaced by the nearest size memory is sold in, marked as an estimate. Null before
      * Android 14, where [advertisedBytes] is 0.
      */
     fun advertisedRam(advertisedBytes: Long, totalBytes: Long): AdvertisedRam? {
         val gb = advertisedRamGb(advertisedBytes) ?: return null
-        if (totalBytes <= 0L || advertisedBytes != androidRoundedStorageSize(totalBytes)) {
+        val androidGuesses = setOf(androidRoundedStorageSize(totalBytes), android14RoundedStorageSize(totalBytes))
+        if (totalBytes <= 0L || advertisedBytes !in androidGuesses) {
             return AdvertisedRam(gb, estimated = false)
         }
         val totalGib = totalBytes / GIB
@@ -178,6 +180,25 @@ object ExtraStatsLogic {
             }
         }
         return value * unit
+    }
+
+    /**
+     * FileUtils.roundStorageSize as Android 14 first shipped it (android-14.0.0_r1): it
+     * compares in powers of 1024 but answers in powers of 1000, so 7.75 GiB reads 8 GB.
+     */
+    fun android14RoundedStorageSize(bytes: Long): Long {
+        var value = 1L
+        var kilo = 1L
+        var kibi = 1L
+        while (value * kibi < bytes) {
+            value = value shl 1
+            if (value > 512) {
+                value = 1
+                kibi *= 1024
+                kilo *= 1000
+            }
+        }
+        return value * kilo
     }
 
     /** The sizes phones' memory is sold in, in GB. */
