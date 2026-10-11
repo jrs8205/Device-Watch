@@ -161,11 +161,37 @@ class FittedText(val text: String, val sizeDp: Float)
 @Composable
 fun fittedName(text: String, sizeDp: Float, availableDp: Float, bold: Boolean = true): FittedText {
     val density = LocalContext.current.resources.displayMetrics.density
-    val available = availableDp * FIT_MARGIN
-    val size = shrinkToFitDp(
-        sizeDp, measureTextWidthDp(text, sizeDp, bold, density), available, minDp = sizeDp * NAME_MIN_SIZE_RATIO,
-    )
-    return FittedText(ellipsizeToFit(text, available) { measureTextWidthDp(it, size, bold, density) }, size)
+    return fitName(text, sizeDp, availableDp * FIT_MARGIN, sizeDp * NAME_MIN_SIZE_RATIO) { shown, size ->
+        measureTextWidthDp(shown, size, bold, density)
+    }
 }
+
+/**
+ * [fittedName]'s fit, with [widthAt] measuring text at a size. Glyph widths are
+ * rounded, so a size shrunk in proportion can still measure a hair too wide; the
+ * size is measured again and stepped down until the whole text fits, and only a
+ * text that does not fit at [minDp] is cut.
+ */
+fun fitName(
+    text: String,
+    sizeDp: Float,
+    availableDp: Float,
+    minDp: Float,
+    widthAt: (String, Float) -> Float,
+): FittedText {
+    val floor = minOf(minDp, sizeDp)
+    var size = shrinkToFitDp(sizeDp, widthAt(text, sizeDp), availableDp, floor)
+    var refits = 0
+    while (size > floor && refits++ < MAX_REFITS) {
+        val width = widthAt(text, size)
+        if (!width.isFinite() || width <= availableDp) break
+        size = maxOf(floor, minOf(size - REFIT_STEP_DP, size * availableDp / width))
+    }
+    return FittedText(ellipsizeToFit(text, availableDp) { widthAt(it, size) }, size)
+}
+
+/** Enough steps to cross from any size to its floor; each one measures once. */
+private const val MAX_REFITS = 40
+private const val REFIT_STEP_DP = 0.1f
 
 private const val FIT_MARGIN = 0.92f

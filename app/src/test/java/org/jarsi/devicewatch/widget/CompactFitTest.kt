@@ -90,6 +90,38 @@ class CompactFitTest {
             .isEqualTo("Koti…")
     }
 
+    /**
+     * Glyph widths that round up to a quarter dp, as Paint's do: shrinking in proportion
+     * then lands a hair too wide, as Codex found with "SINCE BOOT" at 420 dpi.
+     */
+    private val quantizedWidth = { text: String, sizeDp: Float ->
+        text.length * kotlin.math.ceil(sizeDp * 0.5f * 4f) / 4f
+    }
+
+    @Test
+    fun `a name that fits above its floor is shrunk until it does, never cut`() {
+        // 45 dp at 9 dp in 44 dp: in proportion 8.8 dp, which still measures 45 dp.
+        val fit = fitName("SINCE BOOT", sizeDp = 9f, availableDp = 44f, minDp = 6.75f, widthAt = quantizedWidth)
+        assertThat(fit.text).isEqualTo("SINCE BOOT")
+        assertThat(quantizedWidth(fit.text, fit.sizeDp)).isAtMost(44f)
+        assertThat(fit.sizeDp).isAtLeast(6.75f)
+    }
+
+    @Test
+    fun `a name is cut only once it has reached its floor`() {
+        val fit = fitName("SINCE BOOT", sizeDp = 9f, availableDp = 30f, minDp = 6.75f, widthAt = quantizedWidth)
+        assertThat(fit.sizeDp).isEqualTo(6.75f)
+        assertThat(fit.text).endsWith("…")
+        assertThat(quantizedWidth(fit.text, fit.sizeDp)).isAtMost(30f)
+    }
+
+    @Test
+    fun `a name that fits keeps its size and text`() {
+        val fit = fitName("WI-FI", sizeDp = 9f, availableDp = 44f, minDp = 6.75f, widthAt = quantizedWidth)
+        assertThat(fit.text).isEqualTo("WI-FI")
+        assertThat(fit.sizeDp).isEqualTo(9f)
+    }
+
     @Test
     fun `no room at all leaves only the ellipsis`() {
         assertThat(ellipsizeToFit("Kotiverkko", availableDp = 0.5f, widthOf = { it.length.toFloat() }))
