@@ -64,6 +64,39 @@ class CompactFitTest {
     }
 
     @Test
+    fun `a name shrinks no further than its floor`() {
+        // 13 dp measured 120 dp wide in 40 dp would have gone down to 4.33 dp.
+        assertThat(shrinkToFitDp(sizeDp = 13f, widthAtSizeDp = 120f, availableDp = 40f, minDp = 9.75f))
+            .isEqualTo(9.75f)
+        assertThat(shrinkToFitDp(sizeDp = 13f, widthAtSizeDp = 14f, availableDp = 13f, minDp = 9.75f))
+            .isWithin(1e-4f).of(13f * 13f / 14f)
+    }
+
+    @Test
+    fun `a name that does not fit at its floor is cut with an ellipsis`() {
+        // One dp per character keeps the arithmetic visible.
+        val width = { text: String -> text.length.toFloat() }
+        assertThat(ellipsizeToFit("Kotiverkko-5G-Extender", availableDp = 10f, widthOf = width))
+            .isEqualTo("Kotiverkk…")
+        assertThat(ellipsizeToFit("Koti", availableDp = 10f, widthOf = width)).isEqualTo("Koti")
+    }
+
+    @Test
+    fun `an ellipsis never splits an emoji or leaves a space before it`() {
+        val width = { text: String -> text.length.toFloat() }
+        assertThat(ellipsizeToFit("Koti 📶 verkko", availableDp = 7f, widthOf = width))
+            .isEqualTo("Koti…")
+        assertThat(ellipsizeToFit("Koti📶verkko", availableDp = 6f, widthOf = width))
+            .isEqualTo("Koti…")
+    }
+
+    @Test
+    fun `no room at all leaves only the ellipsis`() {
+        assertThat(ellipsizeToFit("Kotiverkko", availableDp = 0.5f, widthOf = { it.length.toFloat() }))
+            .isEqualTo("…")
+    }
+
+    @Test
     fun `unmeasurable input leaves the size alone`() {
         assertThat(shrinkToFitDp(16f, widthAtSizeDp = 0f, availableDp = 39f)).isEqualTo(16f)
         assertThat(shrinkToFitDp(16f, widthAtSizeDp = 40f, availableDp = 0f)).isEqualTo(16f)

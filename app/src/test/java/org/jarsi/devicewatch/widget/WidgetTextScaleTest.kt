@@ -47,24 +47,57 @@ class WidgetTextScaleTest {
     }
 
     @Test
-    fun `a larger display size is undone so the content keeps its default pixel size`() {
-        // Pixel 8 class: default 420 dpi, largest display size 546 dpi. The
-        // launcher cell keeps its pixel size, so the content must too.
-        assertThat(widgetDensityRatio(systemDensity = 3.4125f, defaultDensity = 2.625f))
-            .isWithin(1e-5f).of(2.625f / 3.4125f)
+    fun `the widgets draw their sizes in plain dp whatever density the screen claims as default`() {
+        // Fairphone 6 reads a 160 dpi default against its real 480 dpi: the widget used
+        // to draw at a third of its size. Nothing here takes a density any more.
+        assertThat(widgetSizeDp(baseDp = 22f, spaceScale = 1f)).isEqualTo(22f)
+        assertThat(widgetTextSizeDp(baseDp = 13f, fontScale = 1f, spaceScale = 1f)).isEqualTo(13f)
     }
 
     @Test
-    fun `the default or a smaller display size passes through unchanged`() {
-        assertThat(widgetDensityRatio(systemDensity = 2.625f, defaultDensity = 2.625f)).isEqualTo(1f)
-        assertThat(widgetDensityRatio(systemDensity = 2.2f, defaultDensity = 2.625f)).isEqualTo(1f)
+    fun `text follows the font setting within the cap`() {
+        val sizes = listOf(0.85f, 1.0f, 1.15f, 1.3f, 2.0f).map { widgetTextSizeDp(13f, it, spaceScale = 1f) }
+        assertThat(sizes).containsExactly(
+            13f * 0.85f, 13f, 13f * MAX_WIDGET_FONT_SCALE, 13f * MAX_WIDGET_FONT_SCALE, 13f * MAX_WIDGET_FONT_SCALE,
+        ).inOrder()
     }
 
     @Test
-    fun `nonsense densities leave the widget unscaled`() {
-        assertThat(widgetDensityRatio(0f, 2.625f)).isEqualTo(1f)
-        assertThat(widgetDensityRatio(Float.NaN, 2.625f)).isEqualTo(1f)
-        assertThat(widgetDensityRatio(3.4f, 0f)).isEqualTo(1f)
-        assertThat(widgetDensityRatio(3.4f, Float.POSITIVE_INFINITY)).isEqualTo(1f)
+    fun `a widget that has the height its content needs is drawn at full size`() {
+        // Hosts measured on the owner's launcher: Fairphone 6 372 x 613 dp, Pixel 8a 411 x 698 dp.
+        listOf(1f, MAX_WIDGET_FONT_SCALE).forEach { font ->
+            assertThat(widgetSpaceScale(613f, dashboardNeededHeightDp(font))).isEqualTo(1f)
+            assertThat(widgetSpaceScale(698f, dashboardNeededHeightDp(font))).isEqualTo(1f)
+        }
+        // A 2 x 2 compact widget is about 180 dp tall.
+        assertThat(widgetSpaceScale(180f, compactNeededHeightDp(MAX_WIDGET_FONT_SCALE))).isEqualTo(1f)
+    }
+
+    @Test
+    fun `a widget shorter than its content scales the content down to fit`() {
+        // A launcher's shorter 4 x 4 cell, or a larger display size shrinking the host.
+        val needed = dashboardNeededHeightDp(1f)
+        assertThat(widgetSpaceScale(450f, needed)).isWithin(1e-5f).of(450f / needed)
+        assertThat(450f / needed).isIn(com.google.common.collect.Range.open(MIN_WIDGET_SPACE_SCALE, 1f))
+    }
+
+    @Test
+    fun `the fit never shrinks content past the readable floor`() {
+        // The smallest the dashboard resizes to is 320 dp.
+        assertThat(widgetSpaceScale(320f, dashboardNeededHeightDp(1f))).isEqualTo(MIN_WIDGET_SPACE_SCALE)
+    }
+
+    @Test
+    fun `a larger font needs more height`() {
+        assertThat(dashboardNeededHeightDp(MAX_WIDGET_FONT_SCALE)).isGreaterThan(dashboardNeededHeightDp(1f))
+        assertThat(compactNeededHeightDp(MAX_WIDGET_FONT_SCALE)).isGreaterThan(compactNeededHeightDp(1f))
+    }
+
+    @Test
+    fun `nonsense sizes leave the widget unscaled`() {
+        assertThat(widgetSpaceScale(0f, 500f)).isEqualTo(1f)
+        assertThat(widgetSpaceScale(Float.NaN, 500f)).isEqualTo(1f)
+        assertThat(widgetSpaceScale(400f, 0f)).isEqualTo(1f)
+        assertThat(widgetSpaceScale(400f, Float.POSITIVE_INFINITY)).isEqualTo(1f)
     }
 }

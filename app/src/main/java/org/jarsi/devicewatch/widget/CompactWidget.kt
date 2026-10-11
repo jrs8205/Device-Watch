@@ -5,6 +5,7 @@ import android.content.Intent
 import android.content.res.Configuration
 import android.os.Build
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.datastore.preferences.core.Preferences
 import androidx.glance.ColorFilter
 import androidx.glance.GlanceId
@@ -131,6 +132,25 @@ class CompactWidgetReceiver : GlanceAppWidgetReceiver() {
  */
 @Composable
 fun CompactWidgetContent() {
+    val spaceScale = widgetSpaceScale(LocalSize.current.height.value, compactNeededHeightDp(widgetFontScale()))
+    CompositionLocalProvider(LocalWidgetSpaceScale provides spaceScale) {
+        CompactContent()
+    }
+}
+
+/**
+ * The height the compact widget's content needs at full size, in dp: its padding
+ * and two rows of [CompactCell]s (a heading line over a figure) with the gap
+ * between them. Keep it in step with [CompactContent].
+ */
+fun compactNeededHeightDp(fontScale: Float): Float {
+    fun line(dp: Float) = widgetLineDp(dp, fontScale)
+    val cell = maxOf(11f, line(9f)) + line(16f)
+    return 12f * 2 + cell * 2 + 8f
+}
+
+@Composable
+private fun CompactContent() {
     val context = androidx.glance.LocalContext.current
     val isDark = (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
         Configuration.UI_MODE_NIGHT_YES
@@ -242,10 +262,11 @@ private fun CompactCell(
                 modifier = GlanceModifier.size(widgetDp(iconDp))
             )
             Spacer(modifier = GlanceModifier.width(widgetDp(4f)))
+            val labelFit = fittedName(label, widgetTextDp(9f), labelWidthDp)
             Text(
-                text = label,
+                text = labelFit.text,
                 style = TextStyle(
-                    fontSize = spForDp(fittedTextDp(label, widgetTextDp(9f), labelWidthDp)),
+                    fontSize = spForDp(labelFit.sizeDp),
                     fontWeight = FontWeight.Bold,
                     color = colors.labelText
                 ),

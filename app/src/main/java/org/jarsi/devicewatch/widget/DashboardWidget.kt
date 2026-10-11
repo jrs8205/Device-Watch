@@ -2,6 +2,7 @@ package org.jarsi.devicewatch.widget
 
 import android.content.Context
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.graphics.Color
 import androidx.datastore.preferences.core.Preferences
 import androidx.glance.ColorFilter
@@ -155,6 +156,29 @@ class DashboardWidget : GlanceAppWidget() {
 
 @Composable
 fun WidgetContent() {
+    val spaceScale = widgetSpaceScale(LocalSize.current.height.value, dashboardNeededHeightDp(widgetFontScale()))
+    CompositionLocalProvider(LocalWidgetSpaceScale provides spaceScale) {
+        DashboardContent()
+    }
+}
+
+/**
+ * The height the dashboard's content needs at full size, in dp: the sum of the
+ * layout in [DashboardContent] — its padding, two rows of [MetricTile]s, the two
+ * network rows and the footer, with the gaps between them. Keep it in step with
+ * the layout. Text lines count at [WIDGET_LINE_HEIGHT]; every other size is the
+ * layout's own.
+ */
+fun dashboardNeededHeightDp(fontScale: Float): Float {
+    fun line(dp: Float) = widgetLineDp(dp, fontScale)
+    val tile = 16f * 2 + maxOf(22f, line(12f)) + 2f + line(34f) + 2f + line(13f) + 8f + 4f + line(13f)
+    val networkRow = 17f * 2 + maxOf(30f, line(16f) + line(13f), line(17f) + maxOf(15f, line(10f)))
+    val footer = maxOf(18f, line(13f))
+    return 18f * 2 + tile * 2 + 12f + 8f + networkRow + 8f + networkRow + 12f + footer
+}
+
+@Composable
+private fun DashboardContent() {
     val context = androidx.glance.LocalContext.current
     val isDark = (context.resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
 
@@ -339,10 +363,10 @@ fun WidgetContent() {
                 Spacer(modifier = GlanceModifier.width(widgetDp(12f)))
                 Column(modifier = GlanceModifier.defaultWeight()) {
                     Text(
-                        text = wifiTitle,
+                        text = wifiFit.title.text,
                         style = TextStyle(
                             color = colors.textPrimary,
-                            fontSize = spForDp(wifiFit.titleDp),
+                            fontSize = spForDp(wifiFit.title.sizeDp),
                             fontWeight = FontWeight.Bold
                         ),
                         maxLines = 1
@@ -397,10 +421,10 @@ fun WidgetContent() {
                         )
                         Spacer(modifier = GlanceModifier.width(widgetDp(4f)))
                         Text(
-                            text = wifiDataLabel,
+                            text = wifiFit.label.text,
                             style = TextStyle(
                                 color = colors.textMuted,
-                                fontSize = spForDp(wifiFit.labelDp),
+                                fontSize = spForDp(wifiFit.label.sizeDp),
                                 fontWeight = FontWeight.Bold
                             ),
                             maxLines = 1
@@ -433,10 +457,10 @@ fun WidgetContent() {
                 Spacer(modifier = GlanceModifier.width(widgetDp(12f)))
                 Column(modifier = GlanceModifier.defaultWeight()) {
                     Text(
-                        text = mobileTitle,
+                        text = mobileFit.title.text,
                         style = TextStyle(
                             color = colors.textPrimary,
-                            fontSize = spForDp(mobileFit.titleDp),
+                            fontSize = spForDp(mobileFit.title.sizeDp),
                             fontWeight = FontWeight.Bold
                         ),
                         maxLines = 1
@@ -470,10 +494,10 @@ fun WidgetContent() {
                         )
                         Spacer(modifier = GlanceModifier.width(widgetDp(4f)))
                         Text(
-                            text = mobileDataLabel,
+                            text = mobileFit.label.text,
                             style = TextStyle(
                                 color = colors.textMuted,
-                                fontSize = spForDp(mobileFit.labelDp),
+                                fontSize = spForDp(mobileFit.label.sizeDp),
                                 fontWeight = FontWeight.Bold
                             ),
                             maxLines = 1
@@ -584,15 +608,16 @@ fun MetricTile(
             .cornerRadius(widgetDp(20f))
             .padding(widgetDp(16f))
     ) {
+        val titleFit = fittedName(title, widgetTextDp(12f), contentWidthDp - widgetDp(22f).value)
         Row(
             modifier = GlanceModifier.fillMaxWidth(),
             verticalAlignment = Alignment.Vertical.CenterVertically
         ) {
             Text(
-                text = title,
+                text = titleFit.text,
                 style = TextStyle(
                     color = colors.labelText,
-                    fontSize = spForDp(fittedTextDp(title, widgetTextDp(12f), contentWidthDp - widgetDp(22f).value)),
+                    fontSize = spForDp(titleFit.sizeDp),
                     fontWeight = FontWeight.Bold
                 ),
                 maxLines = 1
@@ -740,15 +765,17 @@ fun MetricTile(
 }
 
 private class NetworkRowFit(
-    val titleDp: Float,
+    val title: FittedText,
     val detailDp: Float,
     val amountDp: Float,
-    val labelDp: Float,
+    val label: FittedText,
 )
 
 /**
- * Text sizes for a full-width network row: the data amount and its label get
- * up to half of [rowDp], and the name and detail lines fit what they leave.
+ * Text for a full-width network row: the data amount and its label get up to
+ * half of [rowDp], and the name and detail lines fit what they leave. The
+ * figures shrink to stay whole; the network's name and the label are names,
+ * cut short below their floor (see [fittedName]).
  */
 @Composable
 private fun networkRowFit(
@@ -762,14 +789,14 @@ private fun networkRowFit(
     val rightDp = rowDp / 2
     val labelIconDp = widgetDp(15f + 4f).value
     val amountDp = fittedTextDp(amount, widgetTextDp(17f), rightDp)
-    val labelDp = fittedTextDp(label, widgetTextDp(10f), rightDp - labelIconDp)
-    val usedRightDp = maxOf(textWidthDp(amount, amountDp), labelIconDp + textWidthDp(label, labelDp))
+    val labelFit = fittedName(label, widgetTextDp(10f), rightDp - labelIconDp)
+    val usedRightDp = maxOf(textWidthDp(amount, amountDp), labelIconDp + textWidthDp(labelFit.text, labelFit.sizeDp))
     val leftDp = rowDp - usedRightDp
     return NetworkRowFit(
-        titleDp = fittedTextDp(title, widgetTextDp(16f), leftDp),
+        title = fittedName(title, widgetTextDp(16f), leftDp),
         detailDp = fittedTextDp(detail, widgetTextDp(13f), leftDp - detailGapDp, bold = false),
         amountDp = amountDp,
-        labelDp = labelDp,
+        label = labelFit,
     )
 }
 
