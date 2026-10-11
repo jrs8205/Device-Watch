@@ -88,8 +88,9 @@ Device Watch is available on
 automatically, and on [**Aptoide**](https://device-watch.en.aptoide.com/app), which also offers a
 [direct APK download](https://aptoide-mmp.aptoide.com/api/v1/download?package_name=org.jarsi.devicewatch&oemid=584d342f9e68b0c33244b78f3cc21a24&redirect_url=https%3A%2F%2Fws.catappult.io%2Fapi%2FdirectToConsumer%2Forg.jarsi.devicewatch%2Fdownload).
 Alternatively, download the latest signed APK from the
-[**Releases**](https://github.com/jrs8205/Device-Watch/releases/latest) page and open it on your
-device to install. Releases are built reproducibly and F-Droid verifies each build against the
+[**Releases**](https://github.com/jrs8205/Device-Watch/releases/latest) page, or from its mirror on
+[**SourceForge**](https://sourceforge.net/projects/device-watch/), and open it on your device to
+install. Releases are built reproducibly and F-Droid verifies each build against the
 developer-signed APK, so every source ships an APK signed with the same key and later versions
 install cleanly as an update over an existing one — from any source.
 
