@@ -149,6 +149,40 @@ object ExtraStatsLogic {
      * report it in binary or decimal units, so the reading that lands closer to a
      * whole number wins (8 GiB and 8 000 000 000 bytes both read as 8).
      */
+    /**
+     * The memory as sold. Android takes it from the maker's `ro.boot.ddr_size`; a phone
+     * that sets none (Fairphone 6) gets Android's own guess, its total memory rounded up
+     * the way storage is ([androidRoundedStorageSize]: 11.2 GiB → 16 GB). That guess is
+     * replaced by the nearest size memory is sold in, marked as an estimate. Null before
+     * Android 14, where [advertisedBytes] is 0.
+     */
+    fun advertisedRam(advertisedBytes: Long, totalBytes: Long): AdvertisedRam? {
+        val gb = advertisedRamGb(advertisedBytes) ?: return null
+        if (totalBytes <= 0L || advertisedBytes != androidRoundedStorageSize(totalBytes)) {
+            return AdvertisedRam(gb, estimated = false)
+        }
+        val totalGib = totalBytes / GIB
+        val sold = SOLD_RAM_GB.firstOrNull { it >= totalGib } ?: Math.ceil(totalGib).toInt()
+        return AdvertisedRam(sold, estimated = true)
+    }
+
+    /** FileUtils.roundStorageSize, which Process.getAdvertisedMem() falls back to: 1, 2, 4 … 512 × 1000ⁿ. */
+    fun androidRoundedStorageSize(bytes: Long): Long {
+        var value = 1L
+        var unit = 1L
+        while (value * unit < bytes) {
+            value = value shl 1
+            if (value > 512) {
+                value = 1
+                unit *= 1000
+            }
+        }
+        return value * unit
+    }
+
+    /** The sizes phones' memory is sold in, in GB. */
+    private val SOLD_RAM_GB = listOf(1, 2, 3, 4, 6, 8, 10, 12, 16, 18, 20, 24, 32, 48, 64)
+
     fun advertisedRamGb(bytes: Long): Int? {
         if (bytes <= 0L) return null
         val binary = bytes / GIB
@@ -700,3 +734,6 @@ object ExtraStatsLogic {
 
     private const val MINUTE_MILLIS = 60_000L
 }
+
+/** The memory as sold, in GB; [estimated] when Android only guessed and the app rounded instead. */
+data class AdvertisedRam(val gb: Int, val estimated: Boolean)

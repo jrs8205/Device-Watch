@@ -858,7 +858,9 @@ class SystemStatsRepositoryImpl @Inject constructor(
         val advertisedRam = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             val memoryInfo = ActivityManager.MemoryInfo()
             (context.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager)?.getMemoryInfo(memoryInfo)
-            ExtraStatsLogic.advertisedRamGb(memoryInfo.advertisedMem)?.let { "$it GB" } ?: UNAVAILABLE_TEXT
+            ExtraStatsLogic.advertisedRam(memoryInfo.advertisedMem, memoryInfo.totalMem)?.let { ram ->
+                if (ram.estimated) context.getString(R.string.device_info_ram_estimate, ram.gb) else "${ram.gb} GB"
+            } ?: UNAVAILABLE_TEXT
         } else {
             UNAVAILABLE_TEXT
         }

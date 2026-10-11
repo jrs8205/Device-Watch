@@ -304,6 +304,51 @@ class ExtraStatsLogicTest {
     }
 
     @Test
+    fun `android's own guess at the memory size is rounded the way it rounds storage`() {
+        // Process.getAdvertisedMem() falls back to FileUtils.roundStorageSize(totalMem).
+        assertThat(ExtraStatsLogic.androidRoundedStorageSize(12_020_539_392L)).isEqualTo(16_000_000_000L)
+        assertThat(ExtraStatsLogic.androidRoundedStorageSize(7_940_911_104L)).isEqualTo(8_000_000_000L)
+        assertThat(ExtraStatsLogic.androidRoundedStorageSize(600L)).isEqualTo(1_000L)
+        assertThat(ExtraStatsLogic.androidRoundedStorageSize(512L)).isEqualTo(512L)
+    }
+
+    @Test
+    fun `a size the maker gave is shown as sold`() {
+        // Pixel 8a: ro.boot.ddr_size is 8GiB; the kernel sees 7 754 796 kB.
+        assertThat(ExtraStatsLogic.advertisedRam(advertisedBytes = 8L * 1024 * 1024 * 1024, totalBytes = 7_940_911_104L))
+            .isEqualTo(AdvertisedRam(gb = 8, estimated = false))
+    }
+
+    @Test
+    fun `android's guess is replaced by the nearest size phones are sold with`() {
+        // Fairphone 6 sets no ro.boot.ddr_size; Android rounds its 11.2 GiB up to 16 GB.
+        assertThat(ExtraStatsLogic.advertisedRam(advertisedBytes = 16_000_000_000L, totalBytes = 12_020_539_392L))
+            .isEqualTo(AdvertisedRam(gb = 12, estimated = true))
+    }
+
+    @Test
+    fun `the estimate rounds up to a size memory comes in`() {
+        fun estimateFor(gib: Double): Int? {
+            val total = (gib * 1024 * 1024 * 1024).toLong()
+            return ExtraStatsLogic.advertisedRam(ExtraStatsLogic.androidRoundedStorageSize(total), total)?.gb
+        }
+        assertThat(estimateFor(3.6)).isEqualTo(4)
+        assertThat(estimateFor(5.5)).isEqualTo(6)
+        assertThat(estimateFor(7.4)).isEqualTo(8)
+        assertThat(estimateFor(11.2)).isEqualTo(12)
+        assertThat(estimateFor(15.0)).isEqualTo(16)
+        assertThat(estimateFor(22.5)).isEqualTo(24)
+    }
+
+    @Test
+    fun `no advertised size, or no memory at all, gives nothing`() {
+        // advertisedMem is 0 before Android 14.
+        assertThat(ExtraStatsLogic.advertisedRam(advertisedBytes = 0L, totalBytes = 12_020_539_392L)).isNull()
+        assertThat(ExtraStatsLogic.advertisedRam(advertisedBytes = 16_000_000_000L, totalBytes = 0L))
+            .isEqualTo(AdvertisedRam(gb = 16, estimated = false))
+    }
+
+    @Test
     fun `no advertised memory reads as none`() {
         assertThat(ExtraStatsLogic.advertisedRamGb(0L)).isNull()
         assertThat(ExtraStatsLogic.advertisedRamGb(-1L)).isNull()

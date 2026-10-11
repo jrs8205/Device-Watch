@@ -464,6 +464,8 @@
 
     <string name="system_info_section">SYSTEM</string>
     <string name="device_info_ram_advertised">RAM as sold</string>
+    <!-- The phone does not state its memory size; this is the nearest size memory is sold in. -->
+    <string name="device_info_ram_estimate">about %1$d GB</string>
     <string name="screen_on_label">Screen on</string>
     <string name="report_summary_screen_on">Screen on per day</string>
     <string name="report_column_screen_on">Screen on</string>
