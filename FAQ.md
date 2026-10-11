@@ -17,8 +17,8 @@ out by itself**. Two things routinely trip people up:
   there; the exact system path varies by manufacturer.
 - **With Always On Display on, plugging in does not wake the phone**, so there is no timeout and
   the screensaver waits until someone wakes the screen. Switch on *Start as soon as charging
-  begins* in the app's Settings: Device Watch then wakes the screen when charging begins on a
-  locked phone, and the lock screen times out into the screensaver in about 10–15 seconds. With
+  begins* in the app's Settings: Device Watch then wakes the screen when charging begins with the
+  screen off, and the lock screen times out into the screensaver in about 10–15 seconds. With
   extended access (Shizuku or root) on, it asks Android to start the screensaver at once instead.
 
 ### It still doesn't start on my Samsung
