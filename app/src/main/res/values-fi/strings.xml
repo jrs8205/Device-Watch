@@ -337,6 +337,8 @@
     <string name="dream_vertical_shift_title">Siirrä vain pystysuunnassa</string>
     <string name="dream_vertical_shift_description">Näytönsäästäjä siirtyy minuutin välein hieman, ettei näyttöön pala kuvaa. Tämän ollessa päällä se siirtyy vain ylös ja alas ja pysyy vaakasuunnassa keskellä.</string>
     <string name="dream_device_name_title">Näytä laitteen nimi</string>
+    <string name="dream_start_on_charge_title">Käynnistä heti kun lataus alkaa</string>
+    <string name="dream_start_on_charge_description">Kun lataus alkaa lukitussa puhelimessa tai näytön ollessa pois päältä, näytönsäästäjä käynnistyy myös Always On Displayn ollessa päällä: laajennetulla käytöllä heti, muuten Device Watch herättää näytön ja näytönsäästäjä seuraa noin 10–15 sekunnissa. Ei koskaan, kun puhelin on avattu ja käytössä.</string>
     <string name="dream_device_name_description">Näyttää puhelimen nimen kellon yläpuolella, sellaisena kuin se on Androidin asetuksissa kohdassa Tietoja puhelimesta.</string>
     <plurals name="dream_unread_notifications">
         <item quantity="one">%d kuittaamaton ilmoitus</item>

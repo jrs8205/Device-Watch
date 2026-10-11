@@ -132,6 +132,16 @@ class MonitorDreamService : DreamService(), LifecycleOwner, ViewModelStoreOwner,
         lifecycleDriver.onAttachedToWindow()
     }
 
+    override fun onDreamingStarted() {
+        super.onDreamingStarted()
+        isDreaming = true
+    }
+
+    override fun onDreamingStopped() {
+        super.onDreamingStopped()
+        isDreaming = false
+    }
+
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
         // GitHub #4: may arrive after onDestroy() on Android 14+; the driver skips it then.
@@ -140,8 +150,16 @@ class MonitorDreamService : DreamService(), LifecycleOwner, ViewModelStoreOwner,
 
     override fun onDestroy() {
         super.onDestroy()
+        isDreaming = false
         lifecycleDriver.onDestroy()
         store.clear()
+    }
+
+    companion object {
+        /** Whether this screensaver is up, for [ChargeStartScreensaver]: same process. */
+        @Volatile
+        var isDreaming = false
+            private set
     }
 }
 

@@ -146,6 +146,9 @@ internal fun SettingsTab(
     var showDreamDeviceName by remember {
         mutableStateOf(dreamPrefs.getBoolean(DreamPreferences.KEY_SHOW_DEVICE_NAME, true))
     }
+    var startDreamOnCharge by remember {
+        mutableStateOf(dreamPrefs.getBoolean(DreamPreferences.KEY_START_ON_CHARGE, false))
+    }
     var nightDimStartMinutes by remember {
         mutableIntStateOf(
             dreamPrefs.getInt(
@@ -633,6 +636,20 @@ internal fun SettingsTab(
                     showDreamDeviceName = checked
                     dreamPrefs.edit()
                         .putBoolean(DreamPreferences.KEY_SHOW_DEVICE_NAME, checked)
+                        .apply()
+                }
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            SettingsToggleRow(
+                titleRes = R.string.dream_start_on_charge_title,
+                descriptionRes = R.string.dream_start_on_charge_description,
+                checked = startDreamOnCharge,
+                onCheckedChange = { checked ->
+                    startDreamOnCharge = checked
+                    dreamPrefs.edit()
+                        .putBoolean(DreamPreferences.KEY_START_ON_CHARGE, checked)
                         .apply()
                 }
             )

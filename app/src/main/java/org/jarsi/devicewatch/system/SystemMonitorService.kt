@@ -64,6 +64,7 @@ class SystemMonitorService : Service() {
     @Inject lateinit var alertNotifications: AlertNotifications
     private val alertController by lazy { HealthAlertController(appSettings, alertNotifications) }
     @Inject lateinit var batteryStatus: BatteryStatusReader
+    @Inject lateinit var chargeStartScreensaver: ChargeStartScreensaver
 
     private var lastUsageRefreshMs = 0L
 
@@ -355,6 +356,7 @@ class SystemMonitorService : Service() {
                         chargeAnchorStore.save(
                             ChargeAnchorLogic.onPowerConnected(chargeAnchorStore.load())
                         )
+                        serviceScope.launch(Dispatchers.IO) { chargeStartScreensaver.onPowerConnected() }
                     }
                     Intent.ACTION_POWER_DISCONNECTED -> {
                         chargeLimitState = ChargeLimitLogic.onPowerDisconnected(chargeLimitState)
