@@ -17,6 +17,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.Density
+import org.jarsi.devicewatch.data.knownDefaultDensityDpi
 import org.jarsi.devicewatch.presentation.ui.clampedDensity
 import org.jarsi.devicewatch.presentation.ui.clampedFontScale
 import kotlin.math.roundToInt
@@ -149,10 +150,11 @@ fun ModernWidgetTheme(
 fun ProvideBoundedDensity(content: @Composable () -> Unit) {
     val systemDensity = LocalDensity.current
     val configuration = LocalConfiguration.current
-    val defaultDensity = DisplayMetrics.DENSITY_DEVICE_STABLE / DisplayMetrics.DENSITY_DEFAULT.toFloat()
+    val defaultDensity = knownDefaultDensityDpi(DisplayMetrics.DENSITY_DEVICE_STABLE, configuration.densityDpi)
+        ?.let { it / DisplayMetrics.DENSITY_DEFAULT.toFloat() }
     // The smallest width, not the current one: the bound is a property of the
     // device, and turning the phone sideways must not let the bars grow.
-    val boundedDensity = remember(systemDensity, configuration.smallestScreenWidthDp) {
+    val boundedDensity = remember(systemDensity, configuration.smallestScreenWidthDp, defaultDensity) {
         val widthPx = (configuration.smallestScreenWidthDp * systemDensity.density).roundToInt()
         Density(
             density = clampedDensity(systemDensity.density, defaultDensity, widthPx),

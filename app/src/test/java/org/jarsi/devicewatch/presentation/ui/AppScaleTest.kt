@@ -68,4 +68,11 @@ class AppScaleTest {
         assertThat(clampedDensity(systemDensity = Float.NaN, defaultDensity = 2.625f, widthPx = 1080))
             .isEqualTo(2.625f)
     }
+
+    @Test
+    fun `without a known default density the system density is used as it is`() {
+        // Fairphone 6 at its default 3.0: the 400 dp floor alone would shrink it to 2.79.
+        assertThat(clampedDensity(systemDensity = 3.0f, defaultDensity = null, widthPx = 1116))
+            .isEqualTo(3.0f)
+    }
 }

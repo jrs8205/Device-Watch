@@ -579,6 +579,35 @@ class ExtraStatsLogicTest {
     }
 
     @Test
+    fun `an unknown default density gives no display size, never a made-up one`() {
+        // Fairphone 6 read 160 dpi as its default and showed 300 %.
+        assertThat(ExtraStatsLogic.displaySizePercent(densityDpi = 480, defaultDpi = null)).isNull()
+        assertThat(
+            ExtraStatsLogic.displaySizePercent(480, knownDefaultDensityDpi(stableDpi = 160, currentDpi = 480))
+        ).isNull()
+    }
+
+    @Test
+    fun `the screen diagonal is estimated from the pixel densities android reports`() {
+        // Fairphone 6: 1116 x 2484 px at 429.49 / 432.147 dpi; the maker states 6.31".
+        assertThat(ExtraStatsLogic.estimatedDiagonalInches(1116, 2484, 429.49f, 432.147f)!!)
+            .isWithin(0.001).of(6.308)
+        // Pixel 8a: the same sum gives 6.48" for a panel sold as 6.1", hence an estimate.
+        assertThat(ExtraStatsLogic.estimatedDiagonalInches(1080, 2400, 391.885f, 409.127f)!!)
+            .isWithin(0.001).of(6.481)
+    }
+
+    @Test
+    fun `nonsense screen figures give no estimate`() {
+        assertThat(ExtraStatsLogic.estimatedDiagonalInches(0, 2400, 400f, 400f)).isNull()
+        assertThat(ExtraStatsLogic.estimatedDiagonalInches(1080, -1, 400f, 400f)).isNull()
+        assertThat(ExtraStatsLogic.estimatedDiagonalInches(1080, 2400, 0f, 400f)).isNull()
+        assertThat(ExtraStatsLogic.estimatedDiagonalInches(1080, 2400, 400f, -3f)).isNull()
+        assertThat(ExtraStatsLogic.estimatedDiagonalInches(1080, 2400, Float.NaN, 400f)).isNull()
+        assertThat(ExtraStatsLogic.estimatedDiagonalInches(1080, 2400, 400f, Float.POSITIVE_INFINITY)).isNull()
+    }
+
+    @Test
     fun `swap is read from meminfo in kilobytes`() {
         val meminfo = """
             MemTotal:        7843156 kB

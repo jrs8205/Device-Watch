@@ -22,9 +22,12 @@ fun clampedFontScale(systemScale: Float): Float {
 
 /**
  * [systemDensity] is the density the current display-size setting gives,
- * [defaultDensity] the device's stable default, [widthPx] the window width.
+ * [defaultDensity] the device's default (null when unknown, see knownDefaultDensityDpi),
+ * [widthPx] the window width. Without a known default nothing tells a larger display size
+ * from a screen that is narrow by default, so the system density is used as it is.
  */
-fun clampedDensity(systemDensity: Float, defaultDensity: Float, widthPx: Int): Float {
+fun clampedDensity(systemDensity: Float, defaultDensity: Float?, widthPx: Int): Float {
+    if (defaultDensity == null) return if (systemDensity.isFinite() && systemDensity > 0f) systemDensity else 1f
     val defaultIsUsable = defaultDensity.isFinite() && defaultDensity > 0f
     if (!systemDensity.isFinite() || systemDensity <= 0f) return if (defaultIsUsable) defaultDensity else 1f
     if (!defaultIsUsable || widthPx <= 0) return systemDensity

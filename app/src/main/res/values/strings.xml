@@ -418,7 +418,7 @@
     <string name="device_info_radio">Baseband</string>
     <string name="device_info_gpu">GPU</string>
     <string name="device_info_gl">OpenGL</string>
-    <string name="device_info_physical_size">Screen size</string>
+    <string name="device_info_physical_size">Estimated screen size</string>
     <string name="device_info_hdr">HDR</string>
     <string name="device_info_battery_tech">Battery type</string>
     <string name="device_info_battery_capacity">Battery design capacity</string>

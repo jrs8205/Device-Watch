@@ -414,7 +414,7 @@
     <string name="device_info_radio">Modeemi (baseband)</string>
     <string name="device_info_gpu">GPU</string>
     <string name="device_info_gl">OpenGL</string>
-    <string name="device_info_physical_size">Näytön koko</string>
+    <string name="device_info_physical_size">Näytön kokoarvio</string>
     <string name="device_info_hdr">HDR</string>
     <string name="device_info_battery_tech">Akkutyyppi</string>
     <string name="device_info_battery_capacity">Akun nimelliskapasiteetti</string>

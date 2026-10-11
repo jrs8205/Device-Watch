@@ -260,10 +260,26 @@ object ExtraStatsLogic {
     private const val HLG_B = 0.28466892
     private const val HLG_C = 0.55991073
 
-    /** The display-size setting as a share of the device's default density. */
-    fun displaySizePercent(densityDpi: Int, defaultDpi: Int): Int? {
-        if (densityDpi <= 0 || defaultDpi <= 0) return null
+    /**
+     * The display-size setting as a share of the device's default density; null when the
+     * default is unknown (see [knownDefaultDensityDpi]) rather than a share of a wrong one.
+     */
+    fun displaySizePercent(densityDpi: Int, defaultDpi: Int?): Int? {
+        if (defaultDpi == null || densityDpi <= 0 || defaultDpi <= 0) return null
         return Math.round(densityDpi * 100.0 / defaultDpi).toInt()
+    }
+
+    /**
+     * The screen's diagonal in inches from its pixels and the pixel densities Android
+     * reports. Only an estimate: makers fill xdpi and ydpi in loosely (a Pixel 8a's give
+     * 6.48" for a 6.1" panel). Null for figures that cannot describe a screen.
+     */
+    fun estimatedDiagonalInches(widthPx: Int, heightPx: Int, xdpi: Float, ydpi: Float): Double? {
+        if (widthPx <= 0 || heightPx <= 0) return null
+        if (!xdpi.isFinite() || !ydpi.isFinite() || xdpi <= 0f || ydpi <= 0f) return null
+        val width = widthPx / xdpi.toDouble()
+        val height = heightPx / ydpi.toDouble()
+        return Math.sqrt(width * width + height * height)
     }
 
     /** SwapTotal and SwapFree from /proc/meminfo; null without swap or without the lines. */

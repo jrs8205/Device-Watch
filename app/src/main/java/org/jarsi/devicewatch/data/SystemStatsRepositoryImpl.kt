@@ -84,7 +84,6 @@ import java.util.TimeZone
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.roundToInt
-import kotlin.math.sqrt
 
 @Singleton
 class SystemStatsRepositoryImpl @Inject constructor(
@@ -239,10 +238,12 @@ class SystemStatsRepositoryImpl @Inject constructor(
             brightness = readBrightness(),
             screenTimeout = readScreenTimeout(),
             fontSize = sizeText(Math.round(context.resources.configuration.fontScale * 100)),
-            displaySize = ExtraStatsLogic.displaySizePercent(
-                context.resources.configuration.densityDpi,
-                DisplayMetrics.DENSITY_DEVICE_STABLE,
-            )?.let(::sizeText) ?: UNAVAILABLE_TEXT,
+            displaySize = context.resources.configuration.densityDpi.let { densityDpi ->
+                ExtraStatsLogic.displaySizePercent(
+                    densityDpi,
+                    knownDefaultDensityDpi(DisplayMetrics.DENSITY_DEVICE_STABLE, densityDpi),
+                )
+            }?.let(::sizeText) ?: UNAVAILABLE_TEXT,
             darkTheme = boolText(
                 (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
                     Configuration.UI_MODE_NIGHT_YES
@@ -883,13 +884,9 @@ class SystemStatsRepositoryImpl @Inject constructor(
             if (metrics.widthPixels > 0 && metrics.heightPixels > 0) {
                 screenResolution = "${metrics.widthPixels} × ${metrics.heightPixels} px"
                 screenDensity = "${metrics.densityDpi} dpi · ${SystemStatsParser.densityBucketLabel(metrics.densityDpi)}"
-                if (metrics.xdpi > 0f && metrics.ydpi > 0f) {
-                    val widthInches = metrics.widthPixels / metrics.xdpi
-                    val heightInches = metrics.heightPixels / metrics.ydpi
-                    physicalSize = String.format(
-                        Locale.US, "%.1f\"", sqrt(widthInches * widthInches + heightInches * heightInches)
-                    )
-                }
+                ExtraStatsLogic.estimatedDiagonalInches(
+                    metrics.widthPixels, metrics.heightPixels, metrics.xdpi, metrics.ydpi,
+                )?.let { physicalSize = String.format(Locale.US, "%.1f\"", it) }
             }
         }
         val refreshRate = formatRefreshRate(display)
