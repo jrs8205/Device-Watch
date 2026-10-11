@@ -1,0 +1,5 @@
+• Screensaver can start as soon as charging begins with the screen off, even with Always On Display (Settings, off by default)
+• The phone's name above the screensaver clock
+• Burn-in shift only up and down (GitHub #6)
+• Fixed on the Fairphone 6 and similar: widget drawn at a third of its size, display size 300 %, 12 GB of RAM shown as 16 GB
+• Coming in the next version: more root features, such as profiles

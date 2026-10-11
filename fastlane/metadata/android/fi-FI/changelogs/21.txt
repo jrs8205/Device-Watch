@@ -1,0 +1,5 @@
+• Näytönsäästäjä voi käynnistyä heti latauksen alkaessa näytön ollessa pois, myös Always On Displayn kanssa (asetuksista, oletuksena pois)
+• Puhelimen nimi näytönsäästäjän kellon yläpuolella
+• Palamissuojan siirto vain pystysuunnassa (GitHub #6)
+• Korjattu esim. Fairphone 6:lla: widgetti kolmasosan kokoisena, näyttökoko 300 % ja 12 GB:n RAM 16 GB:nä
+• Tulossa seuraavaan versioon: lisää rootilla toimivia ominaisuuksia, kuten profiilit
