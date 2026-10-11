@@ -9,9 +9,9 @@ class ChargeStartLogicTest {
         enabled: Boolean = true,
         screenOn: Boolean = false,
         dreamShowing: Boolean = false,
-        ourDreamSelected: Boolean? = true,
+        selection: ChargeDream = ChargeDream.OURS,
         privileged: Boolean = false,
-    ) = chargeStartAction(enabled, screenOn, dreamShowing, ourDreamSelected, privileged)
+    ) = chargeStartAction(enabled, screenOn, dreamShowing, selection, privileged)
 
     @Test
     fun `nothing happens while the setting is off`() {
@@ -34,65 +34,79 @@ class ChargeStartLogicTest {
     }
 
     @Test
-    fun `another screensaver selected means nothing to start`() {
-        assertThat(action(ourDreamSelected = false)).isEqualTo(ChargeStartAction.NONE)
-        assertThat(action(ourDreamSelected = false, privileged = true)).isEqualTo(ChargeStartAction.NONE)
+    fun `a charging phone that would not show ours gets nothing`() {
+        assertThat(action(selection = ChargeDream.NOT_OURS)).isEqualTo(ChargeStartAction.NONE)
+        assertThat(action(selection = ChargeDream.NOT_OURS, privileged = true)).isEqualTo(ChargeStartAction.NONE)
     }
 
     @Test
-    fun `extended access starts the screensaver directly`() {
+    fun `extended access starts the screensaver directly when Android would show ours`() {
         assertThat(action(privileged = true)).isEqualTo(ChargeStartAction.START_DREAM)
+    }
+
+    @Test
+    fun `an uncertain choice is left to Android's own timeout even with extended access`() {
+        // dream() skips Android's check of when to start, so it is used only on certainty.
+        assertThat(action(selection = ChargeDream.UNKNOWN, privileged = true))
+            .isEqualTo(ChargeStartAction.WAKE_SCREEN)
     }
 
     @Test
     fun `without extended access the screen is woken`() {
         assertThat(action()).isEqualTo(ChargeStartAction.WAKE_SCREEN)
-    }
-
-    @Test
-    fun `a selection that could not be read does not stop the wake`() {
-        assertThat(action(ourDreamSelected = null)).isEqualTo(ChargeStartAction.WAKE_SCREEN)
+        assertThat(action(selection = ChargeDream.UNKNOWN)).isEqualTo(ChargeStartAction.WAKE_SCREEN)
     }
 
     private val ours = "org.jarsi.devicewatch/org.jarsi.devicewatch.system.MonitorDreamService"
+    private val clock = "com.android.deskclock/com.android.deskclock.Screensaver"
+
+    private fun selection(enabled: String?, onCharge: String?, components: String?) =
+        chargeDreamSelection(enabled, onCharge, components, ours)
 
     @Test
-    fun `our screensaver selected in full or short form counts`() {
-        assertThat(ourDreamStartsOnCharge("1", "1", ours, ours)).isTrue()
-        assertThat(ourDreamStartsOnCharge("1", "1", "org.jarsi.devicewatch/.system.MonitorDreamService", ours)).isTrue()
-        assertThat(ourDreamStartsOnCharge("1", "1", "com.android.deskclock/com.android.deskclock.Screensaver,$ours", ours)).isTrue()
+    fun `ours selected in full or short form, switched on for charging, is ours`() {
+        assertThat(selection("1", "1", ours)).isEqualTo(ChargeDream.OURS)
+        assertThat(selection("1", "1", "org.jarsi.devicewatch/.system.MonitorDreamService"))
+            .isEqualTo(ChargeDream.OURS)
+        assertThat(selection("1", "1", "$ours,$clock")).isEqualTo(ChargeDream.OURS)
     }
 
     @Test
-    fun `screensavers switched off or another one selected do not count`() {
-        assertThat(ourDreamStartsOnCharge("0", "1", ours, ours)).isFalse()
-        assertThat(ourDreamStartsOnCharge("1", "1", "com.android.deskclock/com.android.deskclock.Screensaver", ours)).isFalse()
+    fun `Android shows the first screensaver of the list, so ours after another is not ours`() {
+        assertThat(selection("1", "1", "$clock,$ours")).isEqualTo(ChargeDream.NOT_OURS)
+        assertThat(selection("1", "1", clock)).isEqualTo(ChargeDream.NOT_OURS)
     }
 
     @Test
-    fun `a screensaver set to start only when docked does not count`() {
-        assertThat(ourDreamStartsOnCharge("1", "0", ours, ours)).isFalse()
+    fun `screensavers off, or not started while charging, are not ours`() {
+        assertThat(selection("0", "1", ours)).isEqualTo(ChargeDream.NOT_OURS)
+        assertThat(selection("1", "0", ours)).isEqualTo(ChargeDream.NOT_OURS)
     }
 
     @Test
-    fun `unset settings mean the system default`() {
-        // An unset switch is on by default; an unset choice is the system's own screensaver.
-        assertThat(ourDreamStartsOnCharge(null, "1", ours, ours)).isTrue()
-        assertThat(ourDreamStartsOnCharge("null", "1", ours, ours)).isTrue()
-        // Whether an unset "while charging" is on varies by device; it is left to Android.
-        assertThat(ourDreamStartsOnCharge("1", null, ours, ours)).isTrue()
-        assertThat(ourDreamStartsOnCharge("1", "null", ours, ours)).isTrue()
-        assertThat(ourDreamStartsOnCharge("1", "1", null, ours)).isFalse()
-        assertThat(ourDreamStartsOnCharge("1", "1", "null", ours)).isFalse()
-        assertThat(ourDreamStartsOnCharge("1", "1", "", ours)).isFalse()
+    fun `no choice at all means the system's own screensaver`() {
+        assertThat(selection("1", "1", null)).isEqualTo(ChargeDream.NOT_OURS)
+        assertThat(selection("1", "1", "null")).isEqualTo(ChargeDream.NOT_OURS)
+        assertThat(selection("1", "1", "")).isEqualTo(ChargeDream.NOT_OURS)
+    }
+
+    @Test
+    fun `unset switches depend on the device's defaults, so they are uncertain`() {
+        // AOSP leaves "while charging" off by default, a Pixel turns it on.
+        assertThat(selection("1", null, ours)).isEqualTo(ChargeDream.UNKNOWN)
+        assertThat(selection("1", "null", ours)).isEqualTo(ChargeDream.UNKNOWN)
+        assertThat(selection(null, "1", ours)).isEqualTo(ChargeDream.UNKNOWN)
+        assertThat(selection("null", "1", ours)).isEqualTo(ChargeDream.UNKNOWN)
     }
 
     @Test
     fun `the shell's answer to the dream call is read`() {
-        assertThat(dreamCallSucceeded("Result: Parcel(00000000    '....')")).isTrue()
-        assertThat(dreamCallSucceeded("Result: Parcel(fffffffc ffffffff '........')")).isFalse()
-        assertThat(dreamCallSucceeded("service: Service dreams does not exist")).isFalse()
-        assertThat(dreamCallSucceeded("")).isFalse()
-        assertThat(dreamCallSucceeded(null)).isFalse()
+        assertThat(dreamCallOutcome("Result: Parcel(00000000    '....')")).isEqualTo(DreamCallOutcome.STARTED)
+        assertThat(dreamCallOutcome("Result: Parcel(	00000000    '....')")).isEqualTo(DreamCallOutcome.STARTED)
+        assertThat(dreamCallOutcome("dw-screen-on")).isEqualTo(DreamCallOutcome.SCREEN_ON)
+        assertThat(dreamCallOutcome("Result: Parcel(fffffffc ffffffff '........')")).isEqualTo(DreamCallOutcome.FAILED)
+        assertThat(dreamCallOutcome("service: Service dreams does not exist")).isEqualTo(DreamCallOutcome.FAILED)
+        assertThat(dreamCallOutcome("")).isEqualTo(DreamCallOutcome.FAILED)
+        assertThat(dreamCallOutcome(null)).isEqualTo(DreamCallOutcome.FAILED)
     }
 }

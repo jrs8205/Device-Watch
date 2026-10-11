@@ -2,6 +2,7 @@ package org.jarsi.devicewatch.system
 
 import android.content.ComponentName
 import android.content.Context
+import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -35,7 +36,7 @@ class ChargeStartScreensaver @Inject constructor(
 
         val shellSelection = if (appSettings.privilegedAccess() != PrivilegedAccess.OFF) {
             shell.run(READ_SELECTION)?.lines()?.let { lines ->
-                ourDreamStartsOnCharge(lines.getOrNull(0), lines.getOrNull(1), lines.getOrNull(2), ourDream)
+                chargeDreamSelection(lines.getOrNull(0), lines.getOrNull(1), lines.getOrNull(2), ourDream)
             }
         } else {
             null
@@ -46,29 +47,32 @@ class ChargeStartScreensaver @Inject constructor(
             enabled = true,
             screenOn = power.isInteractive,
             dreamShowing = MonitorDreamService.isDreaming,
-            ourDreamSelected = shellSelection ?: readSelectionDirectly(),
+            selection = shellSelection ?: readSelectionDirectly(),
             // A shell that did not answer leaves the ordinary route.
             privileged = shellSelection != null,
         )
         when (action) {
             ChargeStartAction.NONE -> Unit
-            ChargeStartAction.START_DREAM ->
-                if (!dreamCallSucceeded(shell.run(START_DREAM)) && !busy()) wakeScreen(power)
+            // The command checks the screen again itself, once it has its turn in the shell.
+            ChargeStartAction.START_DREAM -> {
+                val outcome = dreamCallOutcome(shell.run(startDreamCommand(Build.VERSION.SDK_INT), START_TIMEOUT_MILLIS))
+                if (outcome == DreamCallOutcome.FAILED && !busy()) wakeScreen(power)
+            }
             ChargeStartAction.WAKE_SCREEN -> wakeScreen(power)
         }
     }
 
-    /** Null when Android does not let an ordinary app read these settings. */
-    private fun readSelectionDirectly(): Boolean? = try {
+    /** Uncertain when Android does not let an ordinary app read these settings. */
+    private fun readSelectionDirectly(): ChargeDream = try {
         val resolver = context.contentResolver
-        ourDreamStartsOnCharge(
+        chargeDreamSelection(
             Settings.Secure.getString(resolver, SCREENSAVER_ENABLED),
             Settings.Secure.getString(resolver, SCREENSAVER_ACTIVATE_ON_SLEEP),
             Settings.Secure.getString(resolver, SCREENSAVER_COMPONENTS),
             ourDream,
         )
     } catch (_: SecurityException) {
-        null
+        ChargeDream.UNKNOWN
     }
 
     /**
@@ -93,12 +97,8 @@ class ChargeStartScreensaver @Inject constructor(
             "settings get secure $SCREENSAVER_ACTIVATE_ON_SLEEP; " +
             "settings get secure $SCREENSAVER_COMPONENTS"
 
-        /**
-         * IDreamManager.dream(), the first method of the interface since Android 4.2; the
-         * shell user holds WRITE_DREAM_STATE. `cmd dreams` would be clearer but answers
-         * root only.
-         */
-        const val START_DREAM = "service call dreams 1"
+        /** Before Android 14 the command wakes the screen and waits up to a second for it. */
+        const val START_TIMEOUT_MILLIS = 5_000L
 
         const val WAKE_LOCK_TAG = "DeviceWatch:chargeStart"
         const val WAKE_HOLD_MILLIS = 1_000L
