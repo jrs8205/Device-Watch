@@ -136,7 +136,8 @@ data/           SystemStatsRepository + AppUsageRepository (per-app usage, on de
                 SystemStats / AppUsage / DeviceInfo models (+ UNAVAILABLE_* sentinels)
 widget/         Glance DashboardWidget and CompactWidget, WidgetStateUpdater (DataStore
                 writes), WidgetController (port the ViewModel talks to), receivers,
-                actions and the font-scale cap (WidgetTextScale)
+                actions, and the font cap and the fit to the widget's height
+                (WidgetTextScale)
 system/         SystemMonitorService (foreground) with the charge-limit, data-quota and
                 health-alert notifiers, MonitorDreamService (screensaver) with
                 DreamNotifications, NotificationCounterService (notification listener)
@@ -204,7 +205,7 @@ Release builds are minified with R8 and resource shrinking. The release APK is u
 
 ## Testing
 
-690 JVM unit tests (JUnit 4 + Truth; Robolectric only for the Glance render, backup-rule and
+711 JVM unit tests (JUnit 4 + Truth; Robolectric only for the Glance render, backup-rule and
 settings-store tests) cover the pure logic behind every screen, service and widget:
 
 ```powershell
@@ -213,7 +214,8 @@ settings-store tests) cover the pure logic behind every screen, service and widg
 
 - **Parsing and maths** — `SystemStatsParserTest`, `CpuWindowTest`, `DataPeriodCalculatorTest`,
   `UsageEventAggregatorTest`, `ExtraStatsLogicTest`, `AppPackageLogicTest`, `CameraLogicTest`,
-  `AudioLogicTest`, `TrafficMeterTest`
+  `AudioLogicTest`, `TrafficMeterTest`, `DefaultDensityTest` (when Android's default density can
+  be trusted)
 - **Extended access (Shizuku and root)** — `ShellSessionTest` (the shell conversation, driven
   through a real `sh`; on Windows through Git's), `PrivilegedShellTest`,
   `BatteryStatsDumpParserTest`, `PrivilegedDumpParsersTest` (parsers written against dumps from
@@ -232,12 +234,14 @@ settings-store tests) cover the pure logic behind every screen, service and widg
   (hand-written fakes in `Fakes.kt`)
 - **UI logic** — `HistoryListLogicTest`, `SinceChargeNoticesTest`, `BatteryChartLogicTest`,
   `LabelValueRowTest`, `AppScaleTest`, `AppPaletteTest` (the WCAG AAA contrast of both looks)
-- **Widgets** — `WidgetFormattingTest`, `WidgetTextScaleTest`, `CompactFitTest`,
+- **Widgets** — `WidgetFormattingTest`, `WidgetTextScaleTest` (sizes in plain dp, the fit to
+  the widget's height), `CompactFitTest` (text fitting, the floor for names and the ellipsis),
   `CompactUptimeTest`, `CompactWidgetRenderTest`
 - **Screensaver** — `ClockFitTest`, `DreamLogicTest` (night-dim window, charging watts),
   `DreamNotificationLogicTest` (which notifications show, grouping, arrivals, row fit),
   `ActiveNotificationsStoreTest`, `BurnInShiftTest`, `DeviceNameTest` (tidying, shortening,
-  model codes left out), `ChargeStartLogicTest` (when charging starts the screensaver, and how)
+  model codes left out), `ChargeStartLogicTest` (when charging starts the screensaver, and how),
+  `ChargeStartCommandTest` (the start command's own check of the screen, through a real `sh`)
 
 ## Build Outputs
 
