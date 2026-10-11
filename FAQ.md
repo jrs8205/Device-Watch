@@ -15,12 +15,22 @@ out by itself**. Two things routinely trip people up:
 - Device Watch must be selected as the system screensaver and "start while charging" enabled.
   The app's Settings tab has an *Open screensaver settings* shortcut that takes you straight
   there; the exact system path varies by manufacturer.
+- **With Always On Display on, plugging in does not wake the phone**, so there is no timeout and
+  the screensaver waits until someone wakes the screen. Switch on *Start as soon as charging
+  begins* in the app's Settings: Device Watch then wakes the screen when charging begins on a
+  locked phone, and the lock screen times out into the screensaver in about 10–15 seconds. With
+  extended access (Shizuku or root) on, it asks Android to start the screensaver at once instead.
 
 ### It still doesn't start on my Samsung
 
 One UI's **Always On Display takes precedence over screensavers**: with AOD enabled, the system
 shows AOD when the screen goes off while charging, even when the screensaver is correctly
 selected. Turn AOD off (or set it to tap-to-show) to let the screensaver run.
+
+### The screensaver sits off-centre sideways
+
+To protect the screen from burn-in, the screensaver moves a little once a minute. Switch on
+*Move only up and down* in the app's Settings to keep it centred sideways.
 
 ### The screensaver is too bright at night
 

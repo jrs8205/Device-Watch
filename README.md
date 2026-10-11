@@ -64,7 +64,9 @@ The default app language is English. Finnish users get a localized app name and 
 - Screensaver clock follows the device 12/24-hour setting, with a second-aligned tick
 - Battery-level-tinted background gradient and a softly pulsing charge indicator in the screensaver
 - Optional screensaver dimming: manual, or automatic on a configurable night schedule (default 22:00–07:00)
-- OLED burn-in protection: the screensaver content glides to a new spot within 15 dp once a minute
+- OLED burn-in protection: the screensaver content glides to a new spot within 15 dp once a minute, or, as a setting, only up and down within 20 dp so it stays centred sideways
+- The phone's name (Android's device name, tidied and shortened, e.g. "Pixel 10 Pro") on a small line above the screensaver clock; can be turned off
+- Optional start as soon as charging begins on a locked phone or one with its screen off, even with Always On Display on: at once through the dream manager with extended access, otherwise by waking the screen so the lock screen times out into the screensaver; never while the phone is unlocked and in use
 - Icons of unread notifications under the screensaver clock (one per app, with a count), pulsing when a new one arrives; needs notification access and can be turned off in Settings
 - Remembered screensaver rotation setting for repeated charging sessions; the background gradient mirrors with the 180° layout swap
 - Larger screensaver rotation touch target for easier use
@@ -178,6 +180,7 @@ The app requests only permissions that are used by the current feature set:
 - `PACKAGE_USAGE_STATS`
 - `QUERY_ALL_PACKAGES` (resolve names/icons for the per-app data list; the app is distributed outside Google Play)
 - `REQUEST_DELETE_PACKAGES` (uninstall from the last-opened list via the system dialog)
+- `WAKE_LOCK` (a normal permission, granted on install: only to wake the screen when charging begins, so the screensaver can start, when *Start as soon as charging begins* is switched on)
 - `USE_BIOMETRIC` (a normal permission, granted on install: only to show on the Device tab whether a strong biometric is enrolled — the app never authenticates anyone)
 - `moe.shizuku.manager.permission.API_V23` (declared by the Shizuku library; it does nothing unless you install Shizuku yourself, switch Shizuku on in Settings and approve Device Watch in Shizuku's own dialog)
 
@@ -201,7 +204,7 @@ Release builds are minified with R8 and resource shrinking. The release APK is u
 
 ## Testing
 
-665 JVM unit tests (JUnit 4 + Truth; Robolectric only for the Glance render, backup-rule and
+687 JVM unit tests (JUnit 4 + Truth; Robolectric only for the Glance render, backup-rule and
 settings-store tests) cover the pure logic behind every screen, service and widget:
 
 ```powershell
@@ -233,7 +236,8 @@ settings-store tests) cover the pure logic behind every screen, service and widg
   `CompactUptimeTest`, `CompactWidgetRenderTest`
 - **Screensaver** — `ClockFitTest`, `DreamLogicTest` (night-dim window, charging watts),
   `DreamNotificationLogicTest` (which notifications show, grouping, arrivals, row fit),
-  `ActiveNotificationsStoreTest`
+  `ActiveNotificationsStoreTest`, `BurnInShiftTest`, `DeviceNameTest` (tidying, shortening,
+  model codes left out), `ChargeStartLogicTest` (when charging starts the screensaver, and how)
 
 ## Build Outputs
 
