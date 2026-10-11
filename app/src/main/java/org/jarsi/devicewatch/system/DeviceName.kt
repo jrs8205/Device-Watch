@@ -8,7 +8,10 @@ package org.jarsi.devicewatch.system
  * a person and is left out.
  */
 internal fun screensaverDeviceName(deviceName: String?, model: String?, manufacturer: String?): String? {
-    val name = deviceName.tidy() ?: model.tidy()?.takeUnless(::isModelCode) ?: return null
+    val modelName = model.tidy()
+    // Plain Android names the device after the model when the maker sets no name.
+    val named = deviceName.tidy()?.takeUnless { it == modelName && isModelCode(it) }
+    val name = named ?: modelName?.takeUnless(::isModelCode) ?: return null
     return name.withoutMaker(manufacturer).ellipsized()
 }
 
@@ -31,8 +34,13 @@ private fun String.withoutMaker(manufacturer: String?): String {
     return rest
 }
 
-private fun String.ellipsized(): String =
-    if (length <= MAX_DEVICE_NAME_LENGTH) this else take(MAX_DEVICE_NAME_LENGTH - 1).trimEnd() + "…"
+private fun String.ellipsized(): String {
+    if (length <= MAX_DEVICE_NAME_LENGTH) return this
+    var cut = MAX_DEVICE_NAME_LENGTH - 1
+    // Never between the two halves of an emoji.
+    if (Character.isHighSurrogate(this[cut - 1])) cut--
+    return take(cut).trimEnd() + "…"
+}
 
 private val WHITESPACE = Regex("\\s+")
 private val MODEL_CODE = Regex("[A-Z0-9-]{5,}")

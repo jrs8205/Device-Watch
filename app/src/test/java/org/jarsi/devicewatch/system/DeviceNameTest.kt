@@ -51,6 +51,20 @@ class DeviceNameTest {
     }
 
     @Test
+    fun `a device name that is only the model code is left out too`() {
+        // Plain Android names the device after Build.MODEL when the maker sets no name.
+        assertThat(screensaverDeviceName("CPH2581", "CPH2581", "OPPO")).isNull()
+        assertThat(screensaverDeviceName("FP5", "FP5", "Fairphone")).isEqualTo("FP5")
+    }
+
+    @Test
+    fun `an emoji at the cut is never split in half`() {
+        // The emoji's two halves sit at the 23rd and 24th characters, across the cut.
+        val name = screensaverDeviceName("Jarin työpuhelin Pixel📱 8a", null, "Google")
+        assertThat(name).isEqualTo("Jarin työpuhelin Pixel…")
+    }
+
+    @Test
     fun `no name at all gives nothing`() {
         assertThat(screensaverDeviceName(null, null, null)).isNull()
         assertThat(screensaverDeviceName("", " ", "Google")).isNull()
