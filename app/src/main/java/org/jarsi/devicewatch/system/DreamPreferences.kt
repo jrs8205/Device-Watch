@@ -14,6 +14,15 @@ object DreamPreferences {
     // Icons of the unread notifications under the clock (needs notification access).
     const val KEY_SHOW_NOTIFICATIONS = "show_notifications"
 
+    // GitHub #6: the burn-in shift moves the content only up and down, never sideways.
+    const val KEY_VERTICAL_SHIFT_ONLY = "vertical_shift_only"
+
+    // The phone's name (Android's device name) on a small line above the clock.
+    const val KEY_SHOW_DEVICE_NAME = "show_device_name"
+
+    // Start the screensaver as soon as charging begins on a phone that is not in use.
+    const val KEY_START_ON_CHARGE = "start_on_charge"
+
     // Automatic night dim: dim the screensaver between the selected times of day.
     const val KEY_NIGHT_DIM = "night_dim"
     const val KEY_NIGHT_DIM_START_MINUTES = "night_dim_start_minutes"

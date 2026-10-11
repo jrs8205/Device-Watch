@@ -293,9 +293,12 @@ fun ScreensaverContent(context: Context) {
         }
     }
 
-    // OLED burn-in protection: once a minute the whole content moves to a new spot within
-    // ±15 dp. GitHub #5: the move used to be a single jump that people noticed from the
+    // OLED burn-in protection: once a minute the whole content moves to a new spot (see
+    // burnInOffset). GitHub #5: the move used to be a single jump that people noticed from the
     // corner of their eye; it now glides there over a few seconds.
+    val verticalShiftOnly = remember(preferences) {
+        preferences.getBoolean(DreamPreferences.KEY_VERTICAL_SHIFT_ONLY, false)
+    }
     var offsetX by remember { mutableFloatStateOf(0f) }
     var offsetY by remember { mutableFloatStateOf(0f) }
     val glideX by animateFloatAsState(
@@ -314,8 +317,9 @@ fun ScreensaverContent(context: Context) {
     LaunchedEffect(Unit) {
         while (true) {
             kotlinx.coroutines.delay(60000)
-            offsetX = (Math.random() * 30 - 15).toFloat()
-            offsetY = (Math.random() * 30 - 15).toFloat()
+            val next = burnInOffset(Math.random(), Math.random(), verticalShiftOnly)
+            offsetX = next.xDp
+            offsetY = next.yDp
         }
     }
 

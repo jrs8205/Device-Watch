@@ -140,6 +140,9 @@ internal fun SettingsTab(
     var showDreamNotifications by remember {
         mutableStateOf(dreamPrefs.getBoolean(DreamPreferences.KEY_SHOW_NOTIFICATIONS, true))
     }
+    var verticalShiftOnly by remember {
+        mutableStateOf(dreamPrefs.getBoolean(DreamPreferences.KEY_VERTICAL_SHIFT_ONLY, false))
+    }
     var nightDimStartMinutes by remember {
         mutableIntStateOf(
             dreamPrefs.getInt(
@@ -602,6 +605,20 @@ internal fun SettingsTab(
                     color = MaterialTheme.colorScheme.error
                 )
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            SettingsToggleRow(
+                titleRes = R.string.dream_vertical_shift_title,
+                descriptionRes = R.string.dream_vertical_shift_description,
+                checked = verticalShiftOnly,
+                onCheckedChange = { checked ->
+                    verticalShiftOnly = checked
+                    dreamPrefs.edit()
+                        .putBoolean(DreamPreferences.KEY_VERTICAL_SHIFT_ONLY, checked)
+                        .apply()
+                }
+            )
 
             Spacer(modifier = Modifier.height(16.dp))
 

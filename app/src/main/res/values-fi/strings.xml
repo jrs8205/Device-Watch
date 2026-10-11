@@ -334,6 +334,8 @@
     <string name="dream_notifications_title">Näytä ilmoitusten kuvakkeet</string>
     <string name="dream_notifications_description">Näyttää kuittaamattomien ilmoitusten kuvakkeet kellon alla ja sykäyttää niitä, kun uusi ilmoitus saapuu. Vaatii ilmoitusten käyttöoikeuden.</string>
     <string name="dream_notifications_access_missing">Ilmoitusten käyttöoikeutta ei ole myönnetty, joten näytönsäästäjä ei näe ilmoituksia. Myönnä se alla kohdassa Erityisoikeudet.</string>
+    <string name="dream_vertical_shift_title">Siirrä vain pystysuunnassa</string>
+    <string name="dream_vertical_shift_description">Näytönsäästäjä siirtyy minuutin välein hieman, ettei näyttöön pala kuvaa. Tämän ollessa päällä se siirtyy vain ylös ja alas ja pysyy vaakasuunnassa keskellä.</string>
     <plurals name="dream_unread_notifications">
         <item quantity="one">%d kuittaamaton ilmoitus</item>
         <item quantity="other">%d kuittaamatonta ilmoitusta</item>
