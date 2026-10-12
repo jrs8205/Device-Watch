@@ -24,11 +24,19 @@ enum class CpuProfileNotice {
     ANDROID_KEEPS_CHANGING,
 }
 
-/** An apply whose writes may have run but whose answer never came: settled on the next pass. */
+/**
+ * An apply written ahead of its writes, so a process that dies with them in
+ * flight, or a shell that stops answering, leaves the next pass enough to settle
+ * it: done if the kernel shows it, undone (or, toward Stock, done again) if not.
+ */
 data class PendingApply(
     val profile: CpuProfile,
     val writes: Map<CpuPolicyId, Long>,
+    /** The limits held before, to go back to. */
     val previousHeld: Map<CpuPolicyId, Long>,
+    /** The limits to hold once it is done, including ones Android keeps lower for now and so were not written. */
+    val held: Map<CpuPolicyId, Long>,
+    val custom: Map<CpuPolicyId, Long>,
 )
 
 /** A cluster's limit as the phone had it before the app wrote anything this boot. */
@@ -47,8 +55,11 @@ data class CpuProfileState(
     val originalsAssumed: Set<CpuPolicyId> = emptySet(),
     val pending: PendingApply? = null,
     val applyAfterRestart: Boolean = false,
-    /** A restart came and the profile is to return at the next screen-on pass. */
-    val bootApplyDue: Boolean = false,
+    /**
+     * The profile to set again after a restart, at the next screen-on pass. The
+     * profile shows as Stock until then: nothing is held before it is written.
+     */
+    val bootProfile: CpuProfile? = null,
     /** How many times Android raised a held limit and the app set it again, this boot. */
     val overrideCount: Int = 0,
     val reapplyFailures: Int = 0,
@@ -73,6 +84,18 @@ object CpuProfileRules {
         readback == target -> Acceptance.EXACT
         readback < target && lowered -> Acceptance.HELD_LOWER
         else -> Acceptance.REJECTED
+    }
+
+    /**
+     * A write back to the phone's own limit raises the cluster, which the kernel
+     * never refuses. It took unless the app's own limit [previousCap] still reads
+     * back; anything lower than the target is someone else's limit, not the app's.
+     */
+    fun releaseAcceptance(target: Long, readback: Long?, previousCap: Long?): Acceptance = when {
+        readback == null -> Acceptance.REJECTED
+        readback >= target -> Acceptance.EXACT
+        previousCap != null && readback == previousCap -> Acceptance.REJECTED
+        else -> Acceptance.HELD_LOWER
     }
 
     /**
@@ -112,15 +135,18 @@ object CpuProfileRules {
             originals = emptyMap(),
             originalsAssumed = emptySet(),
             pending = null,
-            bootApplyDue = false,
+            active = CpuProfile.STOCK,
+            bootProfile = null,
             overrideCount = 0,
             reapplyFailures = 0,
             notice = null,
         )
-        return when {
-            state.active == CpuProfile.STOCK -> fresh
-            !state.applyAfterRestart -> fresh.copy(active = CpuProfile.STOCK, notice = CpuProfileNotice.RESET_BY_RESTART)
-            else -> fresh.copy(bootApplyDue = true)
+        // A profile still waiting from the boot before counts as the one chosen.
+        val chosen = state.bootProfile ?: state.active.takeUnless { it == CpuProfile.STOCK } ?: return fresh
+        return if (state.applyAfterRestart) {
+            fresh.copy(bootProfile = chosen)
+        } else {
+            fresh.copy(notice = CpuProfileNotice.RESET_BY_RESTART)
         }
     }
 }

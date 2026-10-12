@@ -39,10 +39,12 @@ class DeviceLocalCpuProfileStore @Inject constructor(
                     profile = it,
                     writes = CpuCapsCodec.decode(p.getString(KEY_PENDING_WRITES, null)),
                     previousHeld = CpuCapsCodec.decode(p.getString(KEY_PENDING_PREVIOUS, null)),
+                    held = CpuCapsCodec.decode(p.getString(KEY_PENDING_HELD, null)),
+                    custom = CpuCapsCodec.decode(p.getString(KEY_PENDING_CUSTOM, null)),
                 )
             },
             applyAfterRestart = p.getBoolean(KEY_APPLY_AFTER_RESTART, false),
-            bootApplyDue = p.getBoolean(KEY_BOOT_APPLY_DUE, false),
+            bootProfile = p.getString(KEY_BOOT_PROFILE, null)?.let(::profileOf),
             overrideCount = p.getInt(KEY_OVERRIDE_COUNT, 0),
             reapplyFailures = p.getInt(KEY_REAPPLY_FAILURES, 0),
             bootCount = p.getInt(KEY_BOOT_COUNT, -1),
@@ -64,13 +66,17 @@ class DeviceLocalCpuProfileStore @Inject constructor(
                 remove(KEY_PENDING_PROFILE)
                 remove(KEY_PENDING_WRITES)
                 remove(KEY_PENDING_PREVIOUS)
+                remove(KEY_PENDING_HELD)
+                remove(KEY_PENDING_CUSTOM)
             } else {
                 putString(KEY_PENDING_PROFILE, pending.profile.name)
                 putString(KEY_PENDING_WRITES, CpuCapsCodec.encode(pending.writes))
                 putString(KEY_PENDING_PREVIOUS, CpuCapsCodec.encode(pending.previousHeld))
+                putString(KEY_PENDING_HELD, CpuCapsCodec.encode(pending.held))
+                putString(KEY_PENDING_CUSTOM, CpuCapsCodec.encode(pending.custom))
             }
             putBoolean(KEY_APPLY_AFTER_RESTART, state.applyAfterRestart)
-            putBoolean(KEY_BOOT_APPLY_DUE, state.bootApplyDue)
+            if (state.bootProfile == null) remove(KEY_BOOT_PROFILE) else putString(KEY_BOOT_PROFILE, state.bootProfile.name)
             putInt(KEY_OVERRIDE_COUNT, state.overrideCount)
             putInt(KEY_REAPPLY_FAILURES, state.reapplyFailures)
             putInt(KEY_BOOT_COUNT, state.bootCount)
@@ -89,8 +95,10 @@ class DeviceLocalCpuProfileStore @Inject constructor(
         const val KEY_PENDING_PROFILE = "cpu_pending_profile"
         const val KEY_PENDING_WRITES = "cpu_pending_writes"
         const val KEY_PENDING_PREVIOUS = "cpu_pending_previous"
+        const val KEY_PENDING_HELD = "cpu_pending_held"
+        const val KEY_PENDING_CUSTOM = "cpu_pending_custom"
         const val KEY_APPLY_AFTER_RESTART = "cpu_apply_after_restart"
-        const val KEY_BOOT_APPLY_DUE = "cpu_boot_apply_due"
+        const val KEY_BOOT_PROFILE = "cpu_boot_profile"
         const val KEY_OVERRIDE_COUNT = "cpu_override_count"
         const val KEY_REAPPLY_FAILURES = "cpu_reapply_failures"
         const val KEY_BOOT_COUNT = "cpu_boot_count"

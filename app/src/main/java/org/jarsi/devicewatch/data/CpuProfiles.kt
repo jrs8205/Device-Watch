@@ -115,16 +115,18 @@ class CpuProfileController internal constructor(
         session { applyLocked(profile, custom) }
 
     override suspend fun setApplyAfterRestart(enabled: Boolean) = session {
-        commit(state.copy(applyAfterRestart = enabled))
+        // Off also drops a profile still waiting from a restart.
+        commit(state.copy(applyAfterRestart = enabled, bootProfile = state.bootProfile.takeIf { enabled }))
     }
 
     override suspend fun enforce() = session { enforceLocked() }
 
     override suspend fun restoreStockBeforeRootOff(): Boolean = session {
+        // Switching root off chooses Stock: a profile waiting from a restart goes too.
+        if (state.bootProfile != null) commit(state.copy(bootProfile = null))
         if (!statusOf(state).holdsCaps) return@session true
-        val outcome = applyLocked(CpuProfile.STOCK, emptyMap())
-        val restored = outcome == ApplyOutcome.Applied || outcome == ApplyOutcome.HeldLower ||
-            outcome == ApplyOutcome.NothingToChange
+        val restored = applyLocked(CpuProfile.STOCK, emptyMap()).settled &&
+            state.held.isEmpty() && state.pending == null
         if (!restored) commit(state.copy(notice = CpuProfileNotice.KEPT_UNTIL_RESTART))
         restored
     }
@@ -153,6 +155,9 @@ class CpuProfileController internal constructor(
         }
     }
 
+    private val ApplyOutcome.settled: Boolean
+        get() = this == ApplyOutcome.Applied || this == ApplyOutcome.HeldLower || this == ApplyOutcome.NothingToChange
+
     private fun Session.applyLocked(profile: CpuProfile, custom: Map<CpuPolicyId, Long>): ApplyOutcome {
         if (settings.privilegedAccess() != PrivilegedAccess.ROOT) return ApplyOutcome.NoRoot
         if (state.pending != null) {
@@ -168,37 +173,65 @@ class CpuProfileController internal constructor(
         if (profile != CpuProfile.STOCK && plan.caps.isEmpty() && plan.unsupported.isNotEmpty()) {
             return ApplyOutcome.NotSupported(plan.unsupported)
         }
-        val writes = plan.writes
+
+        val effective = snapshot.policies.mapNotNull { p -> p.scalingMaxKHz?.let { p.id to it } }.toMap()
+        val writes = LinkedHashMap<CpuPolicyId, Long>()
+        var deferred = false
+        for ((id, target) in plan.caps) {
+            val now = effective[id]
+            // Android holds a lower limit in the same file (battery saver, the
+            // camera): writing would lift it, so the limit is held unwritten and
+            // the monitor sets it once Android lets go. Heat is a limit of its
+            // own, which a write does not lift.
+            if (now != null && now < target && now != before.held[id] && !snapshot.cpuThrottled) {
+                deferred = true
+            } else {
+                writes[id] = target
+            }
+        }
+        writes.putAll(plan.restores)
+        // A held cluster with every core off can be neither written nor forgotten:
+        // its limit comes back with the cores.
+        val offlineHeld = before.held.filterKeys { id -> snapshot.policies.none { it.id == id && it.online } }
+        val held = plan.caps + offlineHeld
+        val done = before.copy(
+            active = profile,
+            held = held,
+            custom = chosenCustom,
+            pending = null,
+            bootProfile = null,
+            overrideCount = 0,
+            reapplyFailures = 0,
+            notice = null,
+        )
         if (writes.isEmpty()) {
-            commit(before.copy(active = profile, custom = chosenCustom, held = emptyMap(), notice = null))
-            return ApplyOutcome.NothingToChange
+            commit(done)
+            return if (deferred) ApplyOutcome.HeldLower else ApplyOutcome.NothingToChange
         }
 
         // Write-ahead: if the process dies with the writes in flight, the next pass knows to look.
-        commit(before.copy(pending = PendingApply(profile, writes, before.held)))
+        commit(before.copy(pending = PendingApply(profile, writes, before.held, held, chosenCustom)))
         val readback = writer.write(writes) ?: return ApplyOutcome.Unconfirmed
         val lowered = readback.cpuThrottled || powerSave()
-        val verdicts = writes.mapValues { (id, target) -> CpuProfileRules.acceptance(target, readback.effective[id], lowered) }
+        val verdicts = writes.mapValues { (id, target) ->
+            if (id in plan.restores) {
+                CpuProfileRules.releaseAcceptance(target, readback.effective[id], before.held[id])
+            } else {
+                CpuProfileRules.acceptance(target, readback.effective[id], lowered)
+            }
+        }
         val refused = verdicts.filterValues { it == Acceptance.REJECTED }.keys
         if (refused.isNotEmpty()) {
-            // All or nothing: the clusters that did take go back to where they were.
-            val rollback = (writes.keys - refused).associateWith { id -> previousLimit(before, id, snapshot) }
-            if (rollback.isNotEmpty()) writer.write(rollback)
+            // All or nothing, the refused clusters included: one that reads back
+            // lower for no known reason may well hold the app's value all the same.
+            val rollback = writes.keys.associateWith { id -> previousLimit(before, id, snapshot) }
+            // Unanswered: the pending apply is still there for the next pass to settle.
+            if (writer.write(rollback) == null) return ApplyOutcome.Unconfirmed
             commit(before.copy(pending = null))
             return ApplyOutcome.NotSupported(refused)
         }
-        commit(
-            before.copy(
-                active = profile,
-                held = plan.caps,
-                custom = chosenCustom,
-                pending = null,
-                overrideCount = 0,
-                reapplyFailures = 0,
-                notice = null,
-            )
-        )
-        return if (Acceptance.HELD_LOWER in verdicts.values) ApplyOutcome.HeldLower else ApplyOutcome.Applied
+        commit(done)
+        return if (deferred || Acceptance.HELD_LOWER in verdicts.values) ApplyOutcome.HeldLower else ApplyOutcome.Applied
     }
 
     private fun Session.enforceLocked() {
@@ -212,16 +245,22 @@ class CpuProfileController internal constructor(
             reconcilePending()
             return
         }
-        if (state.bootApplyDue) {
-            commit(state.copy(bootApplyDue = false))
-            when (applyLocked(state.active, state.custom)) {
+        state.bootProfile?.let { profile ->
+            // Kept until it settles one way or the other: a first read that fails
+            // after a restart is tried again on the next pass.
+            when (applyLocked(profile, state.custom)) {
                 ApplyOutcome.Applied, ApplyOutcome.HeldLower, ApplyOutcome.NothingToChange, ApplyOutcome.Unconfirmed -> Unit
                 is ApplyOutcome.NotSupported, ApplyOutcome.NoRoot ->
-                    commit(state.copy(active = CpuProfile.STOCK, notice = CpuProfileNotice.RESET_BY_RESTART))
+                    commit(state.copy(bootProfile = null, notice = CpuProfileNotice.RESET_BY_RESTART))
             }
             return
         }
         if (state.held.isEmpty()) return
+        if (state.active == CpuProfile.STOCK) {
+            // Left from a Stock that found a cluster's cores off: released once they are back.
+            applyLocked(CpuProfile.STOCK, emptyMap())
+            return
+        }
         val effective = source.readMaxFreqs(state.held.keys) ?: return
         val raised = CpuProfileRules.toReapply(state.held, effective)
         if (raised.isEmpty()) {
@@ -243,17 +282,30 @@ class CpuProfileController internal constructor(
             commit(state.copy(reapplyFailures = failures))
             return
         }
-        // Not fighting Android for ever: everything held goes back, and the page says why.
+        giveUp()
+    }
+
+    /**
+     * Not fighting Android for ever: everything held goes back, and the page says
+     * why. Written ahead like any apply, so nothing is forgotten before the kernel
+     * shows it.
+     */
+    private fun Session.giveUp() {
         val restore = state.held.keys.mapNotNull { id -> state.originals[id]?.let { id to it } }.toMap()
-        if (restore.isNotEmpty()) writer.write(restore)
+        val stock = state.copy(active = CpuProfile.STOCK, held = emptyMap(), pending = null, reapplyFailures = 0)
+        if (restore.isEmpty()) {
+            commit(stock.copy(notice = CpuProfileNotice.ANDROID_KEEPS_CHANGING))
+            return
+        }
         commit(
             state.copy(
-                active = CpuProfile.STOCK,
-                held = emptyMap(),
+                pending = PendingApply(CpuProfile.STOCK, restore, state.held, emptyMap(), state.custom),
                 reapplyFailures = 0,
                 notice = CpuProfileNotice.ANDROID_KEEPS_CHANGING,
             )
         )
+        writer.write(restore) ?: return
+        commit(stock.copy(notice = CpuProfileNotice.ANDROID_KEEPS_CHANGING))
     }
 
     /** An apply whose answer never came: done if the kernel shows it, undone otherwise. */
@@ -263,26 +315,42 @@ class CpuProfileController internal constructor(
         val effective = snapshot.policies.mapNotNull { p -> p.scalingMaxKHz?.let { p.id to it } }.toMap()
         val lowered = snapshot.cpuThrottled || powerSave()
         val took = pending.writes.all { (id, target) ->
-            CpuProfileRules.acceptance(target, effective[id], lowered) != Acceptance.REJECTED
+            val verdict = if (id in pending.held) {
+                CpuProfileRules.acceptance(target, effective[id], lowered)
+            } else {
+                CpuProfileRules.releaseAcceptance(target, effective[id], pending.previousHeld[id])
+            }
+            verdict != Acceptance.REJECTED
         }
         if (took) {
-            // A write at a cluster's original was a release, not a limit to hold.
-            val caps = pending.writes.filter { (id, value) -> value < (state.originals[id] ?: Long.MAX_VALUE) }
-            commit(
-                state.copy(
-                    active = pending.profile,
-                    held = caps,
-                    pending = null,
-                    overrideCount = 0,
-                    reapplyFailures = 0,
-                    notice = null,
-                )
-            )
+            settle(pending)
+            return
+        }
+        if (pending.profile == CpuProfile.STOCK) {
+            // Toward the phone's own limits is the safe way: written again, not undone.
+            writer.write(pending.writes) ?: return
+            settle(pending)
             return
         }
         val rollback = pending.writes.keys.associateWith { id -> previousLimit(state, id, snapshot) }
-        if (writer.write(rollback) == null) return
+        writer.write(rollback) ?: return
         commit(state.copy(pending = null))
+    }
+
+    private fun Session.settle(pending: PendingApply) {
+        commit(
+            state.copy(
+                active = pending.profile,
+                held = pending.held,
+                custom = pending.custom,
+                pending = null,
+                bootProfile = null,
+                overrideCount = 0,
+                reapplyFailures = 0,
+                // Stock keeps the reason it came about, such as Android winning.
+                notice = if (pending.profile == CpuProfile.STOCK) state.notice else null,
+            )
+        )
     }
 
     /** Each online cluster's limit as the phone had it, saved once per boot before the first write. */

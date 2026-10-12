@@ -24,7 +24,13 @@ internal class FakeSysfsRoot(vararg policies: FakePolicy) : RootShell {
         /** The userspace request; the power HAL's "no limit" until something writes. */
         var request: Long = HAL_NO_LIMIT
         var thermalCap: Long = Long.MAX_VALUE
-        val effective: Long get() = minOf(request, thermalCap, cpuinfoMax)
+
+        /** A vendor's own frequency request that no cooling device shows. */
+        var hiddenCap: Long = Long.MAX_VALUE
+
+        /** Every core of the cluster switched off: the kernel answers EBUSY to reads and writes. */
+        var offline = false
+        val effective: Long get() = minOf(request, thermalCap, hiddenCap, cpuinfoMax)
     }
 
     val policies: Map<String, FakePolicy> = policies.associateBy { it.name }
@@ -60,6 +66,10 @@ internal class FakeSysfsRoot(vararg policies: FakePolicy) : RootShell {
 
     fun throttle(name: String, kHz: Long) {
         policies.getValue(name).thermalCap = kHz
+    }
+
+    fun hiddenLimit(name: String, kHz: Long) {
+        policies.getValue(name).hiddenCap = kHz
     }
 
     fun coolDown(name: String) {
@@ -99,6 +109,7 @@ internal class FakeSysfsRoot(vararg policies: FakePolicy) : RootShell {
         val name = MAX_PATH.matchEntire(m.groupValues[2])?.groupValues?.get(1) ?: error("write outside the limits: $statement")
         if (name in rejectWrites) return
         val policy = policies[name] ?: return
+        if (policy.offline) return
         val value = m.groupValues[1].toLong()
         policy.request = value
         writes += name to value
@@ -108,6 +119,7 @@ internal class FakeSysfsRoot(vararg policies: FakePolicy) : RootShell {
         val files = LinkedHashMap<String, List<String>>()
         policies.values.forEachIndexed { index, p ->
             val dir = "${CpuPolicyId.CPUFREQ_DIR}/${p.name}"
+            if (p.offline) return@forEachIndexed
             files["$dir/related_cpus"] = listOf(p.cpus.joinToString(" "))
             files["$dir/cpuinfo_min_freq"] = listOf(p.cpuinfoMin.toString())
             files["$dir/cpuinfo_max_freq"] = listOf(p.cpuinfoMax.toString())

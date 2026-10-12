@@ -64,7 +64,13 @@ class CpuProfileRulesTest {
         custom = mapOf(p8 to 1_745_000L),
         originals = mapOf(p8 to 2_914_000L),
         originalsAssumed = setOf(p8),
-        pending = PendingApply(CpuProfile.POWER_SAVING, mapOf(p8 to 1_745_000L), mapOf(p8 to 2_294_000L)),
+        pending = PendingApply(
+            profile = CpuProfile.POWER_SAVING,
+            writes = mapOf(p8 to 1_745_000L),
+            previousHeld = mapOf(p8 to 2_294_000L),
+            held = mapOf(p8 to 1_745_000L),
+            custom = mapOf(p8 to 1_745_000L),
+        ),
         overrideCount = 4,
         reapplyFailures = 1,
         bootCount = 37,
@@ -97,16 +103,18 @@ class CpuProfileRulesTest {
         assertThat(after.pending).isNull()
         assertThat(after.overrideCount).isEqualTo(0)
         assertThat(after.reapplyFailures).isEqualTo(0)
-        assertThat(after.bootApplyDue).isFalse()
+        assertThat(after.bootProfile).isNull()
         assertThat(after.bootCount).isEqualTo(38)
         assertThat(after.custom).isEqualTo(holding.custom)
     }
 
     @Test
-    fun `a restart with apply-after-restart keeps the profile and applies it again`() {
+    fun `a restart with apply-after-restart waits on stock to set the profile again`() {
+        // Stock until something is held again: a first read that fails must not
+        // leave the page claiming a profile the kernel does not have.
         val after = CpuProfileRules.onBootCount(holding.copy(applyAfterRestart = true), 38)
-        assertThat(after.active).isEqualTo(CpuProfile.BALANCED)
-        assertThat(after.bootApplyDue).isTrue()
+        assertThat(after.active).isEqualTo(CpuProfile.STOCK)
+        assertThat(after.bootProfile).isEqualTo(CpuProfile.BALANCED)
         assertThat(after.held).isEmpty()
         assertThat(after.originals).isEmpty()
         assertThat(after.notice).isNull()
@@ -117,7 +125,36 @@ class CpuProfileRulesTest {
         val after = CpuProfileRules.onBootCount(holding.copy(active = CpuProfile.STOCK), 38)
         assertThat(after.active).isEqualTo(CpuProfile.STOCK)
         assertThat(after.notice).isNull()
-        assertThat(after.bootApplyDue).isFalse()
+        assertThat(after.bootProfile).isNull()
         assertThat(after.held).isEmpty()
+    }
+
+    @Test
+    fun `a profile still waiting from the last boot keeps waiting`() {
+        val waiting = CpuProfileState(active = CpuProfile.STOCK, bootProfile = CpuProfile.POWER_SAVING, applyAfterRestart = true, bootCount = 37)
+        val after = CpuProfileRules.onBootCount(waiting, 38)
+        assertThat(after.bootProfile).isEqualTo(CpuProfile.POWER_SAVING)
+        assertThat(after.active).isEqualTo(CpuProfile.STOCK)
+    }
+
+    @Test
+    fun `without apply-after-restart a waiting profile is dropped`() {
+        val waiting = CpuProfileState(active = CpuProfile.STOCK, bootProfile = CpuProfile.POWER_SAVING, bootCount = 37)
+        val after = CpuProfileRules.onBootCount(waiting, 38)
+        assertThat(after.bootProfile).isNull()
+        assertThat(after.notice).isEqualTo(CpuProfileNotice.RESET_BY_RESTART)
+    }
+
+    @Test
+    fun `a release took when the limit read back is no longer the app's own`() {
+        assertThat(CpuProfileRules.releaseAcceptance(2_914_000L, 2_914_000L, previousCap = 2_294_000L)).isEqualTo(Acceptance.EXACT)
+        // Something else holds the cluster lower now; the app's request is gone all the same.
+        assertThat(CpuProfileRules.releaseAcceptance(2_914_000L, 1_852_000L, previousCap = 2_294_000L)).isEqualTo(Acceptance.HELD_LOWER)
+    }
+
+    @Test
+    fun `a release did not take while the app's own limit still reads back`() {
+        assertThat(CpuProfileRules.releaseAcceptance(2_914_000L, 2_294_000L, previousCap = 2_294_000L)).isEqualTo(Acceptance.REJECTED)
+        assertThat(CpuProfileRules.releaseAcceptance(2_914_000L, null, previousCap = 2_294_000L)).isEqualTo(Acceptance.REJECTED)
     }
 }

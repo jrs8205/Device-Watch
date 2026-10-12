@@ -29,9 +29,15 @@ class CpuProfileStoreTest {
             custom = mapOf(p0 to 955_000L, p8 to 2_294_000L),
             originals = mapOf(p0 to 1_704_000L, p4 to 2_367_000L, p8 to 2_914_000L),
             originalsAssumed = setOf(p8),
-            pending = PendingApply(CpuProfile.POWER_SAVING, mapOf(p8 to 1_745_000L), mapOf(p8 to 2_294_000L)),
+            pending = PendingApply(
+                profile = CpuProfile.CUSTOM,
+                writes = mapOf(p8 to 1_745_000L, p0 to 1_704_000L),
+                previousHeld = mapOf(p8 to 2_294_000L, p0 to 955_000L),
+                held = mapOf(p8 to 1_745_000L, p4 to 1_836_000L),
+                custom = mapOf(p8 to 1_745_000L),
+            ),
             applyAfterRestart = true,
-            bootApplyDue = true,
+            bootProfile = CpuProfile.BALANCED,
             overrideCount = 3,
             reapplyFailures = 2,
             bootCount = 41,
@@ -44,7 +50,7 @@ class CpuProfileStoreTest {
     @Test
     fun `saving again clears what is no longer there`() {
         store.save(CpuProfileState(active = CpuProfile.BALANCED, held = mapOf(p8 to 2_294_000L), notice = CpuProfileNotice.KEPT_UNTIL_RESTART,
-            pending = PendingApply(CpuProfile.STOCK, mapOf(p8 to 2_914_000L), emptyMap())))
+            pending = PendingApply(CpuProfile.STOCK, mapOf(p8 to 2_914_000L), emptyMap(), emptyMap(), emptyMap())))
         store.save(CpuProfileState(bootCount = 5))
         assertThat(store.load()).isEqualTo(CpuProfileState(bootCount = 5))
     }
