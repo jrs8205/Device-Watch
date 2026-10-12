@@ -86,8 +86,11 @@ internal class FakeCpuProfiles(status: CpuProfileStatus = CpuProfileStatus()) : 
     var settings: AppSettingsRepository? = null
     var accessAtRestore: PrivilegedAccess? = null
 
+    var lastCustom: Map<CpuPolicyId, Long> = emptyMap()
+
     override suspend fun apply(profile: CpuProfile, custom: Map<CpuPolicyId, Long>): ApplyOutcome {
         calls += "apply $profile"
+        lastCustom = custom
         return ApplyOutcome.Applied
     }
 

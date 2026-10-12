@@ -701,4 +701,96 @@
     <string name="dream_full_time_tomorrow">Full, estimated tomorrow around %1$s</string>
     <string name="dream_full_time_date">Full, estimated %1$s around %2$s</string>
     <string name="dream_full_time_unknown">Full, estimated around --:--</string>
+    <!-- Kernel page (root) -->
+    <string name="kernel_section" translatable="false">KERNEL</string>
+    <string name="kernel_title" translatable="false">Kernel</string>
+    <string name="kernel_open">Open</string>
+    <string name="kernel_open_description">Open the Kernel page</string>
+    <string name="kernel_band_profile">Processor profile</string>
+    <string name="kernel_band_big_limit">Fastest cores\' limit</string>
+    <string name="kernel_band_throttling">Heat throttling</string>
+    <string name="kernel_throttling_active">Slowing the processor now</string>
+    <string name="kernel_throttling_none">None now</string>
+    <string name="kernel_not_supported">This kernel offers no speed limits</string>
+    <string name="kernel_reading">Reading the kernel…</string>
+    <string name="kernel_read_failed">Root did not answer the last read, so the one before is shown.</string>
+    <string name="kernel_no_cpufreq">This kernel reports no processor speeds.</string>
+    <string name="kernel_profile_section">PROCESSOR PROFILE</string>
+    <string name="cpu_profile_power_saving">Power saving</string>
+    <string name="cpu_profile_power_saving_desc" formatted="false">The faster cores run at most about 60 % of their top speed. Saves battery under heavy use; the little cores stay at full speed.</string>
+    <string name="cpu_profile_balanced">Balanced</string>
+    <string name="cpu_profile_balanced_desc" formatted="false">The faster cores run at most about 80 % of their top speed: nearly all the speed, less heat at the peaks.</string>
+    <string name="cpu_profile_stock">Stock</string>
+    <string name="cpu_profile_stock_desc">The phone\'s own limits, as before the app changed anything.</string>
+    <string name="cpu_profile_custom">Custom</string>
+    <string name="cpu_profile_custom_desc">Choose each group of cores\' limit yourself, from half its top speed up.</string>
+    <string name="cpu_profile_presets_unavailable">This phone has one group of cores, or all run equally fast: there is no faster group to hold back, so only Custom is offered.</string>
+    <string name="cpu_profile_in_use">In use: %1$s</string>
+    <string name="cpu_profile_notice_reset">The phone restarted and its own limits came back. Choose the profile again, or switch on Apply after restart too.</string>
+    <string name="cpu_profile_notice_kept">Root is not available: the limits set earlier stay until the phone restarts.</string>
+    <string name="cpu_profile_notice_android">Android kept raising the limit, so the profile was let go and the phone\'s own limits returned.</string>
+    <string name="cpu_profile_outcome_held_lower">Set. Heat or battery saver keep the speed lower still for now.</string>
+    <string name="cpu_profile_outcome_not_supported">The kernel did not accept a limit for: %1$s. Nothing was changed.</string>
+    <string name="cpu_profile_outcome_unconfirmed">Root did not answer. The app checks in a moment whether the change took.</string>
+    <string name="cpu_profile_outcome_no_root">Root is not on.</string>
+    <string name="cpu_profile_applying">Setting…</string>
+    <string name="cpu_profile_apply_custom">Apply</string>
+    <string name="cpu_profile_cancel_custom">Cancel</string>
+    <string name="cpu_profile_after_restart_title">Apply after restart too</string>
+    <string name="cpu_profile_after_restart_desc">Off, the phone\'s own limits return at every restart. On, the profile is set again the first time the screen is on after a restart.</string>
+    <string name="cpu_profile_explanation">Only each group of cores\' top speed limit changes, never above what the phone allows. Heat protection keeps working as before.</string>
+    <string name="kernel_processor_section">PROCESSOR</string>
+    <string name="cluster_little">Little cores</string>
+    <string name="cluster_middle">Middle cores</string>
+    <string name="cluster_big">Big cores</string>
+    <string name="cluster_only">Cores</string>
+    <string name="kernel_cluster_title">%1$s · cores %2$s</string>
+    <string name="kernel_speed_now">Speed now</string>
+    <string name="kernel_speed_limit">Limit</string>
+    <string name="kernel_speed_range">Range</string>
+    <string name="kernel_range_value" translatable="false">%1$s – %2$s</string>
+    <string name="kernel_phone_limit">Phone\'s own limit</string>
+    <string name="kernel_phone_limit_assumed">%1$s (taken as the maximum: heat or battery saver lowered the reading)</string>
+    <string name="kernel_cluster_offline">All cores in this group are off right now.</string>
+    <string name="kernel_cluster_cannot_limit">Can\'t be limited on this phone: its kernel lists no speeds.</string>
+    <string name="kernel_cluster_technical">%1$s · governor %2$s · driver %3$s</string>
+    <string name="kernel_processor_note">The limit is the highest speed the cores may run at now; heat and Android can hold them lower.</string>
+    <string name="kernel_throttling_section">HEAT THROTTLING</string>
+    <string name="kernel_throttling_none_long">Heat is slowing nothing down right now.</string>
+    <string name="cooling_cpu">%1$s slowed down</string>
+    <string name="cooling_gpu">Graphics slowed down</string>
+    <string name="cooling_charging">Charging current reduced</string>
+    <string name="kernel_cooling_level">level %1$d of %2$d</string>
+    <string name="kernel_gpu_section">GRAPHICS</string>
+    <string name="kernel_gpu_max">Top speed</string>
+    <string name="kernel_gpu_power_policy">Power policy</string>
+    <string name="kernel_memory_section">COMPRESSED MEMORY</string>
+    <string name="kernel_zram_note">Android compresses memory that apps are not using right now, instead of closing them.</string>
+    <string name="kernel_zram_size">Size</string>
+    <string name="kernel_zram_stored">Holding</string>
+    <string name="kernel_zram_stored_value">%1$s in %2$s (%3$s×)</string>
+    <string name="kernel_zram_algorithm">Compression</string>
+    <string name="kernel_system_section">SYSTEM</string>
+    <string name="kernel_release">Kernel version</string>
+    <string name="kernel_selinux" translatable="false">SELinux</string>
+    <string name="kernel_selinux_enforcing">Enforcing: its rules are in force</string>
+    <string name="kernel_selinux_permissive">Permissive: its rules are only logged</string>
+    <string name="kernel_io_scheduler">Storage queue (I/O scheduler)</string>
+    <string name="kernel_temps_section">TEMPERATURE SENSORS</string>
+    <string name="zone_big">Big cores</string>
+    <string name="zone_mid">Middle cores</string>
+    <string name="zone_little">Little cores</string>
+    <string name="zone_gpu">Graphics</string>
+    <string name="zone_tpu">AI processor (TPU)</string>
+    <string name="zone_battery">Battery</string>
+    <string name="zone_charger">Charger</string>
+    <string name="zone_display">Display</string>
+    <string name="zone_usb">USB port</string>
+    <string name="zone_modem">Modem</string>
+    <string name="zone_skin">Phone surface</string>
+    <string name="zone_soc">Chip package</string>
+    <plurals name="cpu_profile_overrides">
+        <item quantity="one">Android raised a limit once; it was set back.</item>
+        <item quantity="other">Android raised a limit %d times; each time it was set back.</item>
+    </plurals>
 </resources>
