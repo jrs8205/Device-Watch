@@ -123,7 +123,9 @@ shows what this phone's kernel itself reports: each group of processor cores wit
 its limit and its range, whether heat is slowing anything down, the graphics processor's speeds,
 compressed memory (zRAM), the kernel version, SELinux, the storage queue and every named
 temperature sensor. Nothing is assumed from the phone's model, so what you see is what your
-kernel offers. The page reads only while it is open and the screen is on.
+kernel offers. The page and the band read the kernel every few seconds only while they are on
+screen; with a profile on, the monitor also checks the held limits every five seconds while the
+screen is on. Nothing is read as root while the screen is off.
 
 ### What do the processor profiles do?
 
@@ -147,8 +149,8 @@ restart too** to have it set again the first time the screen is on after a resta
 
 ### The page says Android raised a limit
 
-Android adjusts the same limit itself now and then: Pixels lift it after the camera, for
-example. The app notices on its next five-second check and sets your limit again, and the page
+Android's power management can write the same limit itself, for example when one of its
+power hints ends and it puts its own value back. The app notices on its next five-second check and sets your limit again, and the page
 counts how often. If Android keeps winning, the app stops after three tries in a row, returns the
 phone's own limits and says why, rather than fight it for ever. When Android holds a group lower
 than your profile (battery saver, say), the app leaves that alone and sets your limit once

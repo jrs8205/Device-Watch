@@ -58,18 +58,25 @@ fun cpuRangeText(cpus: List<Int>): String {
 sealed interface CoolingKind {
     /** A processor cluster, by its place in the kernel's cpufreq order. */
     data class CpuCluster(val index: Int) : CoolingKind
+
+    /** Mainline Linux's naming: the cluster that holds this core. */
+    data class CpuCore(val cpu: Int) : CoolingKind
     data object Gpu : CoolingKind
     data object ChargingCurrent : CoolingKind
     data object Other : CoolingKind
 
     companion object {
         private val CPU = Regex("thermal-cpufreq-(\\d{1,3})")
+        private val CPU_CORE = Regex("cpufreq-cpu(\\d{1,4})")
         private val GPU = Regex("thermal-(gpufreq|devfreq)-\\d{1,3}")
+        /** Mainline names a devfreq device after the device; only the graphics ones are told apart. */
+        private val GPU_DEVFREQ = Regex("devfreq-.*(gpu|mali|kgsl|g3d|adreno).*", RegexOption.IGNORE_CASE)
         private val CHARGING = setOf("fcc", "dc_icl", "battery", "charge-limit")
 
         fun of(type: String): CoolingKind {
             CPU.matchEntire(type)?.let { return CpuCluster(it.groupValues[1].toInt()) }
-            if (GPU.matches(type)) return Gpu
+            CPU_CORE.matchEntire(type)?.let { return CpuCore(it.groupValues[1].toInt()) }
+            if (GPU.matches(type) || GPU_DEVFREQ.matches(type)) return Gpu
             if (type in CHARGING) return ChargingCurrent
             return Other
         }

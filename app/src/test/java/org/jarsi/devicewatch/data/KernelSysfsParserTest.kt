@@ -210,4 +210,14 @@ class KernelSysfsParserTest {
         assertThat(snapshot.selinux).isNull()
         assertThat(snapshot.cpuThrottled).isFalse()
     }
+
+    @Test
+    fun `mainline cpufreq cooling devices count as processor heat`() {
+        val output = """
+            /sys/class/thermal/cooling_device0/type:cpufreq-cpu4
+            /sys/class/thermal/cooling_device0/cur_state:3
+            /sys/class/thermal/cooling_device0/max_state:10
+        """.trimIndent()
+        assertThat(KernelSysfsParser.parse(output).cpuThrottled).isTrue()
+    }
 }

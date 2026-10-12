@@ -73,28 +73,28 @@ class CpuProfileRulesTest {
         ),
         overrideCount = 4,
         reapplyFailures = 1,
-        bootCount = 37,
+        bootId = "boot-a",
         notice = CpuProfileNotice.KEPT_UNTIL_RESTART,
     )
 
     @Test
     fun `the first run only remembers the boot count`() {
-        assertThat(CpuProfileRules.onBootCount(CpuProfileState(), 37)).isEqualTo(CpuProfileState(bootCount = 37))
+        assertThat(CpuProfileRules.onBoot(CpuProfileState(), "boot-a")).isEqualTo(CpuProfileState(bootId = "boot-a"))
     }
 
     @Test
     fun `the same boot, such as after an app update, changes nothing`() {
-        assertThat(CpuProfileRules.onBootCount(holding, 37)).isEqualTo(holding)
+        assertThat(CpuProfileRules.onBoot(holding, "boot-a")).isEqualTo(holding)
     }
 
     @Test
     fun `an unknown boot count changes nothing`() {
-        assertThat(CpuProfileRules.onBootCount(holding, null)).isEqualTo(holding)
+        assertThat(CpuProfileRules.onBoot(holding, null)).isEqualTo(holding)
     }
 
     @Test
     fun `a restart without apply-after-restart returns to stock and says so`() {
-        val after = CpuProfileRules.onBootCount(holding, 38)
+        val after = CpuProfileRules.onBoot(holding, "boot-b")
         assertThat(after.active).isEqualTo(CpuProfile.STOCK)
         assertThat(after.notice).isEqualTo(CpuProfileNotice.RESET_BY_RESTART)
         assertThat(after.held).isEmpty()
@@ -104,7 +104,7 @@ class CpuProfileRulesTest {
         assertThat(after.overrideCount).isEqualTo(0)
         assertThat(after.reapplyFailures).isEqualTo(0)
         assertThat(after.bootProfile).isNull()
-        assertThat(after.bootCount).isEqualTo(38)
+        assertThat(after.bootId).isEqualTo("boot-b")
         assertThat(after.custom).isEqualTo(holding.custom)
     }
 
@@ -112,7 +112,7 @@ class CpuProfileRulesTest {
     fun `a restart with apply-after-restart waits on stock to set the profile again`() {
         // Stock until something is held again: a first read that fails must not
         // leave the page claiming a profile the kernel does not have.
-        val after = CpuProfileRules.onBootCount(holding.copy(applyAfterRestart = true), 38)
+        val after = CpuProfileRules.onBoot(holding.copy(applyAfterRestart = true), "boot-b")
         assertThat(after.active).isEqualTo(CpuProfile.STOCK)
         assertThat(after.bootProfile).isEqualTo(CpuProfile.BALANCED)
         assertThat(after.held).isEmpty()
@@ -122,7 +122,7 @@ class CpuProfileRulesTest {
 
     @Test
     fun `a restart on stock just clears what the old boot held`() {
-        val after = CpuProfileRules.onBootCount(holding.copy(active = CpuProfile.STOCK), 38)
+        val after = CpuProfileRules.onBoot(holding.copy(active = CpuProfile.STOCK), "boot-b")
         assertThat(after.active).isEqualTo(CpuProfile.STOCK)
         assertThat(after.notice).isNull()
         assertThat(after.bootProfile).isNull()
@@ -131,30 +131,44 @@ class CpuProfileRulesTest {
 
     @Test
     fun `a profile still waiting from the last boot keeps waiting`() {
-        val waiting = CpuProfileState(active = CpuProfile.STOCK, bootProfile = CpuProfile.POWER_SAVING, applyAfterRestart = true, bootCount = 37)
-        val after = CpuProfileRules.onBootCount(waiting, 38)
+        val waiting = CpuProfileState(active = CpuProfile.STOCK, bootProfile = CpuProfile.POWER_SAVING, applyAfterRestart = true, bootId = "boot-a")
+        val after = CpuProfileRules.onBoot(waiting, "boot-b")
         assertThat(after.bootProfile).isEqualTo(CpuProfile.POWER_SAVING)
         assertThat(after.active).isEqualTo(CpuProfile.STOCK)
     }
 
     @Test
     fun `without apply-after-restart a waiting profile is dropped`() {
-        val waiting = CpuProfileState(active = CpuProfile.STOCK, bootProfile = CpuProfile.POWER_SAVING, bootCount = 37)
-        val after = CpuProfileRules.onBootCount(waiting, 38)
+        val waiting = CpuProfileState(active = CpuProfile.STOCK, bootProfile = CpuProfile.POWER_SAVING, bootId = "boot-a")
+        val after = CpuProfileRules.onBoot(waiting, "boot-b")
         assertThat(after.bootProfile).isNull()
         assertThat(after.notice).isEqualTo(CpuProfileNotice.RESET_BY_RESTART)
     }
 
     @Test
     fun `a release took when the limit read back is no longer the app's own`() {
-        assertThat(CpuProfileRules.releaseAcceptance(2_914_000L, 2_914_000L, previousCap = 2_294_000L)).isEqualTo(Acceptance.EXACT)
+        assertThat(CpuProfileRules.releaseAcceptance(2_914_000L, 2_914_000L, previousCap = 2_294_000L, lowered = false)).isEqualTo(Acceptance.EXACT)
         // Something else holds the cluster lower now; the app's request is gone all the same.
-        assertThat(CpuProfileRules.releaseAcceptance(2_914_000L, 1_852_000L, previousCap = 2_294_000L)).isEqualTo(Acceptance.HELD_LOWER)
+        assertThat(CpuProfileRules.releaseAcceptance(2_914_000L, 1_852_000L, previousCap = 2_294_000L, lowered = false)).isEqualTo(Acceptance.HELD_LOWER)
     }
 
     @Test
     fun `a release did not take while the app's own limit still reads back`() {
-        assertThat(CpuProfileRules.releaseAcceptance(2_914_000L, 2_294_000L, previousCap = 2_294_000L)).isEqualTo(Acceptance.REJECTED)
-        assertThat(CpuProfileRules.releaseAcceptance(2_914_000L, null, previousCap = 2_294_000L)).isEqualTo(Acceptance.REJECTED)
+        assertThat(CpuProfileRules.releaseAcceptance(2_914_000L, 2_294_000L, previousCap = 2_294_000L, lowered = false)).isEqualTo(Acceptance.REJECTED)
+        assertThat(CpuProfileRules.releaseAcceptance(2_914_000L, null, previousCap = 2_294_000L, lowered = true)).isEqualTo(Acceptance.REJECTED)
+    }
+
+    @Test
+    fun `a release that heat holds at exactly the old limit still took`() {
+        // Heat's limit comes from the same steps as the app's, so the two can match.
+        assertThat(CpuProfileRules.releaseAcceptance(2_914_000L, 2_294_000L, previousCap = 2_294_000L, lowered = true))
+            .isEqualTo(Acceptance.HELD_LOWER)
+    }
+
+    @Test
+    fun `the kernel's own boot id names the boot, the boot count only stands in`() {
+        assertThat(BootIdentity.of(bootId = "3956042b-f691\n", bootCount = 4)).isEqualTo("3956042b-f691")
+        assertThat(BootIdentity.of(bootId = null, bootCount = 4)).isEqualTo("count:4")
+        assertThat(BootIdentity.of(bootId = "  ", bootCount = null)).isNull()
     }
 }

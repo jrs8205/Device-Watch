@@ -14,6 +14,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
  */
 internal class FakeSysfsRoot(vararg policies: FakePolicy) : RootShell {
 
+    /** Name cooling devices as mainline Linux does (`cpufreq-cpu4`), not as Pixel's driver (`thermal-cpufreq-1`). */
+    var mainlineCoolingNames = false
+
     class FakePolicy(
         val name: String,
         val cpus: List<Int>,
@@ -129,7 +132,7 @@ internal class FakeSysfsRoot(vararg policies: FakePolicy) : RootShell {
             files["$dir/scaling_governor"] = listOf("schedutil")
             if (p.steps.isNotEmpty()) files["$dir/scaling_available_frequencies"] = listOf(p.steps.joinToString(" ") + " ")
             val cooling = "/sys/class/thermal/cooling_device$index"
-            files["$cooling/type"] = listOf("thermal-cpufreq-$index")
+            files["$cooling/type"] = listOf(if (mainlineCoolingNames) "cpufreq-cpu${p.cpus.first()}" else "thermal-cpufreq-$index")
             files["$cooling/cur_state"] = listOf(if (p.thermalCap < p.cpuinfoMax) "1" else "0")
             files["$cooling/max_state"] = listOf("10")
         }

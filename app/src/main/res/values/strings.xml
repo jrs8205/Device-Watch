@@ -731,6 +731,7 @@
     <string name="cpu_profile_outcome_held_lower">Set. Heat or battery saver keep the speed lower still for now.</string>
     <string name="cpu_profile_outcome_not_supported">The kernel did not accept a limit for: %1$s. Nothing was changed.</string>
     <string name="cpu_profile_outcome_unconfirmed">Root did not answer. The app checks in a moment whether the change took.</string>
+    <string name="cpu_profile_outcome_no_answer">Root did not answer in time. Try again in a moment.</string>
     <string name="cpu_profile_outcome_no_root">Root is not on.</string>
     <string name="cpu_profile_applying">Setting…</string>
     <string name="cpu_profile_apply_custom">Apply</string>

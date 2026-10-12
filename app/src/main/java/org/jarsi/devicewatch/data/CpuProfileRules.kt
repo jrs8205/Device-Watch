@@ -63,8 +63,8 @@ data class CpuProfileState(
     /** How many times Android raised a held limit and the app set it again, this boot. */
     val overrideCount: Int = 0,
     val reapplyFailures: Int = 0,
-    /** Settings.Global.BOOT_COUNT when last seen; -1 before the first look. */
-    val bootCount: Int = -1,
+    /** The kernel boot this state belongs to ([BootIdentity]); null before the first look. */
+    val bootId: String? = null,
     val notice: CpuProfileNotice? = null,
 )
 
@@ -89,11 +89,14 @@ object CpuProfileRules {
     /**
      * A write back to the phone's own limit raises the cluster, which the kernel
      * never refuses. It took unless the app's own limit [previousCap] still reads
-     * back; anything lower than the target is someone else's limit, not the app's.
+     * back with nothing else to explain it; anything else lower than the target is
+     * someone else's limit, not the app's.
      */
-    fun releaseAcceptance(target: Long, readback: Long?, previousCap: Long?): Acceptance = when {
+    fun releaseAcceptance(target: Long, readback: Long?, previousCap: Long?, lowered: Boolean): Acceptance = when {
         readback == null -> Acceptance.REJECTED
         readback >= target -> Acceptance.EXACT
+        // Heat's limit comes from the same steps as the app's and can match it exactly.
+        lowered -> Acceptance.HELD_LOWER
         previousCap != null && readback == previousCap -> Acceptance.REJECTED
         else -> Acceptance.HELD_LOWER
     }
@@ -115,7 +118,7 @@ object CpuProfileRules {
 
     /**
      * Held clusters whose limit now reads higher than held: Android's power HAL
-     * wrote over it (after the camera, say). One that reads lower is heat or
+     * wrote over it (when one of its power hints ended, say). One that reads lower is heat or
      * Android's own lower limit and is left alone: the app never raises a cluster.
      */
     fun toReapply(held: Map<CpuPolicyId, Long>, effective: Map<CpuPolicyId, Long>): Set<CpuPolicyId> =
@@ -126,11 +129,11 @@ object CpuProfileRules {
      * this boot held or saved is gone with it. Android sends BOOT_COMPLETED after
      * an app update too, which is why the count, not that broadcast, decides.
      */
-    fun onBootCount(state: CpuProfileState, current: Int?): CpuProfileState {
-        if (current == null || current == state.bootCount) return state
-        if (state.bootCount < 0) return state.copy(bootCount = current)
+    fun onBoot(state: CpuProfileState, current: String?): CpuProfileState {
+        if (current == null || current == state.bootId) return state
+        if (state.bootId == null) return state.copy(bootId = current)
         val fresh = state.copy(
-            bootCount = current,
+            bootId = current,
             held = emptyMap(),
             originals = emptyMap(),
             originalsAssumed = emptySet(),
@@ -148,5 +151,18 @@ object CpuProfileRules {
         } else {
             fresh.copy(notice = CpuProfileNotice.RESET_BY_RESTART)
         }
+    }
+}
+
+/**
+ * Which kernel boot this is. Only a kernel restart clears the limits, so the
+ * kernel's own `boot_id` names the boot: Android's BOOT_COUNT may also move when
+ * just the framework restarts, while the limits stay. The count stands in only
+ * where the boot id cannot be read.
+ */
+object BootIdentity {
+    fun of(bootId: String?, bootCount: Int?): String? {
+        bootId?.trim()?.takeIf { it.isNotEmpty() }?.let { return it }
+        return bootCount?.let { "count:$it" }
     }
 }

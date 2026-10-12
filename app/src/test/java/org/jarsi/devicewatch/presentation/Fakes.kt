@@ -78,6 +78,7 @@ internal class FakeCpuProfiles(status: CpuProfileStatus = CpuProfileStatus()) : 
 
     val calls = mutableListOf<String>()
     var restoreResult = true
+    var restoreThrows = false
 
     /** When set, the restore waits for it, like a slow root command. */
     var restoreGate: CompletableDeferred<Unit>? = null
@@ -87,11 +88,12 @@ internal class FakeCpuProfiles(status: CpuProfileStatus = CpuProfileStatus()) : 
     var accessAtRestore: PrivilegedAccess? = null
 
     var lastCustom: Map<CpuPolicyId, Long> = emptyMap()
+    var nextOutcome: ApplyOutcome = ApplyOutcome.Applied
 
     override suspend fun apply(profile: CpuProfile, custom: Map<CpuPolicyId, Long>): ApplyOutcome {
         calls += "apply $profile"
         lastCustom = custom
-        return ApplyOutcome.Applied
+        return nextOutcome
     }
 
     override suspend fun setApplyAfterRestart(enabled: Boolean) {
@@ -105,6 +107,7 @@ internal class FakeCpuProfiles(status: CpuProfileStatus = CpuProfileStatus()) : 
     override suspend fun restoreStockBeforeRootOff(): Boolean {
         calls += "restore"
         accessAtRestore = settings?.privilegedAccess()
+        if (restoreThrows) throw IllegalStateException("restore failed")
         restoreGate?.await()
         status.value = if (restoreResult) {
             status.value.copy(active = CpuProfile.STOCK, held = emptyMap())

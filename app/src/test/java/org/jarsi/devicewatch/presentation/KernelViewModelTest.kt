@@ -147,6 +147,38 @@ class KernelViewModelTest {
     }
 
     @Test
+    fun `an unanswered apply's note goes once the monitor has settled it`() = runTest(dispatcher) {
+        profiles.nextOutcome = ApplyOutcome.Unconfirmed
+        profiles.status.value = profiles.status.value.copy(pending = true)
+        val viewModel = viewModel()
+        backgroundScope.launch { viewModel.page.collect {} }
+        runCurrent()
+
+        viewModel.select(CpuProfile.BALANCED)
+        runCurrent()
+        assertThat(viewModel.page.value.lastOutcome).isEqualTo(ApplyOutcome.Unconfirmed)
+        assertThat(viewModel.page.value.outcomeAwaitsMonitor).isTrue()
+
+        profiles.status.value = profiles.status.value.copy(pending = false)
+        runCurrent()
+        assertThat(viewModel.page.value.lastOutcome).isNull()
+    }
+
+    @Test
+    fun `an apply root never answered keeps its note`() = runTest(dispatcher) {
+        profiles.nextOutcome = ApplyOutcome.Unconfirmed
+        val viewModel = viewModel()
+        backgroundScope.launch { viewModel.page.collect {} }
+        runCurrent()
+
+        viewModel.select(CpuProfile.BALANCED)
+        runCurrent()
+
+        assertThat(viewModel.page.value.lastOutcome).isEqualTo(ApplyOutcome.Unconfirmed)
+        assertThat(viewModel.page.value.outcomeAwaitsMonitor).isFalse()
+    }
+
+    @Test
     fun `the apply-after-restart switch reaches the profile`() = runTest(dispatcher) {
         val viewModel = viewModel()
         viewModel.setApplyAfterRestart(true)

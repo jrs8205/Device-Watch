@@ -40,6 +40,8 @@ data class KernelPageState(
     val draft: Map<CpuPolicyId, Long> = emptyMap(),
     val busy: Boolean = false,
     val lastOutcome: ApplyOutcome? = null,
+    /** The last apply's answer was lost while its writes may have run: the monitor settles it. */
+    val outcomeAwaitsMonitor: Boolean = false,
 )
 
 /**
@@ -61,6 +63,7 @@ class KernelViewModel @Inject constructor(
         val draft: Map<CpuPolicyId, Long> = emptyMap(),
         val busy: Boolean = false,
         val lastOutcome: ApplyOutcome? = null,
+        val outcomeAwaitsMonitor: Boolean = false,
     )
 
     private val refresh = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
@@ -93,7 +96,9 @@ class KernelViewModel @Inject constructor(
             editingCustom = local.editingCustom,
             draft = local.draft,
             busy = local.busy,
-            lastOutcome = local.lastOutcome,
+            // Settled by the monitor since: the note about it no longer holds.
+            lastOutcome = local.lastOutcome.takeUnless { local.outcomeAwaitsMonitor && !status.pending },
+            outcomeAwaitsMonitor = local.outcomeAwaitsMonitor,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), KernelPageState())
 
@@ -135,8 +140,14 @@ class KernelViewModel @Inject constructor(
             val outcome = action()
             val done = outcome == ApplyOutcome.Applied || outcome == ApplyOutcome.HeldLower ||
                 outcome == ApplyOutcome.NothingToChange
+            val awaitsMonitor = outcome == ApplyOutcome.Unconfirmed && profiles.status.value.pending
             local.update {
-                it.copy(busy = false, lastOutcome = outcome, editingCustom = it.editingCustom && !done)
+                it.copy(
+                    busy = false,
+                    lastOutcome = outcome,
+                    outcomeAwaitsMonitor = awaitsMonitor,
+                    editingCustom = it.editingCustom && !done,
+                )
             }
             // The new limits show at once, not at the next poll.
             refresh.tryEmit(Unit)

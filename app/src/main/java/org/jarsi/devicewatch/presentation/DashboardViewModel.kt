@@ -211,13 +211,17 @@ class DashboardViewModel @Inject constructor(
         // Already on its way off: neither direction can interrupt the restore.
         if (_uiState.value.rootStatus == RootStatus.RESTORING) return
         if (!enabled) {
-            if (settings.privilegedAccess() == PrivilegedAccess.ROOT && cpuProfiles.status.value.holdsCaps) {
+            if (settings.privilegedAccess() == PrivilegedAccess.ROOT && profileNeedsRoot()) {
                 // The phone's own limits go back first, while root is still the
                 // access: once OFF is saved, the gate refuses every root command.
                 _uiState.update { it.copy(rootStatus = RootStatus.RESTORING) }
                 viewModelScope.launch {
-                    withContext(NonCancellable) { cpuProfiles.restoreStockBeforeRootOff() }
-                    switchRootOff()
+                    // Off is what the user asked for: it lands even if the screen
+                    // goes away or the restore fails.
+                    withContext(NonCancellable) {
+                        restoreStockQuietly()
+                        switchRootOff()
+                    }
                 }
                 return
             }
@@ -249,6 +253,18 @@ class DashboardViewModel @Inject constructor(
             settings.setPrivilegedAccess(PrivilegedAccess.ROOT)
             shizukuShell.close()
             _uiState.update { it.copy(rootStatus = RootStatus.ON, shizukuStatus = ShizukuStatus.OFF) }
+        }
+    }
+
+    /** Limits held, or a profile waiting to be set after a restart: root has something to undo. */
+    private fun profileNeedsRoot(): Boolean = cpuProfiles.status.value.let { it.holdsCaps || it.waitingAfterRestart }
+
+    /** A restore that throws still lets root go off; the controller then notes what stays. */
+    private suspend fun restoreStockQuietly() {
+        try {
+            cpuProfiles.restoreStockBeforeRootOff()
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
@@ -287,11 +303,11 @@ class DashboardViewModel @Inject constructor(
                 return@launch
             }
             // Shizuku takes root's place: the processor limits root set go back first.
-            if (settings.privilegedAccess() == PrivilegedAccess.ROOT && cpuProfiles.status.value.holdsCaps) {
-                withContext(NonCancellable) { cpuProfiles.restoreStockBeforeRootOff() }
+            withContext(NonCancellable) {
+                if (settings.privilegedAccess() == PrivilegedAccess.ROOT && profileNeedsRoot()) restoreStockQuietly()
+                settings.setPrivilegedAccess(PrivilegedAccess.SHIZUKU)
+                rootShell.close()
             }
-            settings.setPrivilegedAccess(PrivilegedAccess.SHIZUKU)
-            rootShell.close()
             _uiState.update { it.copy(shizukuStatus = ShizukuStatus.ON, rootStatus = RootStatus.OFF) }
         }
     }

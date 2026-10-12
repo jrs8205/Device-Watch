@@ -228,7 +228,7 @@ class SystemMonitorService : Service() {
 
     /**
      * Holds the processor profile chosen on the Kernel page: Android's power HAL
-     * raises a limit now and then (after the camera, say), and this pass sets it
+     * can put its own value back now and then, and this pass sets the limit
      * again. Only here, in the screen-on loop: nothing runs as root while the
      * screen is off. Without root, or with nothing held, it reads no shell.
      */

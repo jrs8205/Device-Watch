@@ -155,6 +155,34 @@ class DashboardViewModelTest {
         }
 
     @Test
+    fun `given a profile waiting after a restart, when root is switched off, then it is dropped first`() =
+        runTest(dispatcher) {
+            val settings = FakeAppSettingsRepository(access = PrivilegedAccess.ROOT)
+            val cpuProfiles = FakeCpuProfiles(CpuProfileStatus(waitingAfterRestart = true))
+            val viewModel = buildViewModel(settings = settings, cpuProfiles = cpuProfiles)
+
+            viewModel.onRootModeChange(false)
+            advanceUntilIdle()
+
+            assertThat(cpuProfiles.calls).containsExactly("restore")
+            assertThat(settings.access).isEqualTo(PrivilegedAccess.OFF)
+        }
+
+    @Test
+    fun `given a restore that throws, when root is switched off, then root still goes off`() =
+        runTest(dispatcher) {
+            val settings = FakeAppSettingsRepository(access = PrivilegedAccess.ROOT)
+            val cpuProfiles = holding().apply { restoreThrows = true }
+            val viewModel = buildViewModel(settings = settings, cpuProfiles = cpuProfiles)
+
+            viewModel.onRootModeChange(false)
+            advanceUntilIdle()
+
+            assertThat(settings.access).isEqualTo(PrivilegedAccess.OFF)
+            assertThat(viewModel.uiState.value.rootStatus).isEqualTo(RootStatus.OFF)
+        }
+
+    @Test
     fun `given limits held, when Shizuku takes over from root, then stock comes back first`() =
         runTest(dispatcher) {
             val settings = FakeAppSettingsRepository(access = PrivilegedAccess.ROOT)

@@ -40,7 +40,7 @@ class CpuProfileStoreTest {
             bootProfile = CpuProfile.BALANCED,
             overrideCount = 3,
             reapplyFailures = 2,
-            bootCount = 41,
+            bootId = "3956042b-f691-43b4-b583-4eca47c13dc0",
             notice = CpuProfileNotice.ANDROID_KEEPS_CHANGING,
         )
         store.save(state)
@@ -51,8 +51,8 @@ class CpuProfileStoreTest {
     fun `saving again clears what is no longer there`() {
         store.save(CpuProfileState(active = CpuProfile.BALANCED, held = mapOf(p8 to 2_294_000L), notice = CpuProfileNotice.KEPT_UNTIL_RESTART,
             pending = PendingApply(CpuProfile.STOCK, mapOf(p8 to 2_914_000L), emptyMap(), emptyMap(), emptyMap())))
-        store.save(CpuProfileState(bootCount = 5))
-        assertThat(store.load()).isEqualTo(CpuProfileState(bootCount = 5))
+        store.save(CpuProfileState(bootId = "count:5"))
+        assertThat(store.load()).isEqualTo(CpuProfileState(bootId = "count:5"))
     }
 
     @Test

@@ -3,6 +3,7 @@ package org.jarsi.devicewatch.data
 import android.content.Context
 import android.os.PowerManager
 import android.provider.Settings
+import java.io.File
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -44,6 +45,8 @@ data class CpuProfileStatus(
     val overrideCount: Int = 0,
     val notice: CpuProfileNotice? = null,
     val pending: Boolean = false,
+    /** A profile is to be set again after the restart, at the next screen-on pass. */
+    val waitingAfterRestart: Boolean = false,
 ) {
     /** The app holds, or may hold, a limit in the kernel right now. */
     val holdsCaps: Boolean get() = held.isNotEmpty() || pending
@@ -78,7 +81,7 @@ class CpuProfileController internal constructor(
     private val source: KernelSnapshotSource,
     private val writer: CpuLimitWriter,
     private val settings: AppSettingsRepository,
-    private val bootCount: () -> Int?,
+    private val bootId: () -> String?,
     private val powerSave: () -> Boolean,
     private val dispatcher: CoroutineDispatcher,
 ) : CpuProfiles {
@@ -96,12 +99,19 @@ class CpuProfileController internal constructor(
         source,
         writer,
         settings,
-        bootCount = {
-            try {
-                Settings.Global.getInt(context.contentResolver, Settings.Global.BOOT_COUNT)
-            } catch (_: Settings.SettingNotFoundException) {
-                null
-            }
+        bootId = {
+            BootIdentity.of(
+                bootId = try {
+                    File(BOOT_ID_PATH).readText()
+                } catch (_: Exception) {
+                    null
+                },
+                bootCount = try {
+                    Settings.Global.getInt(context.contentResolver, Settings.Global.BOOT_COUNT)
+                } catch (_: Settings.SettingNotFoundException) {
+                    null
+                },
+            )
         },
         powerSave = { context.getSystemService(PowerManager::class.java)?.isPowerSaveMode == true },
         dispatcher = dispatcher,
@@ -149,7 +159,7 @@ class CpuProfileController internal constructor(
         withContext(dispatcher) {
             val loaded = store.load()
             val session = Session(loaded)
-            session.commit(CpuProfileRules.onBootCount(loaded, bootCount()))
+            session.commit(CpuProfileRules.onBoot(loaded, bootId()))
             _status.value = statusOf(session.state)
             session.block()
         }
@@ -179,8 +189,8 @@ class CpuProfileController internal constructor(
         var deferred = false
         for ((id, target) in plan.caps) {
             val now = effective[id]
-            // Android holds a lower limit in the same file (battery saver, the
-            // camera): writing would lift it, so the limit is held unwritten and
+            // Android holds a lower limit in the same file (a power hint of its
+            // own): writing would lift it, so the limit is held unwritten and
             // the monitor sets it once Android lets go. Heat is a limit of its
             // own, which a write does not lift.
             if (now != null && now < target && now != before.held[id] && !snapshot.cpuThrottled) {
@@ -215,23 +225,33 @@ class CpuProfileController internal constructor(
         val lowered = readback.cpuThrottled || powerSave()
         val verdicts = writes.mapValues { (id, target) ->
             if (id in plan.restores) {
-                CpuProfileRules.releaseAcceptance(target, readback.effective[id], before.held[id])
+                CpuProfileRules.releaseAcceptance(target, readback.effective[id], before.held[id], lowered)
             } else {
                 CpuProfileRules.acceptance(target, readback.effective[id], lowered)
             }
         }
         val refused = verdicts.filterValues { it == Acceptance.REJECTED }.keys
-        if (refused.isNotEmpty()) {
-            // All or nothing, the refused clusters included: one that reads back
-            // lower for no known reason may well hold the app's value all the same.
-            val rollback = writes.keys.associateWith { id -> previousLimit(before, id, snapshot) }
+        val refusedCaps = refused.filterTo(LinkedHashSet()) { it in plan.caps }
+        val stillHeld = before.held.filterKeys { it in refused && it in plan.restores }
+        val released = plan.restores.keys - stillHeld.keys
+        if (refusedCaps.isNotEmpty()) {
+            // The limits go back to where they were, the refused ones included:
+            // one that reads back lower for no known reason may well hold the
+            // app's value all the same. A release is never undone: toward the
+            // phone's own limits is always the safe way.
+            val rollback = writes.keys.filter { it in plan.caps }.associateWith { id -> previousLimit(before, id, snapshot) }
             // Unanswered: the pending apply is still there for the next pass to settle.
             if (writer.write(rollback) == null) return ApplyOutcome.Unconfirmed
-            commit(before.copy(pending = null))
-            return ApplyOutcome.NotSupported(refused)
+            commit(before.copy(pending = null, held = before.held - released))
+            return ApplyOutcome.NotSupported(refusedCaps)
         }
-        commit(done)
-        return if (deferred || Acceptance.HELD_LOWER in verdicts.values) ApplyOutcome.HeldLower else ApplyOutcome.Applied
+        // A release that did not show stays on record, so Stock or the next pass can try again.
+        commit(done.copy(held = done.held + stillHeld))
+        return when {
+            stillHeld.isNotEmpty() -> ApplyOutcome.Unconfirmed
+            deferred || Acceptance.HELD_LOWER in verdicts.values -> ApplyOutcome.HeldLower
+            else -> ApplyOutcome.Applied
+        }
     }
 
     private fun Session.enforceLocked() {
@@ -314,15 +334,14 @@ class CpuProfileController internal constructor(
         val snapshot = source.read() ?: return
         val effective = snapshot.policies.mapNotNull { p -> p.scalingMaxKHz?.let { p.id to it } }.toMap()
         val lowered = snapshot.cpuThrottled || powerSave()
-        val took = pending.writes.all { (id, target) ->
-            val verdict = if (id in pending.held) {
+        val verdicts = pending.writes.mapValues { (id, target) ->
+            if (id in pending.held) {
                 CpuProfileRules.acceptance(target, effective[id], lowered)
             } else {
-                CpuProfileRules.releaseAcceptance(target, effective[id], pending.previousHeld[id])
+                CpuProfileRules.releaseAcceptance(target, effective[id], pending.previousHeld[id], lowered)
             }
-            verdict != Acceptance.REJECTED
         }
-        if (took) {
+        if (verdicts.values.none { it == Acceptance.REJECTED }) {
             settle(pending)
             return
         }
@@ -332,9 +351,11 @@ class CpuProfileController internal constructor(
             settle(pending)
             return
         }
-        val rollback = pending.writes.keys.associateWith { id -> previousLimit(state, id, snapshot) }
-        writer.write(rollback) ?: return
-        commit(state.copy(pending = null))
+        // Limits go back; releases that showed stay released.
+        val rollback = pending.writes.keys.filter { it in pending.held }.associateWith { id -> previousLimit(state, id, snapshot) }
+        if (rollback.isNotEmpty()) writer.write(rollback) ?: return
+        val released = verdicts.filter { (id, verdict) -> id !in pending.held && verdict != Acceptance.REJECTED }.keys
+        commit(state.copy(pending = null, held = state.held - released))
     }
 
     private fun Session.settle(pending: PendingApply) {
@@ -387,5 +408,11 @@ class CpuProfileController internal constructor(
         overrideCount = state.overrideCount,
         notice = state.notice,
         pending = state.pending != null,
+        waitingAfterRestart = state.bootProfile != null,
     )
+
+    private companion object {
+        /** A new id at every kernel boot; readable by apps. */
+        const val BOOT_ID_PATH = "/proc/sys/kernel/random/boot_id"
+    }
 }

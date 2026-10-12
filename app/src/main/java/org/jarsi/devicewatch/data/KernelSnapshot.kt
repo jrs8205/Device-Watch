@@ -95,9 +95,15 @@ data class KernelSnapshot(
 ) {
     /** Heat is holding a processor cluster below its limit right now. */
     val cpuThrottled: Boolean
-        get() = coolingDevices.any { it.type.startsWith(CPU_COOLING_PREFIX) && it.cur > 0 }
+        get() = coolingDevices.any { isCpuCooling(it.type) && it.cur > 0 }
 
     companion object {
-        const val CPU_COOLING_PREFIX = "thermal-cpufreq"
+        /**
+         * `thermal-cpufreq-N` as Pixel's driver and older kernels name it,
+         * `cpufreq-cpuN` as mainline Linux has since 5.13.
+         */
+        private val CPU_COOLING = Regex("thermal-cpufreq-\\d{1,3}|cpufreq-cpu\\d{1,4}")
+
+        fun isCpuCooling(type: String): Boolean = CPU_COOLING.matches(type)
     }
 }

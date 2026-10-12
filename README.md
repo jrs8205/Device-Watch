@@ -56,7 +56,7 @@ The default app language is English. Finnish users get a localized app name and 
 - Since-charge page (opened from the battery card): the period since the battery was last charged full — or since the charger was unplugged, when charging stopped short of full — with elapsed time, battery drop and average drain, unlocks, notifications, Wi-Fi/mobile data, and a per-app screen-time donut over that window (Android does not expose real per-app battery percentages to third-party apps, so without extended access the page shows honest usage numbers instead)
 - Optional extended access through [Shizuku](https://shizuku.rikka.app/) (no root needed) or root, both off by default, for what Android hides from ordinary apps: Android's own battery statistics on the since-charge page (drain per hour with the screen on and off and how long a full battery would last at that pace, each app's share, and what kept the phone awake, explained in plain words), the real processor load, graphics load, processor/graphics/surface temperatures, and the battery's wear, charge cycles and dates where the phone keeps them
 - Kernel page on rooted phones, opened from the Device tab's KERNEL band: each group of processor cores with its speed now, its limit and range, heat throttling in plain words, the graphics processor's speeds, compressed memory (zRAM), the kernel version, SELinux and the storage queue, and every named temperature sensor, all from what this phone's kernel reports, with no phone model assumed
-- Processor profiles on rooted phones: *Power saving* (the faster cores at most about 60 % of their top speed), *Balanced* (about 80 %), *Stock*, or *Custom* per group of cores. Only speeds the kernel lists, never above what the phone allows; the phone's own limits are saved first and written back on Stock, when root is switched off, or at a restart (unless *Apply after restart too* is on). When Android raises a limit (after the camera, say) the monitor sets it again and counts it, and it never lifts a lower limit that heat or Android hold
+- Processor profiles on rooted phones: *Power saving* (the faster cores at most about 60 % of their top speed), *Balanced* (about 80 %), *Stock*, or *Custom* per group of cores. Only speeds the kernel lists, never above what the phone allows; the phone's own limits are saved first and written back on Stock or when root is switched off (if root no longer answers then, they last until the next restart), and a restart returns them by itself unless *Apply after restart too* is on. When Android's power management raises a limit the monitor sets it again and counts it, and it never lifts a lower limit that heat or Android hold
 - Today's screen time also appears in the widget footer, refreshed at most once a minute so the 5-second widget loop stays untouched
 - Most-opened-today list on the Apps tab, and last-opened rows show the clock time for apps used today (following the system 12/24-hour setting) with two-tier staleness colors: amber after 1 month unused, red after 3 months (Google's app-hibernation threshold) or never used
 - Special-access buttons show a green/red status dot for granted/missing access
@@ -207,7 +207,7 @@ Release builds are minified with R8 and resource shrinking. The release APK is u
 
 ## Testing
 
-871 JVM unit tests (JUnit 4 + Truth; Robolectric only for the Glance render, backup-rule and
+885 JVM unit tests (JUnit 4 + Truth; Robolectric only for the Glance render, backup-rule and
 settings-store tests) cover the pure logic behind every screen, service and widget:
 
 ```powershell

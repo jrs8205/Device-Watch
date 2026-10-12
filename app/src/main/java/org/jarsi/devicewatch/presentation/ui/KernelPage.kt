@@ -37,6 +37,8 @@ import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -181,7 +183,7 @@ private fun ProfileSection(
         if (state.busy) {
             KernelNote(stringResource(R.string.cpu_profile_applying), color = MaterialTheme.colorScheme.primary)
         }
-        outcomeText(state.lastOutcome, snapshot)?.let { KernelNote(it, color = statusWarnColor()) }
+        outcomeText(state.lastOutcome, state.outcomeAwaitsMonitor, snapshot)?.let { KernelNote(it, color = statusWarnColor()) }
         noticeRes(state.status.notice)?.let { KernelNote(stringResource(it), color = statusWarnColor()) }
         if (state.status.active != CpuProfile.STOCK && state.status.overrideCount > 0) {
             KernelNote(pluralStringResource(R.plurals.cpu_profile_overrides, state.status.overrideCount, state.status.overrideCount))
@@ -269,13 +271,17 @@ private fun CustomEditor(
             numeric = true,
         )
         if (steps.size > 1) {
+            val speed = freqText(steps[index], locale)
             Slider(
                 value = index.toFloat(),
                 onValueChange = { onCustomStep(policy.id, steps[it.roundToInt().coerceIn(steps.indices)]) },
                 valueRange = 0f..(steps.size - 1).toFloat(),
                 steps = (steps.size - 2).coerceAtLeast(0),
                 enabled = !state.busy,
-                modifier = Modifier.fillMaxWidth(),
+                // TalkBack reads the speed, not a percentage of the slider.
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .semantics { stateDescription = speed },
             )
         }
     }
@@ -291,10 +297,12 @@ private fun CustomEditor(
 }
 
 @Composable
-private fun outcomeText(outcome: ApplyOutcome?, snapshot: KernelSnapshot): String? = when (outcome) {
+private fun outcomeText(outcome: ApplyOutcome?, awaitsMonitor: Boolean, snapshot: KernelSnapshot): String? = when (outcome) {
     null, ApplyOutcome.Applied, ApplyOutcome.NothingToChange -> null
     ApplyOutcome.HeldLower -> stringResource(R.string.cpu_profile_outcome_held_lower)
-    ApplyOutcome.Unconfirmed -> stringResource(R.string.cpu_profile_outcome_unconfirmed)
+    ApplyOutcome.Unconfirmed -> stringResource(
+        if (awaitsMonitor) R.string.cpu_profile_outcome_unconfirmed else R.string.cpu_profile_outcome_no_answer
+    )
     ApplyOutcome.NoRoot -> stringResource(R.string.cpu_profile_outcome_no_root)
     is ApplyOutcome.NotSupported -> {
         val roles = clusterRoles(snapshot.policies)
@@ -389,6 +397,10 @@ private fun ThrottlingSection(snapshot: KernelSnapshot) {
             val label = when (val kind = CoolingKind.of(device.type)) {
                 is CoolingKind.CpuCluster -> {
                     val role = byNumber.getOrNull(kind.index)?.let { roles[it.id] } ?: ClusterRole.ONLY
+                    stringResource(R.string.cooling_cpu, stringResource(role.labelRes))
+                }
+                is CoolingKind.CpuCore -> {
+                    val role = snapshot.policies.firstOrNull { kind.cpu in it.relatedCpus }?.let { roles[it.id] } ?: ClusterRole.ONLY
                     stringResource(R.string.cooling_cpu, stringResource(role.labelRes))
                 }
                 CoolingKind.Gpu -> stringResource(R.string.cooling_gpu)

@@ -77,4 +77,12 @@ class KernelPresentationTest {
         assertThat(thermalZoneLabelRes("battery")).isNotNull()
         assertThat(thermalZoneLabelRes("rffe_therm")).isNull()
     }
+
+    @Test
+    fun `mainline cooling names are told apart too`() {
+        assertThat(CoolingKind.of("cpufreq-cpu4")).isEqualTo(CoolingKind.CpuCore(4))
+        assertThat(CoolingKind.of("devfreq-1f000000.mali")).isEqualTo(CoolingKind.Gpu)
+        assertThat(CoolingKind.of("devfreq-gpu")).isEqualTo(CoolingKind.Gpu)
+        assertThat(CoolingKind.of("devfreq-ddr")).isEqualTo(CoolingKind.Other)
+    }
 }

@@ -47,7 +47,7 @@ class DeviceLocalCpuProfileStore @Inject constructor(
             bootProfile = p.getString(KEY_BOOT_PROFILE, null)?.let(::profileOf),
             overrideCount = p.getInt(KEY_OVERRIDE_COUNT, 0),
             reapplyFailures = p.getInt(KEY_REAPPLY_FAILURES, 0),
-            bootCount = p.getInt(KEY_BOOT_COUNT, -1),
+            bootId = p.getString(KEY_BOOT_ID, null),
             notice = p.getString(KEY_NOTICE, null)?.let { name -> CpuProfileNotice.entries.firstOrNull { it.name == name } },
         )
     }
@@ -79,7 +79,7 @@ class DeviceLocalCpuProfileStore @Inject constructor(
             if (state.bootProfile == null) remove(KEY_BOOT_PROFILE) else putString(KEY_BOOT_PROFILE, state.bootProfile.name)
             putInt(KEY_OVERRIDE_COUNT, state.overrideCount)
             putInt(KEY_REAPPLY_FAILURES, state.reapplyFailures)
-            putInt(KEY_BOOT_COUNT, state.bootCount)
+            if (state.bootId == null) remove(KEY_BOOT_ID) else putString(KEY_BOOT_ID, state.bootId)
             if (state.notice == null) remove(KEY_NOTICE) else putString(KEY_NOTICE, state.notice.name)
         }.commit()
     }
@@ -101,7 +101,7 @@ class DeviceLocalCpuProfileStore @Inject constructor(
         const val KEY_BOOT_PROFILE = "cpu_boot_profile"
         const val KEY_OVERRIDE_COUNT = "cpu_override_count"
         const val KEY_REAPPLY_FAILURES = "cpu_reapply_failures"
-        const val KEY_BOOT_COUNT = "cpu_boot_count"
+        const val KEY_BOOT_ID = "cpu_boot_id"
         const val KEY_NOTICE = "cpu_notice"
     }
 }
