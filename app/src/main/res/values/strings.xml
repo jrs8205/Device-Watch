@@ -743,7 +743,7 @@
     <string name="cluster_middle">Middle cores</string>
     <string name="cluster_big">Big cores</string>
     <string name="cluster_only">Cores</string>
-    <string name="kernel_cluster_title">%1$s · cores %2$s</string>
+    <string name="kernel_cluster_title">%1$s (no. %2$s)</string>
     <string name="kernel_speed_now">Speed now</string>
     <string name="kernel_speed_limit">Limit</string>
     <string name="kernel_speed_range">Range</string>

@@ -735,7 +735,7 @@
     <string name="cluster_middle">Keskiytimet</string>
     <string name="cluster_big">Isot ytimet</string>
     <string name="cluster_only">Ytimet</string>
-    <string name="kernel_cluster_title">%1$s · ytimet %2$s</string>
+    <string name="kernel_cluster_title">%1$s (nro %2$s)</string>
     <string name="kernel_speed_now">Nopeus nyt</string>
     <string name="kernel_speed_limit">Raja</string>
     <string name="kernel_speed_range">Alue</string>

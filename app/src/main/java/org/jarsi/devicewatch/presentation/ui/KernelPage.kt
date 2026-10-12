@@ -350,12 +350,17 @@ private fun ProcessorSection(snapshot: KernelSnapshot, state: KernelPageState) {
                         numeric = true,
                     )
                 }
+                // Worth a row only when the phone's own limit is not simply the maximum.
                 state.status.originals[policy.id]?.let { original ->
-                    val text = freqText(original, locale)
-                    KernelRow(
-                        R.string.kernel_phone_limit,
-                        if (policy.id in state.status.originalsAssumed) stringResource(R.string.kernel_phone_limit_assumed, text) else text,
-                    )
+                    val assumed = policy.id in state.status.originalsAssumed
+                    if (original < max || assumed) {
+                        val text = freqText(original, locale)
+                        KernelRow(
+                            R.string.kernel_phone_limit,
+                            if (assumed) stringResource(R.string.kernel_phone_limit_assumed, text) else text,
+                            numeric = !assumed,
+                        )
+                    }
                 }
                 if (policy.steps.isEmpty()) {
                     KernelNote(stringResource(R.string.kernel_cluster_cannot_limit), color = statusWarnColor())
