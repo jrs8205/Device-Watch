@@ -32,6 +32,9 @@ sealed interface ApplyOutcome {
     data object NoRoot : ApplyOutcome
 
     data object NothingToChange : ApplyOutcome
+
+    /** The record of the change could not be saved on this phone, so nothing was written. */
+    data object NotSaved : ApplyOutcome
 }
 
 /** What the Kernel page shows about the profile. */
@@ -126,9 +129,11 @@ class CpuProfileController internal constructor(
     override suspend fun apply(profile: CpuProfile, custom: Map<CpuPolicyId, Long>): ApplyOutcome =
         session { applyLocked(profile, custom) }
 
-    override suspend fun setApplyAfterRestart(enabled: Boolean) = session {
-        // Off also drops a profile still waiting from a restart.
-        commit(state.copy(applyAfterRestart = enabled, bootProfile = state.bootProfile.takeIf { enabled }))
+    override suspend fun setApplyAfterRestart(enabled: Boolean) {
+        session {
+            // Off also drops a profile still waiting from a restart.
+            commit(state.copy(applyAfterRestart = enabled, bootProfile = state.bootProfile.takeIf { enabled }))
+        }
     }
 
     override suspend fun enforce() = session { enforceLocked() }
@@ -142,17 +147,22 @@ class CpuProfileController internal constructor(
         restored
     }
 
-    override suspend fun onRootGone() = session {
-        if (statusOf(state).holdsCaps) commit(state.copy(notice = CpuProfileNotice.KEPT_UNTIL_RESTART))
+    override suspend fun onRootGone() {
+        session { if (statusOf(state).holdsCaps) commit(state.copy(notice = CpuProfileNotice.KEPT_UNTIL_RESTART)) }
     }
 
-    /** The state as it stands inside the lock; [commit] writes it through to disk and the page. */
+    /**
+     * The state as it stands inside the lock; [commit] writes it through to disk
+     * and the page. What the disk would not take is not taken here either, so
+     * memory never says more than the record a process death leaves behind.
+     */
     private inner class Session(var state: CpuProfileState) {
-        fun commit(next: CpuProfileState) {
-            if (next == state) return
+        fun commit(next: CpuProfileState): Boolean {
+            if (next == state) return true
+            if (!store.save(next)) return false
             state = next
-            store.save(next)
             _status.value = statusOf(next)
+            return true
         }
     }
 
@@ -176,7 +186,7 @@ class CpuProfileController internal constructor(
             if (state.pending != null) return ApplyOutcome.Unconfirmed
         }
         val snapshot = source.read() ?: return ApplyOutcome.Unconfirmed
-        if (profile != CpuProfile.STOCK) captureOriginals(snapshot)
+        if (profile != CpuProfile.STOCK && !captureOriginals(snapshot)) return ApplyOutcome.NotSaved
 
         val before = state
         // Every limit of the app's in the kernel, wanted or not: each goes back unless the profile caps it.
@@ -218,7 +228,7 @@ class CpuProfileController internal constructor(
         }
 
         // Write-ahead: if the process dies with the writes in flight, the next pass knows to look.
-        commit(before.copy(pending = pending))
+        if (!commit(before.copy(pending = pending))) return ApplyOutcome.NotSaved
         val readback = writer.write(writes) ?: return ApplyOutcome.Unconfirmed
         return complete(pending, readback, snapshot, deferred)
     }
@@ -321,7 +331,8 @@ class CpuProfileController internal constructor(
             // Kept until it settles one way or the other: a first read that fails
             // after a restart is tried again on the next pass.
             when (applyLocked(profile, state.custom)) {
-                ApplyOutcome.Applied, ApplyOutcome.HeldLower, ApplyOutcome.NothingToChange, ApplyOutcome.Unconfirmed -> Unit
+                ApplyOutcome.Applied, ApplyOutcome.HeldLower, ApplyOutcome.NothingToChange, ApplyOutcome.Unconfirmed,
+                ApplyOutcome.NotSaved -> Unit
                 is ApplyOutcome.NotSupported, ApplyOutcome.NoRoot ->
                     commit(state.copy(bootProfile = null, notice = CpuProfileNotice.RESET_BY_RESTART))
             }
@@ -359,7 +370,7 @@ class CpuProfileController internal constructor(
      * process that dies mid-way still knows what to let go of.
      */
     private fun Session.giveUp() {
-        commit(
+        val recorded = commit(
             state.copy(
                 active = CpuProfile.STOCK,
                 held = emptyMap(),
@@ -368,7 +379,7 @@ class CpuProfileController internal constructor(
                 notice = CpuProfileNotice.ANDROID_KEEPS_CHANGING,
             )
         )
-        release()
+        if (recorded) release()
     }
 
     /**
@@ -415,7 +426,7 @@ class CpuProfileController internal constructor(
     }
 
     /** Each online cluster's limit as the phone had it, saved once per boot before the first write. */
-    private fun Session.captureOriginals(snapshot: KernelSnapshot) {
+    private fun Session.captureOriginals(snapshot: KernelSnapshot): Boolean {
         val lowered = snapshot.cpuThrottled || powerSave()
         val originals = LinkedHashMap(state.originals)
         val assumed = LinkedHashSet(state.originalsAssumed)
@@ -431,7 +442,7 @@ class CpuProfileController internal constructor(
             originals[policy.id] = captured.kHz
             if (captured.assumed) assumed += policy.id
         }
-        commit(state.copy(originals = originals, originalsAssumed = assumed))
+        return commit(state.copy(originals = originals, originalsAssumed = assumed))
     }
 
     private fun previousLimit(state: CpuProfileState, id: CpuPolicyId, snapshot: KernelSnapshot): Long =

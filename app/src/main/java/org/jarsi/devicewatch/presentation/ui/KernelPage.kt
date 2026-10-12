@@ -304,6 +304,7 @@ private fun outcomeText(outcome: ApplyOutcome?, awaitsMonitor: Boolean, snapshot
         if (awaitsMonitor) R.string.cpu_profile_outcome_unconfirmed else R.string.cpu_profile_outcome_no_answer
     )
     ApplyOutcome.NoRoot -> stringResource(R.string.cpu_profile_outcome_no_root)
+    ApplyOutcome.NotSaved -> stringResource(R.string.cpu_profile_outcome_not_saved)
     is ApplyOutcome.NotSupported -> {
         val roles = clusterRoles(snapshot.policies)
         val names = outcome.ids.map { id -> stringResource((roles[id] ?: ClusterRole.ONLY).labelRes) }.distinct()

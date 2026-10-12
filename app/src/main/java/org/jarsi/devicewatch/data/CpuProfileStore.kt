@@ -10,7 +10,9 @@ import javax.inject.Singleton
 /** Where the processor profile's state lives between passes and process starts. */
 interface CpuProfileStore {
     fun load(): CpuProfileState
-    fun save(state: CpuProfileState)
+
+    /** False when nothing landed on disk: a limit written on that word would be forgotten. */
+    fun save(state: CpuProfileState): Boolean
 }
 
 /**
@@ -55,7 +57,7 @@ class DeviceLocalCpuProfileStore @Inject constructor(
 
     /** Committed, not applied: a write-ahead that is not on disk before the shell runs protects nothing. */
     @SuppressLint("ApplySharedPref")
-    override fun save(state: CpuProfileState) {
+    override fun save(state: CpuProfileState): Boolean =
         prefs.edit().apply {
             putString(KEY_ACTIVE, state.active.name)
             putString(KEY_HELD, CpuCapsCodec.encode(state.held))
@@ -84,7 +86,6 @@ class DeviceLocalCpuProfileStore @Inject constructor(
             if (state.bootId == null) remove(KEY_BOOT_ID) else putString(KEY_BOOT_ID, state.bootId)
             if (state.notice == null) remove(KEY_NOTICE) else putString(KEY_NOTICE, state.notice.name)
         }.commit()
-    }
 
     private fun profileOf(name: String): CpuProfile? = CpuProfile.entries.firstOrNull { it.name == name }
 

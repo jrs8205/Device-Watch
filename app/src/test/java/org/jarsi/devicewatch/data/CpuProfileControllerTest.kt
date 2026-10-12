@@ -13,10 +13,16 @@ class CpuProfileControllerTest {
 
     private class MemoryStore(var state: CpuProfileState = CpuProfileState()) : CpuProfileStore {
         val saved = mutableListOf<CpuProfileState>()
+
+        /** The disk is full, or the preferences file cannot be written: nothing lands. */
+        var failSaves = false
+
         override fun load() = state
-        override fun save(state: CpuProfileState) {
+        override fun save(state: CpuProfileState): Boolean {
+            if (failSaves) return false
             this.state = state
             saved += state
+            return true
         }
     }
 
@@ -825,6 +831,53 @@ class CpuProfileControllerTest {
         controller.enforce()
         assertThat(sysfs.policies.getValue("policy4").request).isEqualTo(2_367_000L)
         assertThat(controller.status.value.holdsCaps).isFalse()
+    }
+
+    @Test
+    fun `an apply whose record cannot be saved writes nothing`() = runTest {
+        store.failSaves = true
+        val controller = controller()
+
+        assertThat(controller.apply(CpuProfile.BALANCED)).isEqualTo(ApplyOutcome.NotSaved)
+
+        assertThat(sysfs.writes).isEmpty()
+        assertThat(controller.status.value.active).isEqualTo(CpuProfile.STOCK)
+        assertThat(controller.status.value.holdsCaps).isFalse()
+    }
+
+    @Test
+    fun `a write-ahead that cannot be saved stops the apply before the kernel`() = runTest {
+        val controller = controller()
+        controller.apply(CpuProfile.BALANCED)
+        store.failSaves = true
+
+        assertThat(controller.apply(CpuProfile.POWER_SAVING)).isEqualTo(ApplyOutcome.NotSaved)
+
+        assertThat(sysfs.effective("policy4")).isEqualTo(1_836_000L)
+        assertThat(sysfs.effective("policy8")).isEqualTo(2_294_000L)
+        assertThat(controller.status.value.active).isEqualTo(CpuProfile.BALANCED)
+        assertThat(controller.status.value.pending).isFalse()
+    }
+
+    @Test
+    fun `giving up without a record to save lets nothing go yet`() = runTest {
+        val controller = controller()
+        controller.apply(CpuProfile.BALANCED)
+        sysfs.rejectWrites += "policy4"
+        repeat(CpuProfileRules.MAX_REAPPLY_FAILURES - 1) {
+            sysfs.halReset("policy4")
+            controller.enforce()
+        }
+        store.failSaves = true
+        sysfs.halReset("policy4")
+        val writesBefore = sysfs.writes.size
+
+        controller.enforce()
+
+        assertThat(sysfs.writes.drop(writesBefore)).isEmpty()
+        assertThat(sysfs.effective("policy8")).isEqualTo(2_294_000L)
+        assertThat(controller.status.value.active).isEqualTo(CpuProfile.BALANCED)
+        assertThat(controller.status.value.held).containsExactly(p4, 1_836_000L, p8, 2_294_000L)
     }
 
     @Test

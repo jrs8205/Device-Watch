@@ -44,7 +44,7 @@ class CpuProfileStoreTest {
             bootId = "3956042b-f691-43b4-b583-4eca47c13dc0",
             notice = CpuProfileNotice.ANDROID_KEEPS_CHANGING,
         )
-        store.save(state)
+        assertThat(store.save(state)).isTrue()
         assertThat(DeviceLocalCpuProfileStore(context).load()).isEqualTo(state)
     }
 

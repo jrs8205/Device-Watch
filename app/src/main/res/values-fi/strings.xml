@@ -725,6 +725,7 @@
     <string name="cpu_profile_outcome_unconfirmed">Root ei vastannut. Sovellus tarkistaa hetken päästä, menikö muutos läpi.</string>
     <string name="cpu_profile_outcome_no_answer">Root ei vastannut ajoissa. Yritä hetken päästä uudelleen.</string>
     <string name="cpu_profile_outcome_no_root">Root ei ole päällä.</string>
+    <string name="cpu_profile_outcome_not_saved">Profiilia ei voitu tallentaa tälle puhelimelle. Mitään ei muutettu.</string>
     <string name="cpu_profile_applying">Asetetaan…</string>
     <string name="cpu_profile_apply_custom">Ota käyttöön</string>
     <string name="cpu_profile_cancel_custom">Peruuta</string>

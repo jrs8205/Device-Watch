@@ -733,6 +733,7 @@
     <string name="cpu_profile_outcome_unconfirmed">Root did not answer. The app checks in a moment whether the change took.</string>
     <string name="cpu_profile_outcome_no_answer">Root did not answer in time. Try again in a moment.</string>
     <string name="cpu_profile_outcome_no_root">Root is not on.</string>
+    <string name="cpu_profile_outcome_not_saved">The profile could not be saved on this phone. Nothing was changed.</string>
     <string name="cpu_profile_applying">Setting…</string>
     <string name="cpu_profile_apply_custom">Apply</string>
     <string name="cpu_profile_cancel_custom">Cancel</string>
