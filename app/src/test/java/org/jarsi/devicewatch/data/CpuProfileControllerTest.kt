@@ -55,6 +55,25 @@ class CpuProfileControllerTest {
         }
     }
 
+    /**
+     * The root gate, with write commands numbered from 1: the answer to those in
+     * [loseAnswers] is lost after the command ran, and from write [refuseFrom] on
+     * the kernel refuses every write to that policy.
+     */
+    private inner class ScriptedWrites(
+        val loseAnswers: Set<Int> = emptySet(),
+        val refuseFrom: Map<Int, String> = emptyMap(),
+    ) : RootCommandShell {
+        var writes = 0
+        override fun run(command: String, timeoutMillis: Long): String? {
+            if (!command.startsWith("echo ")) return gate.run(command, timeoutMillis)
+            writes++
+            refuseFrom[writes]?.let { sysfs.rejectWrites += it }
+            val answer = gate.run(command, timeoutMillis)
+            return if (writes in loseAnswers) null else answer
+        }
+    }
+
     private fun TestScope.controllerWriting(shell: RootCommandShell) = CpuProfileController(
         store, ShellKernelSnapshotSource(gate), CpuLimitWriter(shell), settings, { bootId }, { powerSave },
         UnconfinedTestDispatcher(testScheduler),
@@ -441,7 +460,6 @@ class CpuProfileControllerTest {
         }
 
         // The restore went unanswered: nothing may be forgotten yet.
-        assertThat(controller.status.value.pending).isTrue()
         assertThat(controller.status.value.holdsCaps).isTrue()
         assertThat(sysfs.effective("policy4")).isEqualTo(1_836_000L)
 
@@ -528,7 +546,8 @@ class CpuProfileControllerTest {
         controller.apply(CpuProfile.STOCK)
 
         assertThat(sysfs.effective("policy4")).isEqualTo(2_367_000L)
-        assertThat(controller.status.value.held).containsExactly(p8, 2_294_000L)
+        assertThat(controller.status.value.held).isEmpty()
+        assertThat(controller.status.value.releasing).containsExactly(p8, 2_294_000L)
         assertThat(controller.status.value.holdsCaps).isTrue()
         assertThat(controller.restoreStockBeforeRootOff()).isFalse()
 
@@ -654,6 +673,157 @@ class CpuProfileControllerTest {
         controller.enforce()
 
         assertThat(controller.status.value.waitingAfterRestart).isTrue()
+        assertThat(controller.status.value.holdsCaps).isFalse()
+    }
+
+    @Test
+    fun `a release that did not show is tried again, never held as a limit`() = runTest {
+        val controller = controller()
+        controller.apply(CpuProfile.CUSTOM, mapOf(p0 to 1_098_000L, p8 to 1_745_000L))
+        sysfs.rejectWrites += "policy0"
+
+        assertThat(controller.apply(CpuProfile.BALANCED)).isEqualTo(ApplyOutcome.Unconfirmed)
+
+        val status = controller.status.value
+        assertThat(status.active).isEqualTo(CpuProfile.BALANCED)
+        assertThat(status.held).containsExactly(p4, 1_836_000L, p8, 2_294_000L)
+        assertThat(status.releasing).containsExactly(p0, 1_098_000L)
+        assertThat(status.holdsCaps).isTrue()
+
+        // Still refused: the little cluster reads the old limit, which is no reason to keep it.
+        controller.enforce()
+        assertThat(sysfs.policies.getValue("policy0").request).isEqualTo(1_098_000L)
+        assertThat(controller.status.value.releasing).containsExactly(p0, 1_098_000L)
+
+        sysfs.rejectWrites.clear()
+        controller.enforce()
+        assertThat(sysfs.policies.getValue("policy0").request).isEqualTo(1_704_000L)
+        assertThat(controller.status.value.releasing).isEmpty()
+        assertThat(controller.status.value.held).containsExactly(p4, 1_836_000L, p8, 2_294_000L)
+    }
+
+    @Test
+    fun `a release android raised meanwhile is never put back as a limit`() = runTest {
+        val controller = controller()
+        controller.apply(CpuProfile.CUSTOM, mapOf(p0 to 1_098_000L))
+        sysfs.rejectWrites += "policy0"
+        controller.apply(CpuProfile.STOCK)
+        sysfs.rejectWrites.clear()
+        sysfs.halReset("policy0")
+        val writesBefore = sysfs.writes.size
+
+        controller.enforce()
+
+        assertThat(sysfs.effective("policy0")).isEqualTo(1_704_000L)
+        assertThat(sysfs.writes.drop(writesBefore)).doesNotContain("policy0" to 1_098_000L)
+        assertThat(controller.status.value.holdsCaps).isFalse()
+    }
+
+    @Test
+    fun `a release root never ran is not taken as done because heat reads low`() = runTest {
+        val flaky = FlakyWrites()
+        val controller = controllerWriting(flaky)
+        controller.apply(CpuProfile.BALANCED)
+        // The screen went off between the read and the write: nothing ran.
+        flaky.writesAllowed = flaky.writes
+        assertThat(controller.apply(CpuProfile.STOCK)).isEqualTo(ApplyOutcome.Unconfirmed)
+        assertThat(sysfs.policies.getValue("policy4").request).isEqualTo(1_836_000L)
+
+        // Heat now holds both clusters at exactly the app's limits.
+        sysfs.throttle("policy4", 1_836_000L)
+        sysfs.throttle("policy8", 2_294_000L)
+        flaky.writesAllowed = Int.MAX_VALUE
+        controller.enforce()
+
+        assertThat(sysfs.policies.getValue("policy4").request).isEqualTo(2_367_000L)
+        assertThat(sysfs.policies.getValue("policy8").request).isEqualTo(2_914_000L)
+        assertThat(controller.status.value.pending).isFalse()
+        assertThat(controller.status.value.holdsCaps).isFalse()
+    }
+
+    @Test
+    fun `a stock written again keeps a cluster the kernel did not answer for`() = runTest {
+        val flaky = FlakyWrites()
+        val controller = controllerWriting(flaky)
+        controller.apply(CpuProfile.BALANCED)
+        flaky.writesAllowed = flaky.writes
+        controller.apply(CpuProfile.STOCK)
+        flaky.writesAllowed = Int.MAX_VALUE
+        sysfs.policies.getValue("policy8").offline = true
+
+        controller.enforce()
+
+        assertThat(sysfs.policies.getValue("policy4").request).isEqualTo(2_367_000L)
+        assertThat(controller.status.value.pending).isFalse()
+        assertThat(controller.status.value.active).isEqualTo(CpuProfile.STOCK)
+        assertThat(controller.status.value.holdsCaps).isTrue()
+        assertThat(controller.restoreStockBeforeRootOff()).isFalse()
+
+        sysfs.policies.getValue("policy8").offline = false
+        controller.enforce()
+        assertThat(sysfs.policies.getValue("policy8").request).isEqualTo(2_914_000L)
+        assertThat(controller.status.value.holdsCaps).isFalse()
+    }
+
+    @Test
+    fun `giving up keeps a cluster whose restore the kernel refused`() = runTest {
+        val controller = controller()
+        controller.apply(CpuProfile.BALANCED)
+        sysfs.rejectWrites += "policy4"
+        sysfs.rejectWrites += "policy8"
+        repeat(CpuProfileRules.MAX_REAPPLY_FAILURES) {
+            sysfs.halReset("policy4")
+            controller.enforce()
+        }
+
+        val status = controller.status.value
+        assertThat(status.active).isEqualTo(CpuProfile.STOCK)
+        assertThat(status.notice).isEqualTo(CpuProfileNotice.ANDROID_KEEPS_CHANGING)
+        assertThat(sysfs.policies.getValue("policy8").request).isEqualTo(2_294_000L)
+        assertThat(status.holdsCaps).isTrue()
+
+        sysfs.rejectWrites.clear()
+        controller.enforce()
+        assertThat(sysfs.policies.getValue("policy8").request).isEqualTo(2_914_000L)
+        assertThat(controller.status.value.holdsCaps).isFalse()
+    }
+
+    @Test
+    fun `a rollback the kernel refused keeps the limit on record`() = runTest {
+        sysfs.rejectWrites += "policy8"
+        val controller = controllerWriting(ScriptedWrites(refuseFrom = mapOf(2 to "policy4")))
+
+        assertThat(controller.apply(CpuProfile.BALANCED)).isEqualTo(ApplyOutcome.NotSupported(setOf(p8)))
+
+        // The middle cluster took the limit, and the kernel then refused to let it go.
+        assertThat(sysfs.policies.getValue("policy4").request).isEqualTo(1_836_000L)
+        assertThat(controller.status.value.active).isEqualTo(CpuProfile.STOCK)
+        assertThat(controller.status.value.held).isEmpty()
+        assertThat(controller.status.value.holdsCaps).isTrue()
+
+        sysfs.rejectWrites.clear()
+        controller.enforce()
+        assertThat(sysfs.policies.getValue("policy4").request).isEqualTo(2_367_000L)
+        assertThat(controller.status.value.holdsCaps).isFalse()
+    }
+
+    @Test
+    fun `a pending apply rolled back on the next pass keeps a limit the kernel refused to let go`() = runTest {
+        sysfs.rejectWrites += "policy8"
+        // Write 1 is the apply, its answer lost; 2 the pass's second try; 3 the rollback, refused for the middle cluster.
+        val controller = controllerWriting(ScriptedWrites(loseAnswers = setOf(1), refuseFrom = mapOf(3 to "policy4")))
+        assertThat(controller.apply(CpuProfile.BALANCED)).isEqualTo(ApplyOutcome.Unconfirmed)
+
+        controller.enforce()
+
+        assertThat(sysfs.policies.getValue("policy4").request).isEqualTo(1_836_000L)
+        assertThat(controller.status.value.pending).isFalse()
+        assertThat(controller.status.value.active).isEqualTo(CpuProfile.STOCK)
+        assertThat(controller.status.value.holdsCaps).isTrue()
+
+        sysfs.rejectWrites.clear()
+        controller.enforce()
+        assertThat(sysfs.policies.getValue("policy4").request).isEqualTo(2_367_000L)
         assertThat(controller.status.value.holdsCaps).isFalse()
     }
 

@@ -47,6 +47,13 @@ data class CpuProfileState(
     val active: CpuProfile = CpuProfile.STOCK,
     /** The limits the app holds now, by cluster; empty on Stock. */
     val held: Map<CpuPolicyId, Long> = emptyMap(),
+    /**
+     * Limits of the app's own that should have gone back to the phone's but have
+     * not shown it yet (the kernel refused, the cluster's cores were off, root did
+     * not answer), by cluster, at the value written: let go of again on each pass,
+     * never held.
+     */
+    val releasing: Map<CpuPolicyId, Long> = emptyMap(),
     /** The user's Custom choices, kept across restarts. */
     val custom: Map<CpuPolicyId, Long> = emptyMap(),
     /** This boot's originals; Stock writes these back. */
@@ -135,6 +142,7 @@ object CpuProfileRules {
         val fresh = state.copy(
             bootId = current,
             held = emptyMap(),
+            releasing = emptyMap(),
             originals = emptyMap(),
             originalsAssumed = emptySet(),
             pending = null,

@@ -26,6 +26,7 @@ class CpuProfileStoreTest {
         val state = CpuProfileState(
             active = CpuProfile.CUSTOM,
             held = mapOf(p4 to 1_836_000L, p8 to 2_294_000L),
+            releasing = mapOf(p0 to 1_098_000L),
             custom = mapOf(p0 to 955_000L, p8 to 2_294_000L),
             originals = mapOf(p0 to 1_704_000L, p4 to 2_367_000L, p8 to 2_914_000L),
             originalsAssumed = setOf(p8),

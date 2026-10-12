@@ -31,6 +31,7 @@ class DeviceLocalCpuProfileStore @Inject constructor(
         return CpuProfileState(
             active = p.getString(KEY_ACTIVE, null)?.let(::profileOf) ?: CpuProfile.STOCK,
             held = CpuCapsCodec.decode(p.getString(KEY_HELD, null)),
+            releasing = CpuCapsCodec.decode(p.getString(KEY_RELEASING, null)),
             custom = CpuCapsCodec.decode(p.getString(KEY_CUSTOM, null)),
             originals = CpuCapsCodec.decode(p.getString(KEY_ORIGINALS, null)),
             originalsAssumed = CpuCapsCodec.decodeIds(p.getString(KEY_ORIGINALS_ASSUMED, null)),
@@ -58,6 +59,7 @@ class DeviceLocalCpuProfileStore @Inject constructor(
         prefs.edit().apply {
             putString(KEY_ACTIVE, state.active.name)
             putString(KEY_HELD, CpuCapsCodec.encode(state.held))
+            putString(KEY_RELEASING, CpuCapsCodec.encode(state.releasing))
             putString(KEY_CUSTOM, CpuCapsCodec.encode(state.custom))
             putString(KEY_ORIGINALS, CpuCapsCodec.encode(state.originals))
             putString(KEY_ORIGINALS_ASSUMED, CpuCapsCodec.encodeIds(state.originalsAssumed))
@@ -89,6 +91,7 @@ class DeviceLocalCpuProfileStore @Inject constructor(
     private companion object {
         const val KEY_ACTIVE = "cpu_active"
         const val KEY_HELD = "cpu_held"
+        const val KEY_RELEASING = "cpu_releasing"
         const val KEY_CUSTOM = "cpu_custom"
         const val KEY_ORIGINALS = "cpu_originals"
         const val KEY_ORIGINALS_ASSUMED = "cpu_originals_assumed"
