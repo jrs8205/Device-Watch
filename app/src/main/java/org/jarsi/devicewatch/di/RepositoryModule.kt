@@ -17,7 +17,9 @@ import org.jarsi.devicewatch.data.NotificationStatsImpl
 import org.jarsi.devicewatch.data.BatteryUsageSource
 import org.jarsi.devicewatch.data.PrivilegedShell
 import org.jarsi.devicewatch.data.ShellBatteryUsageSource
+import org.jarsi.devicewatch.data.KernelSnapshotSource
 import org.jarsi.devicewatch.data.RootCommandShell
+import org.jarsi.devicewatch.data.ShellKernelSnapshotSource
 import org.jarsi.devicewatch.data.RootOnlyShell
 import org.jarsi.devicewatch.data.RootShell
 import org.jarsi.devicewatch.data.SelectedPrivilegedShell
@@ -101,6 +103,10 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindRootCommandShell(impl: RootOnlyShell): RootCommandShell
+
+    @Binds
+    @Singleton
+    abstract fun bindKernelSnapshotSource(impl: ShellKernelSnapshotSource): KernelSnapshotSource
 
     @Binds
     @Singleton
