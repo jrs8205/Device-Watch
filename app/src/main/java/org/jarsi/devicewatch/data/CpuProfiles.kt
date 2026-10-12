@@ -193,7 +193,7 @@ class CpuProfileController internal constructor(
             reconcilePending()
             if (state.pending != null) return ApplyOutcome.Unconfirmed
         }
-        val snapshot = source.read() ?: return ApplyOutcome.Unconfirmed
+        val snapshot = source.readCpu() ?: return ApplyOutcome.Unconfirmed
         if (profile != CpuProfile.STOCK && !captureOriginals(snapshot)) return ApplyOutcome.NotSaved
 
         val before = state
@@ -253,12 +253,11 @@ class CpuProfileController internal constructor(
      * undoes the apply; a release that did not show is tried again on the next pass.
      */
     private fun Session.complete(pending: PendingApply, readback: WriteReadback, snapshot: KernelSnapshot, deferred: Boolean = false): ApplyOutcome {
-        val lowered = readback.cpuThrottled || powerSave()
         val verdicts = pending.writes.mapValues { (id, target) ->
             if (id in pending.held) {
-                CpuProfileRules.acceptance(target, readback.effective[id], lowered)
+                CpuProfileRules.acceptance(target, readback.effective[id], readback.lowered(id))
             } else {
-                CpuProfileRules.releaseAcceptance(target, readback.effective[id], pending.previousHeld[id], lowered)
+                CpuProfileRules.releaseAcceptance(target, readback.effective[id], pending.previousHeld[id], readback.lowered(id))
             }
         }
         if (verdicts.any { (id, verdict) -> id in pending.held && verdict == Acceptance.REJECTED }) {
@@ -291,13 +290,12 @@ class CpuProfileController internal constructor(
         val rollback = pending.writes.keys.filter { it in pending.held }.associateWith { id -> previousLimit(state, id, snapshot) }
         // Unanswered: the pending apply is still there for the next pass to settle.
         val readback = writer.write(rollback) ?: return ApplyOutcome.Unconfirmed
-        val lowered = readback.cpuThrottled || powerSave()
         val stray = LinkedHashMap<CpuPolicyId, Long>()
         for ((id, target) in rollback) {
             // Back to a limit held before: refused or not, the record of that limit stands.
             if (id in state.held) continue
             val cap = pending.writes.getValue(id)
-            if (CpuProfileRules.releaseAcceptance(target, readback.effective[id], cap, lowered) == Acceptance.REJECTED) stray[id] = cap
+            if (CpuProfileRules.releaseAcceptance(target, readback.effective[id], cap, readback.lowered(id)) == Acceptance.REJECTED) stray[id] = cap
         }
         val recorded = commit(state.copy(pending = null, held = state.held - released, releasing = state.releasing - released + stray))
         return if (recorded) ApplyOutcome.NotSupported(refusedCaps) else ApplyOutcome.Unconfirmed
@@ -367,9 +365,8 @@ class CpuProfileController internal constructor(
         }
         val targets = state.held.filterKeys { it in raised }
         val readback = writer.write(targets)
-        val lowered = readback?.cpuThrottled == true || powerSave()
         val held = readback != null && targets.all { (id, target) ->
-            CpuProfileRules.acceptance(target, readback.effective[id], lowered) != Acceptance.REJECTED
+            CpuProfileRules.acceptance(target, readback.effective[id], readback.lowered(id)) != Acceptance.REJECTED
         }
         if (held) {
             commit(state.copy(overrideCount = state.overrideCount + 1, reapplyFailures = 0))
@@ -406,7 +403,7 @@ class CpuProfileController internal constructor(
      * the kernel shows them gone. A cluster whose cores are off waits for them.
      */
     private fun Session.release() {
-        val snapshot = source.read() ?: return
+        val snapshot = source.readCpu() ?: return
         val targets = LinkedHashMap<CpuPolicyId, Long>()
         for (policy in snapshot.policies) {
             if (!policy.online || policy.id !in state.releasing) continue
@@ -414,9 +411,8 @@ class CpuProfileController internal constructor(
         }
         if (targets.isEmpty()) return
         val readback = writer.write(targets) ?: return
-        val lowered = readback.cpuThrottled || powerSave()
         val released = targets.filter { (id, target) ->
-            CpuProfileRules.releaseAcceptance(target, readback.effective[id], state.releasing[id], lowered) != Acceptance.REJECTED
+            CpuProfileRules.releaseAcceptance(target, readback.effective[id], state.releasing[id], readback.lowered(id)) != Acceptance.REJECTED
         }.keys
         if (released.isNotEmpty()) commit(state.copy(releasing = state.releasing - released))
     }
@@ -430,7 +426,7 @@ class CpuProfileController internal constructor(
      */
     private fun Session.reconcilePending() {
         val pending = state.pending ?: return
-        val snapshot = source.read() ?: return
+        val snapshot = source.readCpu() ?: return
         val effective = snapshot.policies.mapNotNull { p -> p.scalingMaxKHz?.let { p.id to it } }.toMap()
         val shown = pending.writes.all { (id, target) ->
             val reading = effective[id] ?: return@all false
@@ -446,11 +442,12 @@ class CpuProfileController internal constructor(
 
     /** Each online cluster's limit as the phone had it, saved once per boot before the first write. */
     private fun Session.captureOriginals(snapshot: KernelSnapshot): Boolean {
-        val lowered = snapshot.cpuThrottled || powerSave()
+        val throttled = snapshot.throttledPolicies
         val originals = LinkedHashMap(state.originals)
         val assumed = LinkedHashSet(state.originalsAssumed)
         for (policy in snapshot.policies) {
             if (!policy.online || policy.id in originals) continue
+            val lowered = policy.id in throttled || powerSave()
             if (policy.id in state.held || policy.id in state.releasing) {
                 // What reads now is the app's own limit, so it cannot be the phone's.
                 originals[policy.id] = policy.cpuinfoMaxKHz!!
@@ -463,6 +460,9 @@ class CpuProfileController internal constructor(
         }
         return commit(state.copy(originals = originals, originalsAssumed = assumed))
     }
+
+    /** Heat on this very cluster, or battery saver, explains a reading below what was written. */
+    private fun WriteReadback.lowered(id: CpuPolicyId): Boolean = id in throttled || powerSave()
 
     private fun previousLimit(state: CpuProfileState, id: CpuPolicyId, snapshot: KernelSnapshot): Long =
         state.held[id] ?: state.originals[id] ?: snapshot.policies.firstOrNull { it.id == id }?.cpuinfoMaxKHz

@@ -163,9 +163,12 @@ class CpuProfileControllerTest {
 
     @Test
     fun `heat on one cluster does not lift android's lower limit on another`() = runTest {
+        val controller = controller()
+        // The phone's own limits are known from an earlier profile; then Android holds the big cluster down.
+        controller.apply(CpuProfile.BALANCED)
+        controller.apply(CpuProfile.STOCK)
         sysfs.throttle("policy4", 1_836_000L)
         sysfs.halLimit("policy8", 1_557_000L)
-        val controller = controller()
 
         assertThat(controller.apply(CpuProfile.BALANCED)).isEqualTo(ApplyOutcome.HeldLower)
 
@@ -951,6 +954,38 @@ class CpuProfileControllerTest {
         assertThat(sysfs.policies.getValue("policy8").request).isEqualTo(2_294_000L)
         controller.apply(CpuProfile.STOCK)
         assertThat(sysfs.policies.getValue("policy8").request).isEqualTo(2_914_000L)
+    }
+
+    @Test
+    fun `a refused limit is refused even while another cluster is hot`() = runTest {
+        val controller = controller()
+        controller.apply(CpuProfile.CUSTOM, mapOf(p8 to 1_745_000L))
+        sysfs.throttle("policy4", 1_836_000L)
+        sysfs.rejectWrites += "policy8"
+
+        assertThat(controller.apply(CpuProfile.BALANCED)).isEqualTo(ApplyOutcome.NotSupported(setOf(p8)))
+
+        assertThat(controller.status.value.active).isEqualTo(CpuProfile.CUSTOM)
+        assertThat(controller.status.value.held).containsExactly(p8, 1_745_000L)
+    }
+
+    @Test
+    fun `a release the kernel refused stays on the list even while another cluster is hot`() = runTest {
+        val controller = controller()
+        controller.apply(CpuProfile.BALANCED)
+        sysfs.throttle("policy4", 1_836_000L)
+        sysfs.rejectWrites += "policy8"
+
+        assertThat(controller.restoreStockBeforeRootOff()).isFalse()
+
+        assertThat(controller.status.value.releasing).containsExactly(p8, 2_294_000L)
+    }
+
+    @Test
+    fun `the profile reads only the clusters and the heat, never the slower sensors`() = runTest {
+        controller().apply(CpuProfile.BALANCED)
+        assertThat(sysfs.commands.first()).isEqualTo(KernelCommands.CPU_READ)
+        assertThat(sysfs.commands).doesNotContain(KernelCommands.FULL_READ)
     }
 
     @Test

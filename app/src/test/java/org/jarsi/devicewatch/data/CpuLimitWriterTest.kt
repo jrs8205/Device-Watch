@@ -18,15 +18,22 @@ class CpuLimitWriterTest {
         assertThat(sysfs.commands).hasSize(1)
         assertThat(sysfs.writes).containsExactly("policy4" to 1_836_000L, "policy8" to 2_294_000L)
         assertThat(readback.effective).containsExactly(p4, 1_836_000L, p8, 2_294_000L)
-        assertThat(readback.cpuThrottled).isFalse()
+        assertThat(readback.throttled).isEmpty()
     }
 
     @Test
-    fun `heat shows in the read back`() {
+    fun `heat shows in the read back, on the cluster it holds`() {
         sysfs.throttle("policy8", 1_557_000L)
         val readback = writer.write(mapOf(p8 to 2_294_000L))!!
         assertThat(readback.effective).containsExactly(p8, 1_557_000L)
-        assertThat(readback.cpuThrottled).isTrue()
+        assertThat(readback.throttled).containsExactly(p8)
+    }
+
+    @Test
+    fun `heat on another cluster is not heat on the one written`() {
+        sysfs.throttle("policy4", 1_836_000L)
+        val readback = writer.write(mapOf(p8 to 2_294_000L))!!
+        assertThat(readback.throttled).containsExactly(p4)
     }
 
     @Test

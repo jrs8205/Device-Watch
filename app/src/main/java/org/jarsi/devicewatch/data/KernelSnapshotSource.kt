@@ -8,6 +8,9 @@ interface KernelSnapshotSource {
     /** A fresh read; null without root, with the screen off, or when root did not answer. */
     fun read(): KernelSnapshot?
 
+    /** Just the clusters and the cooling devices, by the same rules as [read]: what a profile decides on. */
+    fun readCpu(): KernelSnapshot?
+
     /** Just these clusters' limits in force now, by the same rules as [read]. */
     fun readMaxFreqs(ids: Collection<CpuPolicyId>): Map<CpuPolicyId, Long>?
 }
@@ -24,6 +27,8 @@ class ShellKernelSnapshotSource @Inject constructor(
 
     override fun read(): KernelSnapshot? =
         shell.run(KernelCommands.FULL_READ, FULL_READ_TIMEOUT_MILLIS)?.let(KernelSysfsParser::parse)
+
+    override fun readCpu(): KernelSnapshot? = shell.run(KernelCommands.CPU_READ)?.let(KernelSysfsParser::parse)
 
     override fun readMaxFreqs(ids: Collection<CpuPolicyId>): Map<CpuPolicyId, Long>? {
         if (ids.isEmpty()) return emptyMap()

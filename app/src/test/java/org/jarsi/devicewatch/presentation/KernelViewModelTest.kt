@@ -33,6 +33,7 @@ class KernelViewModelTest {
             reads++
             return snapshot
         }
+        override fun readCpu(): KernelSnapshot? = snapshot
         override fun readMaxFreqs(ids: Collection<CpuPolicyId>): Map<CpuPolicyId, Long>? = null
     }
 

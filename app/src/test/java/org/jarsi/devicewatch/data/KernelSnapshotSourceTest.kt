@@ -34,6 +34,17 @@ class KernelSnapshotSourceTest {
     }
 
     @Test
+    fun `the cpu read gives the clusters with their steps and the heat, and asks for nothing else`() {
+        sysfs.throttle("policy4", 1_836_000L)
+        val snapshot = source.readCpu()!!
+        assertThat(snapshot.policies.map { it.id.name }).containsExactly("policy0", "policy4", "policy8").inOrder()
+        assertThat(snapshot.policies.last().steps).hasSize(15)
+        assertThat(snapshot.throttledPolicies).containsExactly(id("policy4"))
+        assertThat(snapshot.thermalZones).isEmpty()
+        assertThat(sysfs.commands).containsExactly(KernelCommands.CPU_READ)
+    }
+
+    @Test
     fun `heat shows in the snapshot`() {
         sysfs.throttle("policy8", 1_745_000L)
         val snapshot = source.read()!!

@@ -50,6 +50,25 @@ class KernelCommandsTest {
     }
 
     @Test
+    fun `the cpu read covers the clusters and the cooling devices, and nothing slower`() {
+        val read = KernelCommands.CPU_READ
+        assertThat(read).startsWith("grep -s -H '^' ")
+        assertThat(read).contains("/sys/devices/system/cpu/cpufreq/policy*/scaling_available_frequencies")
+        assertThat(read).contains("/sys/devices/system/cpu/cpufreq/policy*/related_cpus")
+        assertThat(read).contains("/sys/class/thermal/cooling_device*/cur_state")
+        assertThat(read).doesNotContain("thermal_zone")
+        assertThat(read).doesNotContain("mali")
+        assertThat(read).doesNotContain("zram")
+    }
+
+    @Test
+    fun `writing limits reads every cluster's cores back, so heat can be told cluster by cluster`() {
+        val command = KernelCommands.writeMaxFreqs(mapOf(id("policy8") to 2_294_000L))
+        assertThat(command).contains("/sys/devices/system/cpu/cpufreq/policy*/related_cpus")
+        assertThat(command).contains("/sys/class/thermal/cooling_device*/type")
+    }
+
+    @Test
     fun `writing limits echoes each value into its own file, then reads them all back`() {
         val command = KernelCommands.writeMaxFreqs(linkedMapOf(id("policy8") to 2_294_000L, id("policy4") to 1_836_000L))
         assertThat(command).isEqualTo(
@@ -57,6 +76,7 @@ class KernelCommandsTest {
                 "echo 2294000 > '/sys/devices/system/cpu/cpufreq/policy8/scaling_max_freq'; " +
                 "grep -s -H '^' '/sys/devices/system/cpu/cpufreq/policy4/scaling_max_freq' " +
                 "'/sys/devices/system/cpu/cpufreq/policy8/scaling_max_freq' " +
+                "/sys/devices/system/cpu/cpufreq/policy*/related_cpus " +
                 "/sys/class/thermal/cooling_device*/type /sys/class/thermal/cooling_device*/cur_state " +
                 "/sys/class/thermal/cooling_device*/max_state"
         )

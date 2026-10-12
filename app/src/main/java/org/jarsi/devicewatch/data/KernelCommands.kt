@@ -38,6 +38,12 @@ internal object KernelCommands {
             listOf("/sys/block/sd?/queue/scheduler", "/sys/block/mmcblk?/queue/scheduler")
         ).joinToString(" ", prefix = "$GREP ")
 
+    /**
+     * What the profile decides on: the clusters and the cooling devices, none of
+     * the sensors that can take seconds to answer on some phones.
+     */
+    val CPU_READ: String = (CPU_FILES.map { "$POLICIES/$it" } + COOLING_FILES).joinToString(" ", prefix = "$GREP ")
+
     /** Reads back [ids]' speed limits. */
     fun readMaxFreqs(ids: Collection<CpuPolicyId>): String {
         require(ids.isNotEmpty()) { "nothing to read" }
@@ -46,16 +52,17 @@ internal object KernelCommands {
 
     /**
      * Sets each cluster's limit and reads every one of them back, with the cooling
-     * devices, in the same command: a write the kernel refused says nothing on
-     * stdout, so the value read back is the only answer there is. `;` keeps one
-     * refused write from stopping the rest.
+     * devices and every cluster's cores (so heat can be told cluster by cluster),
+     * in the same command: a write the kernel refused says nothing on stdout, so
+     * the value read back is the only answer there is. `;` keeps one refused
+     * write from stopping the rest.
      */
     fun writeMaxFreqs(targets: Map<CpuPolicyId, Long>): String {
         require(targets.isNotEmpty()) { "nothing to write" }
         targets.values.forEach { require(it in 1..MAX_KHZ) { "not a processor speed: $it" } }
         val ids = ordered(targets.keys)
         val writes = ids.joinToString("; ") { "echo ${targets.getValue(it)} > ${ShellProtocol.quote(it.maxFreqPath)}" }
-        return "$writes; ${readMaxFreqs(ids)} ${COOLING_FILES.joinToString(" ")}"
+        return "$writes; ${readMaxFreqs(ids)} $POLICIES/related_cpus ${COOLING_FILES.joinToString(" ")}"
     }
 
     /** All three: the parser keeps a cooling device only with its type and both states. */
