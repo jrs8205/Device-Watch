@@ -725,7 +725,6 @@
     <string name="cpu_profile_custom">Custom</string>
     <string name="cpu_profile_custom_desc">Choose each group of cores\' limit yourself, from half its top speed up.</string>
     <string name="cpu_profile_presets_unavailable">This phone has one group of cores, or all run equally fast: there is no faster group to hold back, so only Custom is offered.</string>
-    <string name="cpu_profile_in_use">In use: %1$s</string>
     <string name="cpu_profile_notice_reset">The phone restarted and its own limits came back. Choose the profile again, or switch on Apply after restart too.</string>
     <string name="cpu_profile_notice_kept">Root is not available: the limits set earlier stay until the phone restarts.</string>
     <string name="cpu_profile_notice_android">Android kept raising the limit, so the profile was let go and the phone\'s own limits returned.</string>
