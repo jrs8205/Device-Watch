@@ -76,6 +76,15 @@ class KernelSnapshotTest {
     }
 
     @Test
+    fun `a cooling device names its cluster the same way for the page and the profile`() {
+        val snapshot = snapshot(pixel8a)
+        assertThat(snapshot.policyFor(CoolingDevice(1, "thermal-cpufreq-1", 0, 10))).isEqualTo(p4)
+        assertThat(snapshot.policyFor(CoolingDevice(5, "cpufreq-cpu8", 0, 10))).isEqualTo(p8)
+        assertThat(snapshot.policyFor(CoolingDevice(6, "thermal-cpufreq-7", 0, 10))).isNull()
+        assertThat(snapshot.policyFor(CoolingDevice(7, "thermal-gpufreq-0", 0, 10))).isNull()
+    }
+
+    @Test
     fun `a cooling device at rest throttles nothing`() {
         val snapshot = snapshot(pixel8a, CoolingDevice(0, "thermal-cpufreq-1", 0, 10))
         assertThat(snapshot.throttledPolicies).isEmpty()

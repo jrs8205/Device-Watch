@@ -14,7 +14,7 @@ import androidx.compose.ui.unit.dp
 import org.jarsi.devicewatch.R
 import org.jarsi.devicewatch.data.UNAVAILABLE_TEXT
 import org.jarsi.devicewatch.presentation.DashboardUiState
-import org.jarsi.devicewatch.presentation.KernelSummary
+import org.jarsi.devicewatch.presentation.KernelBandState
 import org.jarsi.devicewatch.presentation.RootStatus
 
 /**
@@ -24,7 +24,7 @@ import org.jarsi.devicewatch.presentation.RootStatus
 @Composable
 internal fun DeviceTab(
     uiState: DashboardUiState,
-    kernelSummary: KernelSummary? = null,
+    kernelBand: KernelBandState = KernelBandState(),
     onOpenKernel: () -> Unit = {},
 ) {
     val currentStats = uiState.stats ?: return
@@ -35,7 +35,7 @@ internal fun DeviceTab(
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        if (uiState.rootStatus == RootStatus.ON) KernelBand(kernelSummary, onOpenKernel)
+        if (uiState.rootStatus == RootStatus.ON) KernelBand(kernelBand, onOpenKernel)
 
         uiState.deviceInfo?.let { info ->
             SettingsSectionCard(titleRes = R.string.device_info_section) {

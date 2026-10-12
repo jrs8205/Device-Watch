@@ -59,6 +59,7 @@ import org.jarsi.devicewatch.R
 import org.jarsi.devicewatch.presentation.AppsViewModel
 import org.jarsi.devicewatch.presentation.DashboardViewModel
 import org.jarsi.devicewatch.presentation.KernelViewModel
+import org.jarsi.devicewatch.presentation.KernelBandState
 import org.jarsi.devicewatch.presentation.RootStatus
 import org.jarsi.devicewatch.system.SystemMonitorService
 
@@ -318,14 +319,14 @@ fun SystemDashboardScreen(
 
                         DashboardTab.Device -> {
                             // The band reads the kernel only on a rooted phone, and only while shown.
-                            val kernelSummary = if (uiState.rootStatus == RootStatus.ON) {
-                                kernelViewModel.summary.collectAsStateWithLifecycle().value
+                            val kernelBand = if (uiState.rootStatus == RootStatus.ON) {
+                                kernelViewModel.band.collectAsStateWithLifecycle().value
                             } else {
-                                null
+                                KernelBandState()
                             }
                             DeviceTab(
                                 uiState = uiState,
-                                kernelSummary = kernelSummary,
+                                kernelBand = kernelBand,
                                 onOpenKernel = { showKernel = true },
                             )
                         }

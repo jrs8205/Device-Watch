@@ -7,6 +7,7 @@ import org.jarsi.devicewatch.data.CpuPolicySnapshot
 import org.jarsi.devicewatch.data.CpuProfile
 import org.jarsi.devicewatch.data.CpuProfileStatus
 import org.jarsi.devicewatch.data.KernelSnapshot
+import org.jarsi.devicewatch.data.KernelSnapshot.Companion.isCpuCooling
 import java.util.Locale
 
 /** A speed in kHz as people read it: gigahertz from one up, megahertz below. */
@@ -31,12 +32,16 @@ enum class ClusterRole(@StringRes val labelRes: Int) {
     LITTLE(R.string.cluster_little),
     MIDDLE(R.string.cluster_middle),
     BIG(R.string.cluster_big),
+
+    /** Every core off: its top speed cannot be read, so it takes no place among the others. */
+    OFFLINE(R.string.cluster_offline),
 }
 
 fun clusterRoles(policies: List<CpuPolicySnapshot>): Map<CpuPolicyId, ClusterRole> {
     val maxima = policies.mapNotNull { it.cpuinfoMaxKHz }.distinct().sorted()
     return policies.associate { policy ->
         policy.id to when {
+            policy.cpuinfoMaxKHz == null -> ClusterRole.OFFLINE
             maxima.size <= 1 -> ClusterRole.ONLY
             policy.cpuinfoMaxKHz == maxima.first() -> ClusterRole.LITTLE
             policy.cpuinfoMaxKHz == maxima.last() -> ClusterRole.BIG
@@ -56,26 +61,20 @@ fun cpuRangeText(cpus: List<Int>): String {
 
 /** What a kernel cooling device slows down, from its type name. */
 sealed interface CoolingKind {
-    /** A processor cluster, by its place in the kernel's cpufreq order. */
-    data class CpuCluster(val index: Int) : CoolingKind
-
-    /** Mainline Linux's naming: the cluster that holds this core. */
-    data class CpuCore(val cpu: Int) : CoolingKind
+    /** A processor cluster; which one, [KernelSnapshot.policyFor] says. */
+    data object Cpu : CoolingKind
     data object Gpu : CoolingKind
     data object ChargingCurrent : CoolingKind
     data object Other : CoolingKind
 
     companion object {
-        private val CPU = Regex("thermal-cpufreq-(\\d{1,3})")
-        private val CPU_CORE = Regex("cpufreq-cpu(\\d{1,4})")
         private val GPU = Regex("thermal-(gpufreq|devfreq)-\\d{1,3}")
         /** Mainline names a devfreq device after the device; only the graphics ones are told apart. */
         private val GPU_DEVFREQ = Regex("devfreq-.*(gpu|mali|kgsl|g3d|adreno).*", RegexOption.IGNORE_CASE)
         private val CHARGING = setOf("fcc", "dc_icl", "battery", "charge-limit")
 
         fun of(type: String): CoolingKind {
-            CPU.matchEntire(type)?.let { return CpuCluster(it.groupValues[1].toInt()) }
-            CPU_CORE.matchEntire(type)?.let { return CpuCore(it.groupValues[1].toInt()) }
+            if (isCpuCooling(type)) return Cpu
             if (GPU.matches(type) || GPU_DEVFREQ.matches(type)) return Gpu
             if (type in CHARGING) return ChargingCurrent
             return Other
@@ -123,6 +122,9 @@ data class KernelSummary(
         }
     }
 }
+
+/** The band's state: a summary once a read came, and whether the latest read failed. */
+data class KernelBandState(val summary: KernelSummary? = null, val readFailed: Boolean = false)
 
 @StringRes
 fun profileLabelRes(profile: CpuProfile): Int = when (profile) {

@@ -12,13 +12,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.jarsi.devicewatch.R
-import org.jarsi.devicewatch.presentation.KernelSummary
+import org.jarsi.devicewatch.presentation.KernelBandState
 import org.jarsi.devicewatch.presentation.capOverMaxText
 import org.jarsi.devicewatch.presentation.profileLabelRes
 
 /** The Device tab's first band on a rooted phone: the profile at a glance, and the way into the Kernel page. */
 @Composable
-internal fun KernelBand(summary: KernelSummary?, onOpen: () -> Unit) {
+internal fun KernelBand(band: KernelBandState, onOpen: () -> Unit) {
     val locale = LocalLocale.current.platformLocale
     SettingsSectionCard(
         titleRes = R.string.kernel_section,
@@ -30,7 +30,9 @@ internal fun KernelBand(summary: KernelSummary?, onOpen: () -> Unit) {
             )
         },
     ) {
+        val summary = band.summary
         when {
+            summary == null && band.readFailed -> KernelNote(stringResource(R.string.kernel_band_read_failed), color = statusWarnColor())
             summary == null -> KernelNote(stringResource(R.string.kernel_reading))
             !summary.supported -> KernelNote(stringResource(R.string.kernel_not_supported))
             else -> {

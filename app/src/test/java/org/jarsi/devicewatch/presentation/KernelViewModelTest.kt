@@ -191,9 +191,34 @@ class KernelViewModelTest {
     fun `the summary follows the snapshot and the profile`() = runTest(dispatcher) {
         profiles.status.value = profiles.status.value.copy(active = CpuProfile.POWER_SAVING)
         val viewModel = viewModel()
-        backgroundScope.launch { viewModel.summary.collect {} }
+        backgroundScope.launch { viewModel.band.collect {} }
         runCurrent()
-        assertThat(viewModel.summary.value?.profile).isEqualTo(CpuProfile.POWER_SAVING)
-        assertThat(viewModel.summary.value?.bigMaxKHz).isEqualTo(2_914_000L)
+        assertThat(viewModel.band.value.summary?.profile).isEqualTo(CpuProfile.POWER_SAVING)
+        assertThat(viewModel.band.value.summary?.bigMaxKHz).isEqualTo(2_914_000L)
+        assertThat(viewModel.band.value.readFailed).isFalse()
+    }
+
+    @Test
+    fun `a read root never answers says so on the band`() = runTest(dispatcher) {
+        source.snapshot = null
+        val viewModel = viewModel()
+        backgroundScope.launch { viewModel.band.collect {} }
+        runCurrent()
+        assertThat(viewModel.band.value.summary).isNull()
+        assertThat(viewModel.band.value.readFailed).isTrue()
+    }
+
+    @Test
+    fun `an apply that throws leaves the page usable and says root did not answer`() = runTest(dispatcher) {
+        profiles.applyThrows = true
+        val viewModel = viewModel()
+        backgroundScope.launch { viewModel.page.collect {} }
+        runCurrent()
+
+        viewModel.select(CpuProfile.BALANCED)
+        runCurrent()
+
+        assertThat(viewModel.page.value.busy).isFalse()
+        assertThat(viewModel.page.value.lastOutcome).isEqualTo(ApplyOutcome.Unconfirmed)
     }
 }

@@ -99,23 +99,26 @@ data class KernelSnapshot(
 
     /**
      * The clusters heat is holding down right now, as far as the cooling devices
-     * say which: `cpufreq-cpuN` names a cluster by its first core, `thermal-cpufreq-N`
-     * counts the clusters in core order. A device that names no cluster of this
-     * phone counts for none, so heat elsewhere never passes for heat on a cluster.
+     * say which ([policyFor]). A device that names no cluster of this phone counts
+     * for none, so heat elsewhere never passes for heat on a cluster.
      */
     val throttledPolicies: Set<CpuPolicyId>
-        get() {
-            val hot = coolingDevices.filter { isCpuCooling(it.type) && it.cur > 0 }
-            if (hot.isEmpty()) return emptySet()
-            val byCore = policies.sortedBy { it.relatedCpus.minOrNull() ?: Int.MAX_VALUE }
-            return hot.mapNotNullTo(LinkedHashSet()) { device ->
-                MAINLINE_COOLING.matchEntire(device.type)?.let { m ->
-                    val core = m.groupValues[1].toInt()
-                    return@mapNotNullTo policies.firstOrNull { core in it.relatedCpus }?.id
-                }
-                PIXEL_COOLING.matchEntire(device.type)?.let { m -> byCore.getOrNull(m.groupValues[1].toInt())?.id }
-            }
+        get() = coolingDevices.filter { it.cur > 0 }.mapNotNullTo(LinkedHashSet(), ::policyFor)
+
+    /**
+     * The cluster a processor cooling device slows down: `cpufreq-cpuN` names it
+     * by its first core, `thermal-cpufreq-N` counts the clusters in core order.
+     * Null for a device that is not a processor's, or names no cluster of this phone.
+     */
+    fun policyFor(device: CoolingDevice): CpuPolicyId? {
+        MAINLINE_COOLING.matchEntire(device.type)?.let { m ->
+            val core = m.groupValues[1].toInt()
+            return policies.firstOrNull { core in it.relatedCpus }?.id
         }
+        val m = PIXEL_COOLING.matchEntire(device.type) ?: return null
+        val byCore = policies.sortedBy { it.relatedCpus.minOrNull() ?: Int.MAX_VALUE }
+        return byCore.getOrNull(m.groupValues[1].toInt())?.id
+    }
 
     companion object {
         /**

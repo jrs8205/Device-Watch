@@ -706,6 +706,7 @@
     <string name="kernel_not_supported">Tämä kernel ei tarjoa nopeusrajoja</string>
     <string name="kernel_reading">Luetaan kerneliä…</string>
     <string name="kernel_read_failed">Root ei vastannut viimeisimpään lukuun, joten näytetään edellinen.</string>
+    <string name="kernel_band_read_failed">Root ei vastannut. Kaista yrittää hetken päästä uudelleen.</string>
     <string name="kernel_no_cpufreq">Tämä kernel ei kerro suorittimen nopeuksia.</string>
     <string name="kernel_profile_section">SUORITINPROFIILI</string>
     <string name="cpu_profile_power_saving">Virransäästö</string>
@@ -737,6 +738,7 @@
     <string name="cluster_middle">Keskiytimet</string>
     <string name="cluster_big">Isot ytimet</string>
     <string name="cluster_only">Ytimet</string>
+    <string name="cluster_offline">Ytimet pois päältä</string>
     <string name="kernel_cluster_title">%1$s (nro %2$s)</string>
     <string name="kernel_speed_now">Nopeus nyt</string>
     <string name="kernel_speed_limit">Raja</string>

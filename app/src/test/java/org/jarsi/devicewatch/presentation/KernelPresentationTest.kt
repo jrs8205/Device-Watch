@@ -38,6 +38,15 @@ class KernelPresentationTest {
     }
 
     @Test
+    fun `a cluster with its cores off keeps the others' places`() {
+        val bigOff = pixel.policies.map {
+            if (it.id == id("policy8")) it.copy(relatedCpus = emptyList(), cpuinfoMaxKHz = null, scalingMaxKHz = null) else it
+        }
+        assertThat(clusterRoles(bigOff))
+            .containsExactly(id("policy0"), ClusterRole.LITTLE, id("policy4"), ClusterRole.BIG, id("policy8"), ClusterRole.OFFLINE)
+    }
+
+    @Test
     fun `core ranges read as a span when they are consecutive`() {
         assertThat(cpuRangeText(listOf(0, 1, 2, 3))).isEqualTo("0–3")
         assertThat(cpuRangeText(listOf(8))).isEqualTo("8")
@@ -47,7 +56,7 @@ class KernelPresentationTest {
 
     @Test
     fun `cooling devices are told apart by what they slow down`() {
-        assertThat(CoolingKind.of("thermal-cpufreq-2")).isEqualTo(CoolingKind.CpuCluster(2))
+        assertThat(CoolingKind.of("thermal-cpufreq-2")).isEqualTo(CoolingKind.Cpu)
         assertThat(CoolingKind.of("thermal-gpufreq-0")).isEqualTo(CoolingKind.Gpu)
         assertThat(CoolingKind.of("fcc")).isEqualTo(CoolingKind.ChargingCurrent)
         assertThat(CoolingKind.of("dc_icl")).isEqualTo(CoolingKind.ChargingCurrent)
@@ -80,7 +89,7 @@ class KernelPresentationTest {
 
     @Test
     fun `mainline cooling names are told apart too`() {
-        assertThat(CoolingKind.of("cpufreq-cpu4")).isEqualTo(CoolingKind.CpuCore(4))
+        assertThat(CoolingKind.of("cpufreq-cpu4")).isEqualTo(CoolingKind.Cpu)
         assertThat(CoolingKind.of("devfreq-1f000000.mali")).isEqualTo(CoolingKind.Gpu)
         assertThat(CoolingKind.of("devfreq-gpu")).isEqualTo(CoolingKind.Gpu)
         assertThat(CoolingKind.of("devfreq-ddr")).isEqualTo(CoolingKind.Other)

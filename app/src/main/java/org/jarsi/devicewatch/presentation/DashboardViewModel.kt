@@ -307,9 +307,17 @@ class DashboardViewModel @Inject constructor(
             }
             // Shizuku takes root's place: the processor limits root set go back first.
             withContext(NonCancellable) {
-                if (settings.privilegedAccess() == PrivilegedAccess.ROOT && profileNeedsRoot()) restoreStockQuietly()
+                val restoring = settings.privilegedAccess() == PrivilegedAccess.ROOT && profileNeedsRoot()
+                if (restoring) {
+                    // Root is on its way out: the Kernel page closes and the switch says why, as when root is switched off.
+                    _uiState.update { it.copy(rootStatus = RootStatus.RESTORING) }
+                    restoreStockQuietly()
+                }
                 // Switched off, or asked again, while the limits were going back: that later word wins.
-                if (request != shizukuRequest || _uiState.value.shizukuStatus != ShizukuStatus.REQUESTING) return@withContext
+                if (request != shizukuRequest || _uiState.value.shizukuStatus != ShizukuStatus.REQUESTING) {
+                    if (restoring) _uiState.update { it.copy(rootStatus = RootStatus.ON) }
+                    return@withContext
+                }
                 settings.setPrivilegedAccess(PrivilegedAccess.SHIZUKU)
                 rootShell.close()
                 _uiState.update { it.copy(shizukuStatus = ShizukuStatus.ON, rootStatus = RootStatus.OFF) }

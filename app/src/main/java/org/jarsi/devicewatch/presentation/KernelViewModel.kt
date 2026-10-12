@@ -3,6 +3,7 @@ package org.jarsi.devicewatch.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
@@ -102,9 +103,9 @@ class KernelViewModel @Inject constructor(
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), KernelPageState())
 
-    val summary: StateFlow<KernelSummary?> = combine(reading, profiles.status) { reading, status ->
-        reading.snapshot?.let { KernelSummary.from(it, status) }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), null)
+    val band: StateFlow<KernelBandState> = combine(reading, profiles.status) { reading, status ->
+        KernelBandState(summary = reading.snapshot?.let { KernelSummary.from(it, status) }, readFailed = reading.failed)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), KernelBandState())
 
     /** A preset applies at once; Custom opens its sliders first. */
     fun select(profile: CpuProfile) {
@@ -137,16 +138,22 @@ class KernelViewModel @Inject constructor(
         if (local.value.busy) return
         local.update { it.copy(busy = true, lastOutcome = null) }
         viewModelScope.launch {
-            val outcome = action()
-            val done = outcome == ApplyOutcome.Applied || outcome == ApplyOutcome.HeldLower ||
-                outcome == ApplyOutcome.NothingToChange
+            // Whatever went wrong inside, the page stays usable and the monitor settles what was written ahead.
+            val outcome = try {
+                action()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                e.printStackTrace()
+                ApplyOutcome.Unconfirmed
+            }
             val awaitsMonitor = outcome == ApplyOutcome.Unconfirmed && profiles.status.value.pending
             local.update {
                 it.copy(
                     busy = false,
                     lastOutcome = outcome,
                     outcomeAwaitsMonitor = awaitsMonitor,
-                    editingCustom = it.editingCustom && !done,
+                    editingCustom = it.editingCustom && !outcome.settled,
                 )
             }
             // The new limits show at once, not at the next poll.

@@ -198,6 +198,26 @@ class DashboardViewModelTest {
         }
 
     @Test
+    fun `given limits held, when Shizuku takes over, then root says it is restoring meanwhile`() =
+        runTest(dispatcher) {
+            val settings = FakeAppSettingsRepository(access = PrivilegedAccess.ROOT)
+            val cpuProfiles = holding().apply { restoreGate = CompletableDeferred() }
+            val viewModel = buildViewModel(settings = settings, cpuProfiles = cpuProfiles)
+
+            viewModel.onShizukuModeChange(true)
+            advanceUntilIdle()
+
+            // The Kernel page closes and the root switch says why, as when root is switched off.
+            assertThat(viewModel.uiState.value.rootStatus).isEqualTo(RootStatus.RESTORING)
+
+            cpuProfiles.restoreGate!!.complete(Unit)
+            advanceUntilIdle()
+
+            assertThat(viewModel.uiState.value.rootStatus).isEqualTo(RootStatus.OFF)
+            assertThat(viewModel.uiState.value.shizukuStatus).isEqualTo(ShizukuStatus.ON)
+        }
+
+    @Test
     fun `given Shizuku switched off while stock is coming back, when the restore finishes, then Shizuku stays off`() =
         runTest(dispatcher) {
             val settings = FakeAppSettingsRepository(access = PrivilegedAccess.ROOT)

@@ -51,6 +51,7 @@ import org.jarsi.devicewatch.data.CpuProfile
 import org.jarsi.devicewatch.data.CpuProfileNotice
 import org.jarsi.devicewatch.data.CpuProfilePlanner
 import org.jarsi.devicewatch.data.GpuSnapshot
+import org.jarsi.devicewatch.data.CpuPolicySnapshot
 import org.jarsi.devicewatch.data.KernelSnapshot
 import org.jarsi.devicewatch.data.SelinuxMode
 import org.jarsi.devicewatch.data.ZramSnapshot
@@ -266,7 +267,7 @@ private fun CustomEditor(
         val index = steps.indexOf(value).takeIf { it >= 0 } ?: steps.indexOfLast { it <= value }.coerceAtLeast(0)
         val role = roles[policy.id] ?: ClusterRole.ONLY
         KernelRow(
-            stringResource(R.string.kernel_cluster_title, stringResource(role.labelRes), cpuRangeText(policy.relatedCpus)),
+            clusterTitle(role, policy),
             freqText(steps[index], locale),
             numeric = true,
         )
@@ -333,7 +334,7 @@ private fun ProcessorSection(snapshot: KernelSnapshot, state: KernelPageState) {
             Column(modifier = Modifier.padding(vertical = 8.dp)) {
                 val role = roles[policy.id] ?: ClusterRole.ONLY
                 Text(
-                    text = stringResource(R.string.kernel_cluster_title, stringResource(role.labelRes), cpuRangeText(policy.relatedCpus)),
+                    text = clusterTitle(role, policy),
                     fontSize = 14.sp,
                     fontWeight = FontWeight.SemiBold,
                 )
@@ -383,11 +384,18 @@ private fun ProcessorSection(snapshot: KernelSnapshot, state: KernelPageState) {
     }
 }
 
+/** "Big cores (no. 8)", or just the role where the cores cannot be read. */
+@Composable
+private fun clusterTitle(role: ClusterRole, policy: CpuPolicySnapshot): String =
+    if (policy.relatedCpus.isEmpty()) {
+        stringResource(role.labelRes)
+    } else {
+        stringResource(R.string.kernel_cluster_title, stringResource(role.labelRes), cpuRangeText(policy.relatedCpus))
+    }
+
 @Composable
 private fun ThrottlingSection(snapshot: KernelSnapshot) {
     val active = snapshot.coolingDevices.filter { it.cur > 0 }
-    // thermal-cpufreq-N follows the kernel's own policy order, by policy number.
-    val byNumber = snapshot.policies.sortedBy { it.id.name.removePrefix("policy").toInt() }
     val roles = clusterRoles(snapshot.policies)
     SettingsSectionCard(titleRes = R.string.kernel_throttling_section) {
         if (active.isEmpty()) {
@@ -395,13 +403,9 @@ private fun ThrottlingSection(snapshot: KernelSnapshot) {
             return@SettingsSectionCard
         }
         for (device in active) {
-            val label = when (val kind = CoolingKind.of(device.type)) {
-                is CoolingKind.CpuCluster -> {
-                    val role = byNumber.getOrNull(kind.index)?.let { roles[it.id] } ?: ClusterRole.ONLY
-                    stringResource(R.string.cooling_cpu, stringResource(role.labelRes))
-                }
-                is CoolingKind.CpuCore -> {
-                    val role = snapshot.policies.firstOrNull { kind.cpu in it.relatedCpus }?.let { roles[it.id] } ?: ClusterRole.ONLY
+            val label = when (CoolingKind.of(device.type)) {
+                CoolingKind.Cpu -> {
+                    val role = snapshot.policyFor(device)?.let { roles[it] } ?: ClusterRole.ONLY
                     stringResource(R.string.cooling_cpu, stringResource(role.labelRes))
                 }
                 CoolingKind.Gpu -> stringResource(R.string.cooling_gpu)

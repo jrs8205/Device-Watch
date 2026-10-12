@@ -714,6 +714,7 @@
     <string name="kernel_not_supported">This kernel offers no speed limits</string>
     <string name="kernel_reading">Reading the kernel…</string>
     <string name="kernel_read_failed">Root did not answer the last read, so the one before is shown.</string>
+    <string name="kernel_band_read_failed">Root did not answer. The band tries again in a moment.</string>
     <string name="kernel_no_cpufreq">This kernel reports no processor speeds.</string>
     <string name="kernel_profile_section">PROCESSOR PROFILE</string>
     <string name="cpu_profile_power_saving">Power saving</string>
@@ -745,6 +746,7 @@
     <string name="cluster_middle">Middle cores</string>
     <string name="cluster_big">Big cores</string>
     <string name="cluster_only">Cores</string>
+    <string name="cluster_offline">Cores switched off</string>
     <string name="kernel_cluster_title">%1$s (no. %2$s)</string>
     <string name="kernel_speed_now">Speed now</string>
     <string name="kernel_speed_limit">Limit</string>

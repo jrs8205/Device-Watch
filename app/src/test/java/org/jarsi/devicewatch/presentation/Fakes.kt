@@ -89,10 +89,12 @@ internal class FakeCpuProfiles(status: CpuProfileStatus = CpuProfileStatus()) : 
 
     var lastCustom: Map<CpuPolicyId, Long> = emptyMap()
     var nextOutcome: ApplyOutcome = ApplyOutcome.Applied
+    var applyThrows = false
 
     override suspend fun apply(profile: CpuProfile, custom: Map<CpuPolicyId, Long>): ApplyOutcome {
         calls += "apply $profile"
         lastCustom = custom
+        if (applyThrows) throw IllegalStateException("apply failed")
         return nextOutcome
     }
 

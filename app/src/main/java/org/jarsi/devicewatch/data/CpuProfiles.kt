@@ -18,6 +18,10 @@ import javax.inject.Singleton
 
 /** How choosing a profile went. */
 sealed interface ApplyOutcome {
+    /** The profile is in place, or was already: nothing is left to settle. */
+    val settled: Boolean
+        get() = this == Applied || this == HeldLower || this == NothingToChange
+
     data object Applied : ApplyOutcome
 
     /** In place, but heat or battery saver hold a cluster lower still for now. */
@@ -183,9 +187,6 @@ class CpuProfileController internal constructor(
             session.block()
         }
     }
-
-    private val ApplyOutcome.settled: Boolean
-        get() = this == ApplyOutcome.Applied || this == ApplyOutcome.HeldLower || this == ApplyOutcome.NothingToChange
 
     private fun Session.applyLocked(profile: CpuProfile, custom: Map<CpuPolicyId, Long>): ApplyOutcome {
         if (settings.privilegedAccess() != PrivilegedAccess.ROOT) return ApplyOutcome.NoRoot
