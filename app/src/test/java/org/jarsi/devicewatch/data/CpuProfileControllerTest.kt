@@ -1,0 +1,373 @@
+package org.jarsi.devicewatch.data
+
+import com.google.common.truth.Truth.assertThat
+import kotlinx.coroutines.async
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.runTest
+import org.jarsi.devicewatch.presentation.FakeAppSettingsRepository
+import org.junit.Test
+
+class CpuProfileControllerTest {
+
+    private class MemoryStore(var state: CpuProfileState = CpuProfileState()) : CpuProfileStore {
+        val saved = mutableListOf<CpuProfileState>()
+        override fun load() = state
+        override fun save(state: CpuProfileState) {
+            this.state = state
+            saved += state
+        }
+    }
+
+    private val sysfs = FakeSysfsRoot.pixel8a()
+    private val settings = FakeAppSettingsRepository(access = PrivilegedAccess.ROOT)
+    private val store = MemoryStore()
+    private var bootCount: Int? = 10
+    private var powerSave = false
+    private val gate = RootOnlyShell(settings, sysfs) { true }
+
+    private val p0 = CpuPolicyId.of("policy0")!!
+    private val p4 = CpuPolicyId.of("policy4")!!
+    private val p8 = CpuPolicyId.of("policy8")!!
+
+    private fun TestScope.controller(dispatcher: kotlinx.coroutines.CoroutineDispatcher = UnconfinedTestDispatcher(testScheduler)) =
+        CpuProfileController(
+            store = store,
+            source = ShellKernelSnapshotSource(gate),
+            writer = CpuLimitWriter(gate),
+            settings = settings,
+            bootCount = { bootCount },
+            powerSave = { powerSave },
+            dispatcher = dispatcher,
+        )
+
+    /** A restart: a new boot count, and every request in the kernel back to none. */
+    private fun reboot() {
+        bootCount = bootCount!! + 1
+        sysfs.policies.keys.forEach {
+            sysfs.halReset(it)
+            sysfs.coolDown(it)
+        }
+    }
+
+    @Test
+    fun `balanced holds the middle and big clusters and leaves the little one`() = runTest {
+        val controller = controller()
+        assertThat(controller.apply(CpuProfile.BALANCED)).isEqualTo(ApplyOutcome.Applied)
+        assertThat(sysfs.effective("policy4")).isEqualTo(1_836_000L)
+        assertThat(sysfs.effective("policy8")).isEqualTo(2_294_000L)
+        assertThat(sysfs.writes.map { it.first }).doesNotContain("policy0")
+        val status = controller.status.value
+        assertThat(status.active).isEqualTo(CpuProfile.BALANCED)
+        assertThat(status.held).containsExactly(p4, 1_836_000L, p8, 2_294_000L)
+        assertThat(status.holdsCaps).isTrue()
+        assertThat(store.state.originals).containsExactly(p0, 1_704_000L, p4, 2_367_000L, p8, 2_914_000L)
+    }
+
+    @Test
+    fun `originals are saved before anything is written`() = runTest {
+        controller().apply(CpuProfile.BALANCED)
+        val firstWithPending = store.saved.first { it.pending != null }
+        assertThat(firstWithPending.originals).hasSize(3)
+    }
+
+    @Test
+    fun `originals are not read again later in the same boot`() = runTest {
+        val controller = controller()
+        controller.apply(CpuProfile.BALANCED)
+        controller.apply(CpuProfile.POWER_SAVING)
+        assertThat(store.state.originals[p8]).isEqualTo(2_914_000L)
+        assertThat(sysfs.effective("policy8")).isEqualTo(1_745_000L)
+    }
+
+    @Test
+    fun `stock writes the originals back and holds nothing`() = runTest {
+        val controller = controller()
+        controller.apply(CpuProfile.POWER_SAVING)
+        assertThat(controller.apply(CpuProfile.STOCK)).isEqualTo(ApplyOutcome.Applied)
+        assertThat(sysfs.effective("policy4")).isEqualTo(2_367_000L)
+        assertThat(sysfs.effective("policy8")).isEqualTo(2_914_000L)
+        assertThat(controller.status.value.held).isEmpty()
+        assertThat(controller.status.value.active).isEqualTo(CpuProfile.STOCK)
+    }
+
+    @Test
+    fun `stock with nothing held changes nothing`() = runTest {
+        assertThat(controller().apply(CpuProfile.STOCK)).isEqualTo(ApplyOutcome.NothingToChange)
+        assertThat(sysfs.writes).isEmpty()
+    }
+
+    @Test
+    fun `custom holds the clusters it is given, the little one too`() = runTest {
+        val controller = controller()
+        val outcome = controller.apply(CpuProfile.CUSTOM, mapOf(p0 to 1_098_000L, p8 to 2_049_000L))
+        assertThat(outcome).isEqualTo(ApplyOutcome.Applied)
+        assertThat(sysfs.effective("policy0")).isEqualTo(1_098_000L)
+        assertThat(sysfs.effective("policy8")).isEqualTo(2_049_000L)
+        assertThat(controller.status.value.custom).containsExactly(p0, 1_098_000L, p8, 2_049_000L)
+    }
+
+    @Test
+    fun `a limit heat already holds lower is in place`() = runTest {
+        sysfs.throttle("policy8", 1_557_000L)
+        val controller = controller()
+        assertThat(controller.apply(CpuProfile.BALANCED)).isEqualTo(ApplyOutcome.HeldLower)
+        assertThat(controller.status.value.held[p8]).isEqualTo(2_294_000L)
+        // Read under heat, the big cluster's original is taken to be its maximum.
+        assertThat(store.state.originals[p8]).isEqualTo(2_914_000L)
+        assertThat(store.state.originalsAssumed).containsExactly(p8)
+    }
+
+    @Test
+    fun `a refused write rolls the others back and keeps the old profile`() = runTest {
+        sysfs.rejectWrites += "policy8"
+        val controller = controller()
+        val outcome = controller.apply(CpuProfile.BALANCED)
+        assertThat(outcome).isEqualTo(ApplyOutcome.NotSupported(setOf(p8)))
+        assertThat(sysfs.effective("policy4")).isEqualTo(2_367_000L)
+        val status = controller.status.value
+        assertThat(status.active).isEqualTo(CpuProfile.STOCK)
+        assertThat(status.held).isEmpty()
+        assertThat(status.pending).isFalse()
+    }
+
+    @Test
+    fun `nothing is written without root`() = runTest {
+        settings.access = PrivilegedAccess.SHIZUKU
+        assertThat(controller().apply(CpuProfile.BALANCED)).isEqualTo(ApplyOutcome.NoRoot)
+        assertThat(sysfs.commands).isEmpty()
+    }
+
+    @Test
+    fun `a shell that cannot read is unconfirmed and writes nothing`() = runTest {
+        sysfs.failCommands = true
+        assertThat(controller().apply(CpuProfile.BALANCED)).isEqualTo(ApplyOutcome.Unconfirmed)
+        assertThat(sysfs.writes).isEmpty()
+    }
+
+    @Test
+    fun `a lost answer leaves the apply pending, and the next pass settles it as done`() = runTest {
+        val controller = controller()
+        sysfs.loseAnswers = false
+        // The read before the write answers; only the write's answer is lost.
+        val writerShell = object : RootCommandShell {
+            override fun run(command: String, timeoutMillis: Long): String? =
+                gate.run(command, timeoutMillis).takeUnless { command.startsWith("echo ") }
+        }
+        val lossy = CpuProfileController(store, ShellKernelSnapshotSource(gate), CpuLimitWriter(writerShell), settings, { bootCount }, { powerSave }, UnconfinedTestDispatcher(testScheduler))
+        assertThat(lossy.apply(CpuProfile.BALANCED)).isEqualTo(ApplyOutcome.Unconfirmed)
+        assertThat(lossy.status.value.pending).isTrue()
+        assertThat(lossy.status.value.holdsCaps).isTrue()
+
+        controller.enforce()
+
+        val status = controller.status.value
+        assertThat(status.pending).isFalse()
+        assertThat(status.active).isEqualTo(CpuProfile.BALANCED)
+        assertThat(status.held).containsExactly(p4, 1_836_000L, p8, 2_294_000L)
+    }
+
+    @Test
+    fun `a pending apply that did not take is rolled back on the next pass`() = runTest {
+        sysfs.rejectWrites += "policy8"
+        val writerShell = object : RootCommandShell {
+            override fun run(command: String, timeoutMillis: Long): String? =
+                gate.run(command, timeoutMillis).takeUnless { command.startsWith("echo ") }
+        }
+        val lossy = CpuProfileController(store, ShellKernelSnapshotSource(gate), CpuLimitWriter(writerShell), settings, { bootCount }, { powerSave }, UnconfinedTestDispatcher(testScheduler))
+        lossy.apply(CpuProfile.BALANCED)
+        assertThat(sysfs.effective("policy4")).isEqualTo(1_836_000L)
+
+        val controller = controller()
+        controller.enforce()
+
+        assertThat(sysfs.effective("policy4")).isEqualTo(2_367_000L)
+        assertThat(controller.status.value.pending).isFalse()
+        assertThat(controller.status.value.active).isEqualTo(CpuProfile.STOCK)
+        assertThat(controller.status.value.held).isEmpty()
+    }
+
+    @Test
+    fun `a limit android raised is set again and counted`() = runTest {
+        val controller = controller()
+        controller.apply(CpuProfile.BALANCED)
+        sysfs.halReset("policy8")
+        assertThat(sysfs.effective("policy8")).isEqualTo(2_914_000L)
+
+        controller.enforce()
+
+        assertThat(sysfs.effective("policy8")).isEqualTo(2_294_000L)
+        assertThat(controller.status.value.overrideCount).isEqualTo(1)
+        assertThat(sysfs.writes.last()).isEqualTo("policy8" to 2_294_000L)
+    }
+
+    @Test
+    fun `heat below the limit is left alone`() = runTest {
+        val controller = controller()
+        controller.apply(CpuProfile.BALANCED)
+        sysfs.throttle("policy8", 1_557_000L)
+        val writes = sysfs.writes.size
+
+        controller.enforce()
+
+        assertThat(sysfs.writes).hasSize(writes)
+        assertThat(controller.status.value.overrideCount).isEqualTo(0)
+    }
+
+    @Test
+    fun `android's own lower limit is left alone too`() = runTest {
+        val controller = controller()
+        controller.apply(CpuProfile.BALANCED)
+        sysfs.halLimit("policy8", 1_852_000L)
+        val writes = sysfs.writes.size
+
+        controller.enforce()
+
+        assertThat(sysfs.writes).hasSize(writes)
+    }
+
+    @Test
+    fun `nothing held means nothing to watch`() = runTest {
+        controller().enforce()
+        assertThat(sysfs.commands).isEmpty()
+    }
+
+    @Test
+    fun `android winning three times in a row lets the profile go`() = runTest {
+        val controller = controller()
+        controller.apply(CpuProfile.BALANCED)
+        sysfs.rejectWrites += "policy8"
+        repeat(CpuProfileRules.MAX_REAPPLY_FAILURES) {
+            sysfs.halReset("policy8")
+            controller.enforce()
+        }
+        val status = controller.status.value
+        assertThat(status.active).isEqualTo(CpuProfile.STOCK)
+        assertThat(status.notice).isEqualTo(CpuProfileNotice.ANDROID_KEEPS_CHANGING)
+        assertThat(status.held).isEmpty()
+        // The cluster it could still hold goes back too.
+        assertThat(sysfs.effective("policy4")).isEqualTo(2_367_000L)
+    }
+
+    @Test
+    fun `without root the held limits stay recorded until root returns`() = runTest {
+        val controller = controller()
+        controller.apply(CpuProfile.BALANCED)
+        settings.access = PrivilegedAccess.OFF
+        val commands = sysfs.commands.size
+
+        controller.enforce()
+
+        assertThat(sysfs.commands).hasSize(commands)
+        assertThat(controller.status.value.notice).isEqualTo(CpuProfileNotice.KEPT_UNTIL_RESTART)
+        assertThat(controller.status.value.held).hasSize(2)
+
+        settings.access = PrivilegedAccess.ROOT
+        controller.enforce()
+        assertThat(controller.status.value.notice).isNull()
+        assertThat(controller.apply(CpuProfile.STOCK)).isEqualTo(ApplyOutcome.Applied)
+        assertThat(sysfs.effective("policy8")).isEqualTo(2_914_000L)
+    }
+
+    @Test
+    fun `a restart without apply-after-restart returns to stock without writing`() = runTest {
+        val controller = controller()
+        controller.apply(CpuProfile.BALANCED)
+        reboot()
+        val writes = sysfs.writes.size
+
+        controller.enforce()
+
+        val status = controller.status.value
+        assertThat(status.active).isEqualTo(CpuProfile.STOCK)
+        assertThat(status.notice).isEqualTo(CpuProfileNotice.RESET_BY_RESTART)
+        assertThat(status.held).isEmpty()
+        assertThat(sysfs.writes).hasSize(writes)
+    }
+
+    @Test
+    fun `a restart with apply-after-restart sets the profile again on the first pass`() = runTest {
+        val controller = controller()
+        controller.setApplyAfterRestart(true)
+        controller.apply(CpuProfile.BALANCED)
+        reboot()
+
+        controller.enforce()
+
+        assertThat(sysfs.effective("policy8")).isEqualTo(2_294_000L)
+        assertThat(controller.status.value.active).isEqualTo(CpuProfile.BALANCED)
+        assertThat(controller.status.value.held).hasSize(2)
+        assertThat(store.state.bootApplyDue).isFalse()
+    }
+
+    @Test
+    fun `an app update, the same boot, keeps holding`() = runTest {
+        controller().apply(CpuProfile.BALANCED)
+        // A new process: a new controller over the same saved state.
+        val restarted = controller()
+        sysfs.halReset("policy8")
+
+        restarted.enforce()
+
+        assertThat(restarted.status.value.active).isEqualTo(CpuProfile.BALANCED)
+        assertThat(sysfs.effective("policy8")).isEqualTo(2_294_000L)
+    }
+
+    @Test
+    fun `restoring before root goes off writes the originals`() = runTest {
+        val controller = controller()
+        controller.apply(CpuProfile.POWER_SAVING)
+        assertThat(controller.restoreStockBeforeRootOff()).isTrue()
+        assertThat(sysfs.effective("policy8")).isEqualTo(2_914_000L)
+        assertThat(controller.status.value.holdsCaps).isFalse()
+    }
+
+    @Test
+    fun `a restore that fails says the limits stay until restart`() = runTest {
+        val controller = controller()
+        controller.apply(CpuProfile.POWER_SAVING)
+        sysfs.failCommands = true
+        assertThat(controller.restoreStockBeforeRootOff()).isFalse()
+        assertThat(controller.status.value.notice).isEqualTo(CpuProfileNotice.KEPT_UNTIL_RESTART)
+    }
+
+    @Test
+    fun `nothing held needs no restore`() = runTest {
+        assertThat(controller().restoreStockBeforeRootOff()).isTrue()
+        assertThat(sysfs.commands).isEmpty()
+    }
+
+    @Test
+    fun `root gone asks no shell and notes the limits stay`() = runTest {
+        val controller = controller()
+        controller.apply(CpuProfile.BALANCED)
+        val commands = sysfs.commands.size
+        controller.onRootGone()
+        assertThat(sysfs.commands).hasSize(commands)
+        assertThat(controller.status.value.notice).isEqualTo(CpuProfileNotice.KEPT_UNTIL_RESTART)
+    }
+
+    @Test
+    fun `apply and a pass at the same time run one after the other`() = runTest {
+        val controller = controller(StandardTestDispatcher(testScheduler))
+        controller.apply(CpuProfile.BALANCED)
+        sysfs.halReset("policy8")
+        val apply = async { controller.apply(CpuProfile.POWER_SAVING) }
+        val pass = async { controller.enforce() }
+        apply.await()
+        pass.await()
+        // Whatever the order, the pass never brings back the profile just replaced.
+        assertThat(controller.status.value.active).isEqualTo(CpuProfile.POWER_SAVING)
+        assertThat(sysfs.effective("policy8")).isEqualTo(1_745_000L)
+        assertThat(sysfs.effective("policy4")).isEqualTo(1_418_000L)
+    }
+
+    @Test
+    fun `the apply-after-restart switch is saved`() = runTest {
+        val controller = controller()
+        controller.setApplyAfterRestart(true)
+        assertThat(controller.status.value.applyAfterRestart).isTrue()
+        assertThat(store.state.applyAfterRestart).isTrue()
+    }
+}

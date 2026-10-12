@@ -17,7 +17,9 @@ import org.jarsi.devicewatch.data.NotificationStatsImpl
 import org.jarsi.devicewatch.data.BatteryUsageSource
 import org.jarsi.devicewatch.data.PrivilegedShell
 import org.jarsi.devicewatch.data.ShellBatteryUsageSource
+import org.jarsi.devicewatch.data.CpuProfileController
 import org.jarsi.devicewatch.data.CpuProfileStore
+import org.jarsi.devicewatch.data.CpuProfiles
 import org.jarsi.devicewatch.data.DeviceLocalCpuProfileStore
 import org.jarsi.devicewatch.data.KernelSnapshotSource
 import org.jarsi.devicewatch.data.RootCommandShell
@@ -113,6 +115,10 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindCpuProfileStore(impl: DeviceLocalCpuProfileStore): CpuProfileStore
+
+    @Binds
+    @Singleton
+    abstract fun bindCpuProfiles(impl: CpuProfileController): CpuProfiles
 
     @Binds
     @Singleton

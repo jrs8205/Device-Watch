@@ -12,6 +12,11 @@ import javax.inject.Qualifier
 @Retention(AnnotationRetention.BINARY)
 annotation class DefaultDispatcher
 
+/** For blocking work: a root command can wait seconds for its answer. */
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
+annotation class IoDispatcher
+
 @Module
 @InstallIn(SingletonComponent::class)
 object DispatchersModule {
@@ -19,4 +24,8 @@ object DispatchersModule {
     @Provides
     @DefaultDispatcher
     fun provideDefaultDispatcher(): CoroutineDispatcher = Dispatchers.Default
+
+    @Provides
+    @IoDispatcher
+    fun provideIoDispatcher(): CoroutineDispatcher = Dispatchers.IO
 }
