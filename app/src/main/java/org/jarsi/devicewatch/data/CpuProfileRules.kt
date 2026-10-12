@@ -138,7 +138,8 @@ object CpuProfileRules {
      */
     fun onBoot(state: CpuProfileState, current: String?): CpuProfileState {
         if (current == null || current == state.bootId) return state
-        if (state.bootId == null) return state.copy(bootId = current)
+        // Nothing to compare with, or the id read one way then the other: the same boot, told by the new name from now on.
+        if (state.bootId == null || !BootIdentity.comparable(state.bootId, current)) return state.copy(bootId = current)
         val fresh = state.copy(
             bootId = current,
             held = emptyMap(),
@@ -169,8 +170,13 @@ object CpuProfileRules {
  * where the boot id cannot be read.
  */
 object BootIdentity {
+    private const val COUNT_PREFIX = "count:"
+
     fun of(bootId: String?, bootCount: Int?): String? {
         bootId?.trim()?.takeIf { it.isNotEmpty() }?.let { return it }
-        return bootCount?.let { "count:$it" }
+        return bootCount?.let { "$COUNT_PREFIX$it" }
     }
+
+    /** Two ids of the same kind tell boots apart; an id and a count say nothing about each other. */
+    fun comparable(a: String, b: String): Boolean = a.startsWith(COUNT_PREFIX) == b.startsWith(COUNT_PREFIX)
 }

@@ -935,6 +935,25 @@ class CpuProfileControllerTest {
     }
 
     @Test
+    fun `a limit android held when the profile was chosen is not the phone's own once android lets go`() = runTest {
+        // A power hint holds the big cluster at the moment the profile is first chosen.
+        sysfs.halLimit("policy8", 1_557_000L)
+        val controller = controller()
+        controller.apply(CpuProfile.BALANCED)
+        assertThat(store.state.originals[p8]).isEqualTo(1_557_000L)
+
+        // The hint ends and the cluster shows what the phone itself allows.
+        sysfs.halReset("policy8")
+        controller.enforce()
+
+        assertThat(store.state.originals[p8]).isEqualTo(2_914_000L)
+        assertThat(controller.status.value.held[p8]).isEqualTo(2_294_000L)
+        assertThat(sysfs.policies.getValue("policy8").request).isEqualTo(2_294_000L)
+        controller.apply(CpuProfile.STOCK)
+        assertThat(sysfs.policies.getValue("policy8").request).isEqualTo(2_914_000L)
+    }
+
+    @Test
     fun `the apply-after-restart switch is saved`() = runTest {
         val controller = controller()
         controller.setApplyAfterRestart(true)

@@ -93,6 +93,16 @@ class CpuProfileRulesTest {
     }
 
     @Test
+    fun `a boot id that could not be read this once is not a restart`() {
+        // The count stands in for the id: a different shape, not a different boot.
+        val next = CpuProfileRules.onBoot(holding, "count:17")
+        assertThat(next).isEqualTo(holding.copy(bootId = "count:17"))
+        // From then on the count tells restarts apart, until the id reads again.
+        assertThat(CpuProfileRules.onBoot(next, "count:18").held).isEmpty()
+        assertThat(CpuProfileRules.onBoot(next, "boot-a")).isEqualTo(next.copy(bootId = "boot-a"))
+    }
+
+    @Test
     fun `a restart without apply-after-restart returns to stock and says so`() {
         val after = CpuProfileRules.onBoot(holding, "boot-b")
         assertThat(after.active).isEqualTo(CpuProfile.STOCK)

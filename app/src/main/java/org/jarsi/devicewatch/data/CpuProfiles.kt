@@ -350,6 +350,16 @@ class CpuProfileController internal constructor(
         if (state.releasing.isNotEmpty()) release()
         if (state.held.isEmpty()) return
         val effective = source.readMaxFreqs(state.held.keys) ?: return
+        // A cluster showing more than the limit recorded as the phone's own: that
+        // record was Android's limit of the moment, not the phone's. The phone
+        // showed more, so more is what Stock returns to, and the profile is set
+        // again against it.
+        val raisedOriginals = state.held.keys.filter { id -> effective[id]?.let { it > (state.originals[id] ?: Long.MAX_VALUE) } == true }
+        if (raisedOriginals.isNotEmpty()) {
+            val originals = state.originals + raisedOriginals.associateWith { effective.getValue(it) }
+            if (commit(state.copy(originals = originals))) applyLocked(state.active, state.custom)
+            return
+        }
         val raised = CpuProfileRules.toReapply(state.held, effective)
         if (raised.isEmpty()) {
             if (state.reapplyFailures != 0) commit(state.copy(reapplyFailures = 0))
