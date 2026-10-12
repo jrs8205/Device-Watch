@@ -17,7 +17,12 @@ class CpuProfileControllerTest {
         /** The disk is full, or the preferences file cannot be written: nothing lands. */
         var failSaves = false
 
-        override fun load() = state
+        var loads = 0
+
+        override fun load(): CpuProfileState {
+            loads++
+            return state
+        }
         override fun save(state: CpuProfileState): Boolean {
             if (failSaves) return false
             this.state = state
@@ -31,6 +36,7 @@ class CpuProfileControllerTest {
     private val store = MemoryStore()
     private var bootNumber = 10
     private var bootId: String? = "boot-10"
+    private var bootReads = 0
     private var powerSave = false
     private val gate = RootOnlyShell(settings, sysfs) { true }
 
@@ -44,7 +50,10 @@ class CpuProfileControllerTest {
             source = ShellKernelSnapshotSource(gate),
             writer = CpuLimitWriter(gate),
             settings = settings,
-            bootId = { bootId },
+            bootId = {
+                bootReads++
+                bootId
+            },
             powerSave = { powerSave },
             dispatcher = dispatcher,
         )
@@ -878,6 +887,51 @@ class CpuProfileControllerTest {
         assertThat(sysfs.effective("policy8")).isEqualTo(2_294_000L)
         assertThat(controller.status.value.active).isEqualTo(CpuProfile.BALANCED)
         assertThat(controller.status.value.held).containsExactly(p4, 1_836_000L, p8, 2_294_000L)
+    }
+
+    @Test
+    fun `a limit held unwritten that cannot be recorded is not reported as set`() = runTest {
+        val controller = controller()
+        controller.apply(CpuProfile.BALANCED)
+        controller.apply(CpuProfile.STOCK)
+        // Battery saver holds both clusters under the targets: nothing would be written.
+        sysfs.halLimit("policy4", 1_418_000L)
+        sysfs.halLimit("policy8", 1_557_000L)
+        store.failSaves = true
+
+        assertThat(controller.apply(CpuProfile.BALANCED)).isEqualTo(ApplyOutcome.NotSaved)
+
+        assertThat(controller.status.value.active).isEqualTo(CpuProfile.STOCK)
+        assertThat(controller.status.value.held).isEmpty()
+    }
+
+    @Test
+    fun `a restart whose record cannot be saved writes nothing`() = runTest {
+        val controller = controller()
+        controller.apply(CpuProfile.BALANCED)
+        reboot()
+        store.failSaves = true
+        val writesBefore = sysfs.writes.size
+
+        controller.enforce()
+
+        assertThat(sysfs.writes.drop(writesBefore)).isEmpty()
+        assertThat(controller.apply(CpuProfile.STOCK)).isEqualTo(ApplyOutcome.NotSaved)
+        assertThat(sysfs.writes.drop(writesBefore)).isEmpty()
+    }
+
+    @Test
+    fun `without root and nothing held, a pass reads nothing at all`() = runTest {
+        settings.access = PrivilegedAccess.OFF
+        val controller = controller()
+        val loadsBefore = store.loads
+        val bootReadsBefore = bootReads
+
+        controller.enforce()
+
+        assertThat(store.loads).isEqualTo(loadsBefore)
+        assertThat(bootReads).isEqualTo(bootReadsBefore)
+        assertThat(sysfs.commands).isEmpty()
     }
 
     @Test

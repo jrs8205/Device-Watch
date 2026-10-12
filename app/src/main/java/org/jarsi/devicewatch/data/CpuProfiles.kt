@@ -127,18 +127,23 @@ class CpuProfileController internal constructor(
     override val status: StateFlow<CpuProfileStatus> = _status.asStateFlow()
 
     override suspend fun apply(profile: CpuProfile, custom: Map<CpuPolicyId, Long>): ApplyOutcome =
-        session { applyLocked(profile, custom) }
+        session(notSaved = ApplyOutcome.NotSaved) { applyLocked(profile, custom) }
 
     override suspend fun setApplyAfterRestart(enabled: Boolean) {
-        session {
+        session(notSaved = Unit) {
             // Off also drops a profile still waiting from a restart.
             commit(state.copy(applyAfterRestart = enabled, bootProfile = state.bootProfile.takeIf { enabled }))
         }
     }
 
-    override suspend fun enforce() = session { enforceLocked() }
+    override suspend fun enforce() {
+        // The common case, a phone without root and nothing held, costs no lock, no disk and no boot check.
+        val status = _status.value
+        if (settings.privilegedAccess() != PrivilegedAccess.ROOT && !status.holdsCaps && !status.waitingAfterRestart) return
+        session(notSaved = Unit) { enforceLocked() }
+    }
 
-    override suspend fun restoreStockBeforeRootOff(): Boolean = session {
+    override suspend fun restoreStockBeforeRootOff(): Boolean = session(notSaved = false) {
         // Switching root off chooses Stock: a profile waiting from a restart goes too.
         if (state.bootProfile != null) commit(state.copy(bootProfile = null))
         if (!statusOf(state).holdsCaps) return@session true
@@ -148,7 +153,9 @@ class CpuProfileController internal constructor(
     }
 
     override suspend fun onRootGone() {
-        session { if (statusOf(state).holdsCaps) commit(state.copy(notice = CpuProfileNotice.KEPT_UNTIL_RESTART)) }
+        session(notSaved = Unit) {
+            if (statusOf(state).holdsCaps) commit(state.copy(notice = CpuProfileNotice.KEPT_UNTIL_RESTART))
+        }
     }
 
     /**
@@ -166,11 +173,12 @@ class CpuProfileController internal constructor(
         }
     }
 
-    private suspend fun <R> session(block: Session.() -> R): R = mutex.withLock {
+    /** [notSaved] is the answer when a restart's fresh state cannot be saved: nothing runs on the old boot's. */
+    private suspend fun <R> session(notSaved: R, block: Session.() -> R): R = mutex.withLock {
         withContext(dispatcher) {
             val loaded = store.load()
             val session = Session(loaded)
-            session.commit(CpuProfileRules.onBoot(loaded, bootId()))
+            if (!session.commit(CpuProfileRules.onBoot(loaded, bootId()))) return@withContext notSaved
             _status.value = statusOf(session.state)
             session.block()
         }
@@ -223,7 +231,7 @@ class CpuProfileController internal constructor(
         }
         val pending = PendingApply(profile, writes, previousHeld = written, held = plan.caps + offlineHeld, custom = chosenCustom)
         if (writes.isEmpty()) {
-            finish(pending, unreleased = emptyMap())
+            if (!finish(pending, unreleased = emptyMap())) return ApplyOutcome.NotSaved
             return if (deferred) ApplyOutcome.HeldLower else ApplyOutcome.NothingToChange
         }
 
@@ -261,7 +269,8 @@ class CpuProfileController internal constructor(
             if (id in pending.held || verdict != Acceptance.REJECTED) continue
             unreleased[id] = pending.previousHeld[id] ?: readback.effective[id] ?: continue
         }
-        finish(pending, unreleased)
+        // Not recorded: the write-ahead stays on disk for the next pass to settle.
+        if (!finish(pending, unreleased)) return ApplyOutcome.Unconfirmed
         return when {
             unreleased.isNotEmpty() -> ApplyOutcome.Unconfirmed
             deferred || Acceptance.HELD_LOWER in verdicts.values -> ApplyOutcome.HeldLower
@@ -290,17 +299,17 @@ class CpuProfileController internal constructor(
             val cap = pending.writes.getValue(id)
             if (CpuProfileRules.releaseAcceptance(target, readback.effective[id], cap, lowered) == Acceptance.REJECTED) stray[id] = cap
         }
-        commit(state.copy(pending = null, held = state.held - released, releasing = state.releasing - released + stray))
-        return ApplyOutcome.NotSupported(refusedCaps)
+        val recorded = commit(state.copy(pending = null, held = state.held - released, releasing = state.releasing - released + stray))
+        return if (recorded) ApplyOutcome.NotSupported(refusedCaps) else ApplyOutcome.Unconfirmed
     }
 
     /** The apply is over: its limits are held, what it let go of is gone, and what would not go is tried again. */
-    private fun Session.finish(pending: PendingApply, unreleased: Map<CpuPolicyId, Long>) {
+    private fun Session.finish(pending: PendingApply, unreleased: Map<CpuPolicyId, Long>): Boolean {
         val releasing = LinkedHashMap(state.held + state.releasing)
         pending.writes.keys.forEach(releasing::remove)
         pending.held.keys.forEach(releasing::remove)
         releasing.putAll(unreleased)
-        commit(
+        return commit(
             state.copy(
                 active = pending.profile,
                 held = pending.held,
