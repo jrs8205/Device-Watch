@@ -130,7 +130,10 @@ kernel offers. The page reads only while it is open and the screen is on.
 They set the highest speed each group of cores may run at, nothing else. **Power saving** holds
 the faster cores to about 60 % of their top speed and **Balanced** to about 80 %; the slowest
 group, which runs most background work cheaply, stays at full speed. **Custom** lets you choose
-each group yourself, from half its top speed up. **Stock** returns the phone's own limits.
+each group yourself, from half its top speed up. **Stock (full speed)** returns the phone's own
+limits, so every core may run as fast as the phone itself allows. There is no separate
+performance profile: Stock already lets the cores reach their top speed, and holding them high
+all the time would only add heat, which the phone's heat protection then takes back.
 
 Only speeds the kernel lists are used, never above what the phone allows, so nothing is
 overclocked. The phone's heat protection keeps working as before: it can always hold the cores

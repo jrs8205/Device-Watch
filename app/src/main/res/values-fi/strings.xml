@@ -712,8 +712,8 @@
     <string name="cpu_profile_power_saving_desc" formatted="false">Nopeammat ytimet käyvät enintään noin 60 % huippunopeudestaan. Säästää akkua raskaassa käytössä; pienet ytimet pysyvät täydellä nopeudella.</string>
     <string name="cpu_profile_balanced">Tasapainoinen</string>
     <string name="cpu_profile_balanced_desc" formatted="false">Nopeammat ytimet käyvät enintään noin 80 % huippunopeudestaan: lähes kaikki nopeus, vähemmän lämpöä huipuissa.</string>
-    <string name="cpu_profile_stock">Vakio</string>
-    <string name="cpu_profile_stock_desc">Puhelimen omat rajat, kuten ennen kuin sovellus muutti mitään.</string>
+    <string name="cpu_profile_stock">Vakio (täysi teho)</string>
+    <string name="cpu_profile_stock_desc">Puhelimen omat rajat: kaikki ytimet saavat käydä niin nopeasti kuin puhelin itse sallii, kuten ennen kuin sovellus muutti mitään.</string>
     <string name="cpu_profile_custom">Mukautettu</string>
     <string name="cpu_profile_custom_desc">Valitse jokaisen ydinryhmän raja itse, puolesta huippunopeudesta ylöspäin.</string>
     <string name="cpu_profile_presets_unavailable">Tässä puhelimessa on yksi ydinryhmä tai kaikki ovat yhtä nopeita: hidastettavaa nopeampaa ryhmää ei ole, joten vain Mukautettu on tarjolla.</string>
