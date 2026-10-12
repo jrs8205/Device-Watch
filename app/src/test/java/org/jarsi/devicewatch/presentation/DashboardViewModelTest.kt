@@ -1,6 +1,10 @@
 package org.jarsi.devicewatch.presentation
 
 import org.jarsi.devicewatch.data.HealthAlert
+import org.jarsi.devicewatch.data.CpuPolicyId
+import org.jarsi.devicewatch.data.CpuProfile
+import org.jarsi.devicewatch.data.CpuProfileStatus
+import kotlinx.coroutines.CompletableDeferred
 import org.jarsi.devicewatch.data.PrivilegedAccess
 import org.jarsi.devicewatch.data.RootAccess
 import org.jarsi.devicewatch.data.ShizukuAccess
@@ -62,10 +66,123 @@ class DashboardViewModelTest {
         alertNotifications: FakeAlertNotifications = FakeAlertNotifications(),
         rootShell: FakeRootShell = FakeRootShell(),
         shizukuShell: FakeShizukuShell = FakeShizukuShell(),
+        cpuProfiles: FakeCpuProfiles = FakeCpuProfiles(),
     ) = DashboardViewModel(
         repository, widget, settings, appUsage, notifications, history, relay, alertNotifications, rootShell,
-        shizukuShell,
+        shizukuShell, cpuProfiles,
     )
+
+    private fun holding() = FakeCpuProfiles(
+        CpuProfileStatus(active = CpuProfile.BALANCED, held = mapOf(CpuPolicyId.of("policy8")!! to 2_294_000L))
+    )
+
+    @Test
+    fun `given limits held, when root is switched off, then stock comes back before root goes`() =
+        runTest(dispatcher) {
+            val settings = FakeAppSettingsRepository(access = PrivilegedAccess.ROOT)
+            val rootShell = FakeRootShell()
+            val cpuProfiles = holding().apply {
+                this.settings = settings
+                restoreGate = CompletableDeferred()
+            }
+            val viewModel = buildViewModel(settings = settings, rootShell = rootShell, cpuProfiles = cpuProfiles)
+
+            viewModel.onRootModeChange(false)
+            advanceUntilIdle()
+
+            // Restoring: root is still the access, or the gate would refuse the restore.
+            assertThat(viewModel.uiState.value.rootStatus).isEqualTo(RootStatus.RESTORING)
+            assertThat(cpuProfiles.accessAtRestore).isEqualTo(PrivilegedAccess.ROOT)
+            assertThat(settings.access).isEqualTo(PrivilegedAccess.ROOT)
+            assertThat(rootShell.closedCount).isEqualTo(0)
+
+            cpuProfiles.restoreGate!!.complete(Unit)
+            advanceUntilIdle()
+
+            assertThat(cpuProfiles.calls).containsExactly("restore")
+            assertThat(settings.access).isEqualTo(PrivilegedAccess.OFF)
+            assertThat(rootShell.closedCount).isEqualTo(1)
+            assertThat(viewModel.uiState.value.rootStatus).isEqualTo(RootStatus.OFF)
+            assertThat(viewModel.uiState.value.cpuCapsKeptUntilRestart).isFalse()
+        }
+
+    @Test
+    fun `given a restore that fails, when root is switched off, then it goes off and says the limits stay`() =
+        runTest(dispatcher) {
+            val settings = FakeAppSettingsRepository(access = PrivilegedAccess.ROOT)
+            val cpuProfiles = holding().apply { restoreResult = false }
+            val viewModel = buildViewModel(settings = settings, cpuProfiles = cpuProfiles)
+
+            viewModel.onRootModeChange(false)
+            advanceUntilIdle()
+
+            assertThat(settings.access).isEqualTo(PrivilegedAccess.OFF)
+            assertThat(viewModel.uiState.value.rootStatus).isEqualTo(RootStatus.OFF)
+            assertThat(viewModel.uiState.value.cpuCapsKeptUntilRestart).isTrue()
+        }
+
+    @Test
+    fun `given nothing held, when root is switched off, then nothing is restored`() =
+        runTest(dispatcher) {
+            val settings = FakeAppSettingsRepository(access = PrivilegedAccess.ROOT)
+            val cpuProfiles = FakeCpuProfiles()
+            val viewModel = buildViewModel(settings = settings, cpuProfiles = cpuProfiles)
+
+            viewModel.onRootModeChange(false)
+
+            assertThat(cpuProfiles.calls).isEmpty()
+            assertThat(settings.access).isEqualTo(PrivilegedAccess.OFF)
+            assertThat(viewModel.uiState.value.rootStatus).isEqualTo(RootStatus.OFF)
+        }
+
+    @Test
+    fun `given a restore under way, when root is switched on again, then it is ignored`() =
+        runTest(dispatcher) {
+            val settings = FakeAppSettingsRepository(access = PrivilegedAccess.ROOT)
+            val rootShell = FakeRootShell().apply { holdRequests = true }
+            val cpuProfiles = holding().apply { restoreGate = CompletableDeferred() }
+            val viewModel = buildViewModel(settings = settings, rootShell = rootShell, cpuProfiles = cpuProfiles)
+
+            viewModel.onRootModeChange(false)
+            advanceUntilIdle()
+            viewModel.onRootModeChange(true)
+            viewModel.onRootModeChange(false)
+            advanceUntilIdle()
+
+            assertThat(rootShell.pendingRequests).isEmpty()
+            assertThat(cpuProfiles.calls).containsExactly("restore")
+            assertThat(viewModel.uiState.value.rootStatus).isEqualTo(RootStatus.RESTORING)
+        }
+
+    @Test
+    fun `given limits held, when Shizuku takes over from root, then stock comes back first`() =
+        runTest(dispatcher) {
+            val settings = FakeAppSettingsRepository(access = PrivilegedAccess.ROOT)
+            val cpuProfiles = holding().apply { this.settings = settings }
+            val viewModel = buildViewModel(settings = settings, cpuProfiles = cpuProfiles)
+
+            viewModel.onShizukuModeChange(true)
+            advanceUntilIdle()
+
+            assertThat(cpuProfiles.calls).containsExactly("restore")
+            assertThat(cpuProfiles.accessAtRestore).isEqualTo(PrivilegedAccess.ROOT)
+            assertThat(settings.access).isEqualTo(PrivilegedAccess.SHIZUKU)
+        }
+
+    @Test
+    fun `given limits held, when root turns out to be gone, then the profile hears of it`() =
+        runTest(dispatcher) {
+            val settings = FakeAppSettingsRepository(access = PrivilegedAccess.ROOT)
+            val rootShell = FakeRootShell()
+            val cpuProfiles = holding()
+            buildViewModel(settings = settings, rootShell = rootShell, cpuProfiles = cpuProfiles)
+            advanceUntilIdle()
+
+            rootShell.lost.value = true
+            advanceUntilIdle()
+
+            assertThat(cpuProfiles.calls).containsExactly("rootGone")
+        }
 
     @Test
     fun `service readings update live resources without a manual refresh or widget`() = runTest(dispatcher) {

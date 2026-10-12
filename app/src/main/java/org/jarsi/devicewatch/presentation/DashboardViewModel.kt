@@ -14,6 +14,8 @@ import org.jarsi.devicewatch.data.DataBreakdown
 import org.jarsi.devicewatch.data.StorageBreakdown
 import org.jarsi.devicewatch.data.DeviceState
 import org.jarsi.devicewatch.data.DataCounterMode
+import org.jarsi.devicewatch.data.CpuProfileNotice
+import org.jarsi.devicewatch.data.CpuProfiles
 import org.jarsi.devicewatch.data.DataPeriodCalculator
 import org.jarsi.devicewatch.data.DeviceInfo
 import org.jarsi.devicewatch.data.NotificationStats
@@ -33,6 +35,7 @@ import java.time.LocalDate
 import java.time.ZoneId
 import org.jarsi.devicewatch.widget.WidgetController
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -40,6 +43,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -93,6 +97,8 @@ data class DashboardUiState(
     val classicLook: Boolean = false,
     val rootStatus: RootStatus = RootStatus.OFF,
     val shizukuStatus: ShizukuStatus = ShizukuStatus.OFF,
+    /** Root went off with processor limits still in the kernel: they last until a restart. */
+    val cpuCapsKeptUntilRestart: Boolean = false,
     /** The optional alerts the user has switched on. */
     val enabledAlerts: Set<HealthAlert> = emptySet(),
     /** Foreground/background shares and roaming for the counting period; null until read. */
@@ -103,8 +109,11 @@ data class DashboardUiState(
     val deviceState: DeviceState? = null,
 )
 
-/** Where the root switch stands; DENIED and NO_SU are off with a reason to show. */
-enum class RootStatus { OFF, REQUESTING, ON, DENIED, NO_SU }
+/**
+ * Where the root switch stands; DENIED and NO_SU are off with a reason to show.
+ * RESTORING is on its way off: the phone's own processor limits go back first.
+ */
+enum class RootStatus { OFF, REQUESTING, ON, DENIED, NO_SU, RESTORING }
 
 /**
  * Where the Shizuku switch stands. DENIED and NOT_RUNNING are off with a reason
@@ -124,6 +133,7 @@ class DashboardViewModel @Inject constructor(
     private val alertNotifications: AlertNotifications,
     private val rootShell: RootShell,
     private val shizukuShell: ShizukuShell,
+    private val cpuProfiles: CpuProfiles,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DashboardUiState())
@@ -150,6 +160,11 @@ class DashboardViewModel @Inject constructor(
         }
         viewModelScope.launch {
             rootShell.lost.collect { lost -> if (lost) onRootLost() }
+        }
+        viewModelScope.launch {
+            cpuProfiles.status.collect { status ->
+                _uiState.update { it.copy(cpuCapsKeptUntilRestart = status.notice == CpuProfileNotice.KEPT_UNTIL_RESTART) }
+            }
         }
         // The service already samples every five seconds, even without a widget.
         // Observe those readings instead of repeating the costly usage/storage scans.
@@ -193,10 +208,20 @@ class DashboardViewModel @Inject constructor(
      * only once it said yes, so the monitor never polls a shell it was refused.
      */
     fun onRootModeChange(enabled: Boolean) {
+        // Already on its way off: neither direction can interrupt the restore.
+        if (_uiState.value.rootStatus == RootStatus.RESTORING) return
         if (!enabled) {
-            if (settings.privilegedAccess() == PrivilegedAccess.ROOT) settings.setPrivilegedAccess(PrivilegedAccess.OFF)
-            rootShell.close()
-            _uiState.update { it.copy(rootStatus = RootStatus.OFF) }
+            if (settings.privilegedAccess() == PrivilegedAccess.ROOT && cpuProfiles.status.value.holdsCaps) {
+                // The phone's own limits go back first, while root is still the
+                // access: once OFF is saved, the gate refuses every root command.
+                _uiState.update { it.copy(rootStatus = RootStatus.RESTORING) }
+                viewModelScope.launch {
+                    withContext(NonCancellable) { cpuProfiles.restoreStockBeforeRootOff() }
+                    switchRootOff()
+                }
+                return
+            }
+            switchRootOff()
             return
         }
         if (_uiState.value.rootStatus == RootStatus.REQUESTING) return
@@ -227,6 +252,12 @@ class DashboardViewModel @Inject constructor(
         }
     }
 
+    private fun switchRootOff() {
+        if (settings.privilegedAccess() == PrivilegedAccess.ROOT) settings.setPrivilegedAccess(PrivilegedAccess.OFF)
+        rootShell.close()
+        _uiState.update { it.copy(rootStatus = RootStatus.OFF) }
+    }
+
     /**
      * As [onRootModeChange], through Shizuku: the setting is persisted only once
      * Shizuku granted its permission.
@@ -255,6 +286,10 @@ class DashboardViewModel @Inject constructor(
                 _uiState.update { it.copy(shizukuStatus = status) }
                 return@launch
             }
+            // Shizuku takes root's place: the processor limits root set go back first.
+            if (settings.privilegedAccess() == PrivilegedAccess.ROOT && cpuProfiles.status.value.holdsCaps) {
+                withContext(NonCancellable) { cpuProfiles.restoreStockBeforeRootOff() }
+            }
             settings.setPrivilegedAccess(PrivilegedAccess.SHIZUKU)
             rootShell.close()
             _uiState.update { it.copy(shizukuStatus = ShizukuStatus.ON, rootStatus = RootStatus.OFF) }
@@ -269,6 +304,7 @@ class DashboardViewModel @Inject constructor(
      * since the monitor runs without a screen.
      */
     private fun onRootLost() {
+        viewModelScope.launch { cpuProfiles.onRootGone() }
         if (_uiState.value.rootStatus != RootStatus.ON) return
         rootShell.close()
         _uiState.update { it.copy(rootStatus = RootStatus.DENIED) }

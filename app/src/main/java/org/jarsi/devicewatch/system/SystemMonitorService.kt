@@ -31,6 +31,7 @@ import org.jarsi.devicewatch.data.BatterySample
 import org.jarsi.devicewatch.data.BatteryStatusReader
 import org.jarsi.devicewatch.data.ChargeAnchorLogic
 import org.jarsi.devicewatch.data.ChargeAnchorStore
+import org.jarsi.devicewatch.data.CpuProfiles
 import org.jarsi.devicewatch.data.DataQuotaLogic
 import org.jarsi.devicewatch.data.QuotaReadingAction
 import org.jarsi.devicewatch.data.QuotaSettingsStamp
@@ -65,6 +66,7 @@ class SystemMonitorService : Service() {
     private val alertController by lazy { HealthAlertController(appSettings, alertNotifications) }
     @Inject lateinit var batteryStatus: BatteryStatusReader
     @Inject lateinit var chargeStartScreensaver: ChargeStartScreensaver
+    @Inject lateinit var cpuProfiles: CpuProfiles
 
     private var lastUsageRefreshMs = 0L
 
@@ -218,8 +220,25 @@ class SystemMonitorService : Service() {
             while (isActive && isScreenOn) {
                 val stats = updateWidgetStats(this@SystemMonitorService)
                 maybeRefreshUsage(stats)
+                enforceCpuProfile()
                 delay(5000)
             }
+        }
+    }
+
+    /**
+     * Holds the processor profile chosen on the Kernel page: Android's power HAL
+     * raises a limit now and then (after the camera, say), and this pass sets it
+     * again. Only here, in the screen-on loop: nothing runs as root while the
+     * screen is off. Without root, or with nothing held, it reads no shell.
+     */
+    private suspend fun enforceCpuProfile() {
+        try {
+            cpuProfiles.enforce()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 

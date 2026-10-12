@@ -2,6 +2,12 @@ package org.jarsi.devicewatch.presentation
 
 import org.jarsi.devicewatch.system.AlertNotifications
 import org.jarsi.devicewatch.data.HealthAlert
+import org.jarsi.devicewatch.data.ApplyOutcome
+import org.jarsi.devicewatch.data.CpuPolicyId
+import org.jarsi.devicewatch.data.CpuProfile
+import org.jarsi.devicewatch.data.CpuProfileNotice
+import org.jarsi.devicewatch.data.CpuProfileStatus
+import org.jarsi.devicewatch.data.CpuProfiles
 import org.jarsi.devicewatch.data.PrivilegedAccess
 import org.jarsi.devicewatch.data.RootAccess
 import org.jarsi.devicewatch.data.RootShell
@@ -64,6 +70,49 @@ internal class FakeRootShell(var access: RootAccess = RootAccess.GRANTED) : Root
     override fun close() {
         closedCount++
         generation++
+    }
+}
+
+internal class FakeCpuProfiles(status: CpuProfileStatus = CpuProfileStatus()) : CpuProfiles {
+    override val status = MutableStateFlow(status)
+
+    val calls = mutableListOf<String>()
+    var restoreResult = true
+
+    /** When set, the restore waits for it, like a slow root command. */
+    var restoreGate: CompletableDeferred<Unit>? = null
+
+    /** Read when the restore runs, to see what the access setting was then. */
+    var settings: AppSettingsRepository? = null
+    var accessAtRestore: PrivilegedAccess? = null
+
+    override suspend fun apply(profile: CpuProfile, custom: Map<CpuPolicyId, Long>): ApplyOutcome {
+        calls += "apply $profile"
+        return ApplyOutcome.Applied
+    }
+
+    override suspend fun setApplyAfterRestart(enabled: Boolean) {
+        calls += "applyAfterRestart $enabled"
+    }
+
+    override suspend fun enforce() {
+        calls += "enforce"
+    }
+
+    override suspend fun restoreStockBeforeRootOff(): Boolean {
+        calls += "restore"
+        accessAtRestore = settings?.privilegedAccess()
+        restoreGate?.await()
+        status.value = if (restoreResult) {
+            status.value.copy(active = CpuProfile.STOCK, held = emptyMap())
+        } else {
+            status.value.copy(notice = CpuProfileNotice.KEPT_UNTIL_RESTART)
+        }
+        return restoreResult
+    }
+
+    override suspend fun onRootGone() {
+        calls += "rootGone"
     }
 }
 

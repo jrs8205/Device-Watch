@@ -494,6 +494,7 @@ internal fun SettingsTab(
                 RootStatus.ON -> R.string.root_status_on
                 RootStatus.DENIED -> R.string.root_status_denied
                 RootStatus.NO_SU -> R.string.root_status_no_su
+                RootStatus.RESTORING -> R.string.root_status_restoring
             }
             if (rootStatusRes != null) {
                 Spacer(modifier = Modifier.height(6.dp))
@@ -504,6 +505,14 @@ internal fun SettingsTab(
                         RootStatus.DENIED, RootStatus.NO_SU -> MaterialTheme.colorScheme.error
                         else -> MaterialTheme.colorScheme.primary
                     }
+                )
+            }
+            if (uiState.cpuCapsKeptUntilRestart && uiState.rootStatus != RootStatus.ON) {
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = stringResource(R.string.cpu_caps_kept_until_restart),
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.error
                 )
             }
         }
