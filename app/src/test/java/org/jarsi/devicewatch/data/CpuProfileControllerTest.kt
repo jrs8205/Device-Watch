@@ -1059,6 +1059,25 @@ class CpuProfileControllerTest {
     }
 
     @Test
+    fun `a rollback on the next pass undoes every limit the lost apply may have written`() = runTest {
+        val controller = controllerWriting(ScriptedWrites(loseAnswers = setOf(1)))
+        assertThat(controller.apply(CpuProfile.BALANCED)).isEqualTo(ApplyOutcome.Unconfirmed)
+        // Before the next pass the middle cluster's cores go off, and something unseen holds the big one under its limit.
+        sysfs.policies.getValue("policy4").offline = true
+        sysfs.hiddenLimit("policy8", 2_000_000L)
+
+        controller.enforce()
+
+        // The middle cluster's write could not be judged, so the apply is undone: the big cluster's limit goes too.
+        assertThat(controller.status.value.pending).isFalse()
+        assertThat(controller.status.value.active).isEqualTo(CpuProfile.STOCK)
+        assertThat(sysfs.policies.getValue("policy8").request).isEqualTo(2_914_000L)
+        // The middle cluster, written before its cores went off, stays on record until they return.
+        assertThat(controller.status.value.releasing).containsExactly(p4, 1_836_000L)
+        assertThat(controller.restoreStockBeforeRootOff()).isFalse()
+    }
+
+    @Test
     fun `the apply-after-restart switch is saved`() = runTest {
         val controller = controller()
         controller.setApplyAfterRestart(true)

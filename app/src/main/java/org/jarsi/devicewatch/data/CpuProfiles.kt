@@ -241,7 +241,7 @@ class CpuProfileController internal constructor(
         // Write-ahead: if the process dies with the writes in flight, the next pass knows to look.
         if (!commit(before.copy(pending = pending))) return ApplyOutcome.NotSaved
         val readback = writer.write(writes) ?: return ApplyOutcome.Unconfirmed
-        return complete(pending, readback, snapshot, deferred)
+        return complete(pending, writes, readback, snapshot, deferred)
     }
 
     /**
@@ -265,9 +265,17 @@ class CpuProfileController internal constructor(
     /**
      * The writes ran and answered: what each one shows decides. A refused limit
      * undoes the apply; a release that did not show is tried again on the next pass.
+     * [written] is what ran just now, judged here; a rollback undoes every limit
+     * of [pending], since an earlier run of the same apply may have written the rest.
      */
-    private fun Session.complete(pending: PendingApply, readback: WriteReadback, snapshot: KernelSnapshot, deferred: Boolean = false): ApplyOutcome {
-        val verdicts = pending.writes.mapValues { (id, target) ->
+    private fun Session.complete(
+        pending: PendingApply,
+        written: Map<CpuPolicyId, Long>,
+        readback: WriteReadback,
+        snapshot: KernelSnapshot,
+        deferred: Boolean = false,
+    ): ApplyOutcome {
+        val verdicts = written.mapValues { (id, target) ->
             if (id in pending.held) {
                 CpuProfileRules.acceptance(target, readback.effective[id], readback.lowered(id))
             } else {
@@ -461,7 +469,7 @@ class CpuProfileController internal constructor(
             return
         }
         val readback = writer.write(again) ?: return
-        complete(pending.copy(writes = again), readback, snapshot)
+        complete(pending, again, readback, snapshot)
     }
 
     /** Each online cluster's limit as the phone had it, saved once per boot before the first write. */
