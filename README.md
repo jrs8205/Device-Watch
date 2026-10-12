@@ -223,7 +223,7 @@ settings-store tests) cover the pure logic behind every screen, service and widg
   `BatteryStatsDumpParserTest`, `PrivilegedDumpParsersTest` (parsers written against dumps from
   real phones)
 - **Kernel page and processor profiles (root)** — `KernelSysfsParserTest` (against a full read
-  from a Pixel 8a), `KernelCommandsTest`, `RootOnlyShellTest`, `KernelSnapshotSourceTest`,
+  from a Pixel 8a), `KernelSnapshotTest`, `KernelCommandsTest`, `RootOnlyShellTest`, `KernelSnapshotSourceTest`,
   `CpuProfilePlannerTest`, `CpuProfileRulesTest`, `CpuProfileStoreTest`, `CpuLimitWriterTest`,
   `CpuProfileControllerTest` (over `FakeSysfsRoot`, a pretend cpufreq tree with the kernel's
   frequency QoS, Android's power HAL, heat and switched-off cores), `KernelRootOnlyGuardTest`,
@@ -414,6 +414,7 @@ app/src/test/java/org/jarsi/devicewatch/
     KernelFixtures.kt
     KernelRootOnlyGuardTest.kt
     KernelSnapshotSourceTest.kt
+    KernelSnapshotTest.kt
     KernelSysfsParserTest.kt
     NotificationCountingTest.kt
     NotificationLogCodecTest.kt
