@@ -127,6 +127,13 @@ class CpuProfileController internal constructor(
     )
 
     private val mutex = Mutex()
+
+    /**
+     * The last state the disk took. SharedPreferences keeps a value in memory even
+     * when writing it failed, so the store cannot be asked again for what is truly
+     * saved; this copy is, and every session starts from it.
+     */
+    private var confirmed: CpuProfileState? = null
     private val _status = MutableStateFlow(statusOf(store.load()))
     override val status: StateFlow<CpuProfileStatus> = _status.asStateFlow()
 
@@ -172,6 +179,7 @@ class CpuProfileController internal constructor(
             if (next == state) return true
             if (!store.save(next)) return false
             state = next
+            confirmed = next
             _status.value = statusOf(next)
             return true
         }
@@ -180,7 +188,7 @@ class CpuProfileController internal constructor(
     /** [notSaved] is the answer when a restart's fresh state cannot be saved: nothing runs on the old boot's. */
     private suspend fun <R> session(notSaved: R, block: Session.() -> R): R = mutex.withLock {
         withContext(dispatcher) {
-            val loaded = store.load()
+            val loaded = confirmed ?: store.load()
             val session = Session(loaded)
             if (!session.commit(CpuProfileRules.onBoot(loaded, bootId()))) return@withContext notSaved
             _status.value = statusOf(session.state)
@@ -211,13 +219,7 @@ class CpuProfileController internal constructor(
         val writes = LinkedHashMap<CpuPolicyId, Long>()
         var deferred = false
         for ((id, target) in plan.caps) {
-            val now = effective[id]
-            // Android holds a lower limit in the same file (a power hint of its
-            // own): writing would lift it, so the limit is held unwritten and
-            // the monitor sets it once Android lets go. Heat is a limit of its
-            // own, which a write does not lift; only heat on this very cluster
-            // explains its reading, never heat on another.
-            if (now != null && now < target && now != before.held[id] && id !in throttled) {
+            if (waitsForAndroid(effective[id], target, written[id], id in throttled)) {
                 deferred = true
             } else {
                 writes[id] = target
@@ -241,6 +243,17 @@ class CpuProfileController internal constructor(
         val readback = writer.write(writes) ?: return ApplyOutcome.Unconfirmed
         return complete(pending, readback, snapshot, deferred)
     }
+
+    /**
+     * Android holds a lower limit in the same file (a power hint of its own):
+     * writing would lift it, so the limit is held unwritten and the monitor sets
+     * it once Android lets go. A reading at the app's own value ([own], held or
+     * still there from a refused release) is the app's, not Android's. Heat is a
+     * limit of its own, which a write does not lift; only heat on this very
+     * cluster explains its reading, never heat on another.
+     */
+    private fun waitsForAndroid(reading: Long?, target: Long, own: Long?, throttled: Boolean): Boolean =
+        reading != null && reading < target && reading != own && !throttled
 
     /** The presets limit every cluster but the little one; Custom only those chosen. */
     private fun wantsCap(profile: CpuProfile, custom: Map<CpuPolicyId, Long>, id: CpuPolicyId): Boolean = when (profile) {
@@ -437,18 +450,30 @@ class CpuProfileController internal constructor(
             finish(pending, unreleased = emptyMap())
             return
         }
-        val readback = writer.write(pending.writes) ?: return
-        complete(pending, readback, snapshot)
+        // Android may since have put a lower limit of its own on a capped cluster: that cap waits, as in a fresh apply.
+        val throttled = snapshot.throttledPolicies
+        val waiting = pending.writes.filter { (id, target) ->
+            id in pending.held && waitsForAndroid(effective[id], target, pending.previousHeld[id], id in throttled)
+        }.keys
+        val again = pending.writes - waiting
+        if (again.isEmpty()) {
+            finish(pending, unreleased = emptyMap())
+            return
+        }
+        val readback = writer.write(again) ?: return
+        complete(pending.copy(writes = again), readback, snapshot)
     }
 
     /** Each online cluster's limit as the phone had it, saved once per boot before the first write. */
     private fun Session.captureOriginals(snapshot: KernelSnapshot): Boolean {
-        val throttled = snapshot.throttledPolicies
+        // Heat anywhere: a reading below the maximum may be heat's, and a limit
+        // the phone did not set must never become the one Stock returns to.
+        // Assuming the maximum errs toward the phone's own limits, the safe way.
+        val lowered = snapshot.cpuThrottled || powerSave()
         val originals = LinkedHashMap(state.originals)
         val assumed = LinkedHashSet(state.originalsAssumed)
         for (policy in snapshot.policies) {
             if (!policy.online || policy.id in originals) continue
-            val lowered = policy.id in throttled || powerSave()
             if (policy.id in state.held || policy.id in state.releasing) {
                 // What reads now is the app's own limit, so it cannot be the phone's.
                 originals[policy.id] = policy.cpuinfoMaxKHz!!

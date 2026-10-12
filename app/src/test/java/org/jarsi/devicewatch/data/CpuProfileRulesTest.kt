@@ -176,9 +176,40 @@ class CpuProfileRulesTest {
     }
 
     @Test
-    fun `the kernel's own boot id names the boot, the boot count only stands in`() {
-        assertThat(BootIdentity.of(bootId = "3956042b-f691\n", bootCount = 4)).isEqualTo("3956042b-f691")
-        assertThat(BootIdentity.of(bootId = null, bootCount = 4)).isEqualTo("count:4")
+    fun `the kernel's own boot id names the boot, with the boot count beside it`() {
+        assertThat(BootIdentity.of(bootId = "3956042b-f691\n", bootCount = 4)).isEqualTo("id=3956042b-f691;count=4")
+        assertThat(BootIdentity.of(bootId = null, bootCount = 4)).isEqualTo("count=4")
+        assertThat(BootIdentity.of(bootId = "3956042b-f691", bootCount = null)).isEqualTo("id=3956042b-f691")
         assertThat(BootIdentity.of(bootId = "  ", bootCount = null)).isNull()
+    }
+
+    @Test
+    fun `a restart whose boot id could not be read is still a restart, by the count`() {
+        val stored = holding.copy(bootId = BootIdentity.of("boot-a", 5))
+        val after = CpuProfileRules.onBoot(stored, BootIdentity.of(null, 6))
+        assertThat(after.held).isEmpty()
+        assertThat(after.active).isEqualTo(CpuProfile.STOCK)
+        assertThat(after.bootId).isEqualTo("count=6")
+    }
+
+    @Test
+    fun `a boot id read failing this once is not a restart`() {
+        val stored = holding.copy(bootId = BootIdentity.of("boot-a", 5))
+        assertThat(CpuProfileRules.onBoot(stored, BootIdentity.of(null, 5))).isEqualTo(stored)
+    }
+
+    @Test
+    fun `the id read after a count-only boot is adopted, and a framework restart keeps the kernel's boot`() {
+        val countOnly = CpuProfileState(bootId = "count=6")
+        assertThat(CpuProfileRules.onBoot(countOnly, BootIdentity.of("boot-b", 6)))
+            .isEqualTo(countOnly.copy(bootId = "id=boot-b;count=6"))
+        val stored = holding.copy(bootId = BootIdentity.of("boot-a", 5))
+        assertThat(CpuProfileRules.onBoot(stored, BootIdentity.of("boot-a", 6))).isEqualTo(stored.copy(bootId = "id=boot-a;count=6"))
+    }
+
+    @Test
+    fun `a bare id saved by an earlier build still names its boot`() {
+        assertThat(CpuProfileRules.onBoot(holding, BootIdentity.of("boot-a", 7))).isEqualTo(holding.copy(bootId = "id=boot-a;count=7"))
+        assertThat(CpuProfileRules.onBoot(holding, BootIdentity.of("boot-b", 7)).held).isEmpty()
     }
 }

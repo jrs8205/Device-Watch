@@ -262,6 +262,12 @@ class DashboardViewModel @Inject constructor(
     /** Limits held, or a profile waiting to be set after a restart: root has something to undo. */
     private fun profileNeedsRoot(): Boolean = cpuProfiles.status.value.let { it.holdsCaps || it.waitingAfterRestart }
 
+    private fun rootStatusNow(): RootStatus = when {
+        settings.privilegedAccess() == PrivilegedAccess.ROOT -> RootStatus.ON
+        rootShell.lost.value -> RootStatus.DENIED
+        else -> RootStatus.OFF
+    }
+
     /** A restore that throws still lets root go off; the controller then notes what stays. */
     private suspend fun restoreStockQuietly() {
         try {
@@ -315,7 +321,8 @@ class DashboardViewModel @Inject constructor(
                 }
                 // Switched off, or asked again, while the limits were going back: that later word wins.
                 if (request != shizukuRequest || _uiState.value.shizukuStatus != ShizukuStatus.REQUESTING) {
-                    if (restoring) _uiState.update { it.copy(rootStatus = RootStatus.ON) }
+                    // Root as it stands now, not as it stood: it may have gone while the limits went back.
+                    if (restoring) _uiState.update { it.copy(rootStatus = rootStatusNow()) }
                     return@withContext
                 }
                 settings.setPrivilegedAccess(PrivilegedAccess.SHIZUKU)

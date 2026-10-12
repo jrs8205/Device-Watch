@@ -218,6 +218,27 @@ class DashboardViewModelTest {
         }
 
     @Test
+    fun `given Shizuku cancelled mid-restore and root gone meanwhile, when the restore finishes, then root does not come back on`() =
+        runTest(dispatcher) {
+            val settings = FakeAppSettingsRepository(access = PrivilegedAccess.ROOT)
+            val rootShell = FakeRootShell()
+            val cpuProfiles = holding().apply { restoreGate = CompletableDeferred() }
+            val viewModel = buildViewModel(settings = settings, rootShell = rootShell, cpuProfiles = cpuProfiles)
+
+            viewModel.onShizukuModeChange(true)
+            advanceUntilIdle()
+            viewModel.onShizukuModeChange(false)
+            // The monitor found root gone and switched the setting off meanwhile.
+            rootShell.lost.value = true
+            settings.access = PrivilegedAccess.OFF
+            advanceUntilIdle()
+            cpuProfiles.restoreGate!!.complete(Unit)
+            advanceUntilIdle()
+
+            assertThat(viewModel.uiState.value.rootStatus).isEqualTo(RootStatus.DENIED)
+        }
+
+    @Test
     fun `given Shizuku switched off while stock is coming back, when the restore finishes, then Shizuku stays off`() =
         runTest(dispatcher) {
             val settings = FakeAppSettingsRepository(access = PrivilegedAccess.ROOT)

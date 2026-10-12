@@ -14,7 +14,10 @@ class CpuProfileControllerTest {
     private class MemoryStore(var state: CpuProfileState = CpuProfileState()) : CpuProfileStore {
         val saved = mutableListOf<CpuProfileState>()
 
-        /** The disk is full, or the preferences file cannot be written: nothing lands. */
+        /**
+         * The disk is full, or the preferences file cannot be written: nothing lands.
+         * As SharedPreferences does, the in-memory copy still takes the value.
+         */
         var failSaves = false
 
         var loads = 0
@@ -23,9 +26,10 @@ class CpuProfileControllerTest {
             loads++
             return state
         }
+
         override fun save(state: CpuProfileState): Boolean {
-            if (failSaves) return false
             this.state = state
+            if (failSaves) return false
             saved += state
             return true
         }
@@ -986,6 +990,72 @@ class CpuProfileControllerTest {
         controller().apply(CpuProfile.BALANCED)
         assertThat(sysfs.commands.first()).isEqualTo(KernelCommands.CPU_READ)
         assertThat(sysfs.commands).doesNotContain(KernelCommands.FULL_READ)
+    }
+
+    @Test
+    fun `a limit still in the kernel from a refused release is written over, never taken for android's`() = runTest {
+        val controller = controller()
+        controller.apply(CpuProfile.POWER_SAVING)
+        sysfs.rejectWrites += "policy8"
+        controller.apply(CpuProfile.STOCK)
+        assertThat(controller.status.value.releasing).containsExactly(p8, 1_745_000L)
+        sysfs.rejectWrites.clear()
+
+        assertThat(controller.apply(CpuProfile.BALANCED)).isEqualTo(ApplyOutcome.Applied)
+
+        assertThat(sysfs.policies.getValue("policy8").request).isEqualTo(2_294_000L)
+        assertThat(controller.status.value.releasing).isEmpty()
+        // Refused again on the way back: the limit that is there now is the one on record.
+        sysfs.rejectWrites += "policy8"
+        assertThat(controller.restoreStockBeforeRootOff()).isFalse()
+        assertThat(controller.status.value.releasing).containsExactly(p8, 2_294_000L)
+    }
+
+    @Test
+    fun `a record the disk refused is not run on the next pass`() = runTest {
+        val controller = controller()
+        controller.apply(CpuProfile.BALANCED)
+        store.failSaves = true
+        assertThat(controller.apply(CpuProfile.POWER_SAVING)).isEqualTo(ApplyOutcome.NotSaved)
+        val writesBefore = sysfs.writes.size
+
+        controller.enforce()
+
+        assertThat(sysfs.writes.drop(writesBefore)).isEmpty()
+        assertThat(sysfs.effective("policy4")).isEqualTo(1_836_000L)
+        assertThat(controller.status.value.active).isEqualTo(CpuProfile.BALANCED)
+        assertThat(controller.status.value.pending).isFalse()
+    }
+
+    @Test
+    fun `a pending limit android has since held lower waits, as a fresh apply would`() = runTest {
+        val controller = controllerWriting(ScriptedWrites(loseAnswers = setOf(1)))
+        assertThat(controller.apply(CpuProfile.BALANCED)).isEqualTo(ApplyOutcome.Unconfirmed)
+        // Android puts a lower limit of its own on the big cluster before the next pass, while another cluster is hot.
+        sysfs.halLimit("policy8", 1_557_000L)
+        sysfs.throttle("policy4", 1_836_000L)
+
+        controller.enforce()
+
+        assertThat(sysfs.policies.getValue("policy8").request).isEqualTo(1_557_000L)
+        assertThat(controller.status.value.pending).isFalse()
+        assertThat(controller.status.value.active).isEqualTo(CpuProfile.BALANCED)
+        assertThat(controller.status.value.held).containsExactly(p4, 1_836_000L, p8, 2_294_000L)
+    }
+
+    @Test
+    fun `a cluster missing from the read does not pin heat on the wrong one`() = runTest {
+        // The little cluster's cores are off, so it is missing from the read; its cooling device is not.
+        sysfs.policies.getValue("policy0").offline = true
+        sysfs.throttle("policy4", 1_418_000L)
+        val controller = controller()
+
+        controller.apply(CpuProfile.BALANCED)
+
+        // Read under heat, the hot cluster's original is its maximum, not heat's limit, and
+        // the big cluster's reading at its maximum is taken as read.
+        assertThat(store.state.originals).containsExactly(p4, 2_367_000L, p8, 2_914_000L)
+        assertThat(store.state.originalsAssumed).containsExactly(p4)
     }
 
     @Test

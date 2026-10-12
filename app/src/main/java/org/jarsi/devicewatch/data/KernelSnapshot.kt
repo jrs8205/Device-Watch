@@ -107,7 +107,9 @@ data class KernelSnapshot(
 
     /**
      * The cluster a processor cooling device slows down: `cpufreq-cpuN` names it
-     * by its first core, `thermal-cpufreq-N` counts the clusters in core order.
+     * by its first core, `thermal-cpufreq-N` counts the clusters in core order,
+     * which holds only while every cluster was read (a cluster with its cores
+     * off can be missing from a read, while the numbering stays as at boot).
      * Null for a device that is not a processor's, or names no cluster of this phone.
      */
     fun policyFor(device: CoolingDevice): CpuPolicyId? {
@@ -116,6 +118,7 @@ data class KernelSnapshot(
             return policies.firstOrNull { core in it.relatedCpus }?.id
         }
         val m = PIXEL_COOLING.matchEntire(device.type) ?: return null
+        if (coolingDevices.count { PIXEL_COOLING.matches(it.type) } != policies.size) return null
         val byCore = policies.sortedBy { it.relatedCpus.minOrNull() ?: Int.MAX_VALUE }
         return byCore.getOrNull(m.groupValues[1].toInt())?.id
     }

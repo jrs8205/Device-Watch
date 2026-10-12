@@ -138,8 +138,14 @@ object CpuProfileRules {
      */
     fun onBoot(state: CpuProfileState, current: String?): CpuProfileState {
         if (current == null || current == state.bootId) return state
-        // Nothing to compare with, or the id read one way then the other: the same boot, told by the new name from now on.
-        if (state.bootId == null || !BootIdentity.comparable(state.bootId, current)) return state.copy(bootId = current)
+        val stored = state.bootId ?: return state.copy(bootId = current)
+        when (BootIdentity.sameBoot(stored, current)) {
+            // The same boot: what was read now joins what was known, so either part can tell the next restart.
+            true -> return state.copy(bootId = BootIdentity.merge(stored, current))
+            // Neither the id nor the count on both sides: nothing to tell a restart by, so none is assumed.
+            null -> return state.copy(bootId = current)
+            false -> Unit
+        }
         val fresh = state.copy(
             bootId = current,
             held = emptyMap(),
@@ -164,19 +170,56 @@ object CpuProfileRules {
 }
 
 /**
- * Which kernel boot this is. Only a kernel restart clears the limits, so the
- * kernel's own `boot_id` names the boot: Android's BOOT_COUNT may also move when
- * just the framework restarts, while the limits stay. The count stands in only
- * where the boot id cannot be read.
+ * Which kernel boot this is, as `id=<boot_id>;count=<BOOT_COUNT>`. Only a kernel
+ * restart clears the limits, so the kernel's own `boot_id` names the boot:
+ * Android's BOOT_COUNT may also move when just the framework restarts, while the
+ * limits stay. The count tells restarts apart only where the id could not be
+ * read on one side, so a read that fails once never hides a restart, and one
+ * that fails once on the same boot never invents one.
  */
 object BootIdentity {
-    private const val COUNT_PREFIX = "count:"
+    private const val ID = "id="
+    private const val COUNT = "count="
+
+    /** How builds before 1.8.0 saved a count that stood in for the id. */
+    private const val LEGACY_COUNT = "count:"
 
     fun of(bootId: String?, bootCount: Int?): String? {
-        bootId?.trim()?.takeIf { it.isNotEmpty() }?.let { return it }
-        return bootCount?.let { "$COUNT_PREFIX$it" }
+        val id = bootId?.trim()?.takeIf { it.isNotEmpty() }
+        val parts = listOfNotNull(id?.let { "$ID$it" }, bootCount?.let { "$COUNT$it" })
+        return parts.joinToString(";").ifEmpty { null }
     }
 
-    /** Two ids of the same kind tell boots apart; an id and a count say nothing about each other. */
-    fun comparable(a: String, b: String): Boolean = a.startsWith(COUNT_PREFIX) == b.startsWith(COUNT_PREFIX)
+    /** True or false where both name the id, else where both name the count; null where neither side can tell. */
+    fun sameBoot(stored: String, current: String): Boolean? {
+        val a = parse(stored)
+        val b = parse(current)
+        if (a.id != null && b.id != null) return a.id == b.id
+        if (a.count != null && b.count != null) return a.count == b.count
+        return null
+    }
+
+    /** The current identity, with whatever the stored one still knows that could not be read now. */
+    fun merge(stored: String, current: String): String {
+        val a = parse(stored)
+        val b = parse(current)
+        return of(b.id ?: a.id, (b.count ?: a.count)?.toIntOrNull()) ?: current
+    }
+
+    private class Parts(val id: String?, val count: String?)
+
+    private fun parse(identity: String): Parts {
+        var id: String? = null
+        var count: String? = null
+        for (part in identity.split(';')) {
+            when {
+                part.startsWith(ID) -> id = part.removePrefix(ID)
+                part.startsWith(COUNT) -> count = part.removePrefix(COUNT)
+                part.startsWith(LEGACY_COUNT) -> count = part.removePrefix(LEGACY_COUNT)
+                // A bare id, as earlier builds saved it.
+                part.isNotEmpty() -> id = part
+            }
+        }
+        return Parts(id, count)
+    }
 }

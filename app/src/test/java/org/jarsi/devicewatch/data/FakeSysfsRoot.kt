@@ -122,6 +122,11 @@ internal class FakeSysfsRoot(vararg policies: FakePolicy) : RootShell {
         val files = LinkedHashMap<String, List<String>>()
         policies.values.forEachIndexed { index, p ->
             val dir = "${CpuPolicyId.CPUFREQ_DIR}/${p.name}"
+            // A cooling device is registered at boot and stays, at rest, while its cluster's cores are off.
+            val cooling = "/sys/class/thermal/cooling_device$index"
+            files["$cooling/type"] = listOf(if (mainlineCoolingNames) "cpufreq-cpu${p.cpus.first()}" else "thermal-cpufreq-$index")
+            files["$cooling/cur_state"] = listOf(if (!p.offline && p.thermalCap < p.cpuinfoMax) "1" else "0")
+            files["$cooling/max_state"] = listOf("10")
             if (p.offline) return@forEachIndexed
             files["$dir/related_cpus"] = listOf(p.cpus.joinToString(" "))
             files["$dir/cpuinfo_min_freq"] = listOf(p.cpuinfoMin.toString())
@@ -131,10 +136,6 @@ internal class FakeSysfsRoot(vararg policies: FakePolicy) : RootShell {
             files["$dir/scaling_cur_freq"] = listOf(p.cpuinfoMin.toString())
             files["$dir/scaling_governor"] = listOf("schedutil")
             if (p.steps.isNotEmpty()) files["$dir/scaling_available_frequencies"] = listOf(p.steps.joinToString(" ") + " ")
-            val cooling = "/sys/class/thermal/cooling_device$index"
-            files["$cooling/type"] = listOf(if (mainlineCoolingNames) "cpufreq-cpu${p.cpus.first()}" else "thermal-cpufreq-$index")
-            files["$cooling/cur_state"] = listOf(if (p.thermalCap < p.cpuinfoMax) "1" else "0")
-            files["$cooling/max_state"] = listOf("10")
         }
         return files
     }

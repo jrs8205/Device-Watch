@@ -162,12 +162,18 @@ class AppSettingsRepositoryImpl @Inject constructor(
     }
 
     private val access = MutableStateFlow(privilegedAccess())
+    private val accessLock = Any()
 
     override val privilegedAccessFlow: StateFlow<PrivilegedAccess> = access.asStateFlow()
 
+    // The monitor (root found gone) and the screen (root granted) can both write:
+    // the preference and the flow move under one lock, or the flow could end up
+    // one writer behind the setting.
     override fun setPrivilegedAccess(access: PrivilegedAccess) {
-        DeviceLocalFlags.prefs(context).edit().putString(KEY_PRIVILEGED_ACCESS, access.name).apply()
-        this.access.value = access
+        synchronized(accessLock) {
+            DeviceLocalFlags.prefs(context).edit().putString(KEY_PRIVILEGED_ACCESS, access.name).apply()
+            this.access.value = access
+        }
     }
 
     override fun alertEnabled(alert: HealthAlert): Boolean =

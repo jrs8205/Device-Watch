@@ -77,11 +77,32 @@ class KernelSnapshotTest {
 
     @Test
     fun `a cooling device names its cluster the same way for the page and the profile`() {
-        val snapshot = snapshot(pixel8a)
-        assertThat(snapshot.policyFor(CoolingDevice(1, "thermal-cpufreq-1", 0, 10))).isEqualTo(p4)
-        assertThat(snapshot.policyFor(CoolingDevice(5, "cpufreq-cpu8", 0, 10))).isEqualTo(p8)
+        val devices = listOf(
+            CoolingDevice(0, "thermal-cpufreq-0", 0, 10),
+            CoolingDevice(1, "thermal-cpufreq-1", 0, 10),
+            CoolingDevice(2, "thermal-cpufreq-2", 0, 10),
+            CoolingDevice(5, "cpufreq-cpu8", 0, 10),
+            CoolingDevice(7, "thermal-gpufreq-0", 0, 10),
+        )
+        val snapshot = snapshot(pixel8a, *devices.toTypedArray())
+        assertThat(snapshot.policyFor(devices[1])).isEqualTo(p4)
+        assertThat(snapshot.policyFor(devices[3])).isEqualTo(p8)
         assertThat(snapshot.policyFor(CoolingDevice(6, "thermal-cpufreq-7", 0, 10))).isNull()
-        assertThat(snapshot.policyFor(CoolingDevice(7, "thermal-gpufreq-0", 0, 10))).isNull()
+        assertThat(snapshot.policyFor(devices[4])).isNull()
+    }
+
+    @Test
+    fun `pixel's numbering is trusted only when every cluster was read`() {
+        // The little cluster is off and missing from the read; the devices keep their boot-time numbers.
+        val snapshot = snapshot(
+            pixel8a.drop(1),
+            CoolingDevice(0, "thermal-cpufreq-0", 0, 10),
+            CoolingDevice(1, "thermal-cpufreq-1", 2, 10),
+            CoolingDevice(2, "thermal-cpufreq-2", 0, 10),
+        )
+        assertThat(snapshot.throttledPolicies).isEmpty()
+        assertThat(snapshot.policyFor(CoolingDevice(1, "thermal-cpufreq-1", 2, 10))).isNull()
+        assertThat(snapshot.cpuThrottled).isTrue()
     }
 
     @Test

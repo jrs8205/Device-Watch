@@ -37,6 +37,21 @@ class AppSettingsRepositoryImplTest {
     }
 
     @Test
+    fun `the access flow follows the setting whichever thread wrote last`() {
+        val threads = List(4) { n ->
+            Thread {
+                repeat(250) { i ->
+                    settings.setPrivilegedAccess(if ((i + n) % 2 == 0) PrivilegedAccess.ROOT else PrivilegedAccess.OFF)
+                }
+            }
+        }
+        threads.forEach { it.start() }
+        threads.forEach { it.join() }
+
+        assertThat(settings.privilegedAccessFlow.value).isEqualTo(settings.privilegedAccess())
+    }
+
+    @Test
     fun `switching an alert off forgets that it was already posted`() {
         // Switched back on later, it must be able to alert for a condition still present.
         settings.setAlertEnabled(HealthAlert.HOT_BATTERY, true)
