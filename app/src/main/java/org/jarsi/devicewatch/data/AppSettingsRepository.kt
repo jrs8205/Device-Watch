@@ -1,5 +1,7 @@
 package org.jarsi.devicewatch.data
 
+import kotlinx.coroutines.flow.StateFlow
+
 /** Charge-reminder slider bounds; 0 (off) is the only value outside this range. */
 const val CHARGE_LIMIT_MIN = 50
 const val CHARGE_LIMIT_MAX = 95
@@ -81,6 +83,12 @@ interface AppSettingsRepository {
     fun privilegedAccess(): PrivilegedAccess
 
     fun setPrivilegedAccess(access: PrivilegedAccess)
+
+    /**
+     * [privilegedAccess] as it changes, from whichever side changes it: a screen
+     * opened anew follows a switch a restore or the monitor finished without it.
+     */
+    val privilegedAccessFlow: StateFlow<PrivilegedAccess>
 
     /** Whether the user switched [alert] on; every alert is off by default. */
     fun alertEnabled(alert: HealthAlert): Boolean

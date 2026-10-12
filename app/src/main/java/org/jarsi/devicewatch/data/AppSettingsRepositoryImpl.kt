@@ -3,6 +3,9 @@ package org.jarsi.devicewatch.data
 import android.content.Context
 import android.content.SharedPreferences
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -158,8 +161,13 @@ class AppSettingsRepositoryImpl @Inject constructor(
         return PrivilegedAccess.entries.firstOrNull { it.name == stored } ?: PrivilegedAccess.OFF
     }
 
+    private val access = MutableStateFlow(privilegedAccess())
+
+    override val privilegedAccessFlow: StateFlow<PrivilegedAccess> = access.asStateFlow()
+
     override fun setPrivilegedAccess(access: PrivilegedAccess) {
         DeviceLocalFlags.prefs(context).edit().putString(KEY_PRIVILEGED_ACCESS, access.name).apply()
+        this.access.value = access
     }
 
     override fun alertEnabled(alert: HealthAlert): Boolean =

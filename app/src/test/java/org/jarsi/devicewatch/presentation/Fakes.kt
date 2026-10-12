@@ -177,8 +177,16 @@ internal class FakeAppSettingsRepository(
     var onboardingShown: Boolean = false,
     /** Short name for the same reason as [chargeLimit]. */
     var classic: Boolean = false,
-    var access: PrivilegedAccess = PrivilegedAccess.OFF,
+    access: PrivilegedAccess = PrivilegedAccess.OFF,
 ) : AppSettingsRepository {
+
+    override val privilegedAccessFlow = MutableStateFlow(access)
+
+    var access: PrivilegedAccess
+        get() = privilegedAccessFlow.value
+        set(value) {
+            privilegedAccessFlow.value = value
+        }
 
     /** Fired quota alerts as "periodStartEpochDay:quotaGb:threshold", mirroring the real key scoping. */
     val quotaNotified = mutableSetOf<String>()

@@ -162,6 +162,9 @@ class DashboardViewModel @Inject constructor(
             rootShell.lost.collect { lost -> if (lost) onRootLost() }
         }
         viewModelScope.launch {
+            settings.privilegedAccessFlow.collect(::onPrivilegedAccess)
+        }
+        viewModelScope.launch {
             cpuProfiles.status.collect { status ->
                 _uiState.update { it.copy(cpuCapsKeptUntilRestart = status.notice == CpuProfileNotice.KEPT_UNTIL_RESTART) }
             }
@@ -305,10 +308,37 @@ class DashboardViewModel @Inject constructor(
             // Shizuku takes root's place: the processor limits root set go back first.
             withContext(NonCancellable) {
                 if (settings.privilegedAccess() == PrivilegedAccess.ROOT && profileNeedsRoot()) restoreStockQuietly()
+                // Switched off, or asked again, while the limits were going back: that later word wins.
+                if (request != shizukuRequest || _uiState.value.shizukuStatus != ShizukuStatus.REQUESTING) return@withContext
                 settings.setPrivilegedAccess(PrivilegedAccess.SHIZUKU)
                 rootShell.close()
+                _uiState.update { it.copy(shizukuStatus = ShizukuStatus.ON, rootStatus = RootStatus.OFF) }
             }
-            _uiState.update { it.copy(shizukuStatus = ShizukuStatus.ON, rootStatus = RootStatus.OFF) }
+        }
+    }
+
+    /**
+     * The setting is what every screen shares: root switched off by a restore
+     * that outlived the screen that started it, or by the monitor finding root
+     * gone, shows on a screen opened since. A switch still asking, or refused,
+     * keeps saying so; the setting only ever moves once an answer came.
+     */
+    private fun onPrivilegedAccess(access: PrivilegedAccess) {
+        _uiState.update { state ->
+            state.copy(
+                rootStatus = when {
+                    access == PrivilegedAccess.ROOT ->
+                        if (state.rootStatus == RootStatus.RESTORING) RootStatus.RESTORING else RootStatus.ON
+                    state.rootStatus == RootStatus.ON || state.rootStatus == RootStatus.RESTORING -> RootStatus.OFF
+                    else -> state.rootStatus
+                },
+                shizukuStatus = when {
+                    access == PrivilegedAccess.SHIZUKU ->
+                        if (state.shizukuStatus == ShizukuStatus.WAITING) ShizukuStatus.WAITING else ShizukuStatus.ON
+                    state.shizukuStatus == ShizukuStatus.ON || state.shizukuStatus == ShizukuStatus.WAITING -> ShizukuStatus.OFF
+                    else -> state.shizukuStatus
+                },
+            )
         }
     }
 

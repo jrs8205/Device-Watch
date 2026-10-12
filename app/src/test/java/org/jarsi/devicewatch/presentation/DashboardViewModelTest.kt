@@ -198,6 +198,80 @@ class DashboardViewModelTest {
         }
 
     @Test
+    fun `given Shizuku switched off while stock is coming back, when the restore finishes, then Shizuku stays off`() =
+        runTest(dispatcher) {
+            val settings = FakeAppSettingsRepository(access = PrivilegedAccess.ROOT)
+            val shizukuShell = FakeShizukuShell()
+            val cpuProfiles = holding().apply { restoreGate = CompletableDeferred() }
+            val viewModel = buildViewModel(settings = settings, shizukuShell = shizukuShell, cpuProfiles = cpuProfiles)
+
+            viewModel.onShizukuModeChange(true)
+            advanceUntilIdle()
+            viewModel.onShizukuModeChange(false)
+            cpuProfiles.restoreGate!!.complete(Unit)
+            advanceUntilIdle()
+
+            assertThat(settings.access).isEqualTo(PrivilegedAccess.ROOT)
+            assertThat(viewModel.uiState.value.shizukuStatus).isEqualTo(ShizukuStatus.OFF)
+            assertThat(viewModel.uiState.value.rootStatus).isEqualTo(RootStatus.ON)
+        }
+
+    @Test
+    fun `given a restore under way, when the screen is opened anew, then the new screen hears root went off`() =
+        runTest(dispatcher) {
+            val settings = FakeAppSettingsRepository(access = PrivilegedAccess.ROOT)
+            val rootShell = FakeRootShell()
+            val cpuProfiles = holding().apply { restoreGate = CompletableDeferred() }
+            val first = buildViewModel(settings = settings, rootShell = rootShell, cpuProfiles = cpuProfiles)
+            first.onRootModeChange(false)
+            advanceUntilIdle()
+
+            // The activity was recreated: a new view model over the same singletons.
+            val second = buildViewModel(settings = settings, rootShell = rootShell, cpuProfiles = cpuProfiles)
+            advanceUntilIdle()
+            cpuProfiles.restoreGate!!.complete(Unit)
+            advanceUntilIdle()
+
+            assertThat(settings.access).isEqualTo(PrivilegedAccess.OFF)
+            assertThat(second.uiState.value.rootStatus).isEqualTo(RootStatus.OFF)
+        }
+
+    @Test
+    fun `given Shizuku taking over, when the screen is opened anew, then the new screen shows Shizuku once it is in`() =
+        runTest(dispatcher) {
+            val settings = FakeAppSettingsRepository(access = PrivilegedAccess.ROOT)
+            val cpuProfiles = holding().apply { restoreGate = CompletableDeferred() }
+            val first = buildViewModel(settings = settings, cpuProfiles = cpuProfiles)
+            first.onShizukuModeChange(true)
+            advanceUntilIdle()
+
+            val second = buildViewModel(settings = settings, cpuProfiles = cpuProfiles)
+            advanceUntilIdle()
+            cpuProfiles.restoreGate!!.complete(Unit)
+            advanceUntilIdle()
+
+            assertThat(settings.access).isEqualTo(PrivilegedAccess.SHIZUKU)
+            assertThat(second.uiState.value.shizukuStatus).isEqualTo(ShizukuStatus.ON)
+            assertThat(second.uiState.value.rootStatus).isEqualTo(RootStatus.OFF)
+        }
+
+    @Test
+    fun `given root mode on, when the monitor switches the setting off on finding root gone, then the switch says so`() =
+        runTest(dispatcher) {
+            val settings = FakeAppSettingsRepository(access = PrivilegedAccess.ROOT)
+            val rootShell = FakeRootShell()
+            val viewModel = buildViewModel(settings = settings, rootShell = rootShell)
+            advanceUntilIdle()
+
+            // As the monitor does: the loss is marked first, the setting goes off on its next command.
+            rootShell.lost.value = true
+            settings.access = PrivilegedAccess.OFF
+            advanceUntilIdle()
+
+            assertThat(viewModel.uiState.value.rootStatus).isEqualTo(RootStatus.DENIED)
+        }
+
+    @Test
     fun `given limits held, when root turns out to be gone, then the profile hears of it`() =
         runTest(dispatcher) {
             val settings = FakeAppSettingsRepository(access = PrivilegedAccess.ROOT)
