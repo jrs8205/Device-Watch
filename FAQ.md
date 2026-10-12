@@ -95,7 +95,8 @@ Shizuku runs. The permission you gave is remembered.
 ### What does root mode add?
 
 On a rooted phone the **Root mode** switch reads the same things through `su`, plus the few
-kernel values even Shizuku is denied on some phones. Your root manager asks for permission once.
+kernel values even Shizuku is denied on some phones, and it adds the Kernel page with its
+processor profiles (below). Your root manager asks for permission once.
 The app keeps one root shell open instead of starting a new one for every reading, so the root
 manager is not flooded with requests.
 
@@ -114,6 +115,52 @@ switches Root mode off and says so, rather than keep asking.
 Each maker exposes different things. A Samsung, for example, hides the battery's kernel values
 even from Shizuku but tells its wear and cycle count through its battery service; a Pixel does
 the opposite. A row is shown only when the phone gives a real value.
+
+### What is the Kernel page?
+
+With root mode on, the Device tab starts with a **KERNEL** band; **Open** leads to the page. It
+shows what this phone's kernel itself reports: each group of processor cores with its speed now,
+its limit and its range, whether heat is slowing anything down, the graphics processor's speeds,
+compressed memory (zRAM), the kernel version, SELinux, the storage queue and every named
+temperature sensor. Nothing is assumed from the phone's model, so what you see is what your
+kernel offers. The page reads only while it is open and the screen is on.
+
+### What do the processor profiles do?
+
+They set the highest speed each group of cores may run at, nothing else. **Power saving** holds
+the faster cores to about 60 % of their top speed and **Balanced** to about 80 %; the slowest
+group, which runs most background work cheaply, stays at full speed. **Custom** lets you choose
+each group yourself, from half its top speed up. **Stock** returns the phone's own limits.
+
+Only speeds the kernel lists are used, never above what the phone allows, so nothing is
+overclocked. The phone's heat protection keeps working as before: it can always hold the cores
+lower still, and the page then says so.
+
+### Why did my profile go back to Stock after a restart?
+
+A restart returns every kernel limit to the phone's own, and by default the profile stays that
+way, so a choice never outlives the moment you made it without your say. Switch on **Apply after
+restart too** to have it set again the first time the screen is on after a restart.
+
+### The page says Android raised a limit
+
+Android adjusts the same limit itself now and then: Pixels lift it after the camera, for
+example. The app notices on its next five-second check and sets your limit again, and the page
+counts how often. If Android keeps winning, the app stops after three tries in a row, returns the
+phone's own limits and says why, rather than fight it for ever. When Android holds a group lower
+than your profile (battery saver, say), the app leaves that alone and sets your limit once
+Android lets go.
+
+### Why does a group of cores say it can't be limited?
+
+Its kernel lists no speeds for it, and the app never guesses one. Some kernels list them in a
+statistics file instead; the app uses that when it is there.
+
+### What happens when I switch root off with a profile on?
+
+The app writes the phone's own limits back first, as the last thing root does, and then switches
+root off. If root no longer answers by then, Settings says the limits stay until the phone
+restarts. The same happens when Shizuku takes over from root.
 
 ### Is the drain per hour reliable?
 

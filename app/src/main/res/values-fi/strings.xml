@@ -176,7 +176,7 @@
     <string name="shizuku_status_denied">Shizuku epäsi luvan. Salli Device Watch Shizuku-sovelluksessa ja yritä uudelleen.</string>
     <string name="shizuku_status_not_running">Shizuku ei ole käynnissä. Asenna Shizuku, käynnistä se ja yritä uudelleen.</string>
     <string name="root_mode_title">Root-tila</string>
-    <string name="root_mode_description">Rootatussa puhelimessa lukee tiedot, jotka Android piilottaa tavallisilta sovelluksilta: suorittimen todellisen kuorman, piirien lämpötilat ja akun omat kulumislukemat. Root-hallintasi kysyy luvan.</string>
+    <string name="root_mode_description">Rootatussa puhelimessa lukee tiedot, jotka Android piilottaa tavallisilta sovelluksilta: suorittimen todellisen kuorman, piirien lämpötilat ja akun omat kulumislukemat. Lisäksi Laite-välilehdelle tulee Kernel-sivu suoritinprofiileineen. Root-hallintasi kysyy luvan.</string>
     <string name="root_status_requesting">Odotetaan root-hallinnan lupaa…</string>
     <string name="root_status_on">Root-oikeudet käytössä.</string>
     <string name="root_status_denied">Root-oikeus evättiin. Salli Device Watch root-hallinnassa ja yritä uudelleen.</string>

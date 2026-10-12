@@ -180,7 +180,7 @@
     <string name="shizuku_status_denied">Shizuku refused the permission. Allow Device Watch in the Shizuku app and try again.</string>
     <string name="shizuku_status_not_running">Shizuku is not running. Install Shizuku, start it and try again.</string>
     <string name="root_mode_title">Root mode</string>
-    <string name="root_mode_description">On a rooted phone, reads what Android hides from ordinary apps: the real processor load, chip temperatures and the battery\'s own wear figures. Your root manager asks for permission.</string>
+    <string name="root_mode_description">On a rooted phone, reads what Android hides from ordinary apps: the real processor load, chip temperatures and the battery\'s own wear figures. It also opens the Kernel page on the Device tab, with processor profiles. Your root manager asks for permission.</string>
     <string name="root_status_requesting">Waiting for your root manager\'s permission…</string>
     <string name="root_status_on">Root access in use.</string>
     <string name="root_status_denied">Root access was refused. Allow Device Watch in your root manager and try again.</string>

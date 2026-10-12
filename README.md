@@ -55,6 +55,8 @@ The default app language is English. Finnish users get a localized app name and 
 - Monthly data usage history on the History page: metered mobile and Wi-Fi totals per calendar month, served straight from Android's own statistics for up to 12 months back (no local storage needed)
 - Since-charge page (opened from the battery card): the period since the battery was last charged full — or since the charger was unplugged, when charging stopped short of full — with elapsed time, battery drop and average drain, unlocks, notifications, Wi-Fi/mobile data, and a per-app screen-time donut over that window (Android does not expose real per-app battery percentages to third-party apps, so without extended access the page shows honest usage numbers instead)
 - Optional extended access through [Shizuku](https://shizuku.rikka.app/) (no root needed) or root, both off by default, for what Android hides from ordinary apps: Android's own battery statistics on the since-charge page (drain per hour with the screen on and off and how long a full battery would last at that pace, each app's share, and what kept the phone awake, explained in plain words), the real processor load, graphics load, processor/graphics/surface temperatures, and the battery's wear, charge cycles and dates where the phone keeps them
+- Kernel page on rooted phones, opened from the Device tab's KERNEL band: each group of processor cores with its speed now, its limit and range, heat throttling in plain words, the graphics processor's speeds, compressed memory (zRAM), the kernel version, SELinux and the storage queue, and every named temperature sensor, all from what this phone's kernel reports, with no phone model assumed
+- Processor profiles on rooted phones: *Power saving* (the faster cores at most about 60 % of their top speed), *Balanced* (about 80 %), *Stock*, or *Custom* per group of cores. Only speeds the kernel lists, never above what the phone allows; the phone's own limits are saved first and written back on Stock, when root is switched off, or at a restart (unless *Apply after restart too* is on). When Android raises a limit (after the camera, say) the monitor sets it again and counts it, and it never lifts a lower limit that heat or Android hold
 - Today's screen time also appears in the widget footer, refreshed at most once a minute so the 5-second widget loop stays untouched
 - Most-opened-today list on the Apps tab, and last-opened rows show the clock time for apps used today (following the system 12/24-hour setting) with two-tier staleness colors: amber after 1 month unused, red after 3 months (Google's app-hibernation threshold) or never used
 - Special-access buttons show a green/red status dot for granted/missing access
@@ -185,7 +187,7 @@ The app requests only permissions that are used by the current feature set:
 - `USE_BIOMETRIC` (a normal permission, granted on install: only to show on the Device tab whether a strong biometric is enrolled — the app never authenticates anyone)
 - `moe.shizuku.manager.permission.API_V23` (declared by the Shizuku library; it does nothing unless you install Shizuku yourself, switch Shizuku on in Settings and approve Device Watch in Shizuku's own dialog)
 
-Root mode needs no permission: it is off by default, and the app starts `su` only after you switch it on and your root manager grants it.
+Root mode needs no permission: it is off by default, and the app starts `su` only after you switch it on and your root manager grants it. Through root alone, a processor profile you choose on the Kernel page writes each group of cores' top speed limit; nothing else is written.
 
 Notification counting additionally uses the optional Notification access special permission (a `NotificationListenerService`); counting starts when access is granted. Do Not Disturb and Bluetooth control permissions are not requested.
 
@@ -205,7 +207,7 @@ Release builds are minified with R8 and resource shrinking. The release APK is u
 
 ## Testing
 
-721 JVM unit tests (JUnit 4 + Truth; Robolectric only for the Glance render, backup-rule and
+871 JVM unit tests (JUnit 4 + Truth; Robolectric only for the Glance render, backup-rule and
 settings-store tests) cover the pure logic behind every screen, service and widget:
 
 ```powershell
@@ -220,6 +222,12 @@ settings-store tests) cover the pure logic behind every screen, service and widg
   through a real `sh`; on Windows through Git's), `PrivilegedShellTest`,
   `BatteryStatsDumpParserTest`, `PrivilegedDumpParsersTest` (parsers written against dumps from
   real phones)
+- **Kernel page and processor profiles (root)** — `KernelSysfsParserTest` (against a full read
+  from a Pixel 8a), `KernelCommandsTest`, `RootOnlyShellTest`, `KernelSnapshotSourceTest`,
+  `CpuProfilePlannerTest`, `CpuProfileRulesTest`, `CpuProfileStoreTest`, `CpuLimitWriterTest`,
+  `CpuProfileControllerTest` (over `FakeSysfsRoot`, a pretend cpufreq tree with the kernel's
+  frequency QoS, Android's power HAL, heat and switched-off cores), `KernelRootOnlyGuardTest`,
+  `KernelPresentationTest`, `KernelViewModelTest`
 - **Own history and stores** — `UsageHistoryLogicTest`, `UsageHistoryImplTest`,
   `NotificationCountingTest`, `NotificationLogCodecTest`, `NotificationLogImplTest`,
   `BatteryHistoryCodecTest`, `BatteryHistoryImplTest`, `ChargeSessionsTest`,
@@ -275,12 +283,21 @@ app/src/main/java/org/jarsi/devicewatch/
     ChargeAnchor.kt
     ChargeAnchorStoreImpl.kt
     ChargeSessions.kt
+    CpuLimitWriter.kt
+    CpuProfilePlanner.kt
+    CpuProfileRules.kt
+    CpuProfileStore.kt
+    CpuProfiles.kt
     DataPeriod.kt
     DataQuotaLogic.kt
     DeviceInfo.kt
     DeviceLocalFlags.kt
     DeviceState.kt
     ExtraStatsLogic.kt
+    KernelCommands.kt
+    KernelSnapshot.kt
+    KernelSnapshotSource.kt
+    KernelSysfsParser.kt
     NotificationCounting.kt
     NotificationLog.kt
     NotificationLogImpl.kt
@@ -288,6 +305,7 @@ app/src/main/java/org/jarsi/devicewatch/
     NotificationStatsImpl.kt
     PrivilegedDumpParsers.kt
     PrivilegedShell.kt
+    RootCommandShell.kt
     RootShell.kt
     ShellBatteryUsageSource.kt
     ShellUserService.kt
@@ -311,6 +329,8 @@ app/src/main/java/org/jarsi/devicewatch/
     HistoryCoverage.kt
     HistoryViewModel.kt
     HtmlReportBuilder.kt
+    KernelPresentation.kt
+    KernelViewModel.kt
     LiveTrafficViewModel.kt
     PeriodComparison.kt
     SinceChargeViewModel.kt
@@ -327,6 +347,8 @@ app/src/main/java/org/jarsi/devicewatch/
       Haptics.kt
       HistoryListLogic.kt
       HistoryPage.kt
+      KernelBand.kt
+      KernelPage.kt
       LiveTrafficMeter.kt
       MetricText.kt
       OnboardingPage.kt
@@ -377,16 +399,28 @@ app/src/test/java/org/jarsi/devicewatch/
     CameraLogicTest.kt
     ChargeAnchorLogicTest.kt
     ChargeSessionsTest.kt
+    CpuLimitWriterTest.kt
+    CpuProfileControllerTest.kt
+    CpuProfilePlannerTest.kt
+    CpuProfileRulesTest.kt
+    CpuProfileStoreTest.kt
     CpuWindowTest.kt
     DataPeriodCalculatorTest.kt
     DataQuotaLogicTest.kt
     DeviceLocalFlagsTest.kt
     ExtraStatsLogicTest.kt
+    FakeSysfsRoot.kt
+    KernelCommandsTest.kt
+    KernelFixtures.kt
+    KernelRootOnlyGuardTest.kt
+    KernelSnapshotSourceTest.kt
+    KernelSysfsParserTest.kt
     NotificationCountingTest.kt
     NotificationLogCodecTest.kt
     NotificationLogImplTest.kt
     PrivilegedDumpParsersTest.kt
     PrivilegedShellTest.kt
+    RootOnlyShellTest.kt
     ShellSessionTest.kt
     SystemStatsParserTest.kt
     TrafficMeterTest.kt
@@ -400,6 +434,8 @@ app/src/test/java/org/jarsi/devicewatch/
     Fakes.kt
     HistoryViewModelTest.kt
     HtmlReportBuilderTest.kt
+    KernelPresentationTest.kt
+    KernelViewModelTest.kt
     LiveTrafficViewModelTest.kt
     PeriodComparisonTest.kt
     ReportPaletteTest.kt
