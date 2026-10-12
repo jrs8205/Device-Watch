@@ -58,6 +58,8 @@ import kotlinx.coroutines.launch
 import org.jarsi.devicewatch.R
 import org.jarsi.devicewatch.presentation.AppsViewModel
 import org.jarsi.devicewatch.presentation.DashboardViewModel
+import org.jarsi.devicewatch.presentation.KernelViewModel
+import org.jarsi.devicewatch.presentation.RootStatus
 import org.jarsi.devicewatch.system.SystemMonitorService
 
 /** Doubles the selection pill so colour is never the only cue. */
@@ -80,6 +82,7 @@ internal enum class DashboardTab(
 fun SystemDashboardScreen(
     viewModel: DashboardViewModel = hiltViewModel(),
     appsViewModel: AppsViewModel = hiltViewModel(),
+    kernelViewModel: KernelViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
     val view = LocalView.current
@@ -120,6 +123,14 @@ fun SystemDashboardScreen(
     // "Since charge" full-screen page, reached from the Overview battery card.
     var showSinceCharge by rememberSaveable { mutableStateOf(false) }
     BackHandler(enabled = showSinceCharge) { showSinceCharge = false }
+
+    // Kernel page, reached from the Device tab's KERNEL band; root only, so it
+    // closes the moment root does.
+    var showKernel by rememberSaveable { mutableStateOf(false) }
+    BackHandler(enabled = showKernel) { showKernel = false }
+    LaunchedEffect(uiState.rootStatus) {
+        if (uiState.rootStatus != RootStatus.ON) showKernel = false
+    }
 
     // First-run intro state: shown until completed, and replayable from Settings.
     val onboardingCompleted = uiState.onboardingCompleted
@@ -177,6 +188,11 @@ fun SystemDashboardScreen(
 
     if (showSinceCharge) {
         SinceChargePage(onBack = { showSinceCharge = false })
+        return
+    }
+
+    if (showKernel && uiState.rootStatus == RootStatus.ON) {
+        KernelPage(onBack = { showKernel = false }, viewModel = kernelViewModel)
         return
     }
 
@@ -300,7 +316,19 @@ fun SystemDashboardScreen(
 
                         DashboardTab.Apps -> AppsTab(viewModel = appsViewModel)
 
-                        DashboardTab.Device -> DeviceTab(uiState = uiState)
+                        DashboardTab.Device -> {
+                            // The band reads the kernel only on a rooted phone, and only while shown.
+                            val kernelSummary = if (uiState.rootStatus == RootStatus.ON) {
+                                kernelViewModel.summary.collectAsStateWithLifecycle().value
+                            } else {
+                                null
+                            }
+                            DeviceTab(
+                                uiState = uiState,
+                                kernelSummary = kernelSummary,
+                                onOpenKernel = { showKernel = true },
+                            )
+                        }
 
                         DashboardTab.Settings -> SettingsTab(
                             uiState = uiState,

@@ -14,10 +14,19 @@ import androidx.compose.ui.unit.dp
 import org.jarsi.devicewatch.R
 import org.jarsi.devicewatch.data.UNAVAILABLE_TEXT
 import org.jarsi.devicewatch.presentation.DashboardUiState
+import org.jarsi.devicewatch.presentation.KernelSummary
+import org.jarsi.devicewatch.presentation.RootStatus
 
-/** Device tab: static device facts plus the live SIM and Wi-Fi sections. */
+/**
+ * Device tab: static device facts plus the live SIM and Wi-Fi sections, led on a
+ * rooted phone by the KERNEL band.
+ */
 @Composable
-internal fun DeviceTab(uiState: DashboardUiState) {
+internal fun DeviceTab(
+    uiState: DashboardUiState,
+    kernelSummary: KernelSummary? = null,
+    onOpenKernel: () -> Unit = {},
+) {
     val currentStats = uiState.stats ?: return
 
     Column(
@@ -26,6 +35,8 @@ internal fun DeviceTab(uiState: DashboardUiState) {
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        if (uiState.rootStatus == RootStatus.ON) KernelBand(kernelSummary, onOpenKernel)
+
         uiState.deviceInfo?.let { info ->
             SettingsSectionCard(titleRes = R.string.device_info_section) {
                 DeviceFact(R.string.device_info_manufacturer, info.manufacturer)
