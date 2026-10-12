@@ -97,13 +97,34 @@ data class KernelSnapshot(
     val cpuThrottled: Boolean
         get() = coolingDevices.any { isCpuCooling(it.type) && it.cur > 0 }
 
+    /**
+     * The clusters heat is holding down right now, as far as the cooling devices
+     * say which: `cpufreq-cpuN` names a cluster by its first core, `thermal-cpufreq-N`
+     * counts the clusters in core order. A device that names no cluster of this
+     * phone counts for none, so heat elsewhere never passes for heat on a cluster.
+     */
+    val throttledPolicies: Set<CpuPolicyId>
+        get() {
+            val hot = coolingDevices.filter { isCpuCooling(it.type) && it.cur > 0 }
+            if (hot.isEmpty()) return emptySet()
+            val byCore = policies.sortedBy { it.relatedCpus.minOrNull() ?: Int.MAX_VALUE }
+            return hot.mapNotNullTo(LinkedHashSet()) { device ->
+                MAINLINE_COOLING.matchEntire(device.type)?.let { m ->
+                    val core = m.groupValues[1].toInt()
+                    return@mapNotNullTo policies.firstOrNull { core in it.relatedCpus }?.id
+                }
+                PIXEL_COOLING.matchEntire(device.type)?.let { m -> byCore.getOrNull(m.groupValues[1].toInt())?.id }
+            }
+        }
+
     companion object {
         /**
          * `thermal-cpufreq-N` as Pixel's driver and older kernels name it,
          * `cpufreq-cpuN` as mainline Linux has since 5.13.
          */
-        private val CPU_COOLING = Regex("thermal-cpufreq-\\d{1,3}|cpufreq-cpu\\d{1,4}")
+        private val PIXEL_COOLING = Regex("thermal-cpufreq-(\\d{1,3})")
+        private val MAINLINE_COOLING = Regex("cpufreq-cpu(\\d{1,4})")
 
-        fun isCpuCooling(type: String): Boolean = CPU_COOLING.matches(type)
+        fun isCpuCooling(type: String): Boolean = PIXEL_COOLING.matches(type) || MAINLINE_COOLING.matches(type)
     }
 }

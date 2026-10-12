@@ -128,6 +128,19 @@ class CpuProfileControllerTest {
     }
 
     @Test
+    fun `heat on one cluster does not lift android's lower limit on another`() = runTest {
+        sysfs.throttle("policy4", 1_836_000L)
+        sysfs.halLimit("policy8", 1_557_000L)
+        val controller = controller()
+
+        assertThat(controller.apply(CpuProfile.BALANCED)).isEqualTo(ApplyOutcome.HeldLower)
+
+        // Android's own limit on the big cluster stays; the app's waits for it to let go.
+        assertThat(sysfs.policies.getValue("policy8").request).isEqualTo(1_557_000L)
+        assertThat(controller.status.value.held).containsExactly(p4, 1_836_000L, p8, 2_294_000L)
+    }
+
+    @Test
     fun `a limit heat already holds lower is in place`() = runTest {
         sysfs.throttle("policy8", 1_557_000L)
         val controller = controller()

@@ -185,6 +185,7 @@ class CpuProfileController internal constructor(
         }
 
         val effective = snapshot.policies.mapNotNull { p -> p.scalingMaxKHz?.let { p.id to it } }.toMap()
+        val throttled = snapshot.throttledPolicies
         val writes = LinkedHashMap<CpuPolicyId, Long>()
         var deferred = false
         for ((id, target) in plan.caps) {
@@ -192,8 +193,9 @@ class CpuProfileController internal constructor(
             // Android holds a lower limit in the same file (a power hint of its
             // own): writing would lift it, so the limit is held unwritten and
             // the monitor sets it once Android lets go. Heat is a limit of its
-            // own, which a write does not lift.
-            if (now != null && now < target && now != before.held[id] && !snapshot.cpuThrottled) {
+            // own, which a write does not lift; only heat on this very cluster
+            // explains its reading, never heat on another.
+            if (now != null && now < target && now != before.held[id] && id !in throttled) {
                 deferred = true
             } else {
                 writes[id] = target
