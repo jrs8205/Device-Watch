@@ -32,7 +32,6 @@ internal object KernelCommands {
             CPU_FILES.map { "$POLICIES/$it" } +
             listOf("type", "temp").map { "$THERMAL/thermal_zone*/$it" } +
             COOLING_FILES +
-            listOf("$THERMAL/cooling_device*/max_state") +
             listOf("cur_freq", "max_freq", "min_freq", "available_frequencies", "power_policy").map { "$MALI/$it" } +
             listOf("gpuclk", "max_gpuclk", "gpu_available_frequencies").map { "$KGSL/$it" } +
             listOf("disksize", "comp_algorithm", "mm_stat").map { "/sys/block/zram0/$it" } +
@@ -59,8 +58,9 @@ internal object KernelCommands {
         return "$writes; ${readMaxFreqs(ids)} ${COOLING_FILES.joinToString(" ")}"
     }
 
+    /** All three: the parser keeps a cooling device only with its type and both states. */
     private val COOLING_FILES: List<String>
-        get() = listOf("$THERMAL/cooling_device*/type", "$THERMAL/cooling_device*/cur_state")
+        get() = listOf("type", "cur_state", "max_state").map { "$THERMAL/cooling_device*/$it" }
 
     private fun ordered(ids: Collection<CpuPolicyId>): List<CpuPolicyId> =
         ids.distinct().sortedBy { it.name.removePrefix("policy").toInt() }

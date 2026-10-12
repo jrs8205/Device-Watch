@@ -57,7 +57,8 @@ class KernelCommandsTest {
                 "echo 2294000 > '/sys/devices/system/cpu/cpufreq/policy8/scaling_max_freq'; " +
                 "grep -s -H '^' '/sys/devices/system/cpu/cpufreq/policy4/scaling_max_freq' " +
                 "'/sys/devices/system/cpu/cpufreq/policy8/scaling_max_freq' " +
-                "/sys/class/thermal/cooling_device*/type /sys/class/thermal/cooling_device*/cur_state"
+                "/sys/class/thermal/cooling_device*/type /sys/class/thermal/cooling_device*/cur_state " +
+                "/sys/class/thermal/cooling_device*/max_state"
         )
         assertThat(allowed.matches(command)).isTrue()
     }
