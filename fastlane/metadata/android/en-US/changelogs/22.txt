@@ -1,0 +1,3 @@
+• Kernel page on rooted phones: each group of processor cores with its speed, limit and range, heat throttling, GPU speeds, zRAM, kernel version, SELinux and the temperature sensors
+• Processor profiles (root): Power saving, Balanced, Stock (full speed) or Custom per group of cores. The phone's own limits come back on Stock, when root goes off and at every restart unless you choose otherwise
+• The monitor holds the chosen limit when Android raises it and never lifts one heat or Android hold

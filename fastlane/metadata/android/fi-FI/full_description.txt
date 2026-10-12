@@ -13,6 +13,7 @@ Ominaisuudet:
 * Laitteella pysyvä ilmoitusloki 7 päivän säilytyksellä
 * Latauksesta lähtien -näkymä: kulunut aika, akun pudotus, keskikulutus ja sovelluskohtainen ruutuaika edellisestä täydestä latauksesta tai laturin irrotuksesta
 * Valinnainen laajennettu käyttö Shizukun tai rootin kautta, oletuksena pois: suorittimen todellinen kuorma, piirien lämpötilat, grafiikkakuorma, akun omat kulumisluvut ja Androidin akkutilastot edellisestä latauksesta (kulutus näyttö päällä ja pois, sovellusten osuudet, mikä piti puhelimen hereillä)
+* Rootilla: Kernel-sivu (jokainen ydinryhmä nopeuksineen, rajoineen ja alueineen, lämpökuristus, GPU:n nopeudet, zRAM, kernelin versio, SELinux, lämpöanturit) ja suoritinprofiilit — Virransäästö, Tasapainoinen, Vakio (täysi teho) tai Mukautettu ydinryhmittäin — jotka asettavat vain kunkin ryhmän ylimmän nopeuden ja palauttavat puhelimen omat rajat Vakiolla, kun root kytketään pois ja jokaisessa uudelleenkäynnistyksessä, ellet valitse toisin
 * Interaktiivinen näytönsäästäjä: iso kello, puhelimen nimi, seuraava herätys, kuittaamattomien ilmoitusten kuvakkeet, latausteho watteina, akun mukaan sävyttyvä tausta, valinnainen yöhimmennys, valinnainen käynnistys heti latauksen alkaessa ja akku täynnä -ilmoitus
 
 Sovellus ei lähetä tietoja verkkoon. Android-varmuuskopioon sisältyvät vain asetukset: historia, ilmoitusten sisältö ja hälytyslukot jäävät laitteelle. Voit halutessasi jakaa CSV- ja HTML-vientejä, myös ilmoitustekstejä, toisen sovelluksen kautta.

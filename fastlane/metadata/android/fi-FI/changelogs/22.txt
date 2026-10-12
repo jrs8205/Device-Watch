@@ -1,0 +1,3 @@
+• Kernel-sivu rootatuissa puhelimissa: ydinryhmät nopeuksineen, rajoineen ja alueineen, lämpökuristus, GPU:n nopeudet, zRAM, kernelin versio, SELinux ja lämpöanturit
+• Suoritinprofiilit (root): Virransäästö, Tasapainoinen, Vakio (täysi teho) tai Mukautettu ydinryhmittäin. Puhelimen omat rajat palaavat Vakiolla, kun root kytketään pois ja joka uudelleenkäynnistyksessä, ellet valitse toisin
+• Valvonta pitää valitun rajan, kun Android nostaa sitä, eikä nosta lämmön tai Androidin pitämää rajaa
