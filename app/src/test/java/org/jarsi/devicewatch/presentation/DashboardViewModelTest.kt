@@ -72,6 +72,31 @@ class DashboardViewModelTest {
         shizukuShell, cpuProfiles,
     )
 
+    @Test
+    fun `given the device info shown, when extended access changes, then it is read again`() =
+        runTest(dispatcher) {
+            val settings = FakeAppSettingsRepository(access = PrivilegedAccess.OFF)
+            val repository = FakeSystemStatsRepository(sampleStats())
+            val viewModel = buildViewModel(repository = repository, settings = settings)
+            advanceUntilIdle()
+            // The access flow's first value is not a change: the screen asks for the info itself.
+            assertThat(repository.deviceInfoLoads).isEqualTo(0)
+
+            viewModel.loadDeviceInfo()
+            advanceUntilIdle()
+            assertThat(repository.deviceInfoLoads).isEqualTo(1)
+
+            // Root on: the design capacity a phone keeps from the app is now readable through the shell.
+            settings.access = PrivilegedAccess.ROOT
+            advanceUntilIdle()
+            assertThat(repository.deviceInfoLoads).isEqualTo(2)
+
+            // And off again: what only the shell could read is gone from the screen too.
+            settings.access = PrivilegedAccess.OFF
+            advanceUntilIdle()
+            assertThat(repository.deviceInfoLoads).isEqualTo(3)
+        }
+
     private fun holding() = FakeCpuProfiles(
         CpuProfileStatus(active = CpuProfile.BALANCED, held = mapOf(CpuPolicyId.of("policy8")!! to 2_294_000L))
     )
@@ -1456,7 +1481,12 @@ private class FakeSystemStatsRepository(
         return stats
     }
 
-    override suspend fun getDeviceInfo(): DeviceInfo = sampleDeviceInfo()
+    var deviceInfoLoads = 0
+
+    override suspend fun getDeviceInfo(): DeviceInfo {
+        deviceInfoLoads++
+        return sampleDeviceInfo()
+    }
 
     override suspend fun dataUsedSince(startMillis: Long): DataUsageSince =
         DataUsageSince(wifiGb = 0.0, mobileGb = 0.0)

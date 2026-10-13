@@ -355,6 +355,11 @@ class DashboardViewModel @Inject constructor(
                 },
             )
         }
+        // The device info is read once per screen, and one of its facts (the battery's
+        // design capacity on a phone that keeps the file from the app) comes through
+        // the shell: a switch of access, either way, is a reason to read it again.
+        // The flow's first value is not a switch; the screen asks for the info then.
+        if (_uiState.value.deviceInfo != null) loadDeviceInfo()
     }
 
     /**
@@ -541,7 +546,11 @@ class DashboardViewModel @Inject constructor(
         }
     }
 
-    /** Loads the static, root-free device facts once (build, SoC, display, memory). */
+    /**
+     * Loads the static device facts (build, SoC, display, memory, the battery's design
+     * capacity): once per screen, and again when extended access is switched, since
+     * the design capacity may come through the shell.
+     */
     fun loadDeviceInfo() {
         viewModelScope.launch {
             val info = repository.getDeviceInfo()
