@@ -112,6 +112,13 @@ class SystemStatsRepositoryImpl @Inject constructor(
     private var samsungBattery: SamsungBattery? = null
     private var samsungBatteryReadAtMillis = 0L
 
+    /**
+     * The cell list, kept for a minute: every read of it goes into Android's privacy
+     * log as a location read, and the cell does not change from one poll to the next.
+     */
+    private var cellInfoReadAtMillis = 0L
+    private var cachedCellInfo: List<CellInfo> = emptyList()
+
     /** The privileged shell as this poll may use it; see [beginShellPass]. */
     private var shellPass = ShellPass(privilegedShell, usable = false)
 
@@ -732,14 +739,7 @@ class SystemStatsRepositoryImpl @Inject constructor(
     private fun readRegisteredBands(telephony: TelephonyManager): String? {
         // A location read in Android's eyes: only while the app is on screen, or
         // Android refuses it and logs the app as trying from the background.
-        if (!LocationGatedReads.cellInfoAllowed(hasPermission(Manifest.permission.ACCESS_FINE_LOCATION), appVisibility.visible)) {
-            return null
-        }
-        val cells = try {
-            telephony.allCellInfo.orEmpty().filter { it.isRegistered }
-        } catch (_: SecurityException) {
-            return null
-        }
+        val cells = cellInfo(telephony)?.filter { it.isRegistered } ?: return null
         val parts = cells.mapNotNull { cell ->
             when (cell) {
                 is CellInfoNr -> {
@@ -2108,25 +2108,36 @@ class SystemStatsRepositoryImpl @Inject constructor(
     }
 
     private fun readCellInfoNetworkTypeLabel(telephonyManager: TelephonyManager): String {
-        // As in readRegisteredBands: a location read, allowed only on screen.
-        if (!LocationGatedReads.cellInfoAllowed(hasPermission(Manifest.permission.ACCESS_FINE_LOCATION), appVisibility.visible)) {
-            return UNAVAILABLE_TEXT
-        }
+        val cellInfo = cellInfo(telephonyManager) ?: return UNAVAILABLE_TEXT
+        val registeredLabel = SystemStatsParser.highestMobileGeneration(
+            cellInfo.filter { it.isRegistered }.mapNotNull { cellInfoNetworkTypeLabel(it) }
+        )
+        return registeredLabel
+            ?: SystemStatsParser.highestMobileGeneration(cellInfo.mapNotNull { cellInfoNetworkTypeLabel(it) })
+            ?: UNAVAILABLE_TEXT
+    }
 
-        return try {
-            @Suppress("DEPRECATION")
-            val cellInfo = telephonyManager.allCellInfo.orEmpty()
-            val registeredLabel = SystemStatsParser.highestMobileGeneration(
-                cellInfo.filter { it.isRegistered }.mapNotNull { cellInfoNetworkTypeLabel(it) }
-            )
-            registeredLabel
-                ?: SystemStatsParser.highestMobileGeneration(
-                    cellInfo.mapNotNull { cellInfoNetworkTypeLabel(it) }
-                )
-                ?: UNAVAILABLE_TEXT
-        } catch (_: SecurityException) {
-            UNAVAILABLE_TEXT
+    /**
+     * The cell list, a location read in Android's eyes: only with the permission and
+     * while the app is on screen, or Android refuses it and logs the app as trying
+     * from the background; and at most once a minute, so the app's own line in that
+     * log stays short. Null when it may not be read now.
+     */
+    private fun cellInfo(telephony: TelephonyManager): List<CellInfo>? {
+        if (!LocationGatedReads.cellInfoAllowed(hasPermission(Manifest.permission.ACCESS_FINE_LOCATION), appVisibility.visible)) {
+            return null
         }
+        val now = SystemClock.elapsedRealtime()
+        if (cellInfoReadAtMillis != 0L && now - cellInfoReadAtMillis < CELL_INFO_MAX_AGE_MILLIS) return cachedCellInfo
+        val cells = try {
+            @Suppress("DEPRECATION")
+            telephony.allCellInfo.orEmpty()
+        } catch (_: SecurityException) {
+            return null
+        }
+        cellInfoReadAtMillis = now
+        cachedCellInfo = cells
+        return cells
     }
 
     @Suppress("DEPRECATION") // CellInfoCdma is deprecated but still emitted on legacy networks
@@ -2345,6 +2356,7 @@ class SystemStatsRepositoryImpl @Inject constructor(
         private const val KB_PER_GB = 1024.0 * 1024.0
         private val WIDEVINE_UUID = java.util.UUID.fromString("edef8ba9-79d6-4ace-a3c8-27dcd51d21ed")
         private const val SAMSUNG_BATTERY_MAX_AGE_MILLIS = 10 * 60_000L
+        private const val CELL_INFO_MAX_AGE_MILLIS = 60_000L
 
         /** Adreno (Qualcomm), Exynos, and Mali (Tensor, MediaTek), in that order. */
         private val GPU_LOAD_PATHS = listOf(

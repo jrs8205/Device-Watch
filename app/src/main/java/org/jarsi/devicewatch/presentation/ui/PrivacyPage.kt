@@ -127,6 +127,10 @@ fun PrivacyPage(
     }
 }
 
+/** Whether a length means the sensor was on that long: true of the camera and the microphone. */
+private val PrivacySensor.hasMeaningfulDuration: Boolean
+    get() = this == PrivacySensor.CAMERA || this == PrivacySensor.MICROPHONE
+
 @Composable
 private fun PageNote(text: String, warn: Boolean = false) {
     Column(modifier = Modifier.padding(horizontal = BAND_INSET, vertical = 8.dp)) {
@@ -142,9 +146,11 @@ private fun SensorSection(use: SensorUse, expandedKey: String?, onToggle: (Strin
             KernelNote(stringResource(R.string.privacy_sensor_empty))
             return@SettingsSectionCard
         }
+        // Two apps called "Camera" tell apart only by their package names.
+        val sharedLabels = (use.apps + use.denied).groupBy { it.label }.filterValues { it.size > 1 }.keys
         use.apps.forEach { app ->
             val key = "${use.sensor.name}/${app.uid}/${app.packageName}"
-            AppUseRow(app, use.sensor, expanded = expandedKey == key, onToggle = { onToggle(key) })
+            AppUseRow(app, use.sensor, showPackage = app.label in sharedLabels, expanded = expandedKey == key, onToggle = { onToggle(key) })
         }
         if (use.denied.isNotEmpty()) {
             Spacer(modifier = Modifier.height(10.dp))
@@ -152,16 +158,22 @@ private fun SensorSection(use: SensorUse, expandedKey: String?, onToggle: (Strin
             KernelNote(stringResource(R.string.privacy_denied_note))
             use.denied.forEach { app ->
                 val key = "${use.sensor.name}/denied/${app.uid}/${app.packageName}"
-                AppUseRow(app, use.sensor, expanded = expandedKey == key, onToggle = { onToggle(key) })
+                AppUseRow(app, use.sensor, showPackage = app.label in sharedLabels, expanded = expandedKey == key, onToggle = { onToggle(key) })
             }
         }
     }
 }
 
-/** One app under one sensor: its name, what it did in sum, and on a tap every moment on record. */
+/**
+ * One app under one sensor: its name, what it did in sum, and on a tap every moment
+ * on record. A length is told for the camera and the microphone, where it is how
+ * long the sensor was on; location "monitoring" runs side by side under several
+ * tags and would add up to more hours than the record spans.
+ */
 @Composable
-private fun AppUseRow(app: AppSensorUse, sensor: PrivacySensor, expanded: Boolean, onToggle: () -> Unit) {
+private fun AppUseRow(app: AppSensorUse, sensor: PrivacySensor, showPackage: Boolean, expanded: Boolean, onToggle: () -> Unit) {
     val context = LocalContext.current
+    val showDuration = sensor.hasMeaningfulDuration
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -183,12 +195,13 @@ private fun AppUseRow(app: AppSensorUse, sensor: PrivacySensor, expanded: Boolea
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
+        if (showPackage) KernelTechnical(app.packageName)
         if (sensor == PrivacySensor.OTHER) {
             KernelTechnical(app.ops.sorted().joinToString(", ") { op -> PrivacyPresentation.opNameRes(op)?.let(context::getString) ?: op })
         }
         val summary = listOfNotNull(
             pluralStringResource(R.plurals.privacy_times, app.accesses, app.accesses).takeIf { app.accesses > 0 },
-            shortDurationText(app.durationMillis).takeIf { app.durationMillis > 0 },
+            shortDurationText(app.durationMillis).takeIf { showDuration && app.durationMillis > 0 },
             app.lastMillis?.let { stringResource(R.string.privacy_last, privacyMomentText(it)) },
             // An app only ever refused has no use to date, so its latest refusal stands in.
             app.lastRejectedMillis?.takeIf { app.lastMillis == null }?.let { stringResource(R.string.privacy_last, privacyMomentText(it)) },
@@ -238,7 +251,7 @@ private fun EventRow(event: AccessEvent, sensor: PrivacySensor, showOp: Boolean)
         Column(modifier = Modifier.weight(1f)) {
             val parts = listOfNotNull(
                 pluralStringResource(R.plurals.privacy_times, event.count, event.count).takeIf { event.count > 0 },
-                shortDurationText(event.durationMillis).takeIf { event.durationMillis > 0 },
+                shortDurationText(event.durationMillis).takeIf { sensor.hasMeaningfulDuration && event.durationMillis > 0 },
                 stringResource(R.string.privacy_event_background).takeIf { event.background },
                 pluralStringResource(R.plurals.privacy_refused, event.rejected, event.rejected).takeIf { event.rejected > 0 },
             )
