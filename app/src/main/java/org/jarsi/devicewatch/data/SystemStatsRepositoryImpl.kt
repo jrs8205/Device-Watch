@@ -118,6 +118,8 @@ class SystemStatsRepositoryImpl @Inject constructor(
      */
     private var cellInfoReadAtMillis = 0L
     private var cachedCellInfo: List<CellInfo> = emptyList()
+    private var wifiInfoReadAtMillis = 0L
+    private var cachedWifiInfo: WifiInfo? = null
 
     /** The privileged shell as this poll may use it; see [beginShellPass]. */
     private var shellPass = ShellPass(privilegedShell, usable = false)
@@ -678,11 +680,7 @@ class SystemStatsRepositoryImpl @Inject constructor(
         val onWifi = connectivity.getNetworkCapabilities(connectivity.activeNetwork)
             ?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true
         if (!onWifi) return none
-        val info = try {
-            context.applicationContext.getSystemService(WifiManager::class.java)?.connectionInfo
-        } catch (_: SecurityException) {
-            null
-        } ?: return none
+        val info = wifiConnectionInfo() ?: return none
         val security = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             val type = info.currentSecurityType
             if (type == WifiInfo.SECURITY_TYPE_OPEN) {
@@ -1482,7 +1480,7 @@ class SystemStatsRepositoryImpl @Inject constructor(
 
             if (canReadWifiIdentity()) {
                 try {
-                    val wifiInfo = wifiInfoFromCapabilities(capabilities) ?: wifiManager?.connectionInfo
+                    val wifiInfo = wifiInfoFromCapabilities(capabilities) ?: wifiConnectionInfo()
                     wifiSsid = SystemStatsParser.normalizedWifiSsid(wifiInfo?.ssid) ?: wifiSsid
                     wifiBand = SystemStatsParser.wifiBandLabel(wifiInfo?.frequency ?: UNAVAILABLE_INT)
                 } catch (_: SecurityException) {
@@ -1497,9 +1495,9 @@ class SystemStatsRepositoryImpl @Inject constructor(
         // instead, because a full network name doesn't fit the widget tile. The call is a
         // location read in Android's eyes, so it waits for the app to be on screen, where
         // alone the name is shown; from the service it would only be refused and logged.
-        val wifiSsidName = if (isWifiConnected && LocationGatedReads.locationReadAllowed(canReadWifiIdentity(), appVisibility.visible)) {
+        val wifiSsidName = if (isWifiConnected) {
             val realSsid = try {
-                SystemStatsParser.normalizedWifiSsid(wifiManager?.connectionInfo?.ssid)
+                SystemStatsParser.normalizedWifiSsid(wifiConnectionInfo()?.ssid)
                     ?: capabilities?.let { SystemStatsParser.normalizedWifiSsid(wifiInfoFromCapabilities(it)?.ssid) }
             } catch (_: SecurityException) {
                 null
@@ -1539,7 +1537,7 @@ class SystemStatsRepositoryImpl @Inject constructor(
         var wifiLinkSpeedMbps = UNAVAILABLE_INT
         var wifiStandard = UNAVAILABLE_TEXT
         if (isWifiConnected && capabilities != null) {
-            val wifiInfo = wifiInfoFromCapabilities(capabilities) ?: wifiManager?.connectionInfo
+            val wifiInfo = wifiInfoFromCapabilities(capabilities) ?: wifiConnectionInfo()
             if (wifiInfo != null) {
                 wifiRssiDbm = wifiInfo.rssi.takeIf { it != -127 && it < 0 } ?: UNAVAILABLE_INT
                 wifiLinkSpeedMbps = wifiInfo.linkSpeed.takeIf { it > 0 } ?: UNAVAILABLE_INT
@@ -2142,6 +2140,29 @@ class SystemStatsRepositoryImpl @Inject constructor(
         return cells
     }
 
+    /**
+     * `WifiManager.getConnectionInfo()`, the one call that still gives the network's
+     * name un-redacted, and a location read in Android's eyes: with a permission that
+     * lets the identity through, only while the app is on screen, and at most once a
+     * minute. Null when it may not be read now. The callers that can take the
+     * transport info from the network's capabilities do so first; this is their
+     * fallback (a VPN on top of Wi-Fi hides the Wi-Fi's transport info).
+     */
+    @Suppress("DEPRECATION")
+    private fun wifiConnectionInfo(): WifiInfo? {
+        if (!LocationGatedReads.locationReadAllowed(canReadWifiIdentity(), appVisibility.visible)) return null
+        val now = SystemClock.elapsedRealtime()
+        if (wifiInfoReadAtMillis != 0L && now - wifiInfoReadAtMillis < CELL_INFO_MAX_AGE_MILLIS) return cachedWifiInfo
+        val info = try {
+            context.applicationContext.getSystemService(WifiManager::class.java)?.connectionInfo
+        } catch (_: SecurityException) {
+            null
+        }
+        wifiInfoReadAtMillis = now
+        cachedWifiInfo = info
+        return info
+    }
+
     @Suppress("DEPRECATION") // CellInfoCdma is deprecated but still emitted on legacy networks
     private fun cellInfoNetworkTypeLabel(cellInfo: CellInfo): String? {
         return when (cellInfo) {
@@ -2190,7 +2211,7 @@ class SystemStatsRepositoryImpl @Inject constructor(
 
         return try {
             @Suppress("DEPRECATION")
-            val readings = telephonyManager.allCellInfo?.mapNotNull { cellInfoDbm(it) } ?: emptyList()
+            val readings = cellInfo(telephonyManager)?.mapNotNull { cellInfoDbm(it) } ?: return UNAVAILABLE_INT
             SystemStatsParser.filterValidDbm(readings).maxOrNull() ?: UNAVAILABLE_INT
         } catch (_: SecurityException) {
             UNAVAILABLE_INT

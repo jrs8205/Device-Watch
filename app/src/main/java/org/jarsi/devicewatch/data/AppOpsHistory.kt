@@ -7,7 +7,15 @@ package org.jarsi.devicewatch.data
  * `dumpsys appops --history --include-discrete 0`, the same record the system's
  * Privacy dashboard shows.
  */
-data class AppOpsHistory(val accesses: List<AppOpAccess>)
+data class AppOpsHistory(
+    val accesses: List<AppOpAccess>,
+    /**
+     * Android 12 to 15 keep the record by the minute: a length is rounded up to
+     * whole minutes, uses within one minute are written once, and refusals are not
+     * written at all. The page says so and prints lengths as "about N min".
+     */
+    val minuteQuantized: Boolean = false,
+)
 
 /** One line of the record: one app, one operation, one moment. */
 data class AppOpAccess(
@@ -73,9 +81,12 @@ enum class OpFlag(internal val code: String) {
             text.split('|').mapNotNull { code -> entries.firstOrNull { it.code == code.trim() } }.toSet()
 
         /**
-         * What the system's own Privacy dashboard counts: the app itself and the trusted
-         * system components acting for it. A proxy's own line would count a use twice,
-         * and an untrusted proxy's word is not taken.
+         * The flags the system's own Privacy dashboard asks the record for
+         * (`OP_FLAGS_ALL_TRUSTED`): the app itself, a trusted system component acting
+         * for another app, and the app that component acted for. A use made through a
+         * trusted proxy is therefore on record twice, once on the proxy (`tp`) and once
+         * on the app it was for (`tpd`), and the page lists both, as the record does.
+         * An untrusted proxy's word, either way round, is not taken.
          */
         val TRUSTED: Set<OpFlag> = setOf(SELF, TRUSTED_PROXY, TRUSTED_PROXIED)
     }

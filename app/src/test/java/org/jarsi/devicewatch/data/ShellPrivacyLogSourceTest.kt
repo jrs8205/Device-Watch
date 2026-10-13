@@ -30,12 +30,14 @@ class ShellPrivacyLogSourceTest {
     private fun source(
         shell: PrivilegedShell,
         settings: AppSettingsRepository = FakeAppSettingsRepository(access = PrivilegedAccess.SHIZUKU),
+        sdk: Int = 37,
     ) = ShellPrivacyLogSource(
         settings, shell,
         screenOn = { screenOn },
         now = { now },
         zone = { ZoneId.of("Europe/Helsinki") },
         label = { uid, pkg -> "$pkg/$uid" },
+        sdk = sdk,
     )
 
     @Test
@@ -58,10 +60,25 @@ class ShellPrivacyLogSourceTest {
     }
 
     @Test
-    fun `a dump without the record says this Android keeps none`() {
-        val read = source(ScriptedShell("Current AppOps Service state:\n  Settings:\n")).read()!!
+    fun `on Android 11 and older nothing is asked, and the answer says this Android keeps no record`() {
+        val shell = ScriptedShell(table)
+        val read = source(shell, sdk = 30).read()!!
         assertThat(read.unsupported).isTrue()
         assertThat(read.log).isNull()
+        assertThat(shell.commands).isEmpty()
+        assertThat(source(ScriptedShell(table), sdk = 31).read()!!.unsupported).isFalse()
+    }
+
+    @Test
+    fun `a dump this Android should have but the parser cannot read is a failed read, not an empty record`() {
+        val shell = ScriptedShell("Current AppOps Service state:\n  Settings:\n")
+        val source = source(shell)
+        assertThat(source.read()).isNull()
+        assertThat(shell.commands).hasSize(1)
+        // And it is not asked again within the interval, like any failed read.
+        now += 5_000L
+        assertThat(source.read()).isNull()
+        assertThat(shell.commands).hasSize(1)
     }
 
     @Test

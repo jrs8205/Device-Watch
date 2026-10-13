@@ -1,6 +1,7 @@
 package org.jarsi.devicewatch.data
 
 import android.content.Context
+import android.os.Build
 import android.os.PowerManager
 import android.os.Process
 import android.os.SystemClock
@@ -14,13 +15,13 @@ import javax.inject.Singleton
 data class PrivacyLogRead(
     /** The record, built for the page; null when this Android keeps none. */
     val log: PrivacyLog?,
-    /** This Android (11 or older) has no record of discrete accesses to show. */
+    /** This Android (11 or older) keeps no record of discrete accesses to show. */
     val unsupported: Boolean,
 )
 
 /** Android's record of private things used, as the privileged shell reads it. Blocking: never call on the main thread. */
 interface PrivacyLogSource {
-    /** The latest read; null when extended access is off, or the shell did not answer. */
+    /** The latest read; null when extended access is off, or the shell did not answer, or the dump could not be read. */
     fun read(): PrivacyLogRead?
 }
 
@@ -29,7 +30,8 @@ interface PrivacyLogSource {
  * [PrivilegedShell] is selected, Shizuku or root, on the [ShellBatteryUsageSource]
  * pattern: nothing while access is off, nothing new with the screen off, and one
  * dump at most every [MIN_INTERVAL_MILLIS], since a page that refreshes often
- * would otherwise have the system print its whole record each time.
+ * would otherwise have the system print its whole record each time. Android 11 and
+ * older keep no such record, so there nothing is asked at all.
  */
 @Singleton
 class ShellPrivacyLogSource internal constructor(
@@ -39,6 +41,7 @@ class ShellPrivacyLogSource internal constructor(
     private val now: () -> Long,
     private val zone: () -> ZoneId,
     private val label: (Int, String) -> String,
+    private val sdk: Int,
 ) : PrivacyLogSource {
 
     @Inject
@@ -53,6 +56,7 @@ class ShellPrivacyLogSource internal constructor(
         now = SystemClock::elapsedRealtime,
         zone = ZoneId::systemDefault,
         label = PackageLabels(context)::label,
+        sdk = Build.VERSION.SDK_INT,
     )
 
     private var cached: PrivacyLogRead? = null
@@ -69,23 +73,30 @@ class ShellPrivacyLogSource internal constructor(
             attemptedAtMillis = 0L
         }
         if (access == PrivilegedAccess.OFF) return null
+        if (sdk < FIRST_SDK_WITH_RECORD) return UNSUPPORTED
         // Nobody sees the page under a locked screen; the last read stands and the shell is left alone.
         if (!screenOn()) return cached
         val time = now()
         if (attemptedAtMillis != 0L && time - attemptedAtMillis < MIN_INTERVAL_MILLIS) return cached
         attemptedAtMillis = time
         val dump = shell.run(COMMAND, DUMP_TIMEOUT_MILLIS)
-        cached = dump?.let { output ->
-            val history = AppOpsHistoryParser.parse(output, zone())
-            PrivacyLogRead(log = history?.let { PrivacyLogBuilder.build(it, label) }, unsupported = history == null)
-        }
+        // A dump this Android should have but the parser could not read (a layout not
+        // met before, a dump cut short) is a failed read, not an empty record.
+        cached = dump?.let(::parse)?.let { history -> PrivacyLogRead(log = PrivacyLogBuilder.build(history, label), unsupported = false) }
         return cached
     }
+
+    private fun parse(output: String): AppOpsHistory? = AppOpsHistoryParser.parse(output, zone())
 
     companion object {
         internal const val COMMAND = "dumpsys appops --history --include-discrete 0"
         internal const val MIN_INTERVAL_MILLIS = 30_000L
         private const val DUMP_TIMEOUT_MILLIS = 10_000L
+
+        /** Android 12: the first with a record of discrete accesses (and a Privacy dashboard). */
+        internal const val FIRST_SDK_WITH_RECORD = Build.VERSION_CODES.S
+
+        private val UNSUPPORTED = PrivacyLogRead(log = null, unsupported = true)
     }
 }
 

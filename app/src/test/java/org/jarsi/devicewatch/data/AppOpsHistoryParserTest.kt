@@ -89,10 +89,13 @@ class AppOpsHistoryParserTest {
             abc|com.example.cam|default:0|CAMERA|null|2026-10-12 09:36:03.307|1|0|0|top|s|-1|0
             10171|com.example.cam|default:0||null|2026-10-12 09:36:03.307|1|0|0|top|s|-1|0
             some other line entirely
-
             10172|com.example.mic|default:0|RECORD_AUDIO|voice|2026-10-12 09:40:00.000|0|0|2500|fgsvc|tpd|7|1
+
+            Some later section:
+            10173|com.example.later|default:0|CAMERA|null|2026-10-12 09:50:00.000|1|0|0|top|s|-1|0
         """.trimIndent()
         val rows = parse(dump)
+        // The table ends at the blank line: the later section's row, same width, is not read.
         assertThat(rows).hasSize(2)
         assertThat(rows[1].attributionTag).isEqualTo("voice")
         assertThat(rows[1].flags).containsExactly(OpFlag.TRUSTED_PROXIED)
@@ -213,5 +216,66 @@ class AppOpsHistoryParserTest {
         assertThat(UidState.of("")).isEqualTo(UidState.UNKNOWN)
         assertThat(UidState.CACHED.background).isTrue()
         assertThat(UidState.FOREGROUND_SERVICE.background).isFalse()
+    }
+
+    @Test
+    fun `a layout without a count column is one use per row, a length row its length`() {
+        val dump = """
+            UID|PACKAGE_NAME|DEVICE_ID|OP_NAME|ATTRIBUTION_TAG|UID_STATE|OP_FLAGS|ATTRIBUTION_FLAGS|CHAIN_ID|ACCESS_TIME|DURATION
+            10171|com.example.cam|default:0|CAMERA|null|top|s|0|-1|2026-10-12 09:36:03.307|-1
+            10171|com.example.cam|default:0|CAMERA|null|top|s|0|-1|2026-10-12 09:36:03.307|1863
+        """.trimIndent()
+        val rows = parse(dump)
+        assertThat(rows).hasSize(2)
+        assertThat(rows[0].accessCount).isEqualTo(1)
+        assertThat(rows[0].durationMillis).isEqualTo(0L)
+        assertThat(rows[0].rejectCount).isEqualTo(0)
+        assertThat(rows[1].accessCount).isEqualTo(0)
+        assertThat(rows[1].durationMillis).isEqualTo(1_863L)
+        assertThat(AppOpsHistoryParser.parse(dump, helsinki)!!.minuteQuantized).isFalse()
+    }
+
+    @Test
+    fun `negative counters read as none`() {
+        val dump = """
+            UID|PACKAGE_NAME|OP_NAME|ACCESS_TIME|ACCESS_COUNTS|REJECT_COUNTS|DURATION
+            10171|com.example.cam|CAMERA|2026-10-12 09:36:03.307|-1|-1|-1
+        """.trimIndent()
+        val row = parse(dump).single()
+        assertThat(row.accessCount).isEqualTo(0)
+        assertThat(row.rejectCount).isEqualTo(0)
+        assertThat(row.durationMillis).isEqualTo(0L)
+    }
+
+    @Test
+    fun `digits of another script read as digits`() {
+        // Persian digits, as a phone set to Persian prints them.
+        val persian = "\u06F1\u06F0\u06F1\u06F7\u06F1|com.example.cam|CAMERA|\u06F2\u06F0\u06F2\u06F6-\u06F1\u06F0-\u06F1\u06F2 \u06F0\u06F9:\u06F3\u06F6:\u06F0\u06F3.\u06F3\u06F0\u06F7|\u06F1"
+        val dump = "UID|PACKAGE_NAME|OP_NAME|ACCESS_TIME|ACCESS_COUNTS\n$persian"
+        val row = parse(dump).single()
+        assertThat(row.uid).isEqualTo(10171)
+        assertThat(row.timeMillis).isEqualTo(at("2026-10-12 09:36:03.307"))
+        assertThat(row.accessCount).isEqualTo(1)
+        val tree = "Discrete accesses:\n  Uid: \u06F1\u06F0\u06F1\u06F4\u06F4\n    Package: com.android.camera2\n      CAMERA\n        Attribution: null\n          Access [top-s] at \u06F2\u06F0\u06F2\u06F6-\u06F1\u06F0-\u06F1\u06F3 \u06F0\u06F5:\u06F0\u06F1:\u06F0\u06F0.\u06F0\u06F0\u06F0"
+        assertThat(parse(tree).single().uid).isEqualTo(10144)
+        assertThat(AppOpsHistoryParser.asciiDigits("abc")).isEqualTo("abc")
+    }
+
+    @Test
+    fun `the tree is marked as kept by the minute, the table is not`() {
+        assertThat(AppOpsHistoryParser.parse(AppOpsFixtures.EMULATOR_API34_TREE, helsinki)!!.minuteQuantized).isTrue()
+        assertThat(AppOpsHistoryParser.parse(AppOpsFixtures.PIXEL_8A_TABLE, helsinki)!!.minuteQuantized).isFalse()
+    }
+
+    @Test
+    fun `a table under the tree's heading with a header the parser does not know is not read as empty`() {
+        val dump = """
+            Discrete accesses:
+              SOMETHING|ELSE|ENTIRELY|HERE|NOW
+              10171|com.example.cam|26|1760000000000|1
+        """.trimIndent()
+        assertThat(AppOpsHistoryParser.parse(dump, helsinki)).isNull()
+        // The heading alone, with nothing under it, is an empty record.
+        assertThat(AppOpsHistoryParser.parse("Discrete accesses:\n  Largest chain id: 0\n", helsinki)!!.accesses).isEmpty()
     }
 }

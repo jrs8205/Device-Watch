@@ -19,8 +19,10 @@ internal object LocationGatedReads {
 
     /**
      * `getServiceState`: from API 33 the call can be asked to leave the location
-     * out, which Android then does not check; before that it is a location read
-     * like the others.
+     * out, which Android then does not check. Before API 31 there is no record for
+     * a refusal to land in, so nothing is gained by waiting. On 31 and 32 the call
+     * is a location read like the others.
      */
-    fun serviceStateAllowed(sdk: Int, appVisible: Boolean): Boolean = sdk >= Build.VERSION_CODES.TIRAMISU || appVisible
+    fun serviceStateAllowed(sdk: Int, appVisible: Boolean): Boolean =
+        sdk >= Build.VERSION_CODES.TIRAMISU || sdk < Build.VERSION_CODES.S || appVisible
 }

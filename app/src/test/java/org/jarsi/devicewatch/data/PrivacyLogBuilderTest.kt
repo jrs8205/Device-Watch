@@ -21,6 +21,9 @@ class PrivacyLogBuilderTest {
 
     private fun build(vararg lines: AppOpAccess) = PrivacyLogBuilder.build(AppOpsHistory(lines.toList())) { uid, pkg -> "$pkg#$uid" }
 
+    private fun at(text: String): Long =
+        java.time.LocalDateTime.parse(text.replace(' ', 'T')).atZone(ZoneId.of("Europe/Helsinki")).toInstant().toEpochMilli()
+
     @Test
     fun `operations sort into their sensors`() {
         assertThat(PrivacyOps.sensorOf("CAMERA")).isEqualTo(PrivacySensor.CAMERA)
@@ -192,10 +195,16 @@ class PrivacyLogBuilderTest {
         assertThat(self.lastRejectedMillis).isGreaterThan(self.lastMillis)
         assertThat(self.ops).containsExactly("FINE_LOCATION", "COARSE_LOCATION")
         // Three of the weather app's five location reads came from the background or from a cached process.
+        // Four coarse reads count; its MONITOR_LOCATION line is listed but not counted.
         val weather = location.apps.first { it.packageName == "com.google.android.apps.weather" }
-        assertThat(weather.accesses).isEqualTo(5)
-        assertThat(weather.backgroundAccesses).isEqualTo(3)
+        assertThat(weather.accesses).isEqualTo(4)
+        assertThat(weather.backgroundAccesses).isEqualTo(2)
         assertThat(weather.durationMillis).isEqualTo(1_016L)
+        assertThat(weather.ops).containsExactly("COARSE_LOCATION", "MONITOR_LOCATION")
+        // One geotag is one use, not four: FINE_LOCATION counts, GPS and the two MONITOR ops come along.
+        val cameraLocation = location.apps.first { it.packageName == "com.google.android.GoogleCamera" }
+        assertThat(cameraLocation.events.count { it.timeMillis in at("2026-10-12 09:36:03.000")..at("2026-10-12 09:36:04.000") && it.allowed }).isEqualTo(4)
+        assertThat(cameraLocation.accesses).isEqualTo(cameraLocation.events.count { it.op == "FINE_LOCATION" && it.count > 0 })
 
         assertThat(log.sensor(PrivacySensor.MICROPHONE).empty).isTrue()
         // Accessibility services bind and are allowed; the contacts app asked for device identifiers and was refused every time.
@@ -203,5 +212,51 @@ class PrivacyLogBuilderTest {
         assertThat(other.apps.map { it.ops }.flatten()).containsExactly("BIND_ACCESSIBILITY_SERVICE")
         assertThat(other.denied.single().ops).containsExactly("READ_DEVICE_IDENTIFIERS")
         assertThat(log.oldestMillis).isLessThan(log.newestMillis)
+    }
+
+    @Test
+    fun `location monitoring is listed with the events but not counted as a use`() {
+        val log = build(
+            line(op = "FINE_LOCATION", time = 1_000L),
+            line(op = "MONITOR_LOCATION", time = 1_000L),
+            line(op = "MONITOR_HIGH_POWER_LOCATION", time = 1_000L),
+            line(op = "GPS", time = 1_000L),
+            line(op = "GPS", time = 1_000L, count = 0, duration = 14L),
+            line(packageName = "com.example.listener", op = "MONITOR_LOCATION", time = 5_000L, state = UidState.BACKGROUND),
+        )
+        val location = log.sensor(PrivacySensor.LOCATION)
+        val app = location.apps.first { it.packageName == "com.example.one" }
+        assertThat(app.accesses).isEqualTo(1)
+        assertThat(app.events.count { it.allowed }).isEqualTo(4)
+        assertThat(app.ops).hasSize(4)
+        assertThat(app.monitoringOnly).isFalse()
+        // An app that only ever listened is still listed, latest first, as monitoring only.
+        val listener = location.apps.first { it.packageName == "com.example.listener" }
+        assertThat(listener.accesses).isEqualTo(0)
+        assertThat(listener.backgroundAccesses).isEqualTo(0)
+        assertThat(listener.lastMillis).isEqualTo(5_000L)
+        assertThat(listener.monitoringOnly).isTrue()
+        assertThat(location.denied).isEmpty()
+        assertThat(location.apps.first()).isSameInstanceAs(listener)
+    }
+
+    @Test
+    fun `lines at one moment in different states stay apart, so foreground use is never called background`() {
+        val log = build(
+            line(time = 5_000L, count = 1, state = UidState.TOP),
+            line(time = 5_000L, count = 0, duration = 60_000L, state = UidState.BACKGROUND),
+        )
+        val app = log.sensor(PrivacySensor.CAMERA).apps.single()
+        assertThat(app.events).hasSize(2)
+        assertThat(app.accesses).isEqualTo(1)
+        assertThat(app.backgroundAccesses).isEqualTo(0)
+        assertThat(app.durationMillis).isEqualTo(60_000L)
+    }
+
+    @Test
+    fun `a record kept by the minute says so`() {
+        val quantized = PrivacyLogBuilder.build(AppOpsHistory(listOf(line()), minuteQuantized = true)) { _, p -> p }
+        assertThat(quantized.minuteQuantized).isTrue()
+        assertThat(build(line()).minuteQuantized).isFalse()
     }
 }

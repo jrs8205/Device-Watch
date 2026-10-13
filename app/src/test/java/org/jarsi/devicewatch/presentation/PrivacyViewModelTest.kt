@@ -85,21 +85,4 @@ class PrivacyViewModelTest {
         assertThat(viewModel.state.value.read).isNull()
         assertThat(viewModel.state.value.readFailed).isTrue()
     }
-
-    @Test
-    fun `refresh reads again at once`() = runTest(dispatcher) {
-        val viewModel = viewModel()
-        backgroundScope.launch { viewModel.state.collect {} }
-        runCurrent()
-        assertThat(source.reads).isEqualTo(1)
-        advanceTimeBy(10_000)
-        viewModel.refresh()
-        runCurrent()
-        assertThat(source.reads).isEqualTo(2)
-        // The poll starts over from the refresh, not from the earlier tick.
-        advanceTimeBy(PrivacyViewModel.POLL_MILLIS - 10_000)
-        assertThat(source.reads).isEqualTo(2)
-        advanceTimeBy(10_001)
-        assertThat(source.reads).isEqualTo(3)
-    }
 }

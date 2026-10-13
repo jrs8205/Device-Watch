@@ -14,12 +14,15 @@ class LocationGatedReadsTest {
     }
 
     @Test
-    fun `the service state is read anywhere from API 33, before that only on screen`() {
+    fun `the service state is read anywhere from API 33 and before 31, on 31 and 32 only on screen`() {
         assertThat(LocationGatedReads.serviceStateAllowed(sdk = 33, appVisible = false)).isTrue()
         assertThat(LocationGatedReads.serviceStateAllowed(sdk = 36, appVisible = false)).isTrue()
         assertThat(LocationGatedReads.serviceStateAllowed(sdk = 32, appVisible = false)).isFalse()
+        assertThat(LocationGatedReads.serviceStateAllowed(sdk = 31, appVisible = false)).isFalse()
         assertThat(LocationGatedReads.serviceStateAllowed(sdk = 32, appVisible = true)).isTrue()
-        assertThat(LocationGatedReads.serviceStateAllowed(sdk = 26, appVisible = false)).isFalse()
+        // No privacy record before Android 12: nothing to keep out of.
+        assertThat(LocationGatedReads.serviceStateAllowed(sdk = 30, appVisible = false)).isTrue()
+        assertThat(LocationGatedReads.serviceStateAllowed(sdk = 26, appVisible = false)).isTrue()
     }
 
     @Test
