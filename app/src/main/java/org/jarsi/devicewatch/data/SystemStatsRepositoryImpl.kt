@@ -91,6 +91,7 @@ class SystemStatsRepositoryImpl @Inject constructor(
     @DefaultDispatcher private val dispatcher: CoroutineDispatcher,
     private val settings: AppSettingsRepository,
     private val privilegedShell: PrivilegedShell,
+    private val appVisibility: AppVisibility,
 ) : SystemStatsRepository {
 
     // CPU load needs to compare two samples over time. These snapshots persist across
@@ -729,9 +730,9 @@ class SystemStatsRepositoryImpl @Inject constructor(
 
     @RequiresApi(Build.VERSION_CODES.Q)
     private fun readRegisteredBands(telephony: TelephonyManager): String? {
-        if (context.checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION) !=
-            PackageManager.PERMISSION_GRANTED
-        ) {
+        // A location read in Android's eyes: only while the app is on screen, or
+        // Android refuses it and logs the app as trying from the background.
+        if (!LocationGatedReads.cellInfoAllowed(hasPermission(Manifest.permission.ACCESS_FINE_LOCATION), appVisibility.visible)) {
             return null
         }
         val cells = try {
@@ -2061,9 +2062,19 @@ class SystemStatsRepositoryImpl @Inject constructor(
         if (!hasPermission(Manifest.permission.READ_PHONE_STATE)) {
             return UNAVAILABLE_TEXT
         }
+        // Android treats the service state as a location read: refused, and written
+        // into its privacy log against this app, whenever the app is not on screen.
+        // From API 33 the call can leave the location out and is allowed anywhere.
+        if (!LocationGatedReads.serviceStateAllowed(Build.VERSION.SDK_INT, appVisibility.visible)) {
+            return UNAVAILABLE_TEXT
+        }
 
         val serviceState = try {
-            telephonyManager.serviceState
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                telephonyManager.getServiceState(TelephonyManager.INCLUDE_LOCATION_DATA_NONE)
+            } else {
+                telephonyManager.serviceState
+            }
         } catch (_: SecurityException) {
             null
         } ?: return UNAVAILABLE_TEXT
@@ -2097,7 +2108,8 @@ class SystemStatsRepositoryImpl @Inject constructor(
     }
 
     private fun readCellInfoNetworkTypeLabel(telephonyManager: TelephonyManager): String {
-        if (!hasPermission(Manifest.permission.ACCESS_FINE_LOCATION)) {
+        // As in readRegisteredBands: a location read, allowed only on screen.
+        if (!LocationGatedReads.cellInfoAllowed(hasPermission(Manifest.permission.ACCESS_FINE_LOCATION), appVisibility.visible)) {
             return UNAVAILABLE_TEXT
         }
 
