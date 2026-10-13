@@ -140,4 +140,60 @@ Discrete accesses:
           Access [top-s] at 2026-10-13 05:01:00.000 attribution flags=1 with chainId=-1
           Access [top-s] at 2026-10-13 05:01:00.000 for 60000 milliseconds  attribution flags=1 with chainId=-1
 """.trimIndent()
+
+    /**
+     * Android 16 emulator (API 36, `google_apis`); read 2026-10-13 15:33 (the emulator's clock is UTC).
+     * Still the tree, with a `Device:` level between the operation and its attributions, times to the
+     * millisecond and lengths as measured. The camera was refused once while this was read (its op
+     * set to ignore, "Can't connect to the camera" on screen) and no line of it was written.
+     */
+    val EMULATOR_API36_TREE = """
+        Uid u0a212:
+          Package com.google.android.cellbroadcastreceiver:
+            Attribution null:
+              USE_ICC_AUTH_WITH_DEVICE_IDENTIFIER:
+                [bg-s] = reject=9
+  Empty
+Discrete accesses:
+  Largest chain id: 0
+  Uid: 1000
+    Package: android
+      COARSE_LOCATION
+        Device: default:0
+          Attribution: null
+            Access [pers-s] at 2026-10-13 15:26:38.143
+            Access [pers-s] at 2026-10-13 15:26:53.318
+      FINE_LOCATION
+        Device: default:0
+          Attribution: null
+            Access [pers-s] at 2026-10-13 15:30:50.262
+          Attribution: SensorNotificationService
+            Access [pers-s] at 2026-10-13 15:30:50.242
+  Uid: 10145
+    Package: com.google.android.gms
+      FINE_LOCATION
+        Device: default:0
+          Attribution: network_location_provider
+            Access [fg-s] at 2026-10-13 15:26:59.583
+          Attribution: com.google.android.gms.personalsafety
+            Access [fg-s] at 2026-10-13 15:30:50.372
+          Attribution: com.google.android.gms.gcm
+            Access [fg-s] at 2026-10-13 15:27:20.839
+          Attribution: nearby_connections
+            Access [fg-s] at 2026-10-13 15:27:09.266
+  Uid: 10154
+    Package: com.android.camera2
+      FINE_LOCATION
+        Device: default:0
+          Attribution: null
+            Access [top-s] at 2026-10-13 15:30:50.180
+            Access [top-s] at 2026-10-13 15:31:01.688
+      CAMERA
+        Device: default:0
+          Attribution: null
+            Access [top-s] at 2026-10-13 15:30:47.442
+            Access [top-s] at 2026-10-13 15:30:47.442 for 15290 milliseconds
+            Access [top-s] at 2026-10-13 15:31:26.349
+            Access [top-s] at 2026-10-13 15:31:26.349 for 6224 milliseconds
+""".trimIndent()
 }

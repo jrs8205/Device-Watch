@@ -14,7 +14,7 @@ class AppOpsHistoryParserTest {
 
     private fun parse(output: String) = AppOpsHistoryParser.parse(output, helsinki)!!.accesses
 
-    // --- the table (Android 16 and later) ---
+    // --- the table (met on Android 17) ---
 
     @Test
     fun `reads every row of the phone's table`() {
@@ -262,9 +262,36 @@ class AppOpsHistoryParserTest {
     }
 
     @Test
-    fun `the tree is marked as kept by the minute, the table is not`() {
+    fun `reads Android 16's tree, whose device level sits between the operation and its attributions`() {
+        val utc = ZoneId.of("UTC")
+        val rows = AppOpsHistoryParser.parse(AppOpsFixtures.EMULATOR_API36_TREE, utc)!!.accesses
+        val camera = rows.filter { it.packageName == "com.android.camera2" && it.op == "CAMERA" }
+        assertThat(camera).hasSize(4)
+        assertThat(camera.map { it.accessCount }).containsExactly(1, 0, 1, 0).inOrder()
+        assertThat(camera.map { it.durationMillis }).containsExactly(0L, 15_290L, 0L, 6_224L).inOrder()
+        assertThat(camera[0].timeMillis).isEqualTo(at("2026-10-13 15:30:47.442", utc))
+        assertThat(camera.map { it.uid }.toSet()).containsExactly(10154)
+        assertThat(camera.map { it.attributionTag }.toSet()).containsExactly(null)
+        val gms = rows.filter { it.packageName == "com.google.android.gms" }
+        assertThat(gms.map { it.attributionTag }).containsExactly(
+            "network_location_provider", "com.google.android.gms.personalsafety", "com.google.android.gms.gcm", "nearby_connections",
+        ).inOrder()
+        assertThat(rows.filter { it.uid == 1000 && it.op == "FINE_LOCATION" }.map { it.attributionTag }).containsExactly(null, "SensorNotificationService")
+        // "Device: default:0" is a level, not an operation or an access.
+        assertThat(rows.map { it.op }.toSet()).containsExactly("COARSE_LOCATION", "FINE_LOCATION", "CAMERA")
+        assertThat(rows).hasSize(14)
+    }
+
+    @Test
+    fun `a tree whose every time is on the minute is kept by the minute, one with seconds or the table is not`() {
         assertThat(AppOpsHistoryParser.parse(AppOpsFixtures.EMULATOR_API34_TREE, helsinki)!!.minuteQuantized).isTrue()
+        assertThat(AppOpsHistoryParser.parse(AppOpsFixtures.EMULATOR_API36_TREE, helsinki)!!.minuteQuantized).isFalse()
         assertThat(AppOpsHistoryParser.parse(AppOpsFixtures.PIXEL_8A_TABLE, helsinki)!!.minuteQuantized).isFalse()
+        // A length that is not whole minutes gives the record away as well.
+        val secondsLong = AppOpsFixtures.EMULATOR_API34_TREE.replace("for 60000 milliseconds", "for 61500 milliseconds")
+        assertThat(AppOpsHistoryParser.parse(secondsLong, helsinki)!!.minuteQuantized).isFalse()
+        // An empty tree says nothing about how it is kept.
+        assertThat(AppOpsHistoryParser.parse("Discrete accesses:\n  Largest chain id: 0\n", helsinki)!!.minuteQuantized).isFalse()
     }
 
     @Test

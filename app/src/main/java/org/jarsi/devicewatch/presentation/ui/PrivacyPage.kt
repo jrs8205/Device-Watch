@@ -108,6 +108,7 @@ fun PrivacyPage(
             item(key = "note") {
                 Column(modifier = Modifier.padding(horizontal = BAND_INSET, vertical = 8.dp)) {
                     KernelNote(stringResource(R.string.privacy_page_note))
+                    if (log.minuteQuantized) KernelNote(stringResource(R.string.privacy_minute_note))
                     log.oldestMillis?.let { KernelNote(stringResource(R.string.privacy_span, privacyMomentText(it))) }
                 }
             }
@@ -118,6 +119,7 @@ fun PrivacyPage(
                 item(key = "sensor_${use.sensor.name}") {
                     SensorSection(
                         use = use,
+                        minuteKept = log.minuteQuantized,
                         expandedKey = expandedKey,
                         onToggle = { key -> expandedKey = if (expandedKey == key) null else key },
                     )
@@ -139,7 +141,7 @@ private fun PageNote(text: String, warn: Boolean = false) {
 }
 
 @Composable
-private fun SensorSection(use: SensorUse, expandedKey: String?, onToggle: (String) -> Unit) {
+private fun SensorSection(use: SensorUse, minuteKept: Boolean, expandedKey: String?, onToggle: (String) -> Unit) {
     SettingsSectionCard(titleRes = PrivacyPresentation.sensorNameRes(use.sensor)) {
         if (use.sensor == PrivacySensor.OTHER) KernelNote(stringResource(R.string.privacy_sensor_other_note))
         if (use.empty) {
@@ -150,7 +152,7 @@ private fun SensorSection(use: SensorUse, expandedKey: String?, onToggle: (Strin
         val sharedLabels = (use.apps + use.denied).groupBy { it.label }.filterValues { it.size > 1 }.keys
         use.apps.forEach { app ->
             val key = "${use.sensor.name}/${app.uid}/${app.packageName}"
-            AppUseRow(app, use.sensor, showPackage = app.label in sharedLabels, expanded = expandedKey == key, onToggle = { onToggle(key) })
+            AppUseRow(app, use.sensor, minuteKept, showPackage = app.label in sharedLabels, expanded = expandedKey == key, onToggle = { onToggle(key) })
         }
         if (use.denied.isNotEmpty()) {
             Spacer(modifier = Modifier.height(10.dp))
@@ -158,7 +160,7 @@ private fun SensorSection(use: SensorUse, expandedKey: String?, onToggle: (Strin
             KernelNote(stringResource(R.string.privacy_denied_note))
             use.denied.forEach { app ->
                 val key = "${use.sensor.name}/denied/${app.uid}/${app.packageName}"
-                AppUseRow(app, use.sensor, showPackage = app.label in sharedLabels, expanded = expandedKey == key, onToggle = { onToggle(key) })
+                AppUseRow(app, use.sensor, minuteKept, showPackage = app.label in sharedLabels, expanded = expandedKey == key, onToggle = { onToggle(key) })
             }
         }
     }
@@ -168,12 +170,14 @@ private fun SensorSection(use: SensorUse, expandedKey: String?, onToggle: (Strin
  * One app under one sensor: its name, what it did in sum, and on a tap every moment
  * on record. A length is told for the camera and the microphone, where it is how
  * long the sensor was on; location "monitoring" runs side by side under several
- * tags and would add up to more hours than the record spans.
+ * tags and would add up to more hours than the record spans. A copy in a work
+ * profile or another user says so under its name: it is the same package twice.
  */
 @Composable
-private fun AppUseRow(app: AppSensorUse, sensor: PrivacySensor, showPackage: Boolean, expanded: Boolean, onToggle: () -> Unit) {
+private fun AppUseRow(app: AppSensorUse, sensor: PrivacySensor, minuteKept: Boolean, showPackage: Boolean, expanded: Boolean, onToggle: () -> Unit) {
     val context = LocalContext.current
     val showDuration = sensor.hasMeaningfulDuration
+    val profile = PrivacyPresentation.profileOf(app.uid)
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -196,12 +200,13 @@ private fun AppUseRow(app: AppSensorUse, sensor: PrivacySensor, showPackage: Boo
             )
         }
         if (showPackage) KernelTechnical(app.packageName)
+        if (profile != 0) KernelTechnical(stringResource(R.string.privacy_profile, profile))
         if (sensor == PrivacySensor.OTHER) {
             KernelTechnical(app.ops.sorted().joinToString(", ") { op -> PrivacyPresentation.opNameRes(op)?.let(context::getString) ?: op })
         }
         val summary = listOfNotNull(
             pluralStringResource(R.plurals.privacy_times, app.accesses, app.accesses).takeIf { app.accesses > 0 },
-            shortDurationText(app.durationMillis).takeIf { showDuration && app.durationMillis > 0 },
+            privacyDurationText(app.durationMillis, minuteKept).takeIf { showDuration && app.durationMillis > 0 },
             app.lastMillis?.let { stringResource(R.string.privacy_last, privacyMomentText(it)) },
             // An app only ever refused has no use to date, so its latest refusal stands in.
             app.lastRejectedMillis?.takeIf { app.lastMillis == null }?.let { stringResource(R.string.privacy_last, privacyMomentText(it)) },
@@ -220,12 +225,12 @@ private fun AppUseRow(app: AppSensorUse, sensor: PrivacySensor, showPackage: Boo
                 color = if (app.rejected > 0) statusWarnColor() else MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        if (expanded) EventList(app, sensor)
+        if (expanded) EventList(app, sensor, minuteKept)
     }
 }
 
 @Composable
-private fun EventList(app: AppSensorUse, sensor: PrivacySensor) {
+private fun EventList(app: AppSensorUse, sensor: PrivacySensor, minuteKept: Boolean) {
     val zone = remember { ZoneId.systemDefault() }
     val (shown, earlier) = PrivacyPresentation.shownEvents(app.events)
     Spacer(modifier = Modifier.height(4.dp))
@@ -236,13 +241,13 @@ private fun EventList(app: AppSensorUse, sensor: PrivacySensor) {
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(top = 6.dp, bottom = 2.dp),
         )
-        events.forEach { event -> EventRow(event, sensor, showOp = sensor == PrivacySensor.OTHER || app.ops.size > 1) }
+        events.forEach { event -> EventRow(event, sensor, minuteKept, showOp = sensor == PrivacySensor.OTHER || app.ops.size > 1) }
     }
     if (earlier > 0) KernelNote(pluralStringResource(R.plurals.privacy_earlier, earlier, earlier))
 }
 
 @Composable
-private fun EventRow(event: AccessEvent, sensor: PrivacySensor, showOp: Boolean) {
+private fun EventRow(event: AccessEvent, sensor: PrivacySensor, minuteKept: Boolean, showOp: Boolean) {
     val context = LocalContext.current
     val clock = remember(event.timeMillis) { android.text.format.DateFormat.getTimeFormat(context).format(Date(event.timeMillis)) }
     Row(modifier = Modifier.padding(vertical = 3.dp), verticalAlignment = Alignment.Top) {
@@ -251,7 +256,7 @@ private fun EventRow(event: AccessEvent, sensor: PrivacySensor, showOp: Boolean)
         Column(modifier = Modifier.weight(1f)) {
             val parts = listOfNotNull(
                 pluralStringResource(R.plurals.privacy_times, event.count, event.count).takeIf { event.count > 0 },
-                shortDurationText(event.durationMillis).takeIf { sensor.hasMeaningfulDuration && event.durationMillis > 0 },
+                privacyDurationText(event.durationMillis, minuteKept).takeIf { sensor.hasMeaningfulDuration && event.durationMillis > 0 },
                 stringResource(R.string.privacy_event_background).takeIf { event.background },
                 pluralStringResource(R.plurals.privacy_refused, event.rejected, event.rejected).takeIf { event.rejected > 0 },
             )
@@ -292,6 +297,16 @@ internal fun privacyMomentText(timeMillis: Long): String {
         RelativeDay.EARLIER -> remember(timeMillis) { android.text.format.DateFormat.getDateFormat(context).format(Date(timeMillis)) } + " " + clock
     }
 }
+
+/** A use's length as the record kept it: to the second, or "about 3 min" where Android kept only whole minutes. */
+@Composable
+private fun privacyDurationText(millis: Long, minuteKept: Boolean): String =
+    if (minuteKept) {
+        val minutes = PrivacyPresentation.aboutMinutes(millis)
+        stringResource(R.string.privacy_duration_about_minutes, minutes)
+    } else {
+        shortDurationText(millis)
+    }
 
 /** "1 min 20 s", "2 s", "under a second": the lengths a camera or a recording has. */
 @Composable

@@ -57,13 +57,12 @@ The default app language is English. Finnish users get a localized app name and 
 - Optional extended access through [Shizuku](https://shizuku.rikka.app/) (no root needed) or root, both off by default, for what Android hides from ordinary apps: Android's own battery statistics on the since-charge page (drain per hour with the screen on and off and how long a full battery would last at that pace, each app's share, and what kept the phone awake, explained in plain words), the real processor load, graphics load, processor/graphics/surface temperatures, and the battery's wear, charge cycles and dates where the phone keeps them
 - Kernel page on rooted phones, opened from the Device tab's KERNEL band: each group of processor cores with its speed now, its limit and range, heat throttling in plain words, the graphics processor's speeds, compressed memory (zRAM), the kernel version, SELinux and the storage queue, and every named temperature sensor, all from what this phone's kernel reports, with no phone model assumed
 - Processor profiles on rooted phones: *Power saving* (the faster cores at most about 60 % of their top speed), *Balanced* (about 80 %), *Stock*, or *Custom* per group of cores. Only speeds the kernel lists, never above what the phone allows; the phone's own limits are saved first and written back on Stock or when root is switched off (if root no longer answers then, they last until the next restart), and a restart returns them by itself unless *Apply after restart too* is on. When Android's power management raises a limit the monitor sets it again and counts it, and it never lifts a lower limit that heat or Android hold
-- Privacy log with extended access (Shizuku or root), on the Apps tab's PRIVACY band and its page: Android's own record of which apps used the camera, the microphone and the location, when, for how long, from the background or not, and which were refused, app by app and moment by moment; the same record the system's Privacy dashboard draws on, shown and never stored. Without extended access the band offers Android's own Privacy dashboard instead
+- Privacy log with extended access (Shizuku or root), on the Apps tab's PRIVACY band and its page: Android's own record of which apps used the camera, the microphone and the location, when, for how long, from the background or not, and (on Android 17, which keeps them) which were refused, app by app and moment by moment; the same record the system's Privacy dashboard draws on, shown and never stored. Without extended access the band offers Android's own Privacy dashboard instead
 - Sleep section on the Kernel page (root): the kernel's own count of sleep attempts and failures with what stopped the last one, the wakeup sources that woke the phone most often, those that held it awake longest, and those holding it right now, in plain words with the kernel's names underneath
 - Today's screen time also appears in the widget footer, refreshed at most once a minute so the 5-second widget loop stays untouched
 - Most-opened-today list on the Apps tab, and last-opened rows show the clock time for apps used today (following the system 12/24-hour setting) with two-tier staleness colors: amber after 1 month unused, red after 3 months (Google's app-hibernation threshold) or never used
 - Special-access buttons show a green/red status dot for granted/missing access
 - Active data-SIM carrier shown next to the mobile network name on dual-SIM devices
-- Privacy dashboard shortcut for per-app location/microphone/camera usage (system view; that data is not exposed to third-party apps)
 - Interactive Android screensaver with a large clock, date, next alarm, charging status, battery percentage, voltage, temperature, and live charging power in watts
 - Screensaver clock follows the device 12/24-hour setting, with a second-aligned tick
 - Battery-level-tinted background gradient and a softly pulsing charge indicator in the screensaver
@@ -209,7 +208,7 @@ Release builds are minified with R8 and resource shrinking. The release APK is u
 
 ## Testing
 
-999 JVM unit tests (JUnit 4 + Truth; Robolectric only for the Glance render, backup-rule and
+1015 JVM unit tests (JUnit 4 + Truth; Robolectric only for the Glance render, backup-rule and
 settings-store tests) cover the pure logic behind every screen, service and widget:
 
 ```powershell
@@ -223,8 +222,8 @@ settings-store tests) cover the pure logic behind every screen, service and widg
 - **Extended access (Shizuku and root)** — `ShellSessionTest` (the shell conversation, driven
   through a real `sh`; on Windows through Git's), `PrivilegedShellTest`,
   `BatteryStatsDumpParserTest`, `PrivilegedDumpParsersTest` (parsers written against dumps from
-  real phones), `AppOpsHistoryParserTest` (Android's privacy record in both the table an Android 16+
-  prints and the tree of Android 12–15, against a Pixel 8a and an API 34 emulator),
+  real phones), `AppOpsHistoryParserTest` (Android's privacy record in both the table Android 17
+  prints and the tree of Android 12–16, against a Pixel 8a and API 34 and 36 emulators),
   `PrivacyLogBuilderTest`, `ShellPrivacyLogSourceTest`, `PrivacyPresentationTest`,
   `PrivacyViewModelTest`, `LocationGatedReadsTest` (why the app no longer appears in its own log)
 - **Kernel page and processor profiles (root)** — `KernelSysfsParserTest` (against a full read

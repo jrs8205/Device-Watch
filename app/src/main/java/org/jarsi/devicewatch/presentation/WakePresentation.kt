@@ -55,7 +55,7 @@ object WakePresentation {
         else -> null
     }
 
-    /** The sources that woke the phone from sleep, most often first. */
+    /** The sources that interrupted sleep most often (a signal while the phone was going to or in sleep), most often first. */
     fun topWakers(snapshot: WakeSnapshot, limit: Int = TOP_WAKERS): List<WakeupSource> =
         snapshot.sources.filter { it.wakeupCount > 0L }.sortedWith(compareByDescending<WakeupSource> { it.wakeupCount }.thenBy { it.index }).take(limit)
 
@@ -90,6 +90,15 @@ object WakePresentation {
         "resume_early" -> SuspendStep.RESUME_EARLY
         "resume" -> SuspendStep.RESUME
         else -> null
+    }
+
+    /** A step's plain name: the kernel's eight steps are four things to the reader. */
+    @StringRes
+    fun stepNameRes(step: SuspendStep): Int = when (step) {
+        SuspendStep.FREEZE -> R.string.kernel_sleep_step_name_freeze
+        SuspendStep.PREPARE -> R.string.kernel_sleep_step_name_prepare
+        SuspendStep.SUSPEND, SuspendStep.SUSPEND_LATE, SuspendStep.SUSPEND_NOIRQ -> R.string.kernel_sleep_step_name_suspend
+        SuspendStep.RESUME, SuspendStep.RESUME_EARLY, SuspendStep.RESUME_NOIRQ -> R.string.kernel_sleep_step_name_resume
     }
 
     /** What going wrong at a step means, in plain words. */

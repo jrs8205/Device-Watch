@@ -27,9 +27,10 @@ import org.jarsi.devicewatch.presentation.WakePresentation
 import org.jarsi.devicewatch.presentation.WakeupSourceKind
 
 /**
- * The Kernel page's sleep section: how often the phone slept and failed to, what
- * stopped it last, which sources woke it most, which held it awake longest, and
- * which are holding it now. Root only, counted since the phone started.
+ * The Kernel page's sleep section: how often the phone slept and failed to, where
+ * and on what the last attempt failed, which sources interrupted its sleep most,
+ * which held it awake longest, and which are holding it now. Root only, counted
+ * since the phone started.
  */
 @Composable
 internal fun SleepSection(wake: WakeSnapshot?, readFailed: Boolean) {
@@ -63,21 +64,35 @@ internal fun SleepSection(wake: WakeSnapshot?, readFailed: Boolean) {
     }
 }
 
+/**
+ * The attempts, then the last failure's step and device on rows of their own: the
+ * kernel updates the two independently (a failed freeze names no device, a device's
+ * refusal may be older than the last failed step), so neither stands for the other.
+ */
 @Composable
 private fun SuspendRows(stats: SuspendStats) {
+    val slept = stats.success.coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+    val failed = stats.fail.coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
     KernelRow(
         R.string.kernel_sleep_attempts,
-        stringResource(R.string.kernel_sleep_attempts_value, stats.success, stats.fail),
+        pluralStringResource(R.plurals.kernel_sleep_slept, slept, slept) + " · " + pluralStringResource(R.plurals.kernel_sleep_failed, failed, failed),
         numeric = true,
         color = if (stats.fail > stats.success) statusWarnColor() else MaterialTheme.colorScheme.onSurface,
     )
-    val blocker = stats.lastFailedDev
-    if (blocker != null) {
-        KernelRow(R.string.kernel_sleep_last_blocker, sourcePlainName(blocker))
-        if (sourcePlainName(blocker) != blocker) KernelTechnical(blocker)
-        WakePresentation.stepOf(stats.lastFailedStep)?.let { step ->
+    val stepName = stats.lastFailedStep
+    val step = WakePresentation.stepOf(stepName)
+    if (stepName != null) {
+        KernelRow(R.string.kernel_sleep_last_step, step?.let { stringResource(WakePresentation.stepNameRes(it)) } ?: stepName)
+        if (step != null) {
+            KernelTechnical(stepName)
             KernelNote(stringResource(WakePresentation.stepExplanationRes(step)))
         }
+    }
+    val device = stats.lastFailedDev
+    if (device != null) {
+        val plain = sourcePlainName(device)
+        KernelRow(R.string.kernel_sleep_last_device, plain)
+        if (plain != device) KernelTechnical(device)
     }
 }
 

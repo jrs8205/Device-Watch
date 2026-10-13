@@ -12,7 +12,7 @@ data class WakeupSource(
     val activeCount: Long,
     /** Events it signalled, held or not. */
     val eventCount: Long,
-    /** Times it was what woke the phone from sleep. */
+    /** Times it signalled while the phone was going to or in sleep, each of which aborts or ends the sleep. */
     val wakeupCount: Long,
     /** Times a timed hold ran out. */
     val expireCount: Long,

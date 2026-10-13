@@ -68,6 +68,21 @@ class PrivacyPresentationTest {
     }
 
     @Test
+    fun `a minute-kept length is whole minutes, never under one, rounded up when Android did not`() {
+        assertThat(PrivacyPresentation.aboutMinutes(60_000L)).isEqualTo(1L)
+        assertThat(PrivacyPresentation.aboutMinutes(180_000L)).isEqualTo(3L)
+        assertThat(PrivacyPresentation.aboutMinutes(90_000L)).isEqualTo(2L)
+        assertThat(PrivacyPresentation.aboutMinutes(1L)).isEqualTo(1L)
+    }
+
+    @Test
+    fun `an app's profile is the Android user its uid belongs to, zero for the owner`() {
+        assertThat(PrivacyPresentation.profileOf(10_123)).isEqualTo(0)
+        assertThat(PrivacyPresentation.profileOf(1_010_123)).isEqualTo(10)
+        assertThat(PrivacyPresentation.profileOf(1000)).isEqualTo(0)
+    }
+
+    @Test
     fun `only the latest moments are listed, with a count of the earlier ones`() {
         val events = (1..50).map { event(it.toLong()) }.sortedByDescending { it.timeMillis }
         val (shown, left) = PrivacyPresentation.shownEvents(events, limit = 40)

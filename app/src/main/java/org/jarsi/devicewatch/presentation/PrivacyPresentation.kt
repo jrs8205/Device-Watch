@@ -58,6 +58,16 @@ object PrivacyPresentation {
         return DurationParts(hours = seconds / 3_600L, minutes = seconds % 3_600L / 60L, seconds = seconds % 60L)
     }
 
+    /**
+     * A length from a minute-kept record ([PrivacyLog.minuteQuantized]) in the whole
+     * minutes Android rounded it up to; never under one, since a use that was kept
+     * at all lasted something.
+     */
+    fun aboutMinutes(millis: Long): Long = ((millis + 59_999L) / 60_000L).coerceAtLeast(1L)
+
+    /** The Android user an app's uid belongs to: 0 for the phone's owner, 10 and up for a work profile or another user. */
+    fun profileOf(uid: Int): Int = uid / 100_000
+
     /** The latest [limit] of [events] (which come latest first), and how many earlier ones were left out. */
     fun shownEvents(events: List<AccessEvent>, limit: Int = EVENTS_SHOWN): Pair<List<AccessEvent>, Int> =
         events.take(limit) to (events.size - limit).coerceAtLeast(0)

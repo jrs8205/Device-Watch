@@ -12,7 +12,9 @@ data class AppOpsHistory(
     /**
      * Android 12 to 15 keep the record by the minute: a length is rounded up to
      * whole minutes, uses within one minute are written once, and refusals are not
-     * written at all. The page says so and prints lengths as "about N min".
+     * written at all. The page says so and prints lengths as "about N min". Told
+     * by the record itself (every time on a whole minute), not by the Android version:
+     * Android 16 prints the same tree to the millisecond.
      */
     val minuteQuantized: Boolean = false,
 )

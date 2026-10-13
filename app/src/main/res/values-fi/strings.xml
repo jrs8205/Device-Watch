@@ -791,7 +791,7 @@
     <string name="privacy_section">YKSITYISYYS</string>
     <string name="privacy_title">Yksityisyysloki</string>
     <string name="privacy_open">Avaa</string>
-    <string name="privacy_open_description">Avaa yksityisyyslokin</string>
+    <string name="privacy_open_description">Avaa yksityisyysloki</string>
     <string name="privacy_band_off">Kun laajennettu käyttö on päällä (Shizuku tai root, Asetuksissa), tämä kaista näyttää Androidin omasta lokista, mikä sovellus käytti kameraa, mikrofonia ja sijaintia ja milloin. Ilman sitä Androidin oma näkymä samaan lokiin on napautuksen päässä.</string>
     <string name="privacy_reading">Luetaan Androidin lokia…</string>
     <string name="privacy_read_failed">Komentotulkki ei vastannut. Yritetään kohta uudelleen.</string>
@@ -804,6 +804,7 @@
     </plurals>
     <string name="privacy_last">viimeksi %1$s</string>
     <string name="privacy_page_note">Android pitää tätä lokia itse Yksityisyyden hallintapaneeliaan varten: mikä sovellus käytti kameraa, mikrofonia tai sijaintia, milloin, kuinka pitkään ja evättiinkö se. Device Watch lukee lokin laajennetun käytön kautta ja näyttää sen; mitään tästä ei tallenneta, viedä eikä varmuuskopioida.</string>
+    <string name="privacy_minute_note">Tämä Android pitää lokia minuutin tarkkuudella: saman minuutin käytöt lasketaan yhdeksi, kesto on täysiä minuutteja, eikä evättyjä yrityksiä kirjata lainkaan.</string>
     <string name="privacy_span">Lokissa alkaen %1$s. Kuinka kauas se ulottuu, on Androidin päätös, yleensä muutaman päivän.</string>
     <string name="privacy_empty">Lokissa ei ole vielä mitään.</string>
     <string name="privacy_sensor_camera">Kamera</string>
@@ -825,7 +826,8 @@
         <item quantity="other">%d evättyä</item>
     </plurals>
     <string name="privacy_denied_title">Evätyt yritykset</string>
-    <string name="privacy_denied_note">Sovellukset, jotka pyysivät ja saivat kieltävän vastauksen: lupa puuttui tai se on voimassa vain sovelluksen ollessa näytöllä.</string>
+    <string name="privacy_denied_note">Sovellukset, jotka pyysivät ja saivat kieltävän vastauksen: lupa puuttui tai on voimassa vain sovelluksen ollessa näytöllä, kameran tai mikrofonin pika-asetuskytkin oli pois päältä, tai Android ei myönnä kyseistä toimintoa sovelluksille lainkaan.</string>
+    <string name="privacy_profile">Työprofiili tai toinen käyttäjä (profiili %1$d)</string>
     <string name="privacy_today">tänään %1$s</string>
     <string name="privacy_yesterday">eilen %1$s</string>
     <string name="privacy_day_today">Tänään</string>
@@ -840,6 +842,7 @@
     <string name="privacy_duration_seconds">%1$d s</string>
     <string name="privacy_duration_minutes">%1$d min %2$d s</string>
     <string name="privacy_duration_hours">%1$d h %2$d min</string>
+    <string name="privacy_duration_about_minutes">noin %1$d min</string>
     <string name="privacy_op_accessibility">Esteettömyyspalvelu</string>
     <string name="privacy_op_device_identifiers">Laitetunnisteet</string>
     <string name="privacy_op_overlay">Piirto muiden sovellusten päälle</string>
@@ -856,18 +859,30 @@
     <string name="kernel_sleep_unavailable">Tämä kernel ei kerro uniyrityksiään eikä herätyslähteitään.</string>
     <string name="kernel_sleep_read_failed">Root ei vastannut viimeisimpään herätyslukuun, joten näytetään edellinen.</string>
     <string name="kernel_sleep_attempts">Uniyritykset</string>
-    <string name="kernel_sleep_attempts_value">%1$d nukkui · %2$d epäonnistui</string>
-    <string name="kernel_sleep_last_blocker">Viimeksi esti</string>
+    <plurals name="kernel_sleep_slept">
+        <item quantity="one">%d onnistuminen</item>
+        <item quantity="other">%d onnistumista</item>
+    </plurals>
+    <plurals name="kernel_sleep_failed">
+        <item quantity="one">%d epäonnistuminen</item>
+        <item quantity="other">%d epäonnistumista</item>
+    </plurals>
+    <string name="kernel_sleep_last_step">Viimeksi epäonnistui vaiheessa</string>
+    <string name="kernel_sleep_last_device">Viimeksi kieltäytyi</string>
+    <string name="kernel_sleep_step_name_freeze">Sovellusten pysäytys</string>
+    <string name="kernel_sleep_step_name_prepare">Laitteiden valmistelu</string>
+    <string name="kernel_sleep_step_name_suspend">Laitteiden sammutus</string>
+    <string name="kernel_sleep_step_name_resume">Herääminen</string>
     <string name="kernel_sleep_step_freeze">Sovelluksia ja järjestelmän prosesseja ei saatu kaikkia pysäytettyä ajoissa.</string>
     <string name="kernel_sleep_step_prepare">Jotakin laitetta ei saatu valmiiksi uneen.</string>
     <string name="kernel_sleep_step_suspend">Jonkin laitteen ajuri kieltäytyi sammumasta.</string>
     <string name="kernel_sleep_step_resume">Jokin laite epäonnistui herätessään.</string>
-    <string name="kernel_sleep_top_wakers">Herätti puhelimen useimmin</string>
+    <string name="kernel_sleep_top_wakers">Keskeytti unen useimmin</string>
     <string name="kernel_sleep_longest">Piti hereillä pisimpään</string>
     <string name="kernel_sleep_active_now">Pitää hereillä nyt</string>
     <plurals name="kernel_wakeups">
-        <item quantity="one">%d herätys</item>
-        <item quantity="other">%d herätystä</item>
+        <item quantity="one">kerran</item>
+        <item quantity="other">%d kertaa</item>
     </plurals>
     <string name="kernel_sleep_awake_total">%1$s yhteensä</string>
     <string name="kernel_sleep_held_for">%1$s tähän mennessä</string>

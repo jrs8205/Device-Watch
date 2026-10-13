@@ -814,6 +814,7 @@
     </plurals>
     <string name="privacy_last">last %1$s</string>
     <string name="privacy_page_note">Android keeps this record itself, for its Privacy dashboard: which app used the camera, the microphone or the location, when, for how long, and whether it was refused. Device Watch reads it through extended access and shows it; nothing here is stored, exported or backed up.</string>
+    <string name="privacy_minute_note">This Android keeps the record to the minute: uses within one minute count as one, a length is whole minutes, and refusals are not written down at all.</string>
     <string name="privacy_span">On record since %1$s. How far back it reaches is Android\'s choice, usually a few days.</string>
     <string name="privacy_empty">Nothing on record yet.</string>
     <string name="privacy_sensor_camera">Camera</string>
@@ -835,7 +836,8 @@
         <item quantity="other">%d refused</item>
     </plurals>
     <string name="privacy_denied_title">Refused attempts</string>
-    <string name="privacy_denied_note">Apps that asked and were told no: the permission was missing, or allowed only while the app is on screen.</string>
+    <string name="privacy_denied_note">Apps that asked and were told no: the permission was missing or allowed only while the app is on screen, the camera or microphone switch in Quick Settings was off, or Android never grants that operation to apps at all.</string>
+    <string name="privacy_profile">Work profile or another user (profile %1$d)</string>
     <string name="privacy_today">today %1$s</string>
     <string name="privacy_yesterday">yesterday %1$s</string>
     <string name="privacy_day_today">Today</string>
@@ -850,6 +852,7 @@
     <string name="privacy_duration_seconds">%1$d s</string>
     <string name="privacy_duration_minutes">%1$d min %2$d s</string>
     <string name="privacy_duration_hours">%1$d h %2$d min</string>
+    <string name="privacy_duration_about_minutes">about %1$d min</string>
     <string name="privacy_op_accessibility">Accessibility service</string>
     <string name="privacy_op_device_identifiers">Device identifiers</string>
     <string name="privacy_op_overlay">Drawing over other apps</string>
@@ -866,18 +869,30 @@
     <string name="kernel_sleep_unavailable">This kernel does not report its sleep attempts or its wakeup sources.</string>
     <string name="kernel_sleep_read_failed">Root did not answer the last wake read, so the one before is shown.</string>
     <string name="kernel_sleep_attempts">Sleep attempts</string>
-    <string name="kernel_sleep_attempts_value">%1$d slept · %2$d failed</string>
-    <string name="kernel_sleep_last_blocker">Last stopped by</string>
+    <plurals name="kernel_sleep_slept">
+        <item quantity="one">%d success</item>
+        <item quantity="other">%d successes</item>
+    </plurals>
+    <plurals name="kernel_sleep_failed">
+        <item quantity="one">%d failure</item>
+        <item quantity="other">%d failures</item>
+    </plurals>
+    <string name="kernel_sleep_last_step">Last failed at</string>
+    <string name="kernel_sleep_last_device">Last device to refuse</string>
+    <string name="kernel_sleep_step_name_freeze">Pausing apps</string>
+    <string name="kernel_sleep_step_name_prepare">Readying devices</string>
+    <string name="kernel_sleep_step_name_suspend">Powering down</string>
+    <string name="kernel_sleep_step_name_resume">Waking up</string>
     <string name="kernel_sleep_step_freeze">Apps and system processes could not all be paused in time.</string>
     <string name="kernel_sleep_step_prepare">A device could not be readied for sleep.</string>
     <string name="kernel_sleep_step_suspend">A device driver refused to power down.</string>
     <string name="kernel_sleep_step_resume">A device failed while waking back up.</string>
-    <string name="kernel_sleep_top_wakers">Woke the phone most often</string>
+    <string name="kernel_sleep_top_wakers">Interrupted sleep most often</string>
     <string name="kernel_sleep_longest">Held it awake longest</string>
     <string name="kernel_sleep_active_now">Holding it awake now</string>
     <plurals name="kernel_wakeups">
-        <item quantity="one">%d wake-up</item>
-        <item quantity="other">%d wake-ups</item>
+        <item quantity="one">once</item>
+        <item quantity="other">%d times</item>
     </plurals>
     <string name="kernel_sleep_awake_total">%1$s in all</string>
     <string name="kernel_sleep_held_for">%1$s so far</string>

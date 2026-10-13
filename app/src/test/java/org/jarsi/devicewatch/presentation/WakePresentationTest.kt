@@ -110,4 +110,12 @@ class WakePresentationTest {
         assertThat(WakePresentation.stepOf(null)).isNull()
         assertThat(SuspendStep.entries.map(WakePresentation::stepExplanationRes).toSet()).hasSize(4)
     }
+
+    @Test
+    fun `every step has a plain name, the three suspend steps and the three resume steps sharing theirs`() {
+        assertThat(SuspendStep.entries.map(WakePresentation::stepNameRes).toSet()).hasSize(4)
+        assertThat(WakePresentation.stepNameRes(SuspendStep.SUSPEND)).isEqualTo(WakePresentation.stepNameRes(SuspendStep.SUSPEND_NOIRQ))
+        assertThat(WakePresentation.stepNameRes(SuspendStep.RESUME)).isEqualTo(WakePresentation.stepNameRes(SuspendStep.RESUME_EARLY))
+        assertThat(WakePresentation.stepNameRes(SuspendStep.FREEZE)).isNotEqualTo(WakePresentation.stepNameRes(SuspendStep.PREPARE))
+    }
 }

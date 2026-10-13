@@ -9,12 +9,14 @@ import java.time.format.DateTimeParseException
  * Reads the discrete history out of `dumpsys appops --history --include-discrete 0`,
  * in either shape Android has printed it:
  *
- * - Android 16 and later: a pipe-separated table under a header row that names its
+ * - Android 17 (a Pixel 8a): a pipe-separated table under a header row that names its
  *   columns (`UID|PACKAGE_NAME|…`). Columns are found by name, so their order and
  *   any new column change nothing; a column the layout lacks has a default.
- * - Android 12 to 15: an indented tree, `Uid:` over `Package:` over the operation's
- *   name over `Attribution:` over one `Access […] at …` line per event, kept by the
- *   minute ([AppOpsHistory.minuteQuantized]).
+ * - Android 12 to 16: an indented tree, `Uid:` over `Package:` over the operation's
+ *   name over `Attribution:` over one `Access […] at …` line per event. Android 16
+ *   adds a `Device:` level above the attributions, which is passed over. Android 12
+ *   to 15 keep the tree by the minute, 16 to the millisecond; the record itself says
+ *   which ([AppOpsHistory.minuteQuantized]).
  *
  * A dump with neither shape, or with a table whose header the parser does not know,
  * answers null: the caller decides whether that means an Android too old to keep
@@ -48,10 +50,21 @@ internal object AppOpsHistoryParser {
             // Rows of a table whose header is not known: a layout this parser has not
             // met, which is not the same as an empty record.
             if (accesses.isEmpty() && lines.any { looksLikeRow(it) }) return null
-            return AppOpsHistory(accesses, minuteQuantized = true)
+            return AppOpsHistory(accesses, minuteQuantized = keptByTheMinute(accesses))
         }
         return null
     }
+
+    /**
+     * A record Android rounded to the minute has every time at :00.000 and every length
+     * in whole minutes; one kept to the millisecond gives itself away with its first
+     * odd second. Local minutes fall on epoch minutes in every zone, since no zone's
+     * offset has seconds. An empty record says nothing, and is not called quantized.
+     */
+    private fun keptByTheMinute(accesses: List<AppOpAccess>): Boolean =
+        accesses.isNotEmpty() && accesses.all { it.timeMillis % MINUTE_MILLIS == 0L && it.durationMillis % MINUTE_MILLIS == 0L }
+
+    private const val MINUTE_MILLIS = 60_000L
 
     /** The header names its columns; which comes first is its business. */
     private fun isTableHeader(line: String): Boolean {
