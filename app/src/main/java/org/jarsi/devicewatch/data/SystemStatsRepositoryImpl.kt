@@ -118,10 +118,13 @@ class SystemStatsRepositoryImpl @Inject constructor(
      */
     private var cellInfoReadAtMillis = 0L
     private var cachedCellInfo: List<CellInfo> = emptyList()
+    /** Whether the cached cell list was read with the app on screen; see [LocationGatedReads.cachedCopyUsable]. */
+    private var cachedCellInfoOnScreen = false
     private var wifiInfoReadAtMillis = 0L
     private var cachedWifiInfo: WifiInfo? = null
     /** The active network the cached Wi-Fi info was read on; another network means another read. */
     private var cachedWifiNetwork: Network? = null
+    private var cachedWifiInfoOnScreen = false
 
     /** The privileged shell as this poll may use it; see [beginShellPass]. */
     private var shellPass = ShellPass(privilegedShell, usable = false)
@@ -2192,7 +2195,10 @@ class SystemStatsRepositoryImpl @Inject constructor(
             return null
         }
         val now = SystemClock.elapsedRealtime()
-        if (LocationGatedReads.cachedReadUsable(cellInfoReadAtMillis, now, sameSource = true)) return cachedCellInfo
+        val onScreen = appVisibility.visible
+        if (LocationGatedReads.cachedCopyUsable(cellInfoReadAtMillis, now, sameSource = true, readOnScreen = cachedCellInfoOnScreen, onScreenNow = onScreen)) {
+            return cachedCellInfo
+        }
         val cells = try {
             @Suppress("DEPRECATION")
             telephony.allCellInfo.orEmpty()
@@ -2201,6 +2207,7 @@ class SystemStatsRepositoryImpl @Inject constructor(
         }
         cellInfoReadAtMillis = now
         cachedCellInfo = cells
+        cachedCellInfoOnScreen = onScreen
         return cells
     }
 
@@ -2219,7 +2226,11 @@ class SystemStatsRepositoryImpl @Inject constructor(
         if (!LocationGatedReads.locationReadAllowed(Build.VERSION.SDK_INT, canReadWifiIdentity(), appVisibility.visible)) return null
         val now = SystemClock.elapsedRealtime()
         val network = context.getSystemService(ConnectivityManager::class.java)?.activeNetwork
-        if (LocationGatedReads.cachedReadUsable(wifiInfoReadAtMillis, now, sameSource = network == cachedWifiNetwork)) return cachedWifiInfo
+        val onScreen = appVisibility.visible
+        val usable = LocationGatedReads.cachedCopyUsable(
+            wifiInfoReadAtMillis, now, sameSource = network == cachedWifiNetwork, readOnScreen = cachedWifiInfoOnScreen, onScreenNow = onScreen,
+        )
+        if (usable) return cachedWifiInfo
         val info = try {
             context.applicationContext.getSystemService(WifiManager::class.java)?.connectionInfo
         } catch (_: SecurityException) {
@@ -2228,6 +2239,7 @@ class SystemStatsRepositoryImpl @Inject constructor(
         wifiInfoReadAtMillis = now
         cachedWifiInfo = info
         cachedWifiNetwork = network
+        cachedWifiInfoOnScreen = onScreen
         return info
     }
 

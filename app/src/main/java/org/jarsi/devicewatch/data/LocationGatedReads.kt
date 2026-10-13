@@ -36,6 +36,16 @@ internal object LocationGatedReads {
         readAtMillis != 0L && nowMillis - readAtMillis < CACHE_MAX_AGE_MILLIS && sameSource
 
     /**
+     * [cachedReadUsable], and the copy must be as good as one read now: a read made
+     * off screen on Android 10–11 was refused and came back redacted (the Wi-Fi
+     * details without the name) or empty (the cell list), so it stops serving the
+     * moment the app is on screen, where the full copy may be read. A full copy read
+     * on screen goes on serving after the app leaves it.
+     */
+    fun cachedCopyUsable(readAtMillis: Long, nowMillis: Long, sameSource: Boolean, readOnScreen: Boolean, onScreenNow: Boolean): Boolean =
+        cachedReadUsable(readAtMillis, nowMillis, sameSource) && (readOnScreen || !onScreenNow)
+
+    /**
      * `getServiceState`: from API 33 the call can be asked to leave the location
      * out, which Android then does not check. Before API 31 there is no record for
      * a refusal to land in, so nothing is gained by waiting. On 31 and 32 the call

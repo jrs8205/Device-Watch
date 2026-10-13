@@ -95,6 +95,33 @@ class DashboardViewModelTest {
             settings.access = PrivilegedAccess.OFF
             advanceUntilIdle()
             assertThat(repository.deviceInfoLoads).isEqualTo(3)
+            assertThat(viewModel.uiState.value.deviceInfo?.batteryCapacityMah).isEqualTo("load 3")
+        }
+
+    @Test
+    fun `given access switched under the first read, then a fresh read follows and the stale result is dropped`() =
+        runTest(dispatcher) {
+            val settings = FakeAppSettingsRepository(access = PrivilegedAccess.OFF)
+            val repository = FakeSystemStatsRepository(sampleStats()).apply { firstDeviceInfoGate = CompletableDeferred() }
+            val viewModel = buildViewModel(repository = repository, settings = settings)
+            advanceUntilIdle()
+
+            viewModel.loadDeviceInfo()
+            advanceUntilIdle()
+            // The first read is still waiting, nothing shown yet.
+            assertThat(repository.deviceInfoLoads).isEqualTo(1)
+            assertThat(viewModel.uiState.value.deviceInfo).isNull()
+
+            // Root comes on while it waits: a second read, made with root, completes first.
+            settings.access = PrivilegedAccess.ROOT
+            advanceUntilIdle()
+            assertThat(repository.deviceInfoLoads).isEqualTo(2)
+            assertThat(viewModel.uiState.value.deviceInfo?.batteryCapacityMah).isEqualTo("load 2")
+
+            // The first read, made without root, comes back late and must not overwrite it.
+            repository.firstDeviceInfoGate!!.complete(Unit)
+            advanceUntilIdle()
+            assertThat(viewModel.uiState.value.deviceInfo?.batteryCapacityMah).isEqualTo("load 2")
         }
 
     private fun holding() = FakeCpuProfiles(
@@ -1483,9 +1510,14 @@ private class FakeSystemStatsRepository(
 
     var deviceInfoLoads = 0
 
+    /** Holds the first device-info read back until completed, so a test can switch access under it. */
+    var firstDeviceInfoGate: CompletableDeferred<Unit>? = null
+
+    /** Each read's info names its turn, so a test can tell whose result reached the screen. */
     override suspend fun getDeviceInfo(): DeviceInfo {
-        deviceInfoLoads++
-        return sampleDeviceInfo()
+        val turn = ++deviceInfoLoads
+        if (turn == 1) firstDeviceInfoGate?.await()
+        return sampleDeviceInfo().copy(batteryCapacityMah = "load $turn")
     }
 
     override suspend fun dataUsedSince(startMillis: Long): DataUsageSince =

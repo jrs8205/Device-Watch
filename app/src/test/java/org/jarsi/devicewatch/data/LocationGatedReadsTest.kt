@@ -38,6 +38,20 @@ class LocationGatedReadsTest {
     }
 
     @Test
+    fun `a copy read off screen does not serve on screen, where the full one may now be read`() {
+        // Android 10–11: the refused background read is a redacted copy (no name) or an empty cell list.
+        assertThat(LocationGatedReads.cachedCopyUsable(readAtMillis = 10_000L, nowMillis = 20_000L, sameSource = true, readOnScreen = false, onScreenNow = true)).isFalse()
+        // Off screen it is as good as it gets; on screen a full copy stays good.
+        assertThat(LocationGatedReads.cachedCopyUsable(readAtMillis = 10_000L, nowMillis = 20_000L, sameSource = true, readOnScreen = false, onScreenNow = false)).isTrue()
+        assertThat(LocationGatedReads.cachedCopyUsable(readAtMillis = 10_000L, nowMillis = 20_000L, sameSource = true, readOnScreen = true, onScreenNow = true)).isTrue()
+        // A full copy read on screen still serves the widget after the app leaves the screen.
+        assertThat(LocationGatedReads.cachedCopyUsable(readAtMillis = 10_000L, nowMillis = 20_000L, sameSource = true, readOnScreen = true, onScreenNow = false)).isTrue()
+        // The minute and the source still rule.
+        assertThat(LocationGatedReads.cachedCopyUsable(readAtMillis = 10_000L, nowMillis = 70_000L, sameSource = true, readOnScreen = true, onScreenNow = true)).isFalse()
+        assertThat(LocationGatedReads.cachedCopyUsable(readAtMillis = 10_000L, nowMillis = 20_000L, sameSource = false, readOnScreen = true, onScreenNow = true)).isFalse()
+    }
+
+    @Test
     fun `the service state is read anywhere from API 33 and before 31, on 31 and 32 only on screen`() {
         assertThat(LocationGatedReads.serviceStateAllowed(sdk = 33, appVisible = false)).isTrue()
         assertThat(LocationGatedReads.serviceStateAllowed(sdk = 36, appVisible = false)).isTrue()
