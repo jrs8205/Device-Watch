@@ -54,10 +54,16 @@ import org.jarsi.devicewatch.R
 import org.jarsi.devicewatch.data.LaunchableApp
 import org.jarsi.devicewatch.data.UsageEventAggregator
 import org.jarsi.devicewatch.presentation.AppsViewModel
+import org.jarsi.devicewatch.presentation.PrivacyState
 
-/** Apps tab: screen-time donut, top data consumers and the last-opened list. */
+/** Apps tab: the privacy band, screen-time donut, top data consumers and the last-opened list. */
 @Composable
-internal fun AppsTab(viewModel: AppsViewModel = hiltViewModel()) {
+internal fun AppsTab(
+    viewModel: AppsViewModel = hiltViewModel(),
+    privacy: PrivacyState = PrivacyState(),
+    extendedAccessOn: Boolean = false,
+    onOpenPrivacy: () -> Unit = {},
+) {
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -137,6 +143,15 @@ internal fun AppsTab(viewModel: AppsViewModel = hiltViewModel()) {
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = 24.dp),
     ) {
+        item(key = "privacy") {
+            PrivacyBand(
+                state = privacy,
+                extendedAccessOn = extendedAccessOn,
+                onOpen = onOpenPrivacy,
+                onOpenDashboard = { openPrivacyDashboard(context) },
+            )
+        }
+
         item(key = "screen_time") {
             SettingsSectionCard(
                 titleRes = R.string.screen_time_section,

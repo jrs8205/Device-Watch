@@ -205,22 +205,6 @@ internal fun SettingsTab(
         }
     }
 
-    // Android 12+ ships a Privacy Dashboard activity behind a non-SDK action string;
-    // fall back to the plain privacy settings when it is missing (OEM/older Android).
-    fun openPrivacyDashboard() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            try {
-                context.startActivity(Intent("android.settings.PRIVACY_DASHBOARD").apply {
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                })
-                return
-            } catch (_: Exception) {
-                // fall through to the generic privacy settings
-            }
-        }
-        openSpecialAccessSettings(Settings.ACTION_PRIVACY_SETTINGS)
-    }
-
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -753,16 +737,6 @@ internal fun SettingsTab(
                 fontSize = 11.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            OutlinedButton(
-                onClick = withTapHaptic { openPrivacyDashboard() },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Text(stringResource(R.string.privacy_dashboard_button), fontSize = 12.sp)
-            }
 
             Spacer(modifier = Modifier.height(10.dp))
 

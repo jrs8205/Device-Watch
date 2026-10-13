@@ -796,4 +796,66 @@
         <item quantity="one">Android raised a limit once; it was set back.</item>
         <item quantity="other">Android raised a limit %d times; each time it was set back.</item>
     </plurals>
+
+    <!-- Privacy log (extended access): the Apps tab's band and its page -->
+    <string name="privacy_section">PRIVACY</string>
+    <string name="privacy_title">Privacy log</string>
+    <string name="privacy_open">Open</string>
+    <string name="privacy_open_description">Open the privacy log</string>
+    <string name="privacy_band_off">With extended access on (Shizuku or root, in Settings) this band shows which apps used the camera, the microphone and the location, and when, from Android\'s own record. Without it, Android\'s own view of the same record is a tap away.</string>
+    <string name="privacy_reading">Reading Android\'s record…</string>
+    <string name="privacy_read_failed">The shell did not answer. Trying again in a moment.</string>
+    <string name="privacy_read_failed_stale">The shell did not answer the last read, so the one before is shown.</string>
+    <string name="privacy_unsupported">This Android keeps no record of camera, microphone and location use; Android 12 and later do.</string>
+    <string name="privacy_band_none">No use on record</string>
+    <plurals name="privacy_band_apps">
+        <item quantity="one">%d app</item>
+        <item quantity="other">%d apps</item>
+    </plurals>
+    <string name="privacy_last">last %1$s</string>
+    <string name="privacy_page_note">Android keeps this record itself, for its Privacy dashboard: which app used the camera, the microphone or the location, when, for how long, and whether it was refused. Device Watch reads it through extended access and shows it; nothing here is stored, exported or backed up.</string>
+    <string name="privacy_span">On record since %1$s. How far back it reaches is Android\'s choice, usually a few days.</string>
+    <string name="privacy_empty">Nothing on record yet.</string>
+    <string name="privacy_sensor_camera">Camera</string>
+    <string name="privacy_sensor_microphone">Microphone</string>
+    <string name="privacy_sensor_location">Location</string>
+    <string name="privacy_sensor_other">Other</string>
+    <string name="privacy_sensor_other_note">Other things Android counts as private: an accessibility service in use, device identifiers read, and the like.</string>
+    <string name="privacy_sensor_empty">No use on record.</string>
+    <plurals name="privacy_times">
+        <item quantity="one">%d time</item>
+        <item quantity="other">%d times</item>
+    </plurals>
+    <plurals name="privacy_background">
+        <item quantity="one">%d from the background</item>
+        <item quantity="other">%d from the background</item>
+    </plurals>
+    <plurals name="privacy_refused">
+        <item quantity="one">%d refused</item>
+        <item quantity="other">%d refused</item>
+    </plurals>
+    <string name="privacy_denied_title">Refused attempts</string>
+    <string name="privacy_denied_note">Apps that asked and were told no: the permission was missing, or allowed only while the app is on screen.</string>
+    <string name="privacy_today">today %1$s</string>
+    <string name="privacy_yesterday">yesterday %1$s</string>
+    <string name="privacy_day_today">Today</string>
+    <string name="privacy_day_yesterday">Yesterday</string>
+    <string name="privacy_event_background">from the background</string>
+    <plurals name="privacy_earlier">
+        <item quantity="one">and %d earlier</item>
+        <item quantity="other">and %d earlier</item>
+    </plurals>
+    <string name="privacy_toggle_events">Show or hide each use</string>
+    <string name="privacy_duration_under_second">under a second</string>
+    <string name="privacy_duration_seconds">%1$d s</string>
+    <string name="privacy_duration_minutes">%1$d min %2$d s</string>
+    <string name="privacy_duration_hours">%1$d h %2$d min</string>
+    <string name="privacy_op_accessibility">Accessibility service</string>
+    <string name="privacy_op_device_identifiers">Device identifiers</string>
+    <string name="privacy_op_overlay">Drawing over other apps</string>
+    <string name="privacy_op_body_sensors">Body sensors</string>
+    <string name="privacy_op_contacts">Contacts</string>
+    <string name="privacy_op_call_log">Call log</string>
+    <string name="privacy_op_sms">Messages</string>
+    <string name="privacy_op_calendar">Calendar</string>
 </resources>

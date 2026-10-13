@@ -15,8 +15,10 @@ import org.jarsi.devicewatch.data.NotificationLogImpl
 import org.jarsi.devicewatch.data.NotificationStats
 import org.jarsi.devicewatch.data.NotificationStatsImpl
 import org.jarsi.devicewatch.data.BatteryUsageSource
+import org.jarsi.devicewatch.data.PrivacyLogSource
 import org.jarsi.devicewatch.data.PrivilegedShell
 import org.jarsi.devicewatch.data.ShellBatteryUsageSource
+import org.jarsi.devicewatch.data.ShellPrivacyLogSource
 import org.jarsi.devicewatch.data.CpuProfileController
 import org.jarsi.devicewatch.data.CpuProfileStore
 import org.jarsi.devicewatch.data.CpuProfiles
@@ -123,6 +125,10 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindBatteryUsageSource(impl: ShellBatteryUsageSource): BatteryUsageSource
+
+    @Binds
+    @Singleton
+    abstract fun bindPrivacyLogSource(impl: ShellPrivacyLogSource): PrivacyLogSource
 
     @Binds
     @Singleton

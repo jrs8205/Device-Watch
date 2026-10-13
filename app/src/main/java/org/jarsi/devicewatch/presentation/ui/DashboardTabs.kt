@@ -59,8 +59,11 @@ import org.jarsi.devicewatch.R
 import org.jarsi.devicewatch.presentation.AppsViewModel
 import org.jarsi.devicewatch.presentation.DashboardViewModel
 import org.jarsi.devicewatch.presentation.KernelViewModel
+import org.jarsi.devicewatch.presentation.PrivacyState
+import org.jarsi.devicewatch.presentation.PrivacyViewModel
 import org.jarsi.devicewatch.presentation.KernelBandState
 import org.jarsi.devicewatch.presentation.RootStatus
+import org.jarsi.devicewatch.presentation.ShizukuStatus
 import org.jarsi.devicewatch.system.SystemMonitorService
 
 /** Doubles the selection pill so colour is never the only cue. */
@@ -84,6 +87,7 @@ fun SystemDashboardScreen(
     viewModel: DashboardViewModel = hiltViewModel(),
     appsViewModel: AppsViewModel = hiltViewModel(),
     kernelViewModel: KernelViewModel = hiltViewModel(),
+    privacyViewModel: PrivacyViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
     val view = LocalView.current
@@ -131,6 +135,15 @@ fun SystemDashboardScreen(
     BackHandler(enabled = showKernel) { showKernel = false }
     LaunchedEffect(uiState.rootStatus) {
         if (uiState.rootStatus != RootStatus.ON) showKernel = false
+    }
+
+    // Privacy log page, reached from the Apps tab's PRIVACY band. It reads through
+    // the shell, so it closes the moment extended access goes off.
+    val extendedAccessOn = uiState.rootStatus == RootStatus.ON || uiState.shizukuStatus == ShizukuStatus.ON
+    var showPrivacy by rememberSaveable { mutableStateOf(false) }
+    BackHandler(enabled = showPrivacy) { showPrivacy = false }
+    LaunchedEffect(extendedAccessOn) {
+        if (!extendedAccessOn) showPrivacy = false
     }
 
     // First-run intro state: shown until completed, and replayable from Settings.
@@ -194,6 +207,11 @@ fun SystemDashboardScreen(
 
     if (showKernel && uiState.rootStatus == RootStatus.ON) {
         KernelPage(onBack = { showKernel = false }, viewModel = kernelViewModel)
+        return
+    }
+
+    if (showPrivacy && extendedAccessOn) {
+        PrivacyPage(onBack = { showPrivacy = false }, viewModel = privacyViewModel)
         return
     }
 
@@ -315,7 +333,20 @@ fun SystemDashboardScreen(
                             onOpenSinceCharge = { showSinceCharge = true }
                         )
 
-                        DashboardTab.Apps -> AppsTab(viewModel = appsViewModel)
+                        DashboardTab.Apps -> {
+                            // The band reads the record only with extended access on, and only while shown.
+                            val privacy = if (extendedAccessOn) {
+                                privacyViewModel.state.collectAsStateWithLifecycle().value
+                            } else {
+                                PrivacyState()
+                            }
+                            AppsTab(
+                                viewModel = appsViewModel,
+                                privacy = privacy,
+                                extendedAccessOn = extendedAccessOn,
+                                onOpenPrivacy = { showPrivacy = true },
+                            )
+                        }
 
                         DashboardTab.Device -> {
                             // The band reads the kernel only on a rooted phone, and only while shown.

@@ -786,4 +786,66 @@
         <item quantity="one">Android nosti rajaa kerran; se asetettiin takaisin.</item>
         <item quantity="other">Android nosti rajaa %d kertaa; joka kerta se asetettiin takaisin.</item>
     </plurals>
+
+    <!-- Yksityisyysloki (laajennettu käyttö): Sovellukset-välilehden kaista ja sen sivu -->
+    <string name="privacy_section">YKSITYISYYS</string>
+    <string name="privacy_title">Yksityisyysloki</string>
+    <string name="privacy_open">Avaa</string>
+    <string name="privacy_open_description">Avaa yksityisyyslokin</string>
+    <string name="privacy_band_off">Kun laajennettu käyttö on päällä (Shizuku tai root, Asetuksissa), tämä kaista näyttää Androidin omasta lokista, mikä sovellus käytti kameraa, mikrofonia ja sijaintia ja milloin. Ilman sitä Androidin oma näkymä samaan lokiin on napautuksen päässä.</string>
+    <string name="privacy_reading">Luetaan Androidin lokia…</string>
+    <string name="privacy_read_failed">Komentotulkki ei vastannut. Yritetään kohta uudelleen.</string>
+    <string name="privacy_read_failed_stale">Komentotulkki ei vastannut viimeisimpään lukuun, joten näytetään edellinen.</string>
+    <string name="privacy_unsupported">Tämä Android ei pidä lokia kameran, mikrofonin ja sijainnin käytöstä; Android 12 ja uudemmat pitävät.</string>
+    <string name="privacy_band_none">Ei käyttöä lokissa</string>
+    <plurals name="privacy_band_apps">
+        <item quantity="one">%d sovellus</item>
+        <item quantity="other">%d sovellusta</item>
+    </plurals>
+    <string name="privacy_last">viimeksi %1$s</string>
+    <string name="privacy_page_note">Android pitää tätä lokia itse Yksityisyyden hallintapaneeliaan varten: mikä sovellus käytti kameraa, mikrofonia tai sijaintia, milloin, kuinka pitkään ja evättiinkö se. Device Watch lukee lokin laajennetun käytön kautta ja näyttää sen; mitään tästä ei tallenneta, viedä eikä varmuuskopioida.</string>
+    <string name="privacy_span">Lokissa alkaen %1$s. Kuinka kauas se ulottuu, on Androidin päätös, yleensä muutaman päivän.</string>
+    <string name="privacy_empty">Lokissa ei ole vielä mitään.</string>
+    <string name="privacy_sensor_camera">Kamera</string>
+    <string name="privacy_sensor_microphone">Mikrofoni</string>
+    <string name="privacy_sensor_location">Sijainti</string>
+    <string name="privacy_sensor_other">Muu</string>
+    <string name="privacy_sensor_other_note">Muuta, minkä Android laskee yksityiseksi: käytössä oleva esteettömyyspalvelu, luetut laitetunnisteet ja vastaavat.</string>
+    <string name="privacy_sensor_empty">Ei käyttöä lokissa.</string>
+    <plurals name="privacy_times">
+        <item quantity="one">%d kerta</item>
+        <item quantity="other">%d kertaa</item>
+    </plurals>
+    <plurals name="privacy_background">
+        <item quantity="one">%d taustalta</item>
+        <item quantity="other">%d taustalta</item>
+    </plurals>
+    <plurals name="privacy_refused">
+        <item quantity="one">%d evätty</item>
+        <item quantity="other">%d evättyä</item>
+    </plurals>
+    <string name="privacy_denied_title">Evätyt yritykset</string>
+    <string name="privacy_denied_note">Sovellukset, jotka pyysivät ja saivat kieltävän vastauksen: lupa puuttui tai se on voimassa vain sovelluksen ollessa näytöllä.</string>
+    <string name="privacy_today">tänään %1$s</string>
+    <string name="privacy_yesterday">eilen %1$s</string>
+    <string name="privacy_day_today">Tänään</string>
+    <string name="privacy_day_yesterday">Eilen</string>
+    <string name="privacy_event_background">taustalta</string>
+    <plurals name="privacy_earlier">
+        <item quantity="one">ja %d aiempi</item>
+        <item quantity="other">ja %d aiempaa</item>
+    </plurals>
+    <string name="privacy_toggle_events">Näytä tai piilota yksittäiset käytöt</string>
+    <string name="privacy_duration_under_second">alle sekunti</string>
+    <string name="privacy_duration_seconds">%1$d s</string>
+    <string name="privacy_duration_minutes">%1$d min %2$d s</string>
+    <string name="privacy_duration_hours">%1$d h %2$d min</string>
+    <string name="privacy_op_accessibility">Esteettömyyspalvelu</string>
+    <string name="privacy_op_device_identifiers">Laitetunnisteet</string>
+    <string name="privacy_op_overlay">Piirto muiden sovellusten päälle</string>
+    <string name="privacy_op_body_sensors">Kehon anturit</string>
+    <string name="privacy_op_contacts">Yhteystiedot</string>
+    <string name="privacy_op_call_log">Puheluloki</string>
+    <string name="privacy_op_sms">Viestit</string>
+    <string name="privacy_op_calendar">Kalenteri</string>
 </resources>
