@@ -26,6 +26,23 @@ internal object KernelCommands {
         "scaling_available_frequencies", "stats/time_in_state",
     )
 
+    /** The counters every wakeup source keeps since boot; `active_time_ms` is how long it is being held right now. */
+    val WAKEUP_FILES: List<String> = listOf(
+        "name", "active_count", "event_count", "wakeup_count", "expire_count", "active_time_ms", "total_time_ms",
+        "max_time_ms", "last_change_ms",
+    )
+
+    /** The kernel's tally of its sleep attempts, and what stopped the last failed one. */
+    val SUSPEND_FILES: List<String> = listOf(
+        "success", "fail", "failed_freeze", "failed_prepare", "failed_suspend", "failed_suspend_late", "failed_suspend_noirq",
+        "failed_resume", "failed_resume_early", "failed_resume_noirq", "last_failed_dev", "last_failed_errno", "last_failed_step",
+    )
+
+    /** The sleep section's read: every wakeup source's counters, then the suspend statistics. */
+    val WAKE_READ: String = (
+        WAKEUP_FILES.map { "/sys/class/wakeup/wakeup*/$it" } + SUSPEND_FILES.map { "/sys/power/suspend_stats/$it" }
+        ).joinToString(" ", prefix = "$GREP ")
+
     /** Written out glob by glob: `sh` on Android has no brace expansion to lean on. */
     val FULL_READ: String = (
         listOf("/proc/sys/kernel/osrelease", "/sys/fs/selinux/enforce") +

@@ -249,7 +249,7 @@ private fun WakeList(@StringRes titleRes: Int, entries: List<WakeEntry>) {
 }
 
 @StringRes
-private fun wakeCategoryExplanationRes(category: WakeCategory): Int = when (category) {
+internal fun wakeCategoryExplanationRes(category: WakeCategory): Int = when (category) {
     WakeCategory.SLEEP_INTERRUPTED -> R.string.wake_sleep_interrupted_explanation
     WakeCategory.APPS -> R.string.wake_apps_explanation
     WakeCategory.SCREEN -> R.string.wake_screen_explanation
@@ -274,7 +274,7 @@ private fun appWorkRes(work: AppWork): Int = when (work) {
 }
 
 @StringRes
-private fun wakeCategoryRes(category: WakeCategory): Int = when (category) {
+internal fun wakeCategoryRes(category: WakeCategory): Int = when (category) {
     WakeCategory.SLEEP_INTERRUPTED -> R.string.wake_sleep_interrupted
     WakeCategory.APPS -> R.string.wake_apps
     WakeCategory.SCREEN -> R.string.wake_screen

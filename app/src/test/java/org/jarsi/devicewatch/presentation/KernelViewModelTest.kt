@@ -20,6 +20,8 @@ import org.jarsi.devicewatch.data.KernelFixtures
 import org.jarsi.devicewatch.data.KernelSnapshot
 import org.jarsi.devicewatch.data.KernelSnapshotSource
 import org.jarsi.devicewatch.data.KernelSysfsParser
+import org.jarsi.devicewatch.data.WakeFixtures
+import org.jarsi.devicewatch.data.WakeSnapshot
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
@@ -35,6 +37,12 @@ class KernelViewModelTest {
         }
         override fun readCpu(): KernelSnapshot? = snapshot
         override fun readMaxFreqs(ids: Collection<CpuPolicyId>): Map<CpuPolicyId, Long>? = null
+        var wake: WakeSnapshot? = KernelSysfsParser.parseWake(WakeFixtures.PIXEL_8A_WAKE)
+        var wakeReads = 0
+        override fun readWake(): WakeSnapshot? {
+            wakeReads++
+            return wake
+        }
     }
 
     private val dispatcher: TestDispatcher = StandardTestDispatcher()

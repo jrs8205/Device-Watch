@@ -138,6 +138,7 @@ fun KernelPage(
             if (snapshot.thermalZones.isNotEmpty()) {
                 item(key = "temps") { TemperatureSection(snapshot) }
             }
+            item(key = "sleep") { SleepSection(state.wake, state.wakeReadFailed) }
         }
     }
 }

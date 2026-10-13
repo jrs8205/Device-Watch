@@ -858,4 +858,31 @@
     <string name="privacy_op_call_log">Call log</string>
     <string name="privacy_op_sms">Messages</string>
     <string name="privacy_op_calendar">Calendar</string>
+
+    <!-- Kernel page: sleep and wake-ups (root) -->
+    <string name="kernel_sleep_section">SLEEP AND WAKE-UPS</string>
+    <string name="kernel_sleep_note">Since the phone started. With the screen off the phone tries to sleep; these are the kernel\'s own counts of what woke it and what held it up.</string>
+    <string name="kernel_sleep_reading">Reading the wakeup sources…</string>
+    <string name="kernel_sleep_unavailable">This kernel does not report its sleep attempts or its wakeup sources.</string>
+    <string name="kernel_sleep_read_failed">Root did not answer the last wake read, so the one before is shown.</string>
+    <string name="kernel_sleep_attempts">Sleep attempts</string>
+    <string name="kernel_sleep_attempts_value">%1$d slept · %2$d failed</string>
+    <string name="kernel_sleep_last_blocker">Last stopped by</string>
+    <string name="kernel_sleep_step_freeze">Apps and system processes could not all be paused in time.</string>
+    <string name="kernel_sleep_step_prepare">A device could not be readied for sleep.</string>
+    <string name="kernel_sleep_step_suspend">A device driver refused to power down.</string>
+    <string name="kernel_sleep_step_resume">A device failed while waking back up.</string>
+    <string name="kernel_sleep_top_wakers">Woke the phone most often</string>
+    <string name="kernel_sleep_longest">Held it awake longest</string>
+    <string name="kernel_sleep_active_now">Holding it awake now</string>
+    <plurals name="kernel_wakeups">
+        <item quantity="one">%d wake-up</item>
+        <item quantity="other">%d wake-ups</item>
+    </plurals>
+    <string name="kernel_sleep_awake_total">%1$s in all</string>
+    <string name="kernel_sleep_held_for">%1$s so far</string>
+    <string name="wake_process_system">Android system</string>
+    <string name="wake_process_hal">Hardware service</string>
+    <string name="wake_process_other">Process %1$s</string>
+    <string name="wake_source_touch_note">Touch counts the time the screen was on: a finger on the glass keeps the phone awake by design.</string>
 </resources>

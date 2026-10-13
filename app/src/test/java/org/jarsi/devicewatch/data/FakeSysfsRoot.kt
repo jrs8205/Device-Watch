@@ -86,10 +86,15 @@ internal class FakeSysfsRoot(vararg policies: FakePolicy) : RootShell {
 
     override fun run(command: String, timeoutMillis: Long): String? = run(command, timeoutMillis, generation)
 
+    /** What the wake read prints on this pretend phone; null for a kernel without wakeup sources. */
+    var wakeOutput: String? = WakeFixtures.PIXEL_8A_WAKE
+
     override fun run(command: String, timeoutMillis: Long, wanted: Int): String? {
         if (wanted != generation) return null
         commands += command
         if (failCommands) return null
+        // The wake read is one grep over files this fake has no tree for: answered from a fixture.
+        if (command == KernelCommands.WAKE_READ) return if (loseAnswers) null else wakeOutput.orEmpty()
         val output = ArrayList<String>()
         for (statement in command.split("; ")) {
             when {

@@ -27,6 +27,7 @@ import org.jarsi.devicewatch.data.CpuProfileStatus
 import org.jarsi.devicewatch.data.CpuProfiles
 import org.jarsi.devicewatch.data.KernelSnapshot
 import org.jarsi.devicewatch.data.KernelSnapshotSource
+import org.jarsi.devicewatch.data.WakeSnapshot
 import org.jarsi.devicewatch.di.IoDispatcher
 import javax.inject.Inject
 
@@ -43,6 +44,10 @@ data class KernelPageState(
     val lastOutcome: ApplyOutcome? = null,
     /** The last apply's answer was lost while its writes may have run: the monitor settles it. */
     val outcomeAwaitsMonitor: Boolean = false,
+    /** The sleep section's last good read; null until one arrives. */
+    val wake: WakeSnapshot? = null,
+    /** The latest wake read got no answer from root. */
+    val wakeReadFailed: Boolean = false,
 )
 
 /**
@@ -87,12 +92,39 @@ class KernelViewModel @Inject constructor(
         .flowOn(dispatcher)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), Reading())
 
+    private data class WakeReading(val snapshot: WakeSnapshot? = null, val failed: Boolean = false)
+
+    @Volatile
+    private var lastGoodWake: WakeSnapshot? = null
+
+    /**
+     * The sleep section's own poll. Slower, since boot-long counters move slowly,
+     * and watched by the page alone: the band has no use for it, so a phone sitting
+     * on the Device tab never has root walk fifteen hundred files for nothing.
+     */
+    private val wakeReading: StateFlow<WakeReading> = refresh
+        .onStart { emit(Unit) }
+        .flatMapLatest {
+            flow {
+                while (true) {
+                    val read = source.readWake()
+                    if (read != null) lastGoodWake = read
+                    emit(WakeReading(lastGoodWake, failed = read == null))
+                    delay(WAKE_POLL_MILLIS)
+                }
+            }
+        }
+        .flowOn(dispatcher)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), WakeReading())
+
     private val local = MutableStateFlow(Local())
 
-    val page: StateFlow<KernelPageState> = combine(reading, profiles.status, local) { reading, status, local ->
+    val page: StateFlow<KernelPageState> = combine(reading, wakeReading, profiles.status, local) { reading, wake, status, local ->
         KernelPageState(
             snapshot = reading.snapshot,
             readFailed = reading.failed,
+            wake = wake.snapshot,
+            wakeReadFailed = wake.failed,
             status = status,
             editingCustom = local.editingCustom,
             draft = local.draft,
@@ -176,6 +208,7 @@ class KernelViewModel @Inject constructor(
 
     companion object {
         const val POLL_MILLIS = 3_000L
+        const val WAKE_POLL_MILLIS = 10_000L
         private const val STOP_TIMEOUT_MILLIS = 5_000L
     }
 }

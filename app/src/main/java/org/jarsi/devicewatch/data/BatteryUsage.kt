@@ -186,16 +186,17 @@ internal object WakeGlossary {
     private val rules: List<Pair<WakeCategory, List<String>>> = listOf(
         // Order matters: "PowerManagerService.WakeLocks" before anything matching "wake".
         WakeCategory.APPS to listOf("powermanagerservice.wakelocks"),
-        WakeCategory.SCREEN to listOf("powermanagerservice.display", "powermanager.suspendlockout"),
-        WakeCategory.SENSORS to listOf("sensor", "slpi", "sscrpcd"),
+        WakeCategory.SCREEN to listOf("powermanagerservice.display", "powermanager.suspendlockout", "drmdp", "dsim", "decon"),
+        // Audio before the sensor hub: Pixel's "sound-aoc" is the audio side of the always-on chip.
+        WakeCategory.AUDIO to listOf("audio", "sound"),
+        WakeCategory.SENSORS to listOf("sensor", "slpi", "sscrpcd", "aoc", "usf", "chre"),
         WakeCategory.WIFI to listOf("wlan", "wifi", "qcom_rx_wakelock", "dhd", "cnss", "pmo_wow"),
-        WakeCategory.BLUETOOTH to listOf("bluetooth", "hci_"),
-        WakeCategory.MODEM to listOf("modem", "mdm", "rmnet", "ipa_", "radio-interface", "qmi", "mss"),
+        WakeCategory.BLUETOOTH to listOf("bluetooth", "hci_", "btbcm", "bthal"),
+        WakeCategory.MODEM to listOf("modem", "mdm", "rmnet", "ipa_", "radio-interface", "qmi", "mss", "s5100", "cp2ap", "umts", "oem_ipc"),
         WakeCategory.ALARM to listOf("alarm", "rtc"),
         WakeCategory.NFC to listOf("nfc", "ese_spi"),
-        WakeCategory.CHARGING to listOf("battery", "charger", "usb", "wpc", "otg", "pogo"),
-        WakeCategory.INPUT to listOf("tsp", "touch", "gpio_keys", "pwrkey", "hall_ic"),
-        WakeCategory.AUDIO to listOf("audio"),
+        WakeCategory.CHARGING to listOf("battery", "charger", "usb", "wpc", "otg", "pogo", "fg_irq"),
+        WakeCategory.INPUT to listOf("tsp", "touch", "gpio_keys", "pwrkey", "hall_ic", "gti"),
         WakeCategory.LOCATION to listOf("gnss", "gps"),
     )
 

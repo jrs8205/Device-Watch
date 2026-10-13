@@ -848,4 +848,31 @@
     <string name="privacy_op_call_log">Puheluloki</string>
     <string name="privacy_op_sms">Viestit</string>
     <string name="privacy_op_calendar">Kalenteri</string>
+
+    <!-- Kernel-sivu: uni ja heräämiset (root) -->
+    <string name="kernel_sleep_section">UNI JA HERÄÄMISET</string>
+    <string name="kernel_sleep_note">Puhelimen käynnistyksestä lähtien. Näytön ollessa pois puhelin yrittää nukkua; nämä ovat kernelin omat laskurit siitä, mikä herätti sen ja mikä piti hereillä.</string>
+    <string name="kernel_sleep_reading">Luetaan herätyslähteitä…</string>
+    <string name="kernel_sleep_unavailable">Tämä kernel ei kerro uniyrityksiään eikä herätyslähteitään.</string>
+    <string name="kernel_sleep_read_failed">Root ei vastannut viimeisimpään herätyslukuun, joten näytetään edellinen.</string>
+    <string name="kernel_sleep_attempts">Uniyritykset</string>
+    <string name="kernel_sleep_attempts_value">%1$d nukkui · %2$d epäonnistui</string>
+    <string name="kernel_sleep_last_blocker">Viimeksi esti</string>
+    <string name="kernel_sleep_step_freeze">Sovelluksia ja järjestelmän prosesseja ei saatu kaikkia pysäytettyä ajoissa.</string>
+    <string name="kernel_sleep_step_prepare">Jotakin laitetta ei saatu valmiiksi uneen.</string>
+    <string name="kernel_sleep_step_suspend">Jonkin laitteen ajuri kieltäytyi sammumasta.</string>
+    <string name="kernel_sleep_step_resume">Jokin laite epäonnistui herätessään.</string>
+    <string name="kernel_sleep_top_wakers">Herätti puhelimen useimmin</string>
+    <string name="kernel_sleep_longest">Piti hereillä pisimpään</string>
+    <string name="kernel_sleep_active_now">Pitää hereillä nyt</string>
+    <plurals name="kernel_wakeups">
+        <item quantity="one">%d herätys</item>
+        <item quantity="other">%d herätystä</item>
+    </plurals>
+    <string name="kernel_sleep_awake_total">%1$s yhteensä</string>
+    <string name="kernel_sleep_held_for">%1$s tähän mennessä</string>
+    <string name="wake_process_system">Android-järjestelmä</string>
+    <string name="wake_process_hal">Laitteistopalvelu</string>
+    <string name="wake_process_other">Prosessi %1$s</string>
+    <string name="wake_source_touch_note">Kosketus laskee ajan, jonka näyttö oli päällä: sormi lasilla pitää puhelimen hereillä tarkoituksella.</string>
 </resources>

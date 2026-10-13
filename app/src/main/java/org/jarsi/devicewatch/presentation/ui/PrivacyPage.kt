@@ -188,7 +188,7 @@ private fun AppUseRow(app: AppSensorUse, sensor: PrivacySensor, expanded: Boolea
         }
         val summary = listOfNotNull(
             pluralStringResource(R.plurals.privacy_times, app.accesses, app.accesses).takeIf { app.accesses > 0 },
-            privacyDurationText(app.durationMillis).takeIf { app.durationMillis > 0 },
+            shortDurationText(app.durationMillis).takeIf { app.durationMillis > 0 },
             app.lastMillis?.let { stringResource(R.string.privacy_last, privacyMomentText(it)) },
             // An app only ever refused has no use to date, so its latest refusal stands in.
             app.lastRejectedMillis?.takeIf { app.lastMillis == null }?.let { stringResource(R.string.privacy_last, privacyMomentText(it)) },
@@ -238,7 +238,7 @@ private fun EventRow(event: AccessEvent, sensor: PrivacySensor, showOp: Boolean)
         Column(modifier = Modifier.weight(1f)) {
             val parts = listOfNotNull(
                 pluralStringResource(R.plurals.privacy_times, event.count, event.count).takeIf { event.count > 0 },
-                privacyDurationText(event.durationMillis).takeIf { event.durationMillis > 0 },
+                shortDurationText(event.durationMillis).takeIf { event.durationMillis > 0 },
                 stringResource(R.string.privacy_event_background).takeIf { event.background },
                 pluralStringResource(R.plurals.privacy_refused, event.rejected, event.rejected).takeIf { event.rejected > 0 },
             )
@@ -282,7 +282,7 @@ internal fun privacyMomentText(timeMillis: Long): String {
 
 /** "1 min 20 s", "2 s", "under a second": the lengths a camera or a recording has. */
 @Composable
-internal fun privacyDurationText(millis: Long): String {
+internal fun shortDurationText(millis: Long): String {
     val parts = PrivacyPresentation.durationParts(millis)
     return when {
         parts.underSecond -> stringResource(R.string.privacy_duration_under_second)

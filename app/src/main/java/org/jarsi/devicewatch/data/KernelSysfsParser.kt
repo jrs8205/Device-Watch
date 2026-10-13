@@ -24,6 +24,15 @@ internal object KernelSysfsParser {
     private val IO_SCHEDULER = Regex("/sys/block/(sd[a-z]|mmcblk\\d)/queue/scheduler")
     private const val OS_RELEASE = "/proc/sys/kernel/osrelease"
     private const val SELINUX = "/sys/fs/selinux/enforce"
+    private val WAKEUP = Regex(
+        "/sys/class/wakeup/wakeup(\\d{1,5})/(name|active_count|event_count|wakeup_count|expire_count|active_time_ms|" +
+            "total_time_ms|max_time_ms|last_change_ms)"
+    )
+    private val SUSPEND = Regex(
+        "/sys/power/suspend_stats/(success|fail|failed_freeze|failed_prepare|failed_suspend|failed_suspend_late|" +
+            "failed_suspend_noirq|failed_resume|failed_resume_early|failed_resume_noirq|last_failed_dev|last_failed_errno|" +
+            "last_failed_step)"
+    )
 
     /** Zone types that report something other than a temperature (Pixel: cycle count, charge level). */
     private val NOT_TEMPERATURES = setOf("battery_cycle", "soc")
@@ -108,6 +117,60 @@ internal object KernelSysfsParser {
             value.trim().toLongOrNull()?.let { result[id] = it }
         }
         return result
+    }
+
+    /**
+     * What [KernelCommands.WAKE_READ] prints. A source counts only with its name;
+     * a counter that is missing or garbled reads as zero, since the kernel keeps
+     * every one of them and a zero is what an idle source shows anyway.
+     */
+    fun parseWake(output: String): WakeSnapshot {
+        val sources = HashMap<Int, MutableMap<String, String>>()
+        val suspend = HashMap<String, String>()
+        for ((path, value) in lines(output)) {
+            WAKEUP.matchEntire(path)?.let { m ->
+                sources.getOrPut(m.groupValues[1].toInt()) { HashMap() }[m.groupValues[2]] = value.trim()
+                continue
+            }
+            SUSPEND.matchEntire(path)?.let { m -> suspend[m.groupValues[1]] = value.trim() }
+        }
+        fun Map<String, String>.count(file: String): Long = this[file]?.toLongOrNull()?.coerceAtLeast(0L) ?: 0L
+        return WakeSnapshot(
+            sources = sources.toSortedMap().mapNotNull { (index, files) ->
+                val name = files["name"]?.ifEmpty { null } ?: return@mapNotNull null
+                WakeupSource(
+                    index = index,
+                    name = name,
+                    activeCount = files.count("active_count"),
+                    eventCount = files.count("event_count"),
+                    wakeupCount = files.count("wakeup_count"),
+                    expireCount = files.count("expire_count"),
+                    activeTimeMs = files.count("active_time_ms"),
+                    totalTimeMs = files.count("total_time_ms"),
+                    maxTimeMs = files.count("max_time_ms"),
+                    lastChangeMs = files.count("last_change_ms"),
+                )
+            },
+            suspend = if (suspend.isEmpty()) {
+                null
+            } else {
+                SuspendStats(
+                    success = suspend.count("success"),
+                    fail = suspend.count("fail"),
+                    failedFreeze = suspend.count("failed_freeze"),
+                    failedPrepare = suspend.count("failed_prepare"),
+                    failedSuspend = suspend.count("failed_suspend"),
+                    failedSuspendLate = suspend.count("failed_suspend_late"),
+                    failedSuspendNoirq = suspend.count("failed_suspend_noirq"),
+                    failedResume = suspend.count("failed_resume"),
+                    failedResumeEarly = suspend.count("failed_resume_early"),
+                    failedResumeNoirq = suspend.count("failed_resume_noirq"),
+                    lastFailedDev = suspend["last_failed_dev"]?.ifEmpty { null },
+                    lastFailedErrno = suspend["last_failed_errno"]?.toIntOrNull(),
+                    lastFailedStep = suspend["last_failed_step"]?.ifEmpty { null },
+                )
+            },
+        )
     }
 
     /** The bracketed choice in a sysfs menu such as `coarse_demand [adaptive] always_on`, or the only word. */

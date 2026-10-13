@@ -13,6 +13,9 @@ interface KernelSnapshotSource {
 
     /** Just these clusters' limits in force now, by the same rules as [read]. */
     fun readMaxFreqs(ids: Collection<CpuPolicyId>): Map<CpuPolicyId, Long>?
+
+    /** The wakeup sources and the sleep statistics, by the same rules as [read]. */
+    fun readWake(): WakeSnapshot?
 }
 
 /**
@@ -35,8 +38,13 @@ class ShellKernelSnapshotSource @Inject constructor(
         return shell.run(KernelCommands.readMaxFreqs(ids))?.let(KernelSysfsParser::maxFreqs)
     }
 
+    override fun readWake(): WakeSnapshot? = shell.run(KernelCommands.WAKE_READ, WAKE_READ_TIMEOUT_MILLIS)?.let(KernelSysfsParser::parseWake)
+
     private companion object {
         /** About two hundred small files; slow thermal sensors on some phones take their time. */
         const val FULL_READ_TIMEOUT_MILLIS = 5_000L
+
+        /** Some fifteen hundred small files on a Pixel; a third of a second there. */
+        const val WAKE_READ_TIMEOUT_MILLIS = 5_000L
     }
 }
