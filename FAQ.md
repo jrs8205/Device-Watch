@@ -116,6 +116,26 @@ Each maker exposes different things. A Samsung, for example, hides the battery's
 even from Shizuku but tells its wear and cycle count through its battery service; a Pixel does
 the opposite. A row is shown only when the phone gives a real value.
 
+### What is the privacy log?
+
+With extended access on, the Apps tab starts with a **PRIVACY** band; **Open** leads to the
+log. It is Android's own record of which app used the camera, the microphone or the location,
+when, for how long, whether from the background, and which asks were refused, the same record
+the system's Privacy dashboard draws on, read through the shell as `dumpsys appops`. Device
+Watch shows it and stores nothing from it. Under **Other** are the rest of the things Android
+counts as private: an accessibility service in use, device identifiers read, and the like. How
+far back the record reaches is Android's choice, usually a few days; Android 11 and older keep
+no such record. Without extended access the band offers Android's own Privacy dashboard instead.
+
+### Why did Device Watch itself appear in the privacy log?
+
+In 1.8.0 and earlier the monitor read the mobile network's details every few seconds, and two
+of those reads count as location reads in Android's eyes. The location permission is granted
+only while the app is on screen, so from the monitor's service each read was refused, and every
+refusal went into the record under Device Watch's name. From 1.9.0 those reads wait until the
+app is on screen, or, on Android 13 and newer, ask for the network state without its location,
+so nothing new of the kind is written. The old refusals age out with the rest of the record.
+
 ### What is the Kernel page?
 
 With root mode on, the Device tab starts with a **KERNEL** band; **Open** leads to the page. It
@@ -126,6 +146,17 @@ temperature sensor. Nothing is assumed from the phone's model, so what you see i
 kernel offers. The page and the band read the kernel every few seconds only while they are on
 screen; with a profile on, the monitor also checks the held limits every five seconds while the
 screen is on. Nothing is read as root while the screen is off.
+
+### What does the sleep section show?
+
+The Kernel page ends with **SLEEP AND WAKE-UPS**, the kernel's own counts since the phone
+started: how many times it slept and how many attempts failed, what stopped the last failed
+one and at which step, which wakeup sources woke the phone most often, which held it awake
+longest, and which are holding it at the moment. The since-charge page tells the same story
+from Android's battery statistics for the current charge; this one comes straight from the
+kernel's `/sys/class/wakeup` and `/sys/power/suspend_stats`, which only root may read. Each
+source has a plain name where Device Watch knows one (Wi-Fi, scheduled wake-ups, the charger,
+a process waiting on a timer) and the kernel's own name underneath.
 
 ### What do the processor profiles do?
 
