@@ -43,14 +43,14 @@ internal object AppOpsHistoryParser {
     fun parse(output: String, zone: ZoneId = ZoneId.systemDefault()): AppOpsHistory? {
         val lines = output.lines().map(::asciiDigits)
         val header = lines.indexOfFirst { isTableHeader(it) }
-        if (header >= 0) return AppOpsHistory(table(lines, header, zone))
+        if (header >= 0) return AppOpsHistory(table(lines, header, zone), refusalsRecorded = true)
         val tree = lines.indexOfFirst { it.trimStart().startsWith(TREE_HEADER) }
         if (tree >= 0) {
             val accesses = tree(lines.subList(tree + 1, lines.size), zone)
             // Rows of a table whose header is not known: a layout this parser has not
             // met, which is not the same as an empty record.
             if (accesses.isEmpty() && lines.any { looksLikeRow(it) }) return null
-            return AppOpsHistory(accesses, minuteQuantized = keptByTheMinute(accesses))
+            return AppOpsHistory(accesses, minuteQuantized = keptByTheMinute(accesses), refusalsRecorded = false)
         }
         return null
     }

@@ -6,11 +6,26 @@ import org.junit.Test
 class LocationGatedReadsTest {
 
     @Test
-    fun `a location read runs only with the permission and the app on screen`() {
-        assertThat(LocationGatedReads.locationReadAllowed(permissionGranted = true, appVisible = true)).isTrue()
-        assertThat(LocationGatedReads.locationReadAllowed(permissionGranted = true, appVisible = false)).isFalse()
-        assertThat(LocationGatedReads.locationReadAllowed(permissionGranted = false, appVisible = true)).isFalse()
-        assertThat(LocationGatedReads.locationReadAllowed(permissionGranted = false, appVisible = false)).isFalse()
+    fun `a location read runs only with the permission, and from API 29 only with the app on screen`() {
+        assertThat(LocationGatedReads.locationReadAllowed(sdk = 37, permissionGranted = true, appVisible = true)).isTrue()
+        assertThat(LocationGatedReads.locationReadAllowed(sdk = 37, permissionGranted = true, appVisible = false)).isFalse()
+        assertThat(LocationGatedReads.locationReadAllowed(sdk = 29, permissionGranted = true, appVisible = false)).isFalse()
+        assertThat(LocationGatedReads.locationReadAllowed(sdk = 37, permissionGranted = false, appVisible = true)).isFalse()
+        assertThat(LocationGatedReads.locationReadAllowed(sdk = 37, permissionGranted = false, appVisible = false)).isFalse()
+        // Before Android 10 the permission has no "while in use" form: a read from the
+        // background goes through, and the widget's signal and Wi-Fi band depend on it.
+        assertThat(LocationGatedReads.locationReadAllowed(sdk = 28, permissionGranted = true, appVisible = false)).isTrue()
+        assertThat(LocationGatedReads.locationReadAllowed(sdk = 26, permissionGranted = true, appVisible = false)).isTrue()
+        assertThat(LocationGatedReads.locationReadAllowed(sdk = 26, permissionGranted = false, appVisible = false)).isFalse()
+    }
+
+    @Test
+    fun `a cached read serves for a minute, and only while it is of the same source`() {
+        assertThat(LocationGatedReads.cachedReadUsable(readAtMillis = 0L, nowMillis = 10_000L, sameSource = true)).isFalse()
+        assertThat(LocationGatedReads.cachedReadUsable(readAtMillis = 10_000L, nowMillis = 69_999L, sameSource = true)).isTrue()
+        assertThat(LocationGatedReads.cachedReadUsable(readAtMillis = 10_000L, nowMillis = 70_000L, sameSource = true)).isFalse()
+        // Another Wi-Fi network within the minute: the cached name and security are the old network's.
+        assertThat(LocationGatedReads.cachedReadUsable(readAtMillis = 10_000L, nowMillis = 20_000L, sameSource = false)).isFalse()
     }
 
     @Test

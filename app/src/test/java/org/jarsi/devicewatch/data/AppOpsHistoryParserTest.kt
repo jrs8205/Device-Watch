@@ -295,6 +295,14 @@ class AppOpsHistoryParserTest {
     }
 
     @Test
+    fun `only the table records refusals, the tree of any version does not`() {
+        assertThat(AppOpsHistoryParser.parse(AppOpsFixtures.PIXEL_8A_TABLE, helsinki)!!.refusalsRecorded).isTrue()
+        assertThat(AppOpsHistoryParser.parse(AppOpsFixtures.EMULATOR_API34_TREE, helsinki)!!.refusalsRecorded).isFalse()
+        assertThat(AppOpsHistoryParser.parse(AppOpsFixtures.EMULATOR_API36_TREE, helsinki)!!.refusalsRecorded).isFalse()
+        assertThat(AppOpsHistoryParser.parse("Discrete accesses:\n  Largest chain id: 0\n", helsinki)!!.refusalsRecorded).isFalse()
+    }
+
+    @Test
     fun `a table under the tree's heading with a header the parser does not know is not read as empty`() {
         val dump = """
             Discrete accesses:

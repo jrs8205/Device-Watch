@@ -17,6 +17,13 @@ data class AppOpsHistory(
      * Android 16 prints the same tree to the millisecond.
      */
     val minuteQuantized: Boolean = false,
+    /**
+     * Whether a refused ask is written into this record at all: the table (Android 17)
+     * has reject counts, the tree of Android 12 to 16 holds only the uses that went
+     * ahead (on an Android 16 emulator a refused camera left no line). The page says
+     * so, or its empty "Refused attempts" would pass for a clean record.
+     */
+    val refusalsRecorded: Boolean = false,
 )
 
 /** One line of the record: one app, one operation, one moment. */

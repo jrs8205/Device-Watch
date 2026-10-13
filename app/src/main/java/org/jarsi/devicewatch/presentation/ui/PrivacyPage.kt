@@ -108,6 +108,8 @@ fun PrivacyPage(
             item(key = "note") {
                 Column(modifier = Modifier.padding(horizontal = BAND_INSET, vertical = 8.dp)) {
                     KernelNote(stringResource(R.string.privacy_page_note))
+                    // What this Android leaves out of the record, so an empty list is not read as a clean one.
+                    if (!log.refusalsRecorded) KernelNote(stringResource(R.string.privacy_no_refusals_note))
                     if (log.minuteQuantized) KernelNote(stringResource(R.string.privacy_minute_note))
                     log.oldestMillis?.let { KernelNote(stringResource(R.string.privacy_span, privacyMomentText(it))) }
                 }

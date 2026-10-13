@@ -804,7 +804,8 @@
     </plurals>
     <string name="privacy_last">viimeksi %1$s</string>
     <string name="privacy_page_note">Android pitää tätä lokia itse Yksityisyyden hallintapaneeliaan varten: mikä sovellus käytti kameraa, mikrofonia tai sijaintia, milloin, kuinka pitkään ja evättiinkö se. Device Watch lukee lokin laajennetun käytön kautta ja näyttää sen; mitään tästä ei tallenneta, viedä eikä varmuuskopioida.</string>
-    <string name="privacy_minute_note">Tämä Android pitää lokia minuutin tarkkuudella: saman minuutin käytöt lasketaan yhdeksi, kesto on täysiä minuutteja, eikä evättyjä yrityksiä kirjata lainkaan.</string>
+    <string name="privacy_no_refusals_note">Tämä Android ei kirjaa evättyjä yrityksiä: lokissa ovat vain toteutuneet käytöt.</string>
+    <string name="privacy_minute_note">Tämä Android pitää lokia minuutin tarkkuudella: saman minuutin käytöt lasketaan yhdeksi, ja kesto on täysiä minuutteja.</string>
     <string name="privacy_span">Lokissa alkaen %1$s. Kuinka kauas se ulottuu, on Androidin päätös, yleensä muutaman päivän.</string>
     <string name="privacy_empty">Lokissa ei ole vielä mitään.</string>
     <string name="privacy_sensor_camera">Kamera</string>

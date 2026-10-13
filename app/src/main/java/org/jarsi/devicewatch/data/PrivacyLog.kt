@@ -45,6 +45,8 @@ data class PrivacyLog(
     val sensors: List<SensorUse>,
     /** See [AppOpsHistory.minuteQuantized]. */
     val minuteQuantized: Boolean = false,
+    /** See [AppOpsHistory.refusalsRecorded]. */
+    val refusalsRecorded: Boolean = false,
 ) {
     fun sensor(sensor: PrivacySensor): SensorUse = sensors.first { it.sensor == sensor }
 
@@ -113,6 +115,7 @@ object PrivacyLogBuilder {
             newestMillis = counted.maxOfOrNull { it.timeMillis },
             sensors = PrivacySensor.entries.map { sensor -> sensorUse(sensor, bySensor[sensor].orEmpty(), label) },
             minuteQuantized = history.minuteQuantized,
+            refusalsRecorded = history.refusalsRecorded,
         )
     }
 

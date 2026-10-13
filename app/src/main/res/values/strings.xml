@@ -814,7 +814,8 @@
     </plurals>
     <string name="privacy_last">last %1$s</string>
     <string name="privacy_page_note">Android keeps this record itself, for its Privacy dashboard: which app used the camera, the microphone or the location, when, for how long, and whether it was refused. Device Watch reads it through extended access and shows it; nothing here is stored, exported or backed up.</string>
-    <string name="privacy_minute_note">This Android keeps the record to the minute: uses within one minute count as one, a length is whole minutes, and refusals are not written down at all.</string>
+    <string name="privacy_no_refusals_note">This Android writes no refused attempts down: the record holds only the uses that went ahead.</string>
+    <string name="privacy_minute_note">This Android keeps the record to the minute: uses within one minute count as one, and a length is whole minutes.</string>
     <string name="privacy_span">On record since %1$s. How far back it reaches is Android\'s choice, usually a few days.</string>
     <string name="privacy_empty">Nothing on record yet.</string>
     <string name="privacy_sensor_camera">Camera</string>

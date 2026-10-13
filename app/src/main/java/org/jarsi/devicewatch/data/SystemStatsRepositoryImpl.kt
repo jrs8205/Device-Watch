@@ -120,6 +120,8 @@ class SystemStatsRepositoryImpl @Inject constructor(
     private var cachedCellInfo: List<CellInfo> = emptyList()
     private var wifiInfoReadAtMillis = 0L
     private var cachedWifiInfo: WifiInfo? = null
+    /** The active network the cached Wi-Fi info was read on; another network means another read. */
+    private var cachedWifiNetwork: Network? = null
 
     /** The privileged shell as this poll may use it; see [beginShellPass]. */
     private var shellPass = ShellPass(privilegedShell, usable = false)
@@ -2124,11 +2126,11 @@ class SystemStatsRepositoryImpl @Inject constructor(
      * log stays short. Null when it may not be read now.
      */
     private fun cellInfo(telephony: TelephonyManager): List<CellInfo>? {
-        if (!LocationGatedReads.locationReadAllowed(hasPermission(Manifest.permission.ACCESS_FINE_LOCATION), appVisibility.visible)) {
+        if (!LocationGatedReads.locationReadAllowed(Build.VERSION.SDK_INT, hasPermission(Manifest.permission.ACCESS_FINE_LOCATION), appVisibility.visible)) {
             return null
         }
         val now = SystemClock.elapsedRealtime()
-        if (cellInfoReadAtMillis != 0L && now - cellInfoReadAtMillis < CELL_INFO_MAX_AGE_MILLIS) return cachedCellInfo
+        if (LocationGatedReads.cachedReadUsable(cellInfoReadAtMillis, now, sameSource = true)) return cachedCellInfo
         val cells = try {
             @Suppress("DEPRECATION")
             telephony.allCellInfo.orEmpty()
@@ -2144,15 +2146,18 @@ class SystemStatsRepositoryImpl @Inject constructor(
      * `WifiManager.getConnectionInfo()`, the one call that still gives the network's
      * name un-redacted, and a location read in Android's eyes: with a permission that
      * lets the identity through, only while the app is on screen, and at most once a
-     * minute. Null when it may not be read now. The callers that can take the
-     * transport info from the network's capabilities do so first; this is their
-     * fallback (a VPN on top of Wi-Fi hides the Wi-Fi's transport info).
+     * minute on the same network: the active network changing (another Wi-Fi, a VPN
+     * coming up) reads again, so the name and the security shown are the network's
+     * own. Null when it may not be read now. The callers that can take the transport
+     * info from the network's capabilities do so first; this is their fallback (a VPN
+     * on top of Wi-Fi hides the Wi-Fi's transport info).
      */
     @Suppress("DEPRECATION")
     private fun wifiConnectionInfo(): WifiInfo? {
-        if (!LocationGatedReads.locationReadAllowed(canReadWifiIdentity(), appVisibility.visible)) return null
+        if (!LocationGatedReads.locationReadAllowed(Build.VERSION.SDK_INT, canReadWifiIdentity(), appVisibility.visible)) return null
         val now = SystemClock.elapsedRealtime()
-        if (wifiInfoReadAtMillis != 0L && now - wifiInfoReadAtMillis < CELL_INFO_MAX_AGE_MILLIS) return cachedWifiInfo
+        val network = context.getSystemService(ConnectivityManager::class.java)?.activeNetwork
+        if (LocationGatedReads.cachedReadUsable(wifiInfoReadAtMillis, now, sameSource = network == cachedWifiNetwork)) return cachedWifiInfo
         val info = try {
             context.applicationContext.getSystemService(WifiManager::class.java)?.connectionInfo
         } catch (_: SecurityException) {
@@ -2160,6 +2165,7 @@ class SystemStatsRepositoryImpl @Inject constructor(
         }
         wifiInfoReadAtMillis = now
         cachedWifiInfo = info
+        cachedWifiNetwork = network
         return info
     }
 
@@ -2379,7 +2385,6 @@ class SystemStatsRepositoryImpl @Inject constructor(
         private const val KB_PER_GB = 1024.0 * 1024.0
         private val WIDEVINE_UUID = java.util.UUID.fromString("edef8ba9-79d6-4ace-a3c8-27dcd51d21ed")
         private const val SAMSUNG_BATTERY_MAX_AGE_MILLIS = 10 * 60_000L
-        private const val CELL_INFO_MAX_AGE_MILLIS = 60_000L
 
         /** Adreno (Qualcomm), Exynos, and Mali (Tensor, MediaTek), in that order. */
         private val GPU_LOAD_PATHS = listOf(

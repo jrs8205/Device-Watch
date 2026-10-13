@@ -254,9 +254,13 @@ class PrivacyLogBuilderTest {
     }
 
     @Test
-    fun `a record kept by the minute says so`() {
+    fun `a record kept by the minute, or without refusals, says so`() {
         val quantized = PrivacyLogBuilder.build(AppOpsHistory(listOf(line()), minuteQuantized = true)) { _, p -> p }
         assertThat(quantized.minuteQuantized).isTrue()
+        assertThat(quantized.refusalsRecorded).isFalse()
         assertThat(build(line()).minuteQuantized).isFalse()
+        val withRefusals = PrivacyLogBuilder.build(AppOpsHistory(listOf(line()), refusalsRecorded = true)) { _, p -> p }
+        assertThat(withRefusals.refusalsRecorded).isTrue()
+        assertThat(withRefusals.minuteQuantized).isFalse()
     }
 }
