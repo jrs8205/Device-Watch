@@ -2005,6 +2005,12 @@ class SystemStatsRepositoryImpl @Inject constructor(
         return hasLocation || hasNearbyWifi
     }
 
+    /**
+     * The Wi-Fi network's own, location-redacted `WifiInfo` from its capabilities.
+     * `WifiInfo` is a `TransportInfo` from API 31; on 29 and 30 the cast is tried and
+     * answers null, and the callers fall back to `getConnectionInfo()`, which the
+     * gate lets through there (no privacy record before Android 12).
+     */
     private fun wifiInfoFromCapabilities(capabilities: NetworkCapabilities): WifiInfo? {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             capabilities.transportInfo as? WifiInfo

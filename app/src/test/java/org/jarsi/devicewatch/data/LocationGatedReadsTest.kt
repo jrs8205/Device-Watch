@@ -6,17 +6,26 @@ import org.junit.Test
 class LocationGatedReadsTest {
 
     @Test
-    fun `a location read runs only with the permission, and from API 29 only with the app on screen`() {
+    fun `a location read runs only with the permission, and from API 31 only with the app on screen`() {
         assertThat(LocationGatedReads.locationReadAllowed(sdk = 37, permissionGranted = true, appVisible = true)).isTrue()
         assertThat(LocationGatedReads.locationReadAllowed(sdk = 37, permissionGranted = true, appVisible = false)).isFalse()
-        assertThat(LocationGatedReads.locationReadAllowed(sdk = 29, permissionGranted = true, appVisible = false)).isFalse()
+        assertThat(LocationGatedReads.locationReadAllowed(sdk = 31, permissionGranted = true, appVisible = false)).isFalse()
+        assertThat(LocationGatedReads.locationReadAllowed(sdk = 31, permissionGranted = true, appVisible = true)).isTrue()
         assertThat(LocationGatedReads.locationReadAllowed(sdk = 37, permissionGranted = false, appVisible = true)).isFalse()
         assertThat(LocationGatedReads.locationReadAllowed(sdk = 37, permissionGranted = false, appVisible = false)).isFalse()
-        // Before Android 10 the permission has no "while in use" form: a read from the
-        // background goes through, and the widget's signal and Wi-Fi band depend on it.
-        assertThat(LocationGatedReads.locationReadAllowed(sdk = 28, permissionGranted = true, appVisible = false)).isTrue()
-        assertThat(LocationGatedReads.locationReadAllowed(sdk = 26, permissionGranted = true, appVisible = false)).isTrue()
         assertThat(LocationGatedReads.locationReadAllowed(sdk = 26, permissionGranted = false, appVisible = false)).isFalse()
+    }
+
+    @Test
+    fun `before API 31 a read from the background goes through, since no record exists for a refusal`() {
+        // Android 8–9: the permission has no "while in use" form at all.
+        assertThat(LocationGatedReads.locationReadAllowed(sdk = 26, permissionGranted = true, appVisible = false)).isTrue()
+        assertThat(LocationGatedReads.locationReadAllowed(sdk = 28, permissionGranted = true, appVisible = false)).isTrue()
+        // Android 10–11: the background call is refused but nothing is written down, and the
+        // widget's Wi-Fi band has no other source there: WifiInfo is a TransportInfo only from
+        // API 31, so the location-redacted getConnectionInfo() is the one that carries the frequency.
+        assertThat(LocationGatedReads.locationReadAllowed(sdk = 29, permissionGranted = true, appVisible = false)).isTrue()
+        assertThat(LocationGatedReads.locationReadAllowed(sdk = 30, permissionGranted = true, appVisible = false)).isTrue()
     }
 
     @Test

@@ -17,13 +17,16 @@ internal object LocationGatedReads {
 
     /**
      * `getAllCellInfo`, `WifiManager.getConnectionInfo` and their kin: with the
-     * permission, and from Android 10 only while the app is on screen. Before 10
-     * the permission has no "while in use" form, a read from the background goes
-     * through, and the widget's signal strength and Wi-Fi band have no other source
-     * there (the signal-strength and transport-info calls are Android 10's).
+     * permission, and from Android 12 only while the app is on screen. Before 12
+     * there is no record for a refusal to land in, so nothing is gained by waiting,
+     * and something is lost: on Android 8–9 the permission has no "while in use"
+     * form and a background read goes through, while on 10–11 the refused
+     * `getConnectionInfo()` still answers with a location-redacted copy that carries
+     * the frequency, the widget's only source of the Wi-Fi band there (`WifiInfo` is
+     * a `TransportInfo` only from API 31).
      */
     fun locationReadAllowed(sdk: Int, permissionGranted: Boolean, appVisible: Boolean): Boolean =
-        permissionGranted && (sdk < Build.VERSION_CODES.Q || appVisible)
+        permissionGranted && (sdk < Build.VERSION_CODES.S || appVisible)
 
     /**
      * Whether the last read still serves: made, under a minute ago, and of the same

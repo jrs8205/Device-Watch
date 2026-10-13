@@ -139,8 +139,9 @@ those reads (the mobile network's registration state, the list of nearby cells a
 connection's details) count as location reads in Android's eyes. The location permission is
 granted only while the app is on screen, so from the monitor's service each read was refused,
 and every refusal went into the record under Device Watch's name. From 1.9.0 those reads wait
-until the app is on screen, or, on Android 13 and newer, ask for the network state without its
-location, so nothing new of the kind is written. While the app is on screen the reads go
+until the app is on screen on Android 12 and newer (where the record exists), or, on Android 13
+and newer, ask for the network state without its location, so nothing new of the kind is
+written. While the app is on screen the reads go
 ahead, so Device Watch still appears in the record as an allowed location user, as any app
 with the permission does. The old refusals age out with the rest of the record.
 
