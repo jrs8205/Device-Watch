@@ -181,6 +181,20 @@ internal object SystemStatsParser {
             .filter { it in 1.0..125.0 }
             .maxOrNull()
 
+    /**
+     * The battery's design capacity in mAh from the kernel's `charge_full_design`,
+     * which most kernels keep in µAh (4486000) and a few in mAh (4492). A figure
+     * under 500 or between 20 000 and 500 000 is no phone battery in either unit.
+     */
+    fun designCapacityMah(chargeFullDesign: Long?): Int? {
+        val raw = chargeFullDesign ?: return null
+        return when (raw) {
+            in 500_000L..50_000_000L -> ((raw + 500L) / 1_000L).toInt()
+            in 500L..20_000L -> raw.toInt()
+            else -> null
+        }
+    }
+
     /** Battery wear: full charge capacity as a percentage of the design capacity. */
     fun batteryCapacityPercent(chargeFull: Long?, chargeFullDesign: Long?): Int {
         return if (chargeFull != null && chargeFullDesign != null && chargeFullDesign > 0L) {

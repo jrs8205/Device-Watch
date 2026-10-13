@@ -1029,15 +1029,22 @@ class SystemStatsRepositoryImpl @Inject constructor(
     private fun boolText(value: Boolean): String =
         context.getString(if (value) R.string.common_yes else R.string.common_no)
 
+    /**
+     * The battery's design capacity: the maker's figure from the power profile where
+     * Android still lets an app read it (Android 17 hides `PowerProfile`), else the
+     * kernel's `charge_full_design`, read by the app itself where the phone allows
+     * (a Pixel does) and through extended access where it does not.
+     */
     private fun readBatteryCapacityMah(): String {
-        return try {
+        val profileMah = try {
             val powerProfileClass = Class.forName("com.android.internal.os.PowerProfile")
             val instance = powerProfileClass.getConstructor(Context::class.java).newInstance(context)
-            val mah = powerProfileClass.getMethod("getBatteryCapacity").invoke(instance) as Double
-            if (mah > 0.0) "${mah.roundToInt()} mAh" else UNAVAILABLE_TEXT
+            (powerProfileClass.getMethod("getBatteryCapacity").invoke(instance) as Double).takeIf { it > 0.0 }?.roundToInt()
         } catch (_: Throwable) {
-            UNAVAILABLE_TEXT
+            null
         }
+        val mah = profileMah ?: SystemStatsParser.designCapacityMah(readLongFromFiles(*CHARGE_FULL_DESIGN_PATHS))
+        return if (mah != null) "$mah mAh" else UNAVAILABLE_TEXT
     }
 
     private data class CameraSummary(
@@ -1808,11 +1815,7 @@ class SystemStatsRepositoryImpl @Inject constructor(
             "/sys/class/power_supply/battery/charge_full_uah",
             "/sys/class/power_supply/bms/charge_full"
         )
-        val chargeFullDesign = readLongFromFiles(
-            "/sys/class/power_supply/battery/charge_full_design",
-            "/sys/class/power_supply/battery/charge_full_design_uah",
-            "/sys/class/power_supply/bms/charge_full_design"
-        )
+        val chargeFullDesign = readLongFromFiles(*CHARGE_FULL_DESIGN_PATHS)
         return SystemStatsParser.batteryCapacityPercent(chargeFull, chargeFullDesign)
     }
 
@@ -2415,6 +2418,13 @@ class SystemStatsRepositoryImpl @Inject constructor(
         private const val KB_PER_GB = 1024.0 * 1024.0
         private val WIDEVINE_UUID = java.util.UUID.fromString("edef8ba9-79d6-4ace-a3c8-27dcd51d21ed")
         private const val SAMSUNG_BATTERY_MAX_AGE_MILLIS = 10 * 60_000L
+
+        /** Where kernels keep the battery's design capacity, in the order they are tried. */
+        private val CHARGE_FULL_DESIGN_PATHS = arrayOf(
+            "/sys/class/power_supply/battery/charge_full_design",
+            "/sys/class/power_supply/battery/charge_full_design_uah",
+            "/sys/class/power_supply/bms/charge_full_design",
+        )
 
         /** Adreno (Qualcomm), Exynos, and Mali (Tensor, MediaTek), in that order. */
         private val GPU_LOAD_PATHS = listOf(

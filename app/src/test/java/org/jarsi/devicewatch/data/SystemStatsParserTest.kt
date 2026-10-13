@@ -92,6 +92,21 @@ class SystemStatsParserTest {
     // --- battery wear ---
 
     @Test
+    fun `designCapacityMah reads the kernel's figure in microampere-hours or milliampere-hours, and nothing from nonsense`() {
+        // Pixel 8a: charge_full_design = 4486000 µAh.
+        assertThat(SystemStatsParser.designCapacityMah(4_486_000L)).isEqualTo(4486)
+        assertThat(SystemStatsParser.designCapacityMah(4_486_400L)).isEqualTo(4486)
+        // A kernel that keeps it in mAh.
+        assertThat(SystemStatsParser.designCapacityMah(4_492L)).isEqualTo(4492)
+        assertThat(SystemStatsParser.designCapacityMah(0L)).isNull()
+        assertThat(SystemStatsParser.designCapacityMah(-1L)).isNull()
+        assertThat(SystemStatsParser.designCapacityMah(null)).isNull()
+        // Too small to be a phone's battery in either unit, too large to be one in mAh.
+        assertThat(SystemStatsParser.designCapacityMah(12L)).isNull()
+        assertThat(SystemStatsParser.designCapacityMah(60_000L)).isNull()
+    }
+
+    @Test
     fun `batteryCapacityPercent computes full vs design`() {
         assertThat(SystemStatsParser.batteryCapacityPercent(4_500_000, 5_000_000)).isEqualTo(90)
     }
