@@ -1491,11 +1491,13 @@ class SystemStatsRepositoryImpl @Inject constructor(
                 }
             }
         }
-        // The settings screen shows the real SSID; the deprecated connectionInfo returns it
+        // The Device tab shows the real SSID; the deprecated connectionInfo returns it
         // un-redacted (the transportInfo from a synchronous getNetworkCapabilities() is always
         // location-redacted to <unknown ssid>). The widget keeps the compact wifiSsid label
-        // instead, because a full network name doesn't fit the widget tile.
-        val wifiSsidName = if (isWifiConnected && canReadWifiIdentity()) {
+        // instead, because a full network name doesn't fit the widget tile. The call is a
+        // location read in Android's eyes, so it waits for the app to be on screen, where
+        // alone the name is shown; from the service it would only be refused and logged.
+        val wifiSsidName = if (isWifiConnected && LocationGatedReads.locationReadAllowed(canReadWifiIdentity(), appVisibility.visible)) {
             val realSsid = try {
                 SystemStatsParser.normalizedWifiSsid(wifiManager?.connectionInfo?.ssid)
                     ?: capabilities?.let { SystemStatsParser.normalizedWifiSsid(wifiInfoFromCapabilities(it)?.ssid) }
@@ -2124,7 +2126,7 @@ class SystemStatsRepositoryImpl @Inject constructor(
      * log stays short. Null when it may not be read now.
      */
     private fun cellInfo(telephony: TelephonyManager): List<CellInfo>? {
-        if (!LocationGatedReads.cellInfoAllowed(hasPermission(Manifest.permission.ACCESS_FINE_LOCATION), appVisibility.visible)) {
+        if (!LocationGatedReads.locationReadAllowed(hasPermission(Manifest.permission.ACCESS_FINE_LOCATION), appVisibility.visible)) {
             return null
         }
         val now = SystemClock.elapsedRealtime()

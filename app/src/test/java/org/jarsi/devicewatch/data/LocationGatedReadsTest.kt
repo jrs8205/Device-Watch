@@ -6,11 +6,11 @@ import org.junit.Test
 class LocationGatedReadsTest {
 
     @Test
-    fun `cell info is read only with the permission and the app on screen`() {
-        assertThat(LocationGatedReads.cellInfoAllowed(permissionGranted = true, appVisible = true)).isTrue()
-        assertThat(LocationGatedReads.cellInfoAllowed(permissionGranted = true, appVisible = false)).isFalse()
-        assertThat(LocationGatedReads.cellInfoAllowed(permissionGranted = false, appVisible = true)).isFalse()
-        assertThat(LocationGatedReads.cellInfoAllowed(permissionGranted = false, appVisible = false)).isFalse()
+    fun `a location read runs only with the permission and the app on screen`() {
+        assertThat(LocationGatedReads.locationReadAllowed(permissionGranted = true, appVisible = true)).isTrue()
+        assertThat(LocationGatedReads.locationReadAllowed(permissionGranted = true, appVisible = false)).isFalse()
+        assertThat(LocationGatedReads.locationReadAllowed(permissionGranted = false, appVisible = true)).isFalse()
+        assertThat(LocationGatedReads.locationReadAllowed(permissionGranted = false, appVisible = false)).isFalse()
     }
 
     @Test
