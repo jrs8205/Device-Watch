@@ -234,6 +234,7 @@ class SystemStatsRepositoryImpl @Inject constructor(
         val wifiConnection = readWifiConnection()
         val network = readActiveNetwork()
         val batteryWear = readBatteryWear()
+        val developerFlags = readDeveloperFlags()
         DeviceState(
             powerSaveMode = powerManager?.let { boolText(it.isPowerSaveMode) } ?: UNAVAILABLE_TEXT,
             deviceIdle = powerManager?.let { boolText(it.isDeviceIdleMode) } ?: UNAVAILABLE_TEXT,
@@ -260,8 +261,8 @@ class SystemStatsRepositoryImpl @Inject constructor(
                 (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
                     Configuration.UI_MODE_NIGHT_YES
             ),
-            developerOptions = developerFlag(Settings.Global.DEVELOPMENT_SETTINGS_ENABLED),
-            usbDebugging = developerFlag(Settings.Global.ADB_ENABLED),
+            developerOptions = developerFlags.developerOptions,
+            usbDebugging = developerFlags.usbDebugging,
             batteryFullCapacity = readFullCapacityEstimate(),
             batteryHealth = batteryWear.health,
             batteryCycles = batteryWear.cycles,
@@ -583,12 +584,30 @@ class SystemStatsRepositoryImpl @Inject constructor(
     }
 
     /** Developer switches; Android 17 hides them from apps, so the row says so instead of "off". */
-    private fun developerFlag(name: String): String =
+    private data class DeveloperFlags(val developerOptions: String, val usbDebugging: String)
+
+    /**
+     * The developer-options and USB-debugging switches: from the settings while
+     * Android lets an app read them, and from Android 17, which hands apps "off" for
+     * both, through the privileged shell (`settings get global`, which the ADB shell
+     * user and root may read), under the stats mutex in a shell pass of its own.
+     * Without extended access the rows say Android keeps the value from apps.
+     */
+    private suspend fun readDeveloperFlags(): DeveloperFlags {
         if (ExtraStatsLogic.developerFlagsReadable(Build.VERSION.SDK_INT)) {
-            globalFlag(name, default = false)
-        } else {
-            context.getString(R.string.hidden_by_android)
+            return DeveloperFlags(
+                developerOptions = globalFlag(Settings.Global.DEVELOPMENT_SETTINGS_ENABLED, default = false),
+                usbDebugging = globalFlag(Settings.Global.ADB_ENABLED, default = false),
+            )
         }
+        val hidden = context.getString(R.string.hidden_by_android)
+        val lines = statsMutex.withLock {
+            beginShellPass()
+            shellPass.run(DEVELOPER_FLAGS_COMMAND)
+        }?.lines().orEmpty()
+        fun flag(index: Int): String = PrivilegedReadings.settingsFlag(lines.getOrNull(index))?.let(::boolText) ?: hidden
+        return DeveloperFlags(developerOptions = flag(0), usbDebugging = flag(1))
+    }
 
     private data class BatteryWear(
         val health: String,
@@ -850,7 +869,7 @@ class SystemStatsRepositoryImpl @Inject constructor(
     }
 
     @Suppress("DEPRECATION") // Display.getRealMetrics/isHdr are the broadest cross-version reads
-    private fun computeDeviceInfo(): DeviceInfo {
+    private suspend fun computeDeviceInfo(): DeviceInfo {
         val manufacturer = Build.MANUFACTURER
             ?.replaceFirstChar { it.uppercase() }
             ?.takeIf { it.isNotBlank() } ?: UNAVAILABLE_TEXT
@@ -1035,7 +1054,7 @@ class SystemStatsRepositoryImpl @Inject constructor(
      * kernel's `charge_full_design`, read by the app itself where the phone allows
      * (a Pixel does) and through extended access where it does not.
      */
-    private fun readBatteryCapacityMah(): String {
+    private suspend fun readBatteryCapacityMah(): String {
         val profileMah = try {
             val powerProfileClass = Class.forName("com.android.internal.os.PowerProfile")
             val instance = powerProfileClass.getConstructor(Context::class.java).newInstance(context)
@@ -1043,8 +1062,18 @@ class SystemStatsRepositoryImpl @Inject constructor(
         } catch (_: Throwable) {
             null
         }
-        val mah = profileMah ?: SystemStatsParser.designCapacityMah(readLongFromFiles(*CHARGE_FULL_DESIGN_PATHS))
+        val mah = profileMah ?: readDesignCapacityMah()
         return if (mah != null) "$mah mAh" else UNAVAILABLE_TEXT
+    }
+
+    /**
+     * Under the stats mutex, in a shell pass of its own: the device info is read once,
+     * at the screen's start, before any poll has begun a pass, and a phone that keeps
+     * the file from the app (a Samsung) needs the shell for it.
+     */
+    private suspend fun readDesignCapacityMah(): Int? = statsMutex.withLock {
+        beginShellPass()
+        SystemStatsParser.designCapacityMah(readLongFromFiles(*CHARGE_FULL_DESIGN_PATHS))
     }
 
     private data class CameraSummary(
@@ -1479,7 +1508,7 @@ class SystemStatsRepositoryImpl @Inject constructor(
         val activeNetwork = connManager?.activeNetwork
         val capabilities = connManager?.getNetworkCapabilities(activeNetwork)
         val isWifiConnected = capabilities?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true
-        val wifiCapabilities = if (isWifiConnected && connManager != null) wifiCapabilities(connManager, activeNetwork) else null
+        val wifiCapabilities = connManager?.takeIf { isWifiConnected }?.let { wifiCapabilities(it, activeNetwork) }
 
         var wifiSsid = if (isWifiConnected) {
             context.getString(R.string.wifi_connected)
@@ -2418,6 +2447,9 @@ class SystemStatsRepositoryImpl @Inject constructor(
         private const val KB_PER_GB = 1024.0 * 1024.0
         private val WIDEVINE_UUID = java.util.UUID.fromString("edef8ba9-79d6-4ace-a3c8-27dcd51d21ed")
         private const val SAMSUNG_BATTERY_MAX_AGE_MILLIS = 10 * 60_000L
+
+        /** The two switches, one per line, in the order [DeveloperFlags] takes them. */
+        private const val DEVELOPER_FLAGS_COMMAND = "settings get global development_settings_enabled; settings get global adb_enabled"
 
         /** Where kernels keep the battery's design capacity, in the order they are tried. */
         private val CHARGE_FULL_DESIGN_PATHS = arrayOf(

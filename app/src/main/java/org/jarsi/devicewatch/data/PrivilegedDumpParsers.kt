@@ -96,6 +96,13 @@ internal object PrivilegedReadings {
         return LocalDate.ofEpochDay(seconds / 86_400L)
     }
 
+    /** `settings get global …` as the shell prints it: `1`, `0`, or `null` for a key never set. */
+    fun settingsFlag(raw: String?): Boolean? = when (raw?.trim()) {
+        "1" -> true
+        "0" -> false
+        else -> null
+    }
+
     private const val MIN_DATE_SECONDS = 946_684_800L // 2000-01-01
     private const val MAX_DATE_SECONDS = 4_102_444_800L // 2100-01-01
 }

@@ -143,6 +143,18 @@ class PrivilegedDumpParsersTest {
     }
 
     @Test
+    fun `a settings flag from the shell is 1 or 0, and anything else, null included, is unknown`() {
+        assertThat(PrivilegedReadings.settingsFlag("1")).isTrue()
+        assertThat(PrivilegedReadings.settingsFlag(" 1\r\n")).isTrue()
+        assertThat(PrivilegedReadings.settingsFlag("0")).isFalse()
+        // `settings get` prints "null" for a key never set.
+        assertThat(PrivilegedReadings.settingsFlag("null")).isNull()
+        assertThat(PrivilegedReadings.settingsFlag("")).isNull()
+        assertThat(PrivilegedReadings.settingsFlag(null)).isNull()
+        assertThat(PrivilegedReadings.settingsFlag("2")).isNull()
+    }
+
+    @Test
     fun `a Samsung manufacture date wins over the calibration date`() {
         val both = "LLB CAL: 20221116\nLLB MAN: 20221020\n"
 
