@@ -124,6 +124,26 @@ class SystemStatsParserTest {
     // --- Wi-Fi ---
 
     @Test
+    fun `wifiNetworkOf takes the active network when it is plain Wi-Fi, else the Wi-Fi under a VPN, else none`() {
+        val wifi = "wifi"
+        val vpn = "vpn over wifi"
+        val cell = "cell"
+        val isWifi = { n: String -> n.contains("wifi") }
+        val isVpn = { n: String -> n.startsWith("vpn") }
+        var listed = false
+        val others = { listed = true; listOf(vpn, cell, wifi) }
+        assertThat(SystemStatsParser.wifiNetworkOf(wifi, others, isWifi, isVpn)).isEqualTo(wifi)
+        // Plain Wi-Fi active: the other networks are not even listed.
+        assertThat(listed).isFalse()
+        // A VPN copies Wi-Fi's transport but is not the Wi-Fi network: look for it among the others.
+        assertThat(SystemStatsParser.wifiNetworkOf(vpn, others, isWifi, isVpn)).isEqualTo(wifi)
+        assertThat(listed).isTrue()
+        assertThat(SystemStatsParser.wifiNetworkOf(vpn, { listOf(vpn, cell) }, isWifi, isVpn)).isNull()
+        assertThat(SystemStatsParser.wifiNetworkOf(cell, { emptyList() }, isWifi, isVpn)).isNull()
+        assertThat(SystemStatsParser.wifiNetworkOf(null, { listOf(wifi) }, isWifi, isVpn)).isEqualTo(wifi)
+    }
+
+    @Test
     fun `normalizedWifiSsid strips quotes and rejects hidden placeholders`() {
         assertThat(SystemStatsParser.normalizedWifiSsid("\"MyWifi\"")).isEqualTo("MyWifi")
         assertThat(SystemStatsParser.normalizedWifiSsid("<unknown ssid>")).isNull()

@@ -679,10 +679,15 @@ class SystemStatsRepositoryImpl @Inject constructor(
     private fun readWifiConnection(): Pair<String, String> {
         val none = UNAVAILABLE_TEXT to UNAVAILABLE_TEXT
         val connectivity = context.getSystemService(ConnectivityManager::class.java) ?: return none
-        val onWifi = connectivity.getNetworkCapabilities(connectivity.activeNetwork)
+        val activeNetwork = connectivity.activeNetwork
+        val onWifi = connectivity.getNetworkCapabilities(activeNetwork)
             ?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true
         if (!onWifi) return none
-        val info = wifiConnectionInfo() ?: return none
+        // The full copy while it may be read; else the Wi-Fi network's own redacted one,
+        // which keeps the security type and the links and costs no location read.
+        val info = wifiConnectionInfo()
+            ?: wifiCapabilities(connectivity, activeNetwork)?.let(::wifiInfoFromCapabilities)
+            ?: return none
         val security = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             val type = info.currentSecurityType
             if (type == WifiInfo.SECURITY_TYPE_OPEN) {
@@ -1467,6 +1472,7 @@ class SystemStatsRepositoryImpl @Inject constructor(
         val activeNetwork = connManager?.activeNetwork
         val capabilities = connManager?.getNetworkCapabilities(activeNetwork)
         val isWifiConnected = capabilities?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true
+        val wifiCapabilities = if (isWifiConnected && connManager != null) wifiCapabilities(connManager, activeNetwork) else null
 
         var wifiSsid = if (isWifiConnected) {
             context.getString(R.string.wifi_connected)
@@ -1480,15 +1486,15 @@ class SystemStatsRepositoryImpl @Inject constructor(
             wifiSpeedDown = capabilities.linkDownstreamBandwidthKbps.takeIf { it > 0 }?.div(1000) ?: UNAVAILABLE_INT
             wifiSpeedUp = capabilities.linkUpstreamBandwidthKbps.takeIf { it > 0 }?.div(1000) ?: UNAVAILABLE_INT
 
-            if (canReadWifiIdentity()) {
-                try {
-                    val wifiInfo = wifiInfoFromCapabilities(capabilities) ?: wifiConnectionInfo()
-                    wifiSsid = SystemStatsParser.normalizedWifiSsid(wifiInfo?.ssid) ?: wifiSsid
-                    wifiBand = SystemStatsParser.wifiBandLabel(wifiInfo?.frequency ?: UNAVAILABLE_INT)
-                } catch (_: SecurityException) {
-                    wifiSsid = context.getString(R.string.wifi_connected)
-                    wifiBand = UNAVAILABLE_TEXT
-                }
+            // The band needs no identity: the Wi-Fi network's own transport info has the
+            // frequency with the name redacted. The gated full copy is only the fallback.
+            try {
+                val wifiInfo = wifiCapabilities?.let(::wifiInfoFromCapabilities) ?: wifiConnectionInfo()
+                wifiSsid = SystemStatsParser.normalizedWifiSsid(wifiInfo?.ssid) ?: wifiSsid
+                wifiBand = SystemStatsParser.wifiBandLabel(wifiInfo?.frequency ?: UNAVAILABLE_INT)
+            } catch (_: SecurityException) {
+                wifiSsid = context.getString(R.string.wifi_connected)
+                wifiBand = UNAVAILABLE_TEXT
             }
         }
         // The Device tab shows the real SSID; the deprecated connectionInfo returns it
@@ -1500,7 +1506,7 @@ class SystemStatsRepositoryImpl @Inject constructor(
         val wifiSsidName = if (isWifiConnected) {
             val realSsid = try {
                 SystemStatsParser.normalizedWifiSsid(wifiConnectionInfo()?.ssid)
-                    ?: capabilities?.let { SystemStatsParser.normalizedWifiSsid(wifiInfoFromCapabilities(it)?.ssid) }
+                    ?: wifiCapabilities?.let { SystemStatsParser.normalizedWifiSsid(wifiInfoFromCapabilities(it)?.ssid) }
             } catch (_: SecurityException) {
                 null
             }
@@ -1539,7 +1545,7 @@ class SystemStatsRepositoryImpl @Inject constructor(
         var wifiLinkSpeedMbps = UNAVAILABLE_INT
         var wifiStandard = UNAVAILABLE_TEXT
         if (isWifiConnected && capabilities != null) {
-            val wifiInfo = wifiInfoFromCapabilities(capabilities) ?: wifiConnectionInfo()
+            val wifiInfo = wifiCapabilities?.let(::wifiInfoFromCapabilities) ?: wifiConnectionInfo()
             if (wifiInfo != null) {
                 wifiRssiDbm = wifiInfo.rssi.takeIf { it != -127 && it < 0 } ?: UNAVAILABLE_INT
                 wifiLinkSpeedMbps = wifiInfo.linkSpeed.takeIf { it > 0 } ?: UNAVAILABLE_INT
@@ -2006,6 +2012,24 @@ class SystemStatsRepositoryImpl @Inject constructor(
             null
         }
     }
+
+    /**
+     * The capabilities of the Wi-Fi network itself. With a VPN on top, the active
+     * network is the VPN's: it copies Wi-Fi's transport but carries a
+     * `VpnTransportInfo`, so the Wi-Fi's own entry is looked for among the networks.
+     * Its transport info (API 29+) has the frequency, the signal, the speed, the
+     * standard, the security type and the links, with the name and the addresses
+     * redacted, and reading it is not a location read: it is what the widget's band
+     * and the Device tab's Wi-Fi rows live on when the full copy may not be read.
+     */
+    @Suppress("DEPRECATION") // allNetworks: the one synchronous way to the Wi-Fi under a VPN
+    private fun wifiCapabilities(connManager: ConnectivityManager, activeNetwork: Network?): NetworkCapabilities? =
+        SystemStatsParser.wifiNetworkOf(
+            active = activeNetwork?.let(connManager::getNetworkCapabilities),
+            others = { connManager.allNetworks.mapNotNull(connManager::getNetworkCapabilities) },
+            isWifi = { it.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) },
+            isVpn = { it.hasTransport(NetworkCapabilities.TRANSPORT_VPN) },
+        )
 
     @Suppress("DEPRECATION")
     private fun readNetworkUsageGb(

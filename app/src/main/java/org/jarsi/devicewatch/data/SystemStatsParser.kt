@@ -235,6 +235,17 @@ internal object SystemStatsParser {
             ?.takeIf { it.isNotBlank() && it != "<unknown ssid>" && it != "0x" }
     }
 
+    /**
+     * The Wi-Fi network whose details to read: the active network when it is Wi-Fi
+     * itself; else (a VPN on top of Wi-Fi copies Wi-Fi's transport but carries the
+     * VPN's own transport info) the first Wi-Fi network among [others] that is not
+     * a VPN; null when there is none. [others] is asked only when needed.
+     */
+    fun <T : Any> wifiNetworkOf(active: T?, others: () -> List<T>, isWifi: (T) -> Boolean, isVpn: (T) -> Boolean): T? {
+        if (active != null && isWifi(active) && !isVpn(active)) return active
+        return others().firstOrNull { isWifi(it) && !isVpn(it) }
+    }
+
     /** Human label for a Wi-Fi channel frequency in MHz. */
     fun wifiBandLabel(frequencyMhz: Int): String {
         return when (frequencyMhz) {
