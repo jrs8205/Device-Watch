@@ -1,5 +1,5 @@
-• Yksityisyysloki (laajennettu käyttö): mikä sovellus käytti kameraa, mikrofonia tai sijaintia, milloin, kauanko ja taustaltako, ja mitä Android 17 epäsi
-• Järjestelmäsovellukset (laajennettu käyttö): poista turhat esiasennetut sovellukset tältä käyttäjältä kysyen, tai palauta ne; tärkeät varoittavat
-• Kernel-sivu: nukkumisyritykset, niiden estäjä ja herättäjät
-• Sovellus ei enää näy Androidin yksityisyyslokissa
-• Wi-Fi VPN:n alla; nimelliskapasiteetti ja kehittäjäkytkimet Android 17:ssä
+• Yksityisyysloki (laajennettu käyttö): mikä sovellus käytti kameraa, mikrofonia tai sijaintia, milloin, kauanko, taustaltako, ja mitä Android 17 epäsi
+• Järjestelmäsovellukset (laajennettu käyttö): poista turhat esiasennetut sovellukset tältä käyttäjältä kysyen tai palauta ne; tärkeät varoittavat
+• Kernel-sivu (root): nukkumisyritykset, estäjä ja herättäjät
+• Sovellus ei enää näy omassa lokissaan
+• Wi-Fi VPN:n alla; Android 17:ssä nimelliskapasiteetti ja kehittäjäkytkimet (laajennettu käyttö)
