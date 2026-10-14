@@ -919,6 +919,7 @@
     <string name="system_apps_restore">Restore</string>
     <string name="system_apps_blocked">Cannot be removed from here</string>
     <string name="system_apps_warning">Warning</string>
+    <string name="system_apps_note">Note</string>
     <string name="system_apps_aosp">Part of Android</string>
     <string name="system_apps_updated">Updated from a store</string>
     <string name="system_apps_remove_title">Remove %1$s?</string>

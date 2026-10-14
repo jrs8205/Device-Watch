@@ -543,6 +543,9 @@ class DashboardViewModel @Inject constructor(
             periodStart.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
         )
         val storage = repository.storageBreakdown()
+        // A refresh already overtaken must not number a state read of its own: the
+        // newer refresh's read would then look overtaken too, and nobody would publish.
+        if (generation != refreshGeneration) return
         deviceStateRequested = true
         val stateGeneration = ++deviceStateGeneration
         val deviceState = repository.deviceState()

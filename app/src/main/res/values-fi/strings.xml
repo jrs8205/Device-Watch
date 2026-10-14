@@ -909,6 +909,7 @@
     <string name="system_apps_restore">Palauta</string>
     <string name="system_apps_blocked">Ei voi poistaa tästä</string>
     <string name="system_apps_warning">Varoitus</string>
+    <string name="system_apps_note">Huomio</string>
     <string name="system_apps_aosp">Androidin oma osa</string>
     <string name="system_apps_updated">Päivitetty kaupasta</string>
     <string name="system_apps_remove_title">Poistetaanko %1$s?</string>

@@ -144,6 +144,7 @@ fun SystemAppsPage(
                     SystemAppRow(
                         app = app,
                         busy = state.busyPackage != null,
+                        restore = true,
                         actionRes = R.string.system_apps_restore,
                         onAction = { viewModel.onRestore(app.packageName) },
                     )
@@ -163,6 +164,7 @@ fun SystemAppsPage(
                 SystemAppRow(
                     app = app,
                     busy = state.busyPackage != null,
+                    restore = false,
                     actionRes = R.string.system_apps_remove,
                     onAction = { viewModel.onRemoveRequested(app.packageName) },
                 )
@@ -190,17 +192,20 @@ private fun ListTitle(text: String) {
 
 /**
  * One app: its icon, name and package, what its removal would mean, and the
- * button. A blocked app has the reason where the button would be.
+ * button. A blocked app has the reason where the Remove button would be; the
+ * verdict only ever withholds a removal, so a removed app (by another tool,
+ * say) always has its Restore, with the reason as a note.
  */
 @Composable
 private fun SystemAppRow(
     app: SystemApp,
     busy: Boolean,
+    restore: Boolean,
     @StringRes actionRes: Int,
     onAction: () -> Unit,
 ) {
     val verdict = app.verdict
-    val blocked = verdict.risk == SystemAppRisk.BLOCKED
+    val blocked = !restore && verdict.risk == SystemAppRisk.BLOCKED
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
@@ -224,8 +229,14 @@ private fun SystemAppRow(
             }
             if (captions.isNotEmpty()) KernelTechnical(captions.joinToString(" · "))
             verdict.role?.let { role ->
-                val color = if (blocked) MaterialTheme.colorScheme.onSurfaceVariant else statusWarnColor()
-                val lead = stringResource(if (blocked) R.string.system_apps_blocked else R.string.system_apps_warning)
+                val color = if (blocked || restore) MaterialTheme.colorScheme.onSurfaceVariant else statusWarnColor()
+                val lead = stringResource(
+                    when {
+                        restore -> R.string.system_apps_note
+                        blocked -> R.string.system_apps_blocked
+                        else -> R.string.system_apps_warning
+                    }
+                )
                 Text(
                     text = "$lead: " + stringResource(roleExplanation(role)),
                     fontSize = 12.sp,

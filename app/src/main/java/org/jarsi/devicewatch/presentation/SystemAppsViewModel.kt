@@ -54,15 +54,37 @@ class SystemAppsViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(SystemAppsUiState())
     val uiState: StateFlow<SystemAppsUiState> = _uiState.asStateFlow()
 
+    /** Counts the reads, so a read overtaken by a newer one (an action's re-read, say) is not shown. */
+    private var loadGeneration = 0
+
     /** Reads the lists; called when the page opens and whenever it comes back on screen. */
     fun load() {
         viewModelScope.launch { reload() }
     }
 
+    /**
+     * Only the latest read reaches the screen: a read started on the return to the
+     * page and answered after a removal's own re-read would otherwise put the removed
+     * app back among the installed. A question left up follows the app as it stands
+     * now: gone, or blocked, and the question is gone; warned about anew, and the
+     * acknowledgement is asked again.
+     */
     private suspend fun reload() {
+        val generation = ++loadGeneration
         val apps = repository.systemApps().sortedBy { it.label.lowercase() }
+        if (generation != loadGeneration) return
         _uiState.update { state ->
-            state.copy(loading = false, apps = apps.filter { it.installed }, removed = apps.filterNot { it.installed })
+            val installed = apps.filter { it.installed }
+            val pending = state.pending?.let { asked ->
+                installed.firstOrNull { it.packageName == asked.packageName }?.takeIf { it.verdict.risk != SystemAppRisk.BLOCKED }
+            }
+            state.copy(
+                loading = false,
+                apps = installed,
+                removed = apps.filterNot { it.installed },
+                pending = pending,
+                acknowledged = state.acknowledged && pending != null && pending.verdict == state.pending?.verdict,
+            )
         }
     }
 
@@ -87,11 +109,20 @@ class SystemAppsViewModel @Inject constructor(
         _uiState.update { it.copy(pending = null, acknowledged = false) }
     }
 
-    /** The question's remove button: runs the removal the question was about. */
+    /**
+     * The question's remove button: runs the removal the question was about, by the
+     * app's verdict as it stands in the list now, never by the copy the question was
+     * opened with.
+     */
     fun onConfirmRemove() {
         val state = _uiState.value
-        val app = state.pending ?: return
+        val asked = state.pending ?: return
         if (!state.canConfirm || state.busyPackage != null) return
+        val app = state.apps.firstOrNull { it.packageName == asked.packageName }
+        if (app == null || app.verdict.risk == SystemAppRisk.BLOCKED) {
+            onDismissRemove()
+            return
+        }
         _uiState.update { it.copy(pending = null, acknowledged = false, busyPackage = app.packageName, lastAction = null) }
         viewModelScope.launch {
             val result = repository.remove(app.packageName)

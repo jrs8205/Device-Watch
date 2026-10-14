@@ -31,10 +31,20 @@ class SystemAppsViewModelTest {
         var result: SystemAppActionResult = SystemAppActionResult.Done
         /** Holds the next removal until completed, so a test can act while one runs. */
         var removeGate: CompletableDeferred<Unit>? = null
+        /** Holds read number [gatedRead] until completed; the list it answers with is the one from before the wait. */
+        var gatedRead = 0
+        var readGate: CompletableDeferred<Unit>? = null
 
         override suspend fun systemApps(): List<SystemApp> {
-            reads++
-            return apps.toList()
+            val turn = ++reads
+            val snapshot = apps.toList()
+            if (turn == gatedRead) readGate?.await()
+            return snapshot
+        }
+
+        fun reclassify(packageName: String, verdict: SystemAppVerdict) {
+            val index = apps.indexOfFirst { it.packageName == packageName }
+            apps[index] = apps[index].copy(verdict = verdict)
         }
 
         override suspend fun remove(packageName: String): SystemAppActionResult {
@@ -230,6 +240,103 @@ class SystemAppsViewModelTest {
         assertThat(state.removed).isEmpty()
         assertThat(state.apps.map { it.packageName }).contains("com.example.bloat")
         assertThat(state.lastAction).isEqualTo(SystemAppAction(gone, restore = true, result = SystemAppActionResult.Done))
+    }
+
+    @Test
+    fun `a question outlived by a reload follows the app's verdict now, not the one it was asked with`() = runTest(dispatcher) {
+        val repository = repository()
+        val viewModel = SystemAppsViewModel(repository)
+        viewModel.load()
+        advanceUntilIdle()
+
+        // The question is up for a warned-about keyboard; meanwhile, in Settings, it is made the
+        // keyboard in use, and the return to the page reads the lists again.
+        viewModel.onRemoveRequested("com.google.android.gms")
+        viewModel.onAcknowledgeChange(true)
+        repository.reclassify("com.google.android.gms", SystemAppVerdict(SystemAppRisk.BLOCKED, SystemAppRole.KEYBOARD_IN_USE))
+        viewModel.load()
+        advanceUntilIdle()
+
+        // Blocked now: the question is gone, and confirming it removes nothing.
+        assertThat(viewModel.uiState.value.pending).isNull()
+        viewModel.onConfirmRemove()
+        advanceUntilIdle()
+        assertThat(repository.removed).isEmpty()
+    }
+
+    @Test
+    fun `a question outlived by a reload keeps up with a changed warning`() = runTest(dispatcher) {
+        val repository = repository()
+        val viewModel = SystemAppsViewModel(repository)
+        viewModel.load()
+        advanceUntilIdle()
+
+        // Plain when asked; warned about by the time the page is back.
+        viewModel.onRemoveRequested("com.facebook.services")
+        assertThat(viewModel.uiState.value.canConfirm).isTrue()
+        repository.reclassify("com.facebook.services", SystemAppVerdict(SystemAppRisk.WARNING, SystemAppRole.HOME))
+        viewModel.load()
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertThat(state.pending?.verdict?.role).isEqualTo(SystemAppRole.HOME)
+        assertThat(state.canConfirm).isFalse()
+
+        // And an app removed meanwhile (by another tool) has no question left to answer.
+        viewModel.onDismissRemove()
+        viewModel.onRemoveRequested("com.google.android.youtube")
+        repository.apps.removeAll { it.packageName == "com.google.android.youtube" }
+        viewModel.load()
+        advanceUntilIdle()
+        assertThat(viewModel.uiState.value.pending).isNull()
+    }
+
+    @Test
+    fun `a confirmation checks the verdict as it stands, not as it was shown`() = runTest(dispatcher) {
+        val repository = repository()
+        val viewModel = SystemAppsViewModel(repository)
+        viewModel.load()
+        advanceUntilIdle()
+
+        // The lists changed under the question without a reload reaching the screen's copy of it.
+        viewModel.onRemoveRequested("com.google.android.youtube")
+        repository.reclassify("com.google.android.youtube", SystemAppVerdict(SystemAppRisk.BLOCKED, SystemAppRole.CORE))
+        viewModel.load()
+        advanceUntilIdle()
+        viewModel.onConfirmRemove()
+        advanceUntilIdle()
+
+        assertThat(repository.removed).isEmpty()
+        assertThat(viewModel.uiState.value.pending).isNull()
+    }
+
+    @Test
+    fun `a list read from before an action never lands over the one read after it`() = runTest(dispatcher) {
+        val repository = repository()
+        val viewModel = SystemAppsViewModel(repository)
+        viewModel.load()
+        advanceUntilIdle()
+
+        // The return to the page starts a read (the second) that is slow to answer.
+        repository.gatedRead = 2
+        repository.readGate = CompletableDeferred()
+        viewModel.load()
+        advanceUntilIdle()
+        assertThat(repository.reads).isEqualTo(2)
+
+        // The removal goes through meanwhile, and its own re-read (the third) shows it.
+        viewModel.onRemoveRequested("com.google.android.youtube")
+        viewModel.onConfirmRemove()
+        advanceUntilIdle()
+        assertThat(repository.reads).isEqualTo(3)
+        assertThat(viewModel.uiState.value.apps.map { it.packageName }).doesNotContain("com.google.android.youtube")
+        assertThat(viewModel.uiState.value.removed.map { it.packageName }).contains("com.google.android.youtube")
+
+        // The slow read answers with the list from before the removal: it must not take the screen back.
+        repository.readGate!!.complete(Unit)
+        advanceUntilIdle()
+        assertThat(viewModel.uiState.value.apps.map { it.packageName }).doesNotContain("com.google.android.youtube")
+        assertThat(viewModel.uiState.value.removed.map { it.packageName }).contains("com.google.android.youtube")
     }
 
     @Test

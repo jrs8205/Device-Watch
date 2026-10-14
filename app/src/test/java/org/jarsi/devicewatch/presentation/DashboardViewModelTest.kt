@@ -152,6 +152,36 @@ class DashboardViewModelTest {
         }
 
     @Test
+    fun `given two refreshes overlapping, then the newer one's device state reaches the screen`() =
+        runTest(dispatcher) {
+            val repository = FakeSystemStatsRepository(sampleStats()).apply {
+                deviceStateNamesTurn = true
+                firstStorageGate = CompletableDeferred()
+                firstDeviceStateGate = CompletableDeferred()
+            }
+            val viewModel = buildViewModel(repository = repository)
+
+            // The first refresh lingers in its storage read; the second runs past it into its
+            // device-state read (the first such read), which waits too.
+            viewModel.refresh()
+            advanceUntilIdle()
+            viewModel.refresh()
+            advanceUntilIdle()
+            assertThat(repository.deviceStateLoads).isEqualTo(1)
+
+            // The first refresh moves on, finds itself overtaken and stops short of a state read of its own.
+            repository.firstStorageGate!!.complete(Unit)
+            advanceUntilIdle()
+            assertThat(repository.deviceStateLoads).isEqualTo(1)
+            assertThat(viewModel.uiState.value.deviceState).isNull()
+
+            // The second refresh finishes: its state is the newest there is, and must show.
+            repository.firstDeviceStateGate!!.complete(Unit)
+            advanceUntilIdle()
+            assertThat(viewModel.uiState.value.deviceState?.developerOptions).isEqualTo("load 1")
+        }
+
+    @Test
     fun `given access switched under a refresh, then the refresh's device state does not overwrite the newer read`() =
         runTest(dispatcher) {
             val settings = FakeAppSettingsRepository(access = PrivilegedAccess.OFF)
@@ -1556,7 +1586,14 @@ private class FakeSystemStatsRepository(
         return if (deviceStateNamesTurn) state.copy(developerOptions = "load $turn") else state
     }
 
-    override suspend fun storageBreakdown(): StorageBreakdown? = storage
+    /** Holds the first storage read back until completed, so a test can run a second refresh past it. */
+    var firstStorageGate: CompletableDeferred<Unit>? = null
+    private var storageReads = 0
+
+    override suspend fun storageBreakdown(): StorageBreakdown? {
+        if (++storageReads == 1) firstStorageGate?.await()
+        return storage
+    }
 
     var callCount = 0
         private set
