@@ -124,7 +124,8 @@ class SystemStatsRepositoryImpl @Inject constructor(
     private var cachedWifiInfo: WifiInfo? = null
     /** The active network the cached Wi-Fi info was read on; another network means another read. */
     private var cachedWifiNetwork: Network? = null
-    private var cachedWifiInfoOnScreen = false
+    /** Whether the cached Wi-Fi info carries the name; see [LocationGatedReads.wifiReadInFull]. */
+    private var cachedWifiInfoInFull = false
 
     /** The privileged shell as this poll may use it; see [beginShellPass]. */
     private var shellPass = ShellPass(privilegedShell, usable = false)
@@ -2196,7 +2197,8 @@ class SystemStatsRepositoryImpl @Inject constructor(
         }
         val now = SystemClock.elapsedRealtime()
         val onScreen = appVisibility.visible
-        if (LocationGatedReads.cachedCopyUsable(cellInfoReadAtMillis, now, sameSource = true, readOnScreen = cachedCellInfoOnScreen, onScreenNow = onScreen)) {
+        // The permission is a given here (the gate above); the full list wants the app on screen too.
+        if (LocationGatedReads.cachedCopyUsable(cellInfoReadAtMillis, now, sameSource = true, readInFull = cachedCellInfoOnScreen, fullReadableNow = onScreen)) {
             return cachedCellInfo
         }
         val cells = try {
@@ -2219,16 +2221,21 @@ class SystemStatsRepositoryImpl @Inject constructor(
      * coming up) reads again, so the name and the security shown are the network's
      * own. Null when it may not be read now. The callers that can take the transport
      * info from the network's capabilities do so first; this is their fallback (a VPN
-     * on top of Wi-Fi hides the Wi-Fi's transport info).
+     * on top of Wi-Fi hides the Wi-Fi's transport info). A copy read without the
+     * name (no location permission yet, or off screen on 10–11) gives way the moment
+     * the name may be read: the permission granted a moment ago must show.
      */
     @Suppress("DEPRECATION")
     private fun wifiConnectionInfo(): WifiInfo? {
         if (!LocationGatedReads.locationReadAllowed(Build.VERSION.SDK_INT, canReadWifiIdentity(), appVisibility.visible)) return null
         val now = SystemClock.elapsedRealtime()
         val network = context.getSystemService(ConnectivityManager::class.java)?.activeNetwork
-        val onScreen = appVisibility.visible
+        val inFull = LocationGatedReads.wifiReadInFull(
+            fineLocationGranted = hasPermission(Manifest.permission.ACCESS_FINE_LOCATION),
+            appVisible = appVisibility.visible,
+        )
         val usable = LocationGatedReads.cachedCopyUsable(
-            wifiInfoReadAtMillis, now, sameSource = network == cachedWifiNetwork, readOnScreen = cachedWifiInfoOnScreen, onScreenNow = onScreen,
+            wifiInfoReadAtMillis, now, sameSource = network == cachedWifiNetwork, readInFull = cachedWifiInfoInFull, fullReadableNow = inFull,
         )
         if (usable) return cachedWifiInfo
         val info = try {
@@ -2239,7 +2246,7 @@ class SystemStatsRepositoryImpl @Inject constructor(
         wifiInfoReadAtMillis = now
         cachedWifiInfo = info
         cachedWifiNetwork = network
-        cachedWifiInfoOnScreen = onScreen
+        cachedWifiInfoInFull = inFull
         return info
     }
 

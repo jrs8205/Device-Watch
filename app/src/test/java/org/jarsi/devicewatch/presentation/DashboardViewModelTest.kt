@@ -124,6 +124,62 @@ class DashboardViewModelTest {
             assertThat(viewModel.uiState.value.deviceInfo?.batteryCapacityMah).isEqualTo("load 2")
         }
 
+    @Test
+    fun `given the device state shown, when extended access changes, then it is read again`() =
+        runTest(dispatcher) {
+            val settings = FakeAppSettingsRepository(access = PrivilegedAccess.OFF)
+            val repository = FakeSystemStatsRepository(sampleStats()).apply { deviceStateNamesTurn = true }
+            val viewModel = buildViewModel(repository = repository, settings = settings)
+            advanceUntilIdle()
+            // The access flow's first value is not a change: a refresh reads the state itself.
+            assertThat(repository.deviceStateLoads).isEqualTo(0)
+
+            viewModel.refresh()
+            advanceUntilIdle()
+            assertThat(repository.deviceStateLoads).isEqualTo(1)
+
+            // Root on: the developer switches Android 17 hides from apps now come through the shell.
+            settings.access = PrivilegedAccess.ROOT
+            advanceUntilIdle()
+            assertThat(repository.deviceStateLoads).isEqualTo(2)
+            assertThat(viewModel.uiState.value.deviceState?.developerOptions).isEqualTo("load 2")
+
+            // And off again: the rows go back to saying Android hides them.
+            settings.access = PrivilegedAccess.OFF
+            advanceUntilIdle()
+            assertThat(repository.deviceStateLoads).isEqualTo(3)
+            assertThat(viewModel.uiState.value.deviceState?.developerOptions).isEqualTo("load 3")
+        }
+
+    @Test
+    fun `given access switched under a refresh, then the refresh's device state does not overwrite the newer read`() =
+        runTest(dispatcher) {
+            val settings = FakeAppSettingsRepository(access = PrivilegedAccess.OFF)
+            val repository = FakeSystemStatsRepository(sampleStats()).apply {
+                deviceStateNamesTurn = true
+                firstDeviceStateGate = CompletableDeferred()
+            }
+            val viewModel = buildViewModel(repository = repository, settings = settings)
+            advanceUntilIdle()
+
+            viewModel.refresh()
+            advanceUntilIdle()
+            // The refresh waits in its device-state read, nothing shown yet.
+            assertThat(repository.deviceStateLoads).isEqualTo(1)
+            assertThat(viewModel.uiState.value.deviceState).isNull()
+
+            // Root comes on while it waits: a second read, made with root, completes first.
+            settings.access = PrivilegedAccess.ROOT
+            advanceUntilIdle()
+            assertThat(repository.deviceStateLoads).isEqualTo(2)
+            assertThat(viewModel.uiState.value.deviceState?.developerOptions).isEqualTo("load 2")
+
+            // The refresh's read, made without root, comes back late and must not overwrite it.
+            repository.firstDeviceStateGate!!.complete(Unit)
+            advanceUntilIdle()
+            assertThat(viewModel.uiState.value.deviceState?.developerOptions).isEqualTo("load 2")
+        }
+
     private fun holding() = FakeCpuProfiles(
         CpuProfileStatus(active = CpuProfile.BALANCED, held = mapOf(CpuPolicyId.of("policy8")!! to 2_294_000L))
     )
@@ -1486,7 +1542,19 @@ private class FakeSystemStatsRepository(
 ) : SystemStatsRepository {
     override val latestStats = kotlinx.coroutines.flow.MutableStateFlow<SystemStats?>(null)
 
-    override suspend fun deviceState(): DeviceState = state
+    var deviceStateLoads = 0
+
+    /** Holds the first device-state read back until completed, so a test can switch access under it. */
+    var firstDeviceStateGate: CompletableDeferred<Unit>? = null
+
+    /** Names each read's turn in the developer-options row, so a test can tell whose result reached the screen. */
+    var deviceStateNamesTurn = false
+
+    override suspend fun deviceState(): DeviceState {
+        val turn = ++deviceStateLoads
+        if (turn == 1) firstDeviceStateGate?.await()
+        return if (deviceStateNamesTurn) state.copy(developerOptions = "load $turn") else state
+    }
 
     override suspend fun storageBreakdown(): StorageBreakdown? = storage
 

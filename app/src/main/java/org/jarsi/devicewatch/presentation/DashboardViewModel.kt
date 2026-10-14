@@ -359,8 +359,11 @@ class DashboardViewModel @Inject constructor(
         // design capacity on a phone that keeps the file from the app) comes through
         // the shell: a switch of access, either way, is a reason to read it again, a
         // read still under way included. The flow's first value is not a switch; the
-        // screen asks for the info then.
+        // screen asks for the info then. The device state's developer switches come
+        // through the shell on Android 17 the same way, and nothing else re-reads the
+        // state until the next refresh.
         if (deviceInfoRequested) loadDeviceInfo()
+        if (deviceStateRequested) reloadDeviceState()
     }
 
     /**
@@ -540,10 +543,36 @@ class DashboardViewModel @Inject constructor(
             periodStart.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
         )
         val storage = repository.storageBreakdown()
+        deviceStateRequested = true
+        val stateGeneration = ++deviceStateGeneration
         val deviceState = repository.deviceState()
         if (generation != refreshGeneration) return
         _uiState.update {
-            it.copy(dataBreakdown = breakdown, storageBreakdown = storage, deviceState = deviceState)
+            it.copy(
+                dataBreakdown = breakdown,
+                storageBreakdown = storage,
+                // Access switched under this read: the read that switch started is the newer one.
+                deviceState = if (stateGeneration == deviceStateGeneration) deviceState else it.deviceState,
+            )
+        }
+    }
+
+    /** Whether a refresh has read the device state; a switch of access reads it again from then on. */
+    private var deviceStateRequested = false
+
+    /** Counts the device-state reads, so a read overtaken by a newer one (access switched under it) is not shown. */
+    private var deviceStateGeneration = 0
+
+    /**
+     * Reads the device state again when extended access is switched: the developer
+     * switches Android 17 hides from apps come through the shell, so the rows
+     * change with the access. Only the latest read's result reaches the screen.
+     */
+    private fun reloadDeviceState() {
+        val generation = ++deviceStateGeneration
+        viewModelScope.launch {
+            val state = repository.deviceState()
+            if (generation == deviceStateGeneration) _uiState.update { it.copy(deviceState = state) }
         }
     }
 

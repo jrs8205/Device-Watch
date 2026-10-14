@@ -38,17 +38,30 @@ class LocationGatedReadsTest {
     }
 
     @Test
-    fun `a copy read off screen does not serve on screen, where the full one may now be read`() {
-        // Android 10–11: the refused background read is a redacted copy (no name) or an empty cell list.
-        assertThat(LocationGatedReads.cachedCopyUsable(readAtMillis = 10_000L, nowMillis = 20_000L, sameSource = true, readOnScreen = false, onScreenNow = true)).isFalse()
-        // Off screen it is as good as it gets; on screen a full copy stays good.
-        assertThat(LocationGatedReads.cachedCopyUsable(readAtMillis = 10_000L, nowMillis = 20_000L, sameSource = true, readOnScreen = false, onScreenNow = false)).isTrue()
-        assertThat(LocationGatedReads.cachedCopyUsable(readAtMillis = 10_000L, nowMillis = 20_000L, sameSource = true, readOnScreen = true, onScreenNow = true)).isTrue()
-        // A full copy read on screen still serves the widget after the app leaves the screen.
-        assertThat(LocationGatedReads.cachedCopyUsable(readAtMillis = 10_000L, nowMillis = 20_000L, sameSource = true, readOnScreen = true, onScreenNow = false)).isTrue()
+    fun `a redacted copy does not serve where the full one may now be read`() {
+        // Android 10–11: the refused background read is a redacted copy (no name) or an empty cell
+        // list; so is a Wi-Fi read made without the location permission on 10–12, where the
+        // nearby-devices gate lets it through. Either stops serving once the full copy is readable.
+        assertThat(LocationGatedReads.cachedCopyUsable(readAtMillis = 10_000L, nowMillis = 20_000L, sameSource = true, readInFull = false, fullReadableNow = true)).isFalse()
+        // While the full copy cannot be read either, the redacted one is as good as it gets.
+        assertThat(LocationGatedReads.cachedCopyUsable(readAtMillis = 10_000L, nowMillis = 20_000L, sameSource = true, readInFull = false, fullReadableNow = false)).isTrue()
+        assertThat(LocationGatedReads.cachedCopyUsable(readAtMillis = 10_000L, nowMillis = 20_000L, sameSource = true, readInFull = true, fullReadableNow = true)).isTrue()
+        // A full copy still serves the widget after the app leaves the screen.
+        assertThat(LocationGatedReads.cachedCopyUsable(readAtMillis = 10_000L, nowMillis = 20_000L, sameSource = true, readInFull = true, fullReadableNow = false)).isTrue()
         // The minute and the source still rule.
-        assertThat(LocationGatedReads.cachedCopyUsable(readAtMillis = 10_000L, nowMillis = 70_000L, sameSource = true, readOnScreen = true, onScreenNow = true)).isFalse()
-        assertThat(LocationGatedReads.cachedCopyUsable(readAtMillis = 10_000L, nowMillis = 20_000L, sameSource = false, readOnScreen = true, onScreenNow = true)).isFalse()
+        assertThat(LocationGatedReads.cachedCopyUsable(readAtMillis = 10_000L, nowMillis = 70_000L, sameSource = true, readInFull = true, fullReadableNow = true)).isFalse()
+        assertThat(LocationGatedReads.cachedCopyUsable(readAtMillis = 10_000L, nowMillis = 20_000L, sameSource = false, readInFull = true, fullReadableNow = true)).isFalse()
+    }
+
+    @Test
+    fun `a Wi-Fi copy is full only with the fine location permission and the app on screen`() {
+        // Android 10–12: the gate lets a read without the location permission through (the
+        // nearby-devices permission exists only from 13), and it answers with the name redacted.
+        assertThat(LocationGatedReads.wifiReadInFull(fineLocationGranted = false, appVisible = true)).isFalse()
+        // Android 10–11: a read from the background is refused and answers redacted even with the permission.
+        assertThat(LocationGatedReads.wifiReadInFull(fineLocationGranted = true, appVisible = false)).isFalse()
+        assertThat(LocationGatedReads.wifiReadInFull(fineLocationGranted = true, appVisible = true)).isTrue()
+        assertThat(LocationGatedReads.wifiReadInFull(fineLocationGranted = false, appVisible = false)).isFalse()
     }
 
     @Test
