@@ -118,13 +118,13 @@ class SystemStatsRepositoryImpl @Inject constructor(
      */
     private var cellInfoReadAtMillis = 0L
     private var cachedCellInfo: List<CellInfo> = emptyList()
-    /** Whether the cached cell list was read with the app on screen; see [LocationGatedReads.cachedCopyUsable]. */
-    private var cachedCellInfoOnScreen = false
+    /** Whether the cached cell list is the full one; see [LocationGatedReads.fullCopyReadable]. */
+    private var cachedCellInfoInFull = false
     private var wifiInfoReadAtMillis = 0L
     private var cachedWifiInfo: WifiInfo? = null
     /** The active network the cached Wi-Fi info was read on; another network means another read. */
     private var cachedWifiNetwork: Network? = null
-    /** Whether the cached Wi-Fi info carries the name; see [LocationGatedReads.wifiReadInFull]. */
+    /** Whether the cached Wi-Fi info carries the name; see [LocationGatedReads.fullCopyReadable]. */
     private var cachedWifiInfoInFull = false
 
     /** The privileged shell as this poll may use it; see [beginShellPass]. */
@@ -2196,9 +2196,10 @@ class SystemStatsRepositoryImpl @Inject constructor(
             return null
         }
         val now = SystemClock.elapsedRealtime()
-        val onScreen = appVisibility.visible
-        // The permission is a given here (the gate above); the full list wants the app on screen too.
-        if (LocationGatedReads.cachedCopyUsable(cellInfoReadAtMillis, now, sameSource = true, readInFull = cachedCellInfoOnScreen, fullReadableNow = onScreen)) {
+        // The permission is a given here (the gate above); the full list wants the
+        // phone's location switch on and the app on screen too.
+        val inFull = LocationGatedReads.fullCopyReadable(fineLocationGranted = true, locationEnabled = locationEnabled(), appVisible = appVisibility.visible)
+        if (LocationGatedReads.cachedCopyUsable(cellInfoReadAtMillis, now, sameSource = true, readInFull = cachedCellInfoInFull, fullReadableNow = inFull)) {
             return cachedCellInfo
         }
         val cells = try {
@@ -2209,8 +2210,20 @@ class SystemStatsRepositoryImpl @Inject constructor(
         }
         cellInfoReadAtMillis = now
         cachedCellInfo = cells
-        cachedCellInfoOnScreen = onScreen
+        cachedCellInfoInFull = inFull
         return cells
+    }
+
+    /** The phone's own location switch, which off leaves every location read redacted or empty. */
+    private fun locationEnabled(): Boolean {
+        val manager = context.getSystemService(LocationManager::class.java) ?: return false
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            manager.isLocationEnabled
+        } else {
+            @Suppress("DEPRECATION")
+            Settings.Secure.getInt(context.contentResolver, Settings.Secure.LOCATION_MODE, Settings.Secure.LOCATION_MODE_OFF) !=
+                Settings.Secure.LOCATION_MODE_OFF
+        }
     }
 
     /**
@@ -2222,16 +2235,18 @@ class SystemStatsRepositoryImpl @Inject constructor(
      * own. Null when it may not be read now. The callers that can take the transport
      * info from the network's capabilities do so first; this is their fallback (a VPN
      * on top of Wi-Fi hides the Wi-Fi's transport info). A copy read without the
-     * name (no location permission yet, or off screen on 10–11) gives way the moment
-     * the name may be read: the permission granted a moment ago must show.
+     * name (no location permission yet, the phone's location switch off, or off
+     * screen on 10–11) gives way the moment the name may be read: the permission
+     * granted or the switch turned on a moment ago must show.
      */
     @Suppress("DEPRECATION")
     private fun wifiConnectionInfo(): WifiInfo? {
         if (!LocationGatedReads.locationReadAllowed(Build.VERSION.SDK_INT, canReadWifiIdentity(), appVisibility.visible)) return null
         val now = SystemClock.elapsedRealtime()
         val network = context.getSystemService(ConnectivityManager::class.java)?.activeNetwork
-        val inFull = LocationGatedReads.wifiReadInFull(
+        val inFull = LocationGatedReads.fullCopyReadable(
             fineLocationGranted = hasPermission(Manifest.permission.ACCESS_FINE_LOCATION),
+            locationEnabled = locationEnabled(),
             appVisible = appVisibility.visible,
         )
         val usable = LocationGatedReads.cachedCopyUsable(

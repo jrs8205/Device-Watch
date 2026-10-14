@@ -38,24 +38,27 @@ internal object LocationGatedReads {
     /**
      * [cachedReadUsable], and the copy must be as good as one read now: a read made
      * off screen on Android 10–11 was refused and came back redacted (the Wi-Fi
-     * details without the name) or empty (the cell list), and a Wi-Fi read made
-     * without the location permission (see [wifiReadInFull]) came back redacted
-     * too. Such a copy stops serving the moment the full one may be read: the app
-     * on screen, the permission granted meanwhile. A full copy goes on serving
-     * after the app leaves the screen.
+     * details without the name) or empty (the cell list), and so did one made
+     * without the location permission or with the phone's location switch off (see
+     * [fullCopyReadable]). Such a copy stops serving the moment the full one may be
+     * read: the app on screen, the permission granted or the switch turned on
+     * meanwhile. A full copy goes on serving after the app leaves the screen.
      */
     fun cachedCopyUsable(readAtMillis: Long, nowMillis: Long, sameSource: Boolean, readInFull: Boolean, fullReadableNow: Boolean): Boolean =
         cachedReadUsable(readAtMillis, nowMillis, sameSource) && (readInFull || !fullReadableNow)
 
     /**
-     * Whether `getConnectionInfo()` answers with the network's name: with the fine
-     * location permission (from Android 10 the coarse one leaves the name redacted)
-     * and the app on screen. The gate lets a read without the permission through on
-     * Android 10–12, where the nearby-devices permission does not exist yet, and
-     * on 10–11 a read from the background goes through refused: both answer redacted.
+     * Whether a location read answers in full, `getConnectionInfo()` with the
+     * network's name and `getAllCellInfo()` with the cells: with the fine location
+     * permission (from Android 10 the coarse one leaves the name redacted), the
+     * phone's own location switch on (off, Android redacts the name and empties the
+     * list whatever the permission), and the app on screen. The gate lets a Wi-Fi read
+     * without the permission through on Android 10–12, where the nearby-devices
+     * permission does not exist yet, and on 10–11 a read from the background goes
+     * through refused: all of these answer redacted.
      */
-    fun wifiReadInFull(fineLocationGranted: Boolean, appVisible: Boolean): Boolean =
-        fineLocationGranted && appVisible
+    fun fullCopyReadable(fineLocationGranted: Boolean, locationEnabled: Boolean, appVisible: Boolean): Boolean =
+        fineLocationGranted && locationEnabled && appVisible
 
     /**
      * `getServiceState`: from API 33 the call can be asked to leave the location

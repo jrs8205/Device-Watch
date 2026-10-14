@@ -54,14 +54,16 @@ class LocationGatedReadsTest {
     }
 
     @Test
-    fun `a Wi-Fi copy is full only with the fine location permission and the app on screen`() {
-        // Android 10–12: the gate lets a read without the location permission through (the
+    fun `a copy is full only with the fine location permission, the phone's location on, and the app on screen`() {
+        // Android 10–12: the gate lets a Wi-Fi read without the location permission through (the
         // nearby-devices permission exists only from 13), and it answers with the name redacted.
-        assertThat(LocationGatedReads.wifiReadInFull(fineLocationGranted = false, appVisible = true)).isFalse()
+        assertThat(LocationGatedReads.fullCopyReadable(fineLocationGranted = false, locationEnabled = true, appVisible = true)).isFalse()
+        // The phone's location switch off: the name is redacted and the cell list empty, permission or not.
+        assertThat(LocationGatedReads.fullCopyReadable(fineLocationGranted = true, locationEnabled = false, appVisible = true)).isFalse()
         // Android 10–11: a read from the background is refused and answers redacted even with the permission.
-        assertThat(LocationGatedReads.wifiReadInFull(fineLocationGranted = true, appVisible = false)).isFalse()
-        assertThat(LocationGatedReads.wifiReadInFull(fineLocationGranted = true, appVisible = true)).isTrue()
-        assertThat(LocationGatedReads.wifiReadInFull(fineLocationGranted = false, appVisible = false)).isFalse()
+        assertThat(LocationGatedReads.fullCopyReadable(fineLocationGranted = true, locationEnabled = true, appVisible = false)).isFalse()
+        assertThat(LocationGatedReads.fullCopyReadable(fineLocationGranted = true, locationEnabled = true, appVisible = true)).isTrue()
+        assertThat(LocationGatedReads.fullCopyReadable(fineLocationGranted = false, locationEnabled = false, appVisible = false)).isFalse()
     }
 
     @Test

@@ -32,13 +32,18 @@ data class SystemAppsUiState(
     /** The app a removal or restore is running for; one at a time. */
     val busyPackage: String? = null,
     val lastAction: SystemAppAction? = null,
+    /** A read of the lists is under way; what it brings may change a verdict. */
+    val reloading: Boolean = false,
 ) {
     val visibleApps: List<SystemApp> get() = SystemAppRules.matching(apps, query)
     val visibleRemoved: List<SystemApp> get() = SystemAppRules.matching(removed, query)
 
-    /** The question's remove button: a warned-about app waits for the acknowledgement. */
+    /**
+     * The question's remove button: a warned-about app waits for the acknowledgement,
+     * and any app for a read under way, since the verdict it brings is the one that counts.
+     */
     val canConfirm: Boolean
-        get() = pending != null && (pending.verdict.risk != SystemAppRisk.WARNING || acknowledged)
+        get() = pending != null && !reloading && (pending.verdict.risk != SystemAppRisk.WARNING || acknowledged)
 }
 
 /**
@@ -57,6 +62,9 @@ class SystemAppsViewModel @Inject constructor(
     /** Counts the reads, so a read overtaken by a newer one (an action's re-read, say) is not shown. */
     private var loadGeneration = 0
 
+    /** How many reads are under way; the question cannot be confirmed while any is. */
+    private var readsInFlight = 0
+
     /** Reads the lists; called when the page opens and whenever it comes back on screen. */
     fun load() {
         viewModelScope.launch { reload() }
@@ -67,11 +75,22 @@ class SystemAppsViewModel @Inject constructor(
      * page and answered after a removal's own re-read would otherwise put the removed
      * app back among the installed. A question left up follows the app as it stands
      * now: gone, or blocked, and the question is gone; warned about anew, and the
-     * acknowledgement is asked again.
+     * acknowledgement is asked again. While a read is under way the question waits
+     * for it (`reloading`): the verdict it brings is the one that counts.
      */
     private suspend fun reload() {
         val generation = ++loadGeneration
-        val apps = repository.systemApps().sortedBy { it.label.lowercase() }
+        readsInFlight++
+        _uiState.update { it.copy(reloading = true) }
+        try {
+            publish(generation, repository.systemApps().sortedBy { it.label.lowercase() })
+        } finally {
+            readsInFlight--
+            if (readsInFlight == 0) _uiState.update { it.copy(reloading = false) }
+        }
+    }
+
+    private fun publish(generation: Int, apps: List<SystemApp>) {
         if (generation != loadGeneration) return
         _uiState.update { state ->
             val installed = apps.filter { it.installed }

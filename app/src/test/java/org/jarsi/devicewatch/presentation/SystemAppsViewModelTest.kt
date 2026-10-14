@@ -311,24 +311,80 @@ class SystemAppsViewModelTest {
     }
 
     @Test
+    fun `a confirmation waits for a read under way, which may change the verdict`() = runTest(dispatcher) {
+        val repository = repository()
+        val viewModel = SystemAppsViewModel(repository)
+        viewModel.load()
+        advanceUntilIdle()
+
+        // The warning acknowledged; the keyboard made the one in use in Settings; back on the
+        // page, the read that would say so is still under way.
+        viewModel.onRemoveRequested("com.google.android.gms")
+        viewModel.onAcknowledgeChange(true)
+        assertThat(viewModel.uiState.value.canConfirm).isTrue()
+        repository.reclassify("com.google.android.gms", SystemAppVerdict(SystemAppRisk.BLOCKED, SystemAppRole.KEYBOARD_IN_USE))
+        repository.gatedRead = 2
+        repository.readGate = CompletableDeferred()
+        viewModel.load()
+        advanceUntilIdle()
+
+        // Nothing can be confirmed on the list as it was.
+        assertThat(viewModel.uiState.value.reloading).isTrue()
+        assertThat(viewModel.uiState.value.canConfirm).isFalse()
+        viewModel.onConfirmRemove()
+        advanceUntilIdle()
+        assertThat(repository.removed).isEmpty()
+        assertThat(viewModel.uiState.value.pending).isEqualTo(gms)
+
+        // The read lands: blocked now, so the question goes, and still nothing is removed.
+        repository.readGate!!.complete(Unit)
+        advanceUntilIdle()
+        assertThat(viewModel.uiState.value.reloading).isFalse()
+        assertThat(viewModel.uiState.value.pending).isNull()
+        viewModel.onConfirmRemove()
+        advanceUntilIdle()
+        assertThat(repository.removed).isEmpty()
+
+        // A read that changes nothing gives the confirmation back once it lands.
+        viewModel.onRemoveRequested("com.facebook.services")
+        repository.gatedRead = 3
+        repository.readGate = CompletableDeferred()
+        viewModel.load()
+        advanceUntilIdle()
+        assertThat(viewModel.uiState.value.canConfirm).isFalse()
+        repository.readGate!!.complete(Unit)
+        advanceUntilIdle()
+        assertThat(viewModel.uiState.value.canConfirm).isTrue()
+        viewModel.onConfirmRemove()
+        advanceUntilIdle()
+        assertThat(repository.removed).containsExactly("com.facebook.services")
+    }
+
+    @Test
     fun `a list read from before an action never lands over the one read after it`() = runTest(dispatcher) {
         val repository = repository()
         val viewModel = SystemAppsViewModel(repository)
         viewModel.load()
         advanceUntilIdle()
 
-        // The return to the page starts a read (the second) that is slow to answer.
+        // The removal is confirmed and under way; the page is left and returned to meanwhile,
+        // which starts a read (the second) that is slow to answer.
+        repository.removeGate = CompletableDeferred()
+        viewModel.onRemoveRequested("com.google.android.youtube")
+        viewModel.onConfirmRemove()
+        advanceUntilIdle()
+        assertThat(viewModel.uiState.value.busyPackage).isEqualTo("com.google.android.youtube")
         repository.gatedRead = 2
         repository.readGate = CompletableDeferred()
         viewModel.load()
         advanceUntilIdle()
         assertThat(repository.reads).isEqualTo(2)
 
-        // The removal goes through meanwhile, and its own re-read (the third) shows it.
-        viewModel.onRemoveRequested("com.google.android.youtube")
-        viewModel.onConfirmRemove()
+        // The removal completes, and its own re-read (the third) shows it.
+        repository.removeGate!!.complete(Unit)
         advanceUntilIdle()
         assertThat(repository.reads).isEqualTo(3)
+        assertThat(viewModel.uiState.value.busyPackage).isNull()
         assertThat(viewModel.uiState.value.apps.map { it.packageName }).doesNotContain("com.google.android.youtube")
         assertThat(viewModel.uiState.value.removed.map { it.packageName }).contains("com.google.android.youtube")
 
