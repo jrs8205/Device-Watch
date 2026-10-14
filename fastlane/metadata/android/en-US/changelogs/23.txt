@@ -1,0 +1,5 @@
+• Privacy log (extended access): which apps used the camera, microphone and location, when, how long, from the background too, and what Android 17 refused
+• System apps (extended access): remove preinstalled apps you do not use, this user only, after a question, warned where the phone needs them, or restore them
+• Kernel page: sleep attempts, their blocker, what woke the phone
+• The app no longer appears in its own log
+• Wi-Fi under a VPN; design capacity and developer switches on Android 17
