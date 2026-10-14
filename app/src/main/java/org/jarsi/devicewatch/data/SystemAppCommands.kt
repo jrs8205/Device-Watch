@@ -15,6 +15,13 @@ sealed interface SystemAppActionResult {
 
     /** The removal never ran: the app was no longer installed for this user by then. */
     data object NotInstalled : SystemAppActionResult
+
+    /**
+     * The shell called it done, but the package manager shows the app as it was.
+     * `pm install-existing` says "installed for user" for every failure but a
+     * missing package (a restriction on the user, say), so the lists have the last word.
+     */
+    data object Unchanged : SystemAppActionResult
 }
 
 /**

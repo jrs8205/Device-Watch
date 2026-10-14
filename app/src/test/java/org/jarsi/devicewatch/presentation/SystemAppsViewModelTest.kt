@@ -34,9 +34,11 @@ class SystemAppsViewModelTest {
         /** Holds read number [gatedRead] until completed; the list it answers with is the one from before the wait. */
         var gatedRead = 0
         var readGate: CompletableDeferred<Unit>? = null
-        /** Holds the next fresh verdict read until completed. */
+        /** Holds the next fresh verdict read until completed; the verdict it answers with is the one from before the wait. */
         var verdictGate: CompletableDeferred<Unit>? = null
         var verdictReads = 0
+        /** False: the shell says done, but the package manager leaves the app as it was (a restriction on the user, say). */
+        var effective = true
 
         override suspend fun systemApps(): List<SystemApp> {
             val turn = ++reads
@@ -48,8 +50,9 @@ class SystemAppsViewModelTest {
         /** The verdict as the lists stand now, without a read of them: null for an app not installed. */
         override suspend fun verdictNow(packageName: String): SystemAppVerdict? {
             verdictReads++
+            val snapshot = apps.firstOrNull { it.packageName == packageName && it.installed }?.verdict
             verdictGate?.await()
-            return apps.firstOrNull { it.packageName == packageName && it.installed }?.verdict
+            return snapshot
         }
 
         fun reclassify(packageName: String, verdict: SystemAppVerdict) {
@@ -60,13 +63,13 @@ class SystemAppsViewModelTest {
         override suspend fun remove(packageName: String): SystemAppActionResult {
             removed += packageName
             removeGate?.await()
-            if (result == SystemAppActionResult.Done) replace(packageName, installed = false)
+            if (result == SystemAppActionResult.Done && effective) replace(packageName, installed = false)
             return result
         }
 
         override suspend fun restore(packageName: String): SystemAppActionResult {
             restored += packageName
-            if (result == SystemAppActionResult.Done) replace(packageName, installed = true)
+            if (result == SystemAppActionResult.Done && effective) replace(packageName, installed = true)
             return result
         }
 
@@ -478,6 +481,111 @@ class SystemAppsViewModelTest {
     }
 
     @Test
+    fun `a confirmation overtaken by a reload is withdrawn, whatever the fresh verdict said`() = runTest(dispatcher) {
+        val repository = repository().apply { verdictGate = CompletableDeferred() }
+        val viewModel = SystemAppsViewModel(repository)
+        viewModel.load()
+        advanceUntilIdle()
+
+        // Confirmed as a plain app; the verdict read answers with that, late. Meanwhile the app
+        // is made a home screen and a reload lands, which asks the acknowledgement anew.
+        viewModel.onRemoveRequested("com.facebook.services")
+        viewModel.onConfirmRemove()
+        advanceUntilIdle()
+        repository.reclassify("com.facebook.services", SystemAppVerdict(SystemAppRisk.WARNING, SystemAppRole.HOME))
+        viewModel.load()
+        advanceUntilIdle()
+        assertThat(viewModel.uiState.value.pending?.verdict?.role).isEqualTo(SystemAppRole.HOME)
+        assertThat(viewModel.uiState.value.acknowledged).isFalse()
+
+        // The late answer (plain) must not send the removal of an app now warned about and unacknowledged.
+        repository.verdictGate!!.complete(Unit)
+        advanceUntilIdle()
+        assertThat(repository.removed).isEmpty()
+        val state = viewModel.uiState.value
+        assertThat(state.busyPackage).isNull()
+        assertThat(state.pending?.verdict?.role).isEqualTo(SystemAppRole.HOME)
+        assertThat(state.acknowledged).isFalse()
+        assertThat(state.canConfirm).isFalse()
+
+        // Acknowledged and confirmed again, it goes.
+        viewModel.onAcknowledgeChange(true)
+        viewModel.onConfirmRemove()
+        advanceUntilIdle()
+        assertThat(repository.removed).containsExactly("com.facebook.services")
+    }
+
+    @Test
+    fun `a confirmation is withdrawn while a reload started after it is still under way`() = runTest(dispatcher) {
+        val repository = repository().apply { verdictGate = CompletableDeferred() }
+        val viewModel = SystemAppsViewModel(repository)
+        viewModel.load()
+        advanceUntilIdle()
+
+        // Confirmed with the warning acknowledged; the verdict read is slow; the keyboard is made
+        // the one in use and the page returned to, which starts a read that is slower still.
+        viewModel.onRemoveRequested("com.google.android.gms")
+        viewModel.onAcknowledgeChange(true)
+        viewModel.onConfirmRemove()
+        advanceUntilIdle()
+        repository.reclassify("com.google.android.gms", SystemAppVerdict(SystemAppRisk.BLOCKED, SystemAppRole.KEYBOARD_IN_USE))
+        repository.gatedRead = 2
+        repository.readGate = CompletableDeferred()
+        viewModel.load()
+        advanceUntilIdle()
+        assertThat(viewModel.uiState.value.reloading).isTrue()
+
+        // The verdict read answers (warned about, as it was): the read under way is the one that counts.
+        repository.verdictGate!!.complete(Unit)
+        advanceUntilIdle()
+        assertThat(repository.removed).isEmpty()
+        assertThat(viewModel.uiState.value.busyPackage).isNull()
+        assertThat(viewModel.uiState.value.pending).isNotNull()
+
+        // The read lands: blocked, so the question goes.
+        repository.readGate!!.complete(Unit)
+        advanceUntilIdle()
+        assertThat(viewModel.uiState.value.pending).isNull()
+        viewModel.onConfirmRemove()
+        advanceUntilIdle()
+        assertThat(repository.removed).isEmpty()
+    }
+
+    @Test
+    fun `a restore the shell calls done but the lists show undone is reported undone`() = runTest(dispatcher) {
+        val repository = repository().apply { effective = false }
+        val viewModel = SystemAppsViewModel(repository)
+        viewModel.load()
+        advanceUntilIdle()
+
+        viewModel.onRestore("com.example.bloat")
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertThat(repository.restored).containsExactly("com.example.bloat")
+        assertThat(state.lastAction).isEqualTo(SystemAppAction(gone, restore = true, result = SystemAppActionResult.Unchanged))
+        assertThat(state.removed.map { it.packageName }).contains("com.example.bloat")
+        assertThat(state.busyPackage).isNull()
+    }
+
+    @Test
+    fun `a removal the shell calls done but the lists show undone is reported undone`() = runTest(dispatcher) {
+        val repository = repository().apply { effective = false }
+        val viewModel = SystemAppsViewModel(repository)
+        viewModel.load()
+        advanceUntilIdle()
+
+        viewModel.onRemoveRequested("com.google.android.youtube")
+        viewModel.onConfirmRemove()
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertThat(repository.removed).containsExactly("com.google.android.youtube")
+        assertThat(state.lastAction).isEqualTo(SystemAppAction(youtube, restore = false, result = SystemAppActionResult.Unchanged))
+        assertThat(state.apps.map { it.packageName }).contains("com.google.android.youtube")
+    }
+
+    @Test
     fun `a question cancelled while the fresh verdict is read runs no command`() = runTest(dispatcher) {
         val repository = repository().apply { verdictGate = CompletableDeferred() }
         val viewModel = SystemAppsViewModel(repository)
@@ -504,11 +612,13 @@ class SystemAppsViewModelTest {
         viewModel.load()
         advanceUntilIdle()
 
+        // Plain when asked, a home screen by the confirmation; the question is cancelled while
+        // the verdict (the new one) is still being read.
         viewModel.onRemoveRequested("com.facebook.services")
+        repository.reclassify("com.facebook.services", SystemAppVerdict(SystemAppRisk.WARNING, SystemAppRole.HOME))
         viewModel.onConfirmRemove()
         advanceUntilIdle()
         viewModel.onDismissRemove()
-        repository.reclassify("com.facebook.services", SystemAppVerdict(SystemAppRisk.WARNING, SystemAppRole.HOME))
         repository.verdictGate!!.complete(Unit)
         advanceUntilIdle()
 

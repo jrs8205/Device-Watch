@@ -80,12 +80,14 @@ class SystemAppsViewModel @Inject constructor(
      * acknowledgement is asked again. While a read is under way the question waits
      * for it (`reloading`): the verdict it brings is the one that counts.
      */
-    private suspend fun reload() {
+    private suspend fun reload(): List<SystemApp> {
         val generation = ++loadGeneration
         readsInFlight++
         _uiState.update { it.copy(reloading = true) }
         try {
-            publish(generation, repository.systemApps().sortedBy { it.label.lowercase() })
+            val apps = repository.systemApps().sortedBy { it.label.lowercase() }
+            publish(generation, apps)
+            return apps
         } finally {
             readsInFlight--
             if (readsInFlight == 0) _uiState.update { it.copy(reloading = false) }
@@ -138,7 +140,9 @@ class SystemAppsViewModel @Inject constructor(
      * keeps the page on screen. So the verdict is read again just before the command.
      * Blocked by then, or gone: no command, and the notice says so. Changed otherwise:
      * the question is asked again with the verdict as it is now, the acknowledgement
-     * reset. The same: the removal runs.
+     * reset. The same: the removal runs. A read of the lists started while the verdict
+     * was read withdraws the confirmation altogether: what that read brings is the one
+     * that counts, and the question it leaves up, if any, is to be confirmed anew.
      */
     fun onConfirmRemove() {
         val state = _uiState.value
@@ -149,10 +153,12 @@ class SystemAppsViewModel @Inject constructor(
             onDismissRemove()
             return
         }
+        val generation = loadGeneration
         _uiState.update { it.copy(busyPackage = app.packageName, lastAction = null) }
         viewModelScope.launch {
             val verdict = repository.verdictNow(app.packageName)
             when {
+                generation != loadGeneration -> _uiState.update { it.copy(busyPackage = null) }
                 verdict == null -> refuse(app, SystemAppActionResult.NotInstalled)
                 verdict.risk == SystemAppRisk.BLOCKED -> refuse(app, SystemAppActionResult.Blocked(verdict))
                 verdict != app.verdict -> askAgain(app.copy(verdict = verdict))
@@ -197,10 +203,20 @@ class SystemAppsViewModel @Inject constructor(
         }
     }
 
-    /** The lists are read again either way: the package manager's state is the truth, not the answer. */
+    /**
+     * The lists are read again either way: the package manager's state is the truth, not
+     * the answer. A "done" the lists contradict (the app still installed after a removal,
+     * still removed after a restore) is reported as nothing changed.
+     */
     private suspend fun finish(action: SystemAppAction) {
-        reload()
-        _uiState.update { it.copy(busyPackage = null, lastAction = action) }
+        val apps = reload()
+        val installedNow = apps.any { it.packageName == action.app.packageName && it.installed }
+        val result = if (action.result == SystemAppActionResult.Done && installedNow != action.restore) {
+            SystemAppActionResult.Unchanged
+        } else {
+            action.result
+        }
+        _uiState.update { it.copy(busyPackage = null, lastAction = action.copy(result = result)) }
     }
 
     fun onDismissAction() {

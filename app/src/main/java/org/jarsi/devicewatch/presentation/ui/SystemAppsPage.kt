@@ -333,6 +333,11 @@ private fun ActionNotice(action: SystemAppAction, onDismiss: () -> Unit) {
             )
         SystemAppActionResult.NotInstalled ->
             stringResource(R.string.system_apps_failed_removed, label, stringResource(R.string.system_apps_not_installed_now))
+        SystemAppActionResult.Unchanged ->
+            stringResource(
+                if (action.restore) R.string.system_apps_failed_restored else R.string.system_apps_failed_removed,
+                label, stringResource(R.string.system_apps_unchanged),
+            )
     }
     Row(
         verticalAlignment = Alignment.CenterVertically,
