@@ -901,6 +901,7 @@
     <string name="system_apps_band_off">Kun laajennettu käyttö on päällä (Shizuku tai root, Asetuksissa), täältä voi poistaa valmiiksi asennettuja sovelluksia, joita et käytä. Puhelimelle välttämättömät sovellukset on merkitty tai jätetty poiston ulottumattomiin, jokainen poisto varmistetaan ensin, ja poistetun sovelluksen voi palauttaa.</string>
     <string name="system_apps_page_note">Poisto vie sovelluksen vain tältä käyttäjältä tietoineen: kopio järjestelmäosiossa säilyy, ja Palauta tuo sen takaisin, samoin tehdasasetusten palautus. Poista vain sovelluksia, jotka tunnet. Järjestelmäsovellus voi olla sellainen, johon muut sovellukset tai puhelin itse nojaavat; tämän version tuntemat kertovat sen.</string>
     <string name="system_apps_search">Hae nimellä tai paketilla</string>
+    <string name="system_apps_clear_search">Tyhjennä haku</string>
     <string name="system_apps_reading">Luetaan järjestelmäsovelluksia…</string>
     <string name="system_apps_installed_title">Asennetut (%1$d)</string>
     <string name="system_apps_removed_title">Poistetut (%1$d)</string>

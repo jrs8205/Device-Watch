@@ -911,6 +911,7 @@
     <string name="system_apps_band_off">With extended access on (Shizuku or root, in Settings) preinstalled apps you do not use can be removed from here. The apps the phone depends on are marked or kept out of reach, every removal is asked about first, and a removed app can be brought back.</string>
     <string name="system_apps_page_note">A removal takes the app away from this user only, with its data: the copy on the system image stays, and Restore brings it back, as does a factory reset. Remove only apps you know. A system app can be one that other apps, or the phone itself, rely on; the ones this build knows of say so.</string>
     <string name="system_apps_search">Search by name or package</string>
+    <string name="system_apps_clear_search">Clear the search</string>
     <string name="system_apps_reading">Reading the system apps…</string>
     <string name="system_apps_installed_title">Installed (%1$d)</string>
     <string name="system_apps_removed_title">Removed (%1$d)</string>

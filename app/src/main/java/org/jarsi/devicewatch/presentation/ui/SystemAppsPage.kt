@@ -16,6 +16,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -121,6 +122,16 @@ fun SystemAppsPage(
                         .padding(horizontal = BAND_INSET, vertical = 4.dp),
                     singleLine = true,
                     placeholder = { Text(stringResource(R.string.system_apps_search)) },
+                    // Whatever the keyboard's state: the search is cleared with one tap.
+                    trailingIcon = if (state.query.isEmpty()) {
+                        null
+                    } else {
+                        {
+                            IconButton(onClick = withTapHaptic { viewModel.onQueryChange("") }) {
+                                Icon(Icons.Filled.Clear, contentDescription = stringResource(R.string.system_apps_clear_search))
+                            }
+                        }
+                    },
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                     keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
                 )
