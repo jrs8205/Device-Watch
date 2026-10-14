@@ -9,6 +9,12 @@ sealed interface SystemAppActionResult {
 
     /** The package manager refused, in its own words (which may be none). */
     data class Failed(val message: String) : SystemAppActionResult
+
+    /** The removal never ran: the verdict, read again just before the command, had the app blocked by then. */
+    data class Blocked(val verdict: SystemAppVerdict) : SystemAppActionResult
+
+    /** The removal never ran: the app was no longer installed for this user by then. */
+    data object NotInstalled : SystemAppActionResult
 }
 
 /**

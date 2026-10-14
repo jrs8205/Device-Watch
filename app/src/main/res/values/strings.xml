@@ -931,6 +931,8 @@
     <string name="system_apps_failed_restored">%1$s could not be restored: %2$s</string>
     <string name="system_apps_no_shell">extended access did not answer</string>
     <string name="system_apps_no_reason">the package manager gave no reason</string>
+    <string name="system_apps_blocked_now">by now it is one the phone cannot do without</string>
+    <string name="system_apps_not_installed_now">it is no longer installed for this user</string>
     <string name="system_apps_dismiss_notice">Dismiss</string>
     <string name="system_app_role_core">part of Android\'s core; the phone does not start or work without it.</string>
     <string name="system_app_role_self">Device Watch itself.</string>

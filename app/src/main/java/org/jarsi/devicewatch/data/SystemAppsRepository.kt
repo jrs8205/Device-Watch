@@ -22,6 +22,13 @@ interface SystemAppsRepository {
     /** Every package on the system image, installed for this user or not, with its verdict. */
     suspend fun systemApps(): List<SystemApp>
 
+    /**
+     * The verdict for [packageName] as the phone stands now, with its roles read again;
+     * null when the package is not installed for this user. For the moment before a
+     * removal: the list's verdict can be stale while the page stays on screen.
+     */
+    suspend fun verdictNow(packageName: String): SystemAppVerdict?
+
     /** Removes [packageName] for this user. [SystemAppActionResult.NoShell] when extended access is off. */
     suspend fun remove(packageName: String): SystemAppActionResult
 
@@ -78,6 +85,14 @@ class SystemAppsRepositoryImpl @Inject constructor(
                     SystemAppCommands.neverInstalledForUser(dump, userId)
                 }
             }
+    }
+
+    @Suppress("DEPRECATION") // the flags overload: the ApplicationInfoFlags one is API 33
+    override suspend fun verdictNow(packageName: String): SystemAppVerdict? = withContext(dispatcher) {
+        // Without MATCH_UNINSTALLED_PACKAGES the package manager does not know a package removed for this user.
+        val info = quietly { packageManager.getApplicationInfo(packageName, 0) } ?: return@withContext null
+        if (info.flags and ApplicationInfo.FLAG_INSTALLED == 0) return@withContext null
+        SystemAppRules.verdict(packageName, deviceRoles())
     }
 
     override suspend fun remove(packageName: String): SystemAppActionResult = withContext(dispatcher) {

@@ -34,12 +34,22 @@ class SystemAppsViewModelTest {
         /** Holds read number [gatedRead] until completed; the list it answers with is the one from before the wait. */
         var gatedRead = 0
         var readGate: CompletableDeferred<Unit>? = null
+        /** Holds the next fresh verdict read until completed. */
+        var verdictGate: CompletableDeferred<Unit>? = null
+        var verdictReads = 0
 
         override suspend fun systemApps(): List<SystemApp> {
             val turn = ++reads
             val snapshot = apps.toList()
             if (turn == gatedRead) readGate?.await()
             return snapshot
+        }
+
+        /** The verdict as the lists stand now, without a read of them: null for an app not installed. */
+        override suspend fun verdictNow(packageName: String): SystemAppVerdict? {
+            verdictReads++
+            verdictGate?.await()
+            return apps.firstOrNull { it.packageName == packageName && it.installed }?.verdict
         }
 
         fun reclassify(packageName: String, verdict: SystemAppVerdict) {
@@ -358,6 +368,155 @@ class SystemAppsViewModelTest {
         viewModel.onConfirmRemove()
         advanceUntilIdle()
         assertThat(repository.removed).containsExactly("com.facebook.services")
+    }
+
+    @Test
+    fun `a confirmation reads the verdict again just before the command, and refuses an app blocked by then`() = runTest(dispatcher) {
+        val repository = repository()
+        val viewModel = SystemAppsViewModel(repository)
+        viewModel.load()
+        advanceUntilIdle()
+
+        // The warning acknowledged; the keyboard made the one in use from the page's own search
+        // field, which keeps the page on screen, so no read of the lists is started.
+        viewModel.onRemoveRequested("com.google.android.gms")
+        viewModel.onAcknowledgeChange(true)
+        val blocked = SystemAppVerdict(SystemAppRisk.BLOCKED, SystemAppRole.KEYBOARD_IN_USE)
+        repository.reclassify("com.google.android.gms", blocked)
+        assertThat(viewModel.uiState.value.canConfirm).isTrue()
+
+        viewModel.onConfirmRemove()
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertThat(repository.removed).isEmpty()
+        assertThat(repository.verdictReads).isEqualTo(1)
+        assertThat(state.pending).isNull()
+        assertThat(state.busyPackage).isNull()
+        assertThat(state.lastAction).isEqualTo(SystemAppAction(gms, restore = false, result = SystemAppActionResult.Blocked(blocked)))
+        // The lists are read again, so the list shows the app blocked.
+        assertThat(repository.reads).isEqualTo(2)
+        assertThat(state.apps.first { it.packageName == "com.google.android.gms" }.verdict).isEqualTo(blocked)
+    }
+
+    @Test
+    fun `a confirmation whose fresh verdict differs asks again, with the acknowledgement reset`() = runTest(dispatcher) {
+        val repository = repository()
+        val viewModel = SystemAppsViewModel(repository)
+        viewModel.load()
+        advanceUntilIdle()
+
+        // Plain when asked; a home screen by the time the question is confirmed.
+        viewModel.onRemoveRequested("com.facebook.services")
+        val warned = SystemAppVerdict(SystemAppRisk.WARNING, SystemAppRole.HOME)
+        repository.reclassify("com.facebook.services", warned)
+        viewModel.onConfirmRemove()
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertThat(repository.removed).isEmpty()
+        assertThat(state.pending).isEqualTo(facebook.copy(verdict = warned))
+        assertThat(state.acknowledged).isFalse()
+        assertThat(state.canConfirm).isFalse()
+        assertThat(state.busyPackage).isNull()
+        assertThat(state.lastAction).isNull()
+        assertThat(state.apps.first { it.packageName == "com.facebook.services" }.verdict).isEqualTo(warned)
+        assertThat(repository.reads).isEqualTo(1)
+
+        // Acknowledged and confirmed anew, with the verdict unchanged, the removal runs.
+        viewModel.onAcknowledgeChange(true)
+        viewModel.onConfirmRemove()
+        advanceUntilIdle()
+        assertThat(repository.removed).containsExactly("com.facebook.services")
+        assertThat(viewModel.uiState.value.pending).isNull()
+    }
+
+    @Test
+    fun `a confirmation for an app gone meanwhile removes nothing and says so`() = runTest(dispatcher) {
+        val repository = repository()
+        val viewModel = SystemAppsViewModel(repository)
+        viewModel.load()
+        advanceUntilIdle()
+
+        viewModel.onRemoveRequested("com.google.android.youtube")
+        repository.apps.removeAll { it.packageName == "com.google.android.youtube" }
+        viewModel.onConfirmRemove()
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertThat(repository.removed).isEmpty()
+        assertThat(state.pending).isNull()
+        assertThat(state.lastAction).isEqualTo(SystemAppAction(youtube, restore = false, result = SystemAppActionResult.NotInstalled))
+        assertThat(state.apps.map { it.packageName }).doesNotContain("com.google.android.youtube")
+        assertThat(repository.reads).isEqualTo(2)
+    }
+
+    @Test
+    fun `the question waits while the fresh verdict is read, and a second confirmation does nothing`() = runTest(dispatcher) {
+        val repository = repository().apply { verdictGate = CompletableDeferred() }
+        val viewModel = SystemAppsViewModel(repository)
+        viewModel.load()
+        advanceUntilIdle()
+
+        viewModel.onRemoveRequested("com.google.android.youtube")
+        viewModel.onConfirmRemove()
+        advanceUntilIdle()
+
+        // The question is still up, its button held, while the verdict is read.
+        assertThat(viewModel.uiState.value.pending).isEqualTo(youtube)
+        assertThat(viewModel.uiState.value.busyPackage).isEqualTo("com.google.android.youtube")
+        assertThat(viewModel.uiState.value.canConfirm).isFalse()
+        viewModel.onConfirmRemove()
+        advanceUntilIdle()
+        assertThat(repository.verdictReads).isEqualTo(1)
+
+        repository.verdictGate!!.complete(Unit)
+        advanceUntilIdle()
+        assertThat(repository.removed).containsExactly("com.google.android.youtube")
+        assertThat(viewModel.uiState.value.pending).isNull()
+        assertThat(viewModel.uiState.value.busyPackage).isNull()
+    }
+
+    @Test
+    fun `a question cancelled while the fresh verdict is read runs no command`() = runTest(dispatcher) {
+        val repository = repository().apply { verdictGate = CompletableDeferred() }
+        val viewModel = SystemAppsViewModel(repository)
+        viewModel.load()
+        advanceUntilIdle()
+
+        viewModel.onRemoveRequested("com.google.android.youtube")
+        viewModel.onConfirmRemove()
+        advanceUntilIdle()
+        viewModel.onDismissRemove()
+        repository.verdictGate!!.complete(Unit)
+        advanceUntilIdle()
+
+        assertThat(repository.removed).isEmpty()
+        assertThat(viewModel.uiState.value.pending).isNull()
+        assertThat(viewModel.uiState.value.busyPackage).isNull()
+        assertThat(viewModel.uiState.value.lastAction).isNull()
+    }
+
+    @Test
+    fun `a question cancelled while the fresh verdict is read is not asked again`() = runTest(dispatcher) {
+        val repository = repository().apply { verdictGate = CompletableDeferred() }
+        val viewModel = SystemAppsViewModel(repository)
+        viewModel.load()
+        advanceUntilIdle()
+
+        viewModel.onRemoveRequested("com.facebook.services")
+        viewModel.onConfirmRemove()
+        advanceUntilIdle()
+        viewModel.onDismissRemove()
+        repository.reclassify("com.facebook.services", SystemAppVerdict(SystemAppRisk.WARNING, SystemAppRole.HOME))
+        repository.verdictGate!!.complete(Unit)
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertThat(repository.removed).isEmpty()
+        assertThat(state.pending).isNull()
+        assertThat(state.busyPackage).isNull()
+        assertThat(state.apps.first { it.packageName == "com.facebook.services" }.verdict.role).isEqualTo(SystemAppRole.HOME)
     }
 
     @Test

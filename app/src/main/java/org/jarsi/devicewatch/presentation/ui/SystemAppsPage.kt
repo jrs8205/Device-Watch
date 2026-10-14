@@ -325,6 +325,14 @@ private fun ActionNotice(action: SystemAppAction, onDismiss: () -> Unit) {
                 if (action.restore) R.string.system_apps_failed_restored else R.string.system_apps_failed_removed,
                 label, result.message.ifBlank { stringResource(R.string.system_apps_no_reason) },
             )
+        is SystemAppActionResult.Blocked ->
+            stringResource(
+                R.string.system_apps_failed_removed,
+                label,
+                result.verdict.role?.let { stringResource(roleExplanation(it)) } ?: stringResource(R.string.system_apps_blocked_now),
+            )
+        SystemAppActionResult.NotInstalled ->
+            stringResource(R.string.system_apps_failed_removed, label, stringResource(R.string.system_apps_not_installed_now))
     }
     Row(
         verticalAlignment = Alignment.CenterVertically,

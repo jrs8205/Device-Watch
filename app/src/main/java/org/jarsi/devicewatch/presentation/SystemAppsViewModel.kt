@@ -40,10 +40,12 @@ data class SystemAppsUiState(
 
     /**
      * The question's remove button: a warned-about app waits for the acknowledgement,
-     * and any app for a read under way, since the verdict it brings is the one that counts.
+     * and any app for a read under way, since the verdict it brings is the one that
+     * counts, and for an action already running (the fresh read of its own verdict included).
      */
     val canConfirm: Boolean
-        get() = pending != null && !reloading && (pending.verdict.risk != SystemAppRisk.WARNING || acknowledged)
+        get() = pending != null && !reloading && busyPackage == null &&
+            (pending.verdict.risk != SystemAppRisk.WARNING || acknowledged)
 }
 
 /**
@@ -130,22 +132,56 @@ class SystemAppsViewModel @Inject constructor(
 
     /**
      * The question's remove button: runs the removal the question was about, by the
-     * app's verdict as it stands in the list now, never by the copy the question was
-     * opened with.
+     * app's verdict as the phone stands at that moment, never by the copy the question
+     * was opened with. The list's verdict can be stale without a read of the lists
+     * having been started: the keyboard switched from the page's own search field
+     * keeps the page on screen. So the verdict is read again just before the command.
+     * Blocked by then, or gone: no command, and the notice says so. Changed otherwise:
+     * the question is asked again with the verdict as it is now, the acknowledgement
+     * reset. The same: the removal runs.
      */
     fun onConfirmRemove() {
         val state = _uiState.value
         val asked = state.pending ?: return
-        if (!state.canConfirm || state.busyPackage != null) return
+        if (!state.canConfirm) return
         val app = state.apps.firstOrNull { it.packageName == asked.packageName }
         if (app == null || app.verdict.risk == SystemAppRisk.BLOCKED) {
             onDismissRemove()
             return
         }
-        _uiState.update { it.copy(pending = null, acknowledged = false, busyPackage = app.packageName, lastAction = null) }
+        _uiState.update { it.copy(busyPackage = app.packageName, lastAction = null) }
         viewModelScope.launch {
-            val result = repository.remove(app.packageName)
-            finish(SystemAppAction(app, restore = false, result = result))
+            val verdict = repository.verdictNow(app.packageName)
+            when {
+                verdict == null -> refuse(app, SystemAppActionResult.NotInstalled)
+                verdict.risk == SystemAppRisk.BLOCKED -> refuse(app, SystemAppActionResult.Blocked(verdict))
+                verdict != app.verdict -> askAgain(app.copy(verdict = verdict))
+                // Cancelled while the verdict was read: the confirmation is withdrawn.
+                _uiState.value.pending?.packageName != app.packageName -> _uiState.update { it.copy(busyPackage = null) }
+                else -> {
+                    onDismissRemove()
+                    val result = repository.remove(app.packageName)
+                    finish(SystemAppAction(app, restore = false, result = result))
+                }
+            }
+        }
+    }
+
+    private suspend fun refuse(app: SystemApp, result: SystemAppActionResult) {
+        onDismissRemove()
+        finish(SystemAppAction(app, restore = false, result = result))
+    }
+
+    /** The list takes the fresh verdict, and so does the question, unless it was cancelled meanwhile. */
+    private fun askAgain(app: SystemApp) {
+        _uiState.update { state ->
+            val stillAsked = state.pending?.packageName == app.packageName
+            state.copy(
+                busyPackage = null,
+                apps = state.apps.map { if (it.packageName == app.packageName) app else it },
+                pending = if (stillAsked) app else state.pending,
+                acknowledged = if (stillAsked) false else state.acknowledged,
+            )
         }
     }
 

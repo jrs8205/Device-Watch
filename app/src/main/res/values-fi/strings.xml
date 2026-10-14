@@ -921,6 +921,8 @@
     <string name="system_apps_failed_restored">Sovellusta %1$s ei voitu palauttaa: %2$s</string>
     <string name="system_apps_no_shell">laajennettu käyttö ei vastannut</string>
     <string name="system_apps_no_reason">paketinhallinta ei kertonut syytä</string>
+    <string name="system_apps_blocked_now">se on nyt sellainen, jota ilman puhelin ei toimi</string>
+    <string name="system_apps_not_installed_now">se ei ole enää asennettuna tälle käyttäjälle</string>
     <string name="system_apps_dismiss_notice">Sulje</string>
     <string name="system_app_role_core">osa Androidin ydintä; puhelin ei käynnisty tai toimi ilman sitä.</string>
     <string name="system_app_role_self">Device Watch itse.</string>
