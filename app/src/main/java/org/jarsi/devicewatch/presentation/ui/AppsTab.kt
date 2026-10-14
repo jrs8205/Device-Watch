@@ -63,6 +63,7 @@ internal fun AppsTab(
     privacy: PrivacyState = PrivacyState(),
     extendedAccessOn: Boolean = false,
     onOpenPrivacy: () -> Unit = {},
+    onOpenSystemApps: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -150,6 +151,10 @@ internal fun AppsTab(
                 onOpen = onOpenPrivacy,
                 onOpenDashboard = { openPrivacyDashboard(context) },
             )
+        }
+
+        item(key = "system_apps") {
+            SystemAppsBand(extendedAccessOn = extendedAccessOn, onOpen = onOpenSystemApps)
         }
 
         item(key = "screen_time") {

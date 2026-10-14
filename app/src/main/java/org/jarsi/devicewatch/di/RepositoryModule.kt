@@ -32,6 +32,8 @@ import org.jarsi.devicewatch.data.SelectedPrivilegedShell
 import org.jarsi.devicewatch.data.ShizukuShell
 import org.jarsi.devicewatch.data.ShizukuUserShell
 import org.jarsi.devicewatch.data.SuRootShell
+import org.jarsi.devicewatch.data.SystemAppsRepository
+import org.jarsi.devicewatch.data.SystemAppsRepositoryImpl
 import org.jarsi.devicewatch.data.SystemStatsRepository
 import org.jarsi.devicewatch.data.SystemStatsRepositoryImpl
 import org.jarsi.devicewatch.data.UsageHistory
@@ -129,6 +131,10 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindPrivacyLogSource(impl: ShellPrivacyLogSource): PrivacyLogSource
+
+    @Binds
+    @Singleton
+    abstract fun bindSystemAppsRepository(impl: SystemAppsRepositoryImpl): SystemAppsRepository
 
     @Binds
     @Singleton

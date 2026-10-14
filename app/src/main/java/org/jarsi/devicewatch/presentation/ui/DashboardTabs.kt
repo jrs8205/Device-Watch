@@ -64,6 +64,7 @@ import org.jarsi.devicewatch.presentation.PrivacyViewModel
 import org.jarsi.devicewatch.presentation.KernelBandState
 import org.jarsi.devicewatch.presentation.RootStatus
 import org.jarsi.devicewatch.presentation.ShizukuStatus
+import org.jarsi.devicewatch.presentation.SystemAppsViewModel
 import org.jarsi.devicewatch.system.SystemMonitorService
 
 /** Doubles the selection pill so colour is never the only cue. */
@@ -88,6 +89,7 @@ fun SystemDashboardScreen(
     appsViewModel: AppsViewModel = hiltViewModel(),
     kernelViewModel: KernelViewModel = hiltViewModel(),
     privacyViewModel: PrivacyViewModel = hiltViewModel(),
+    systemAppsViewModel: SystemAppsViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
     val view = LocalView.current
@@ -144,6 +146,14 @@ fun SystemDashboardScreen(
     BackHandler(enabled = showPrivacy) { showPrivacy = false }
     LaunchedEffect(extendedAccessOn) {
         if (!extendedAccessOn) showPrivacy = false
+    }
+
+    // System apps page, reached from the Apps tab's SYSTEM APPS band. Its removals
+    // go through the shell, so it too closes the moment extended access goes off.
+    var showSystemApps by rememberSaveable { mutableStateOf(false) }
+    BackHandler(enabled = showSystemApps) { showSystemApps = false }
+    LaunchedEffect(extendedAccessOn) {
+        if (!extendedAccessOn) showSystemApps = false
     }
 
     // First-run intro state: shown until completed, and replayable from Settings.
@@ -212,6 +222,11 @@ fun SystemDashboardScreen(
 
     if (showPrivacy && extendedAccessOn) {
         PrivacyPage(onBack = { showPrivacy = false }, viewModel = privacyViewModel)
+        return
+    }
+
+    if (showSystemApps && extendedAccessOn) {
+        SystemAppsPage(onBack = { showSystemApps = false }, viewModel = systemAppsViewModel)
         return
     }
 
@@ -345,6 +360,7 @@ fun SystemDashboardScreen(
                                 privacy = privacy,
                                 extendedAccessOn = extendedAccessOn,
                                 onOpenPrivacy = { showPrivacy = true },
+                                onOpenSystemApps = { showSystemApps = true },
                             )
                         }
 

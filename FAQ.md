@@ -132,6 +132,20 @@ How far back the record reaches is Android's choice, usually a few days; Android
 keep no such record.
 Without extended access the band offers Android's own Privacy dashboard instead.
 
+### Can I remove preinstalled apps?
+
+With extended access on, the Apps tab has a **SYSTEM APPS** band; **Open** lists every app on
+the system image, with a search. **Remove** takes an app away from this user only, through
+`pm uninstall --user`: the copy on the system image stays, and **Restore** on the same page
+brings it back (`pm install-existing`), as does a factory reset. Every removal is asked about
+first. The apps the phone depends on, Google Play services or the keyboard say so, and the
+question then waits until you have acknowledged what breaks; the ones the phone cannot do
+without (Android's core, the home screen, keyboard, phone app and web view in use, and Device
+Watch itself) cannot be removed from here at all. The list of those is a fixed table plus what
+the phone says it is using now, not a judgement on every package: an app the page shows as
+plain is still a system app, so remove only the ones you know. Apps a private space or a work
+profile keeps for itself, which this user never had, are left off the removed list.
+
 ### Why did Device Watch itself appear in the privacy log?
 
 In 1.8.0 and earlier the monitor read the network's details every few seconds, and some of

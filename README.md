@@ -58,6 +58,7 @@ The default app language is English. Finnish users get a localized app name and 
 - Kernel page on rooted phones, opened from the Device tab's KERNEL band: each group of processor cores with its speed now, its limit and range, heat throttling in plain words, the graphics processor's speeds, compressed memory (zRAM), the kernel version, SELinux and the storage queue, and every named temperature sensor, all from what this phone's kernel reports, with no phone model assumed
 - Processor profiles on rooted phones: *Power saving* (the faster cores at most about 60 % of their top speed), *Balanced* (about 80 %), *Stock*, or *Custom* per group of cores. Only speeds the kernel lists, never above what the phone allows; the phone's own limits are saved first and written back on Stock or when root is switched off (if root no longer answers then, they last until the next restart), and a restart returns them by itself unless *Apply after restart too* is on. When Android's power management raises a limit the monitor sets it again and counts it, and it never lifts a lower limit that heat or Android hold
 - Privacy log with extended access (Shizuku or root), on the Apps tab's PRIVACY band and its page: Android's own record of which apps used the camera, the microphone and the location, when, for how long, from the background or not, and (on Android 17, which keeps them) which were refused, app by app and moment by moment; the same record the system's Privacy dashboard draws on, shown and never stored. Without extended access the band offers Android's own Privacy dashboard instead
+- System apps page with extended access (Shizuku or root), opened from the Apps tab's SYSTEM APPS band: every app on the system image, with a search, and *Remove* for the preinstalled ones you do not use. A removal takes the app away from this user only (`pm uninstall --user`), the system image's copy stays, and *Restore* brings it back; every removal is asked about first, the apps the phone depends on say what breaks and want that acknowledged, and the ones it cannot do without (Android's core, the home screen, keyboard, phone app and web view in use, Device Watch itself) cannot be removed from here at all
 - Sleep section on the Kernel page (root): the kernel's own count of sleep attempts and failures with what stopped the last one, the wakeup sources that woke the phone most often, those that held it awake longest, and those holding it right now, in plain words with the kernel's names underneath
 - Today's screen time also appears in the widget footer, refreshed at most once a minute so the 5-second widget loop stays untouched
 - Most-opened-today list on the Apps tab, and last-opened rows show the clock time for apps used today (following the system 12/24-hour setting) with two-tier staleness colors: amber after 1 month unused, red after 3 months (Google's app-hibernation threshold) or never used
@@ -225,7 +226,9 @@ settings-store tests) cover the pure logic behind every screen, service and widg
   real phones), `AppOpsHistoryParserTest` (Android's privacy record in both the table Android 17
   prints and the tree of Android 12–16, against a Pixel 8a and API 34 and 36 emulators),
   `PrivacyLogBuilderTest`, `ShellPrivacyLogSourceTest`, `PrivacyPresentationTest`,
-  `PrivacyViewModelTest`, `LocationGatedReadsTest` (why the app no longer appears in its own log)
+  `PrivacyViewModelTest`, `LocationGatedReadsTest` (why the app no longer appears in its own log),
+  `SystemAppRulesTest` (which system apps are blocked or warned about), `SystemAppCommandsTest`,
+  `SystemAppsViewModelTest` (the removal question, the acknowledgement, one action at a time)
 - **Kernel page and processor profiles (root)** — `KernelSysfsParserTest` (against a full read
   from a Pixel 8a), `KernelSnapshotTest`, `KernelCommandsTest`, `RootOnlyShellTest`, `KernelSnapshotSourceTest`,
   `CpuProfilePlannerTest`, `CpuProfileRulesTest`, `CpuProfileStoreTest`, `CpuLimitWriterTest`,
@@ -316,6 +319,9 @@ app/src/main/java/org/jarsi/devicewatch/
     PrivacyLogSource.kt
     PrivilegedDumpParsers.kt
     PrivilegedShell.kt
+    SystemAppCommands.kt
+    SystemApps.kt
+    SystemAppsRepository.kt
     RootCommandShell.kt
     RootShell.kt
     ShellBatteryUsageSource.kt
@@ -348,6 +354,7 @@ app/src/main/java/org/jarsi/devicewatch/
     PrivacyPresentation.kt
     PrivacyViewModel.kt
     SinceChargeViewModel.kt
+    SystemAppsViewModel.kt
     WakePresentation.kt
     ui/
       AppDetailSheet.kt
@@ -374,6 +381,8 @@ app/src/main/java/org/jarsi/devicewatch/
       PrivacyPage.kt
       ScreenTimeDonut.kt
       SettingsTab.kt
+      SystemAppsBand.kt
+      SystemAppsPage.kt
       SinceChargeNotices.kt
       SinceChargePage.kt
   system/
@@ -444,6 +453,8 @@ app/src/test/java/org/jarsi/devicewatch/
     PrivacyLogBuilderTest.kt
     PrivilegedDumpParsersTest.kt
     PrivilegedShellTest.kt
+    SystemAppCommandsTest.kt
+    SystemAppRulesTest.kt
     RootOnlyShellTest.kt
     ShellPrivacyLogSourceTest.kt
     ShellSessionTest.kt
@@ -470,6 +481,7 @@ app/src/test/java/org/jarsi/devicewatch/
     PrivacyViewModelTest.kt
     ReportPaletteTest.kt
     SinceChargeViewModelTest.kt
+    SystemAppsViewModelTest.kt
     WakePresentationTest.kt
     ui/
       AppScaleTest.kt
