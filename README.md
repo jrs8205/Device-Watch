@@ -509,6 +509,13 @@ app/src/test/java/org/jarsi/devicewatch/
     WidgetTextScaleTest.kt
 ```
 
+## Support development
+
+If Device Watch is useful to you, you can support its development:
+
+- [GitHub Sponsors](https://github.com/sponsors/jrs8205) — monthly or one-time
+- [Buy Me a Coffee](https://buymeacoffee.com/jrs8205) — no sign-up needed
+
 ## License
 
 Device Watch is free software, licensed under the GNU General Public License,
