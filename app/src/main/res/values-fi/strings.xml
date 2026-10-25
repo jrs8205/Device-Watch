@@ -948,4 +948,35 @@
     <string name="system_app_role_chipset">piirisarjan valmistajan osa. Radio, kamera, ääni tai sijainti voi lakata toimimasta.</string>
     <string name="system_app_role_overlay">teema- tai resurssipaketti. Järjestelmän tai sovelluksen ulkoasu voi rikkoutua.</string>
     <string name="system_app_role_files">tiedostonvalitsin. Tiedostojen liittäminen ja latausten tallennus lakkaavat toimimasta kaikissa sovelluksissa.</string>
+
+    <!-- Pikaluvut (GitHub #7): pikapainikkeet, Yksi luku -widgetti ja elävä ilmoitus -->
+    <string name="quick_battery_title">Akku</string>
+    <string name="quick_battery_tile">Akku</string>
+    <string name="quick_battery_short">Akku</string>
+    <string name="quick_battery_temp_title">Akun lämpötila</string>
+    <string name="quick_battery_temp_tile">Akun lämpö</string>
+    <string name="quick_battery_temp_short">Akku</string>
+    <string name="quick_cpu_temp_title">Suorittimen lämpötila</string>
+    <string name="quick_cpu_temp_tile">CPU:n lämpö</string>
+    <string name="quick_cpu_temp_short">CPU</string>
+    <string name="quick_data_today_title">Data tänään</string>
+    <string name="quick_data_today_tile">Data tänään</string>
+    <string name="quick_data_today_short">Data</string>
+    <string name="quick_uptime_title">Käynnissä</string>
+    <string name="quick_uptime_tile">Käynnissä</string>
+    <string name="quick_uptime_short">Päällä</string>
+    <string name="quick_cpu_load_title">Suorittimen kuorma</string>
+    <string name="quick_cpu_load_tile">Suoritin</string>
+    <string name="quick_cpu_load_short">CPU</string>
+    <string name="quick_memory_title">Muisti</string>
+    <string name="quick_memory_tile">Muisti</string>
+    <string name="quick_memory_short">RAM</string>
+    <string name="quick_storage_title">Tallennustila</string>
+    <string name="quick_storage_tile">Tallennus</string>
+    <string name="quick_storage_short">Tila</string>
+    <string name="quick_mobile_short">mob</string>
+    <string name="quick_wifi_short">wifi</string>
+    <string name="quick_needs_extended_access">vaatii laajennetun käytön</string>
+    <string name="quick_needs_usage_access">vaatii käyttötietojen luvan</string>
+    <string name="quick_not_available">ei saatavilla</string>
 </resources>

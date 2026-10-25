@@ -958,4 +958,35 @@
     <string name="system_app_role_chipset">a chipset vendor\'s component. The radio, camera, audio or location may stop working.</string>
     <string name="system_app_role_overlay">a theme or resource overlay. The look of the system or of an app may break.</string>
     <string name="system_app_role_files">the file picker. Attaching files and saving downloads stop working in every app.</string>
+
+    <!-- Quick figures (GitHub #7): tiles, the single-figure widget and the live notification -->
+    <string name="quick_battery_title">Battery</string>
+    <string name="quick_battery_tile">Battery</string>
+    <string name="quick_battery_short">Batt</string>
+    <string name="quick_battery_temp_title">Battery temperature</string>
+    <string name="quick_battery_temp_tile">Battery temp</string>
+    <string name="quick_battery_temp_short">Batt</string>
+    <string name="quick_cpu_temp_title">Processor temperature</string>
+    <string name="quick_cpu_temp_tile">CPU temp</string>
+    <string name="quick_cpu_temp_short">CPU</string>
+    <string name="quick_data_today_title">Data today</string>
+    <string name="quick_data_today_tile">Data today</string>
+    <string name="quick_data_today_short">Data</string>
+    <string name="quick_uptime_title">Uptime</string>
+    <string name="quick_uptime_tile">Uptime</string>
+    <string name="quick_uptime_short">Up</string>
+    <string name="quick_cpu_load_title">Processor load</string>
+    <string name="quick_cpu_load_tile">CPU load</string>
+    <string name="quick_cpu_load_short">CPU</string>
+    <string name="quick_memory_title">Memory</string>
+    <string name="quick_memory_tile">Memory</string>
+    <string name="quick_memory_short">RAM</string>
+    <string name="quick_storage_title">Storage</string>
+    <string name="quick_storage_tile">Storage</string>
+    <string name="quick_storage_short">Disk</string>
+    <string name="quick_mobile_short">mob</string>
+    <string name="quick_wifi_short">wifi</string>
+    <string name="quick_needs_extended_access">needs extended access</string>
+    <string name="quick_needs_usage_access">needs usage access</string>
+    <string name="quick_not_available">not available</string>
 </resources>
