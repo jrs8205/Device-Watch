@@ -1,0 +1,13 @@
+<!-- Battery temperature: a battery outline with a thermometer inside, so its small tile tells itself apart from the processor's. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M10,2h4v2h1.67C16.4,4 17,4.6 17,5.33v15.34C17,21.4 16.4,22 15.67,22H8.33C7.6,22 7,21.4 7,20.67V5.33C7,4.6 7.6,4 8.33,4H10V2zM9,6v14h6V6H9z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M11.1,9a0.9,0.9 0 0,1 1.8,0v6.1a1.9,1.9 0 1,1 -1.8,0z" />
+</vector>

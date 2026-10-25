@@ -26,6 +26,13 @@ class QuickMetricLabelsTest {
     }
 
     @Test
+    fun `every figure has its own tile icon`() {
+        // Device test 25.10.: both temperatures showed the same thermometer, and a
+        // small tile shows nothing but its icon.
+        assertThat(QuickMetric.entries.map(::quickMetricIconRes).toSet()).hasSize(QuickMetric.entries.size)
+    }
+
+    @Test
     @Config(qualifiers = "fi")
     fun `finnish names and units`() {
         val labels = quickMetricLabels(context)

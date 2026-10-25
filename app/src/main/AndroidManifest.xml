@@ -147,7 +147,7 @@
         <service
             android:name=".quick.BatteryTempTileService"
             android:exported="true"
-            android:icon="@drawable/ic_quick_thermometer"
+            android:icon="@drawable/ic_quick_battery_temp"
             android:label="@string/quick_battery_temp_tile"
             android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
             <intent-filter>
@@ -157,7 +157,7 @@
         <service
             android:name=".quick.CpuTempTileService"
             android:exported="true"
-            android:icon="@drawable/ic_quick_thermometer"
+            android:icon="@drawable/ic_quick_cpu_temp"
             android:label="@string/quick_cpu_temp_tile"
             android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
             <intent-filter>
@@ -197,7 +197,7 @@
         <service
             android:name=".quick.MemoryTileService"
             android:exported="true"
-            android:icon="@drawable/ic_widget_memory"
+            android:icon="@drawable/ic_quick_memory"
             android:label="@string/quick_memory_tile"
             android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
             <intent-filter>

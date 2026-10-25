@@ -1,0 +1,13 @@
+<!-- Memory: a RAM module, so its small tile is not one more chip next to the processor's two. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M3,6h18c0.55,0 1,0.45 1,1v8c0,0.55 -0.45,1 -1,1H3c-0.55,0 -1,-0.45 -1,-1V7c0,-0.55 0.45,-1 1,-1zM5,8v6h3V8H5zM10,8v6h4V8h-4zM16,8v6h3V8h-3z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M5,17h2v2H5zM9,17h2v2H9zM13,17h2v2h-2zM17,17h2v2h-2z" />
+</vector>

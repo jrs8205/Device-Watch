@@ -20,15 +20,16 @@ internal fun quickMetricNameRes(metric: QuickMetric): Triple<Int, Int, Int> = wh
     QuickMetric.STORAGE -> Triple(R.string.quick_storage_title, R.string.quick_storage_tile, R.string.quick_storage_short)
 }
 
-/** A figure's tile icon; both temperatures share the thermometer and are told apart by their label. */
+/** A figure's tile icon, each its own: a small tile shows nothing else. */
 @DrawableRes
 internal fun quickMetricIconRes(metric: QuickMetric): Int = when (metric) {
     QuickMetric.BATTERY -> R.drawable.ic_widget_battery
-    QuickMetric.BATTERY_TEMP, QuickMetric.CPU_TEMP -> R.drawable.ic_quick_thermometer
+    QuickMetric.BATTERY_TEMP -> R.drawable.ic_quick_battery_temp
+    QuickMetric.CPU_TEMP -> R.drawable.ic_quick_cpu_temp
     QuickMetric.DATA_TODAY -> R.drawable.ic_widget_swap
     QuickMetric.UPTIME -> R.drawable.ic_widget_schedule
     QuickMetric.CPU_LOAD -> R.drawable.ic_widget_cpu
-    QuickMetric.MEMORY -> R.drawable.ic_widget_memory
+    QuickMetric.MEMORY -> R.drawable.ic_quick_memory
     QuickMetric.STORAGE -> R.drawable.ic_widget_storage
 }
 
