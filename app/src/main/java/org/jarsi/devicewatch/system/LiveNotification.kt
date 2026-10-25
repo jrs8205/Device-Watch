@@ -59,6 +59,12 @@ class LiveNotificationGate {
         lastPosted = null
     }
 
+    /** The post [shouldPost] allowed did not go out; the same text may be posted again. */
+    @Synchronized
+    fun notPosted() {
+        lastPosted = null
+    }
+
     /** Whether [content] should be posted now; a yes counts it as posted. */
     @Synchronized
     fun shouldPost(content: String): Boolean {

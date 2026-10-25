@@ -81,28 +81,41 @@ class MonitorNotifications(private val context: Context) {
                 .setContentTitle(context.getString(R.string.monitor_notification_title))
                 .setContentText(context.getString(R.string.monitor_notification_text))
         } else {
+            // A title is one line in both views and cuts off a long first line, so the
+            // expanded view swaps it for a short heading and wraps every figure under
+            // it, each once.
             builder
                 .setContentTitle(text.title)
                 .setContentText(text.text)
-            // Expanded, the title stays on top: the expanded text is the second line
-            // alone, wrapped, or the first would show twice.
-            if (text.text != null) builder.setStyle(NotificationCompat.BigTextStyle().bigText(text.text))
+                .setStyle(
+                    NotificationCompat.BigTextStyle()
+                        .setBigContentTitle(context.getString(R.string.monitor_live_channel_name))
+                        .bigText(text.content)
+                )
         }
         return builder.build()
     }
 
-    /** Replaces the posted notification; nothing happens without the permission to post. */
-    fun post(id: Int, notification: Notification) {
+    /**
+     * Replaces the posted notification; returns whether it went out. Without the
+     * permission, or with the app's notifications switched off (which notify()
+     * ignores silently), nothing is posted.
+     */
+    fun post(id: Int, notification: Notification): Boolean {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
             ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) !=
             PackageManager.PERMISSION_GRANTED
         ) {
-            return
+            return false
         }
-        try {
-            NotificationManagerCompat.from(context).notify(id, notification)
+        val manager = NotificationManagerCompat.from(context)
+        if (!manager.areNotificationsEnabled()) return false
+        return try {
+            manager.notify(id, notification)
+            true
         } catch (_: SecurityException) {
             // Permission can still be revoked between the check and notify().
+            false
         }
     }
 

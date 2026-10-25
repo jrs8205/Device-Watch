@@ -75,6 +75,14 @@ class LiveNotificationTest {
     }
 
     @Test
+    fun `a post that did not go out does not count as posted`() {
+        val g = LiveNotificationGate()
+        assertThat(g.shouldPost("a")).isTrue()
+        g.notPosted()
+        assertThat(g.shouldPost("a")).isTrue()
+    }
+
+    @Test
     fun `screen on reposts the same text`() {
         val g = LiveNotificationGate()
         g.shouldPost("a")

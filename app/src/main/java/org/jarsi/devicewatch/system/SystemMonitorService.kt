@@ -51,8 +51,6 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import java.time.LocalDate
 import javax.inject.Inject
 
@@ -73,9 +71,14 @@ class SystemMonitorService : Service() {
     @Inject lateinit var quickStats: QuickStatsSource
 
     private val notifications by lazy { MonitorNotifications(this) }
-    private val liveGate = LiveNotificationGate()
-    /** One live-notification update at a time, so an older reading never lands after a newer one. */
-    private val liveMutex = Mutex()
+    private val live by lazy {
+        LiveNotificationController(
+            chosen = { appSettings.notificationMetrics() },
+            read = ::liveText,
+            postLive = { text -> notifications.post(NOTIFICATION_ID, notifications.live(text)) },
+            postQuiet = { notifications.post(NOTIFICATION_ID, notifications.quiet()) },
+        )
+    }
 
     private var lastUsageRefreshMs = 0L
 
@@ -117,7 +120,7 @@ class SystemMonitorService : Service() {
             ACTION_CHARGE_LIMIT_CHANGED -> onChargeLimitChanged()
             ACTION_DATA_QUOTA_CHANGED -> onDataQuotaChanged()
             ACTION_NOTIFICATION_METRICS_CHANGED -> onNotificationMetricsChanged()
-            ACTION_LIVE_NOTIFICATION_DISMISSED -> liveGate.onDismissed()
+            ACTION_LIVE_NOTIFICATION_DISMISSED -> live.onDismissed()
         }
         return START_STICKY
     }
@@ -143,11 +146,8 @@ class SystemMonitorService : Service() {
      * reading, whatever a swipe held back.
      */
     private fun onNotificationMetricsChanged() {
-        liveGate.onSettingsChanged()
-        if (appSettings.notificationMetrics().isEmpty()) {
-            notifications.post(NOTIFICATION_ID, notifications.quiet())
-        } else {
-            serviceScope.launch { updateWidgetStats(applicationContext) }
+        serviceScope.launch {
+            if (live.onSelectionChanged()) updateWidgetStats(applicationContext)
         }
     }
 
@@ -210,7 +210,7 @@ class SystemMonitorService : Service() {
                     Intent.ACTION_SCREEN_ON -> {
                         isScreenOn = true
                         // A live notification swiped away comes back with the screen.
-                        liveGate.onScreenOn()
+                        live.onScreenOn()
                         startUpdateLoop()
                     }
                     Intent.ACTION_SCREEN_OFF -> {
@@ -441,26 +441,24 @@ class SystemMonitorService : Service() {
      * only when it is one of the figures.
      */
     private suspend fun refreshLiveNotification(stats: SystemStats) {
-        val chosen = appSettings.notificationMetrics()
-        if (chosen.isEmpty()) return
         try {
-            liveMutex.withLock {
-                val dataToday = if (QuickMetric.DATA_TODAY in chosen) quickStats.dataToday() else null
-                val labels = quickMetricLabels(applicationContext)
-                val extendedAccess = appSettings.privilegedAccess() != PrivilegedAccess.OFF
-                val readings = QuickMetric.entries.filter { it in chosen }
-                    .map { QuickMetricFormatter.read(it, stats, dataToday, extendedAccess, labels) }
-                val text = liveNotificationText(readings, labels)
-                if (liveGate.shouldPost(text?.content.orEmpty())) {
-                    notifications.post(NOTIFICATION_ID, notifications.live(text))
-                }
-            }
+            live.refresh(stats)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
             // The figures are a convenience; the monitor must not stop over them.
             e.printStackTrace()
         }
+    }
+
+    /** The [chosen] figures of [stats] as the notification's two lines. */
+    private suspend fun liveText(chosen: Set<QuickMetric>, stats: SystemStats): LiveNotificationText? {
+        val dataToday = if (QuickMetric.DATA_TODAY in chosen) quickStats.dataToday() else null
+        val labels = quickMetricLabels(applicationContext)
+        val extendedAccess = appSettings.privilegedAccess() != PrivilegedAccess.OFF
+        val readings = QuickMetric.entries.filter { it in chosen }
+            .map { QuickMetricFormatter.read(it, stats, dataToday, extendedAccess, labels) }
+        return liveNotificationText(readings, labels)
     }
 
     /**

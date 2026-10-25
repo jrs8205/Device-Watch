@@ -990,7 +990,7 @@
     <string name="quick_needs_usage_access">needs usage access</string>
     <string name="quick_not_available">not available</string>
     <string name="live_notification_section">NOTIFICATION FIGURES</string>
-    <string name="live_notification_description">The figures you choose are shown in the monitor\'s notification on two lines among your other notifications. Its icon then stays in the status bar. With none chosen the notification stays silent at the bottom.</string>
+    <string name="live_notification_description">The figures you choose are shown in the monitor\'s notification on two lines among your other notifications; expand it to see them all. With none chosen the notification stays silent and folded at the bottom.</string>
     <string name="quick_cpu_temp_setting_description">Most phones give it only with extended access.</string>
     <string name="quick_data_today_setting_description">Needs usage access.</string>
     <string name="live_notification_blocked">Notifications are off for Device Watch, so the figures are not shown.</string>
