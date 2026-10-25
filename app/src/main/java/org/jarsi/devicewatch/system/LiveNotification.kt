@@ -59,7 +59,7 @@ class LiveNotificationGate {
         lastPosted = null
     }
 
-    /** The post [shouldPost] allowed did not go out; the same text may be posted again. */
+    /** What was posted is not on screen (it did not go out, or the system took it away); the same text may go up again. */
     @Synchronized
     fun notPosted() {
         lastPosted = null

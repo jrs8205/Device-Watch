@@ -14,9 +14,14 @@ import org.jarsi.devicewatch.data.SystemStats
 class LiveNotificationController(
     private val chosen: () -> Set<QuickMetric>,
     private val read: suspend (Set<QuickMetric>, SystemStats) -> LiveNotificationText?,
-    /** Posts the live notification; false when it could not be posted (no permission, notifications off). */
+    /** Posts the live notification; false when it could not be posted (no permission, notifications or channel off). */
     private val postLive: (LiveNotificationText?) -> Boolean,
-    private val postQuiet: () -> Unit,
+    /** Posts the silent notification over the live one; false when it could not be posted. */
+    private val postQuiet: () -> Boolean,
+    /** Takes the live notification down when the silent one could not replace it. */
+    private val removeLive: () -> Unit,
+    /** Whether the monitor's notification is still up; blocking its channel takes it away. */
+    private val isShowing: () -> Boolean,
 ) {
     private val gate = LiveNotificationGate()
     private val mutex = Mutex()
@@ -29,6 +34,9 @@ class LiveNotificationController(
     suspend fun refresh(stats: SystemStats) = mutex.withLock {
         val selection = chosen()
         if (selection.isEmpty()) return@withLock
+        // Gone without a swipe (its channel blocked, say): what was posted is not on
+        // screen, so the same text goes up again. A swipe still holds it back.
+        if (!isShowing()) gate.notPosted()
         val text = read(selection, stats)
         // One that did not go out is tried again with the next reading, so the
         // figures appear as soon as notifications are allowed.
@@ -37,13 +45,13 @@ class LiveNotificationController(
 
     /**
      * The choice changed: with nothing chosen the silent notification goes back up
-     * at once; with figures chosen the caller follows with a fresh reading, which
-     * this returns true for.
+     * at once, or, its channel blocked, the live one comes down; with figures chosen
+     * the caller follows with a fresh reading, which this returns true for.
      */
     suspend fun onSelectionChanged(): Boolean = mutex.withLock {
         gate.onSettingsChanged()
         if (chosen().isEmpty()) {
-            postQuiet()
+            if (!postQuiet()) removeLive()
             false
         } else {
             true

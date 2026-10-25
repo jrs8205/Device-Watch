@@ -76,6 +76,19 @@ class MonitorNotificationsTest {
     }
 
     @Test
+    fun `it tells whether the monitor's notification is still posted`() {
+        shadowOf(context as Application).grantPermissions(Manifest.permission.POST_NOTIFICATIONS)
+        notifications.ensureChannels()
+        assertThat(notifications.isShowing(1001)).isFalse()
+
+        notifications.post(1001, notifications.live(LiveNotificationText(first, null)))
+        assertThat(notifications.isShowing(1001)).isTrue()
+
+        context.getSystemService(NotificationManager::class.java).cancel(1001)
+        assertThat(notifications.isShowing(1001)).isFalse()
+    }
+
+    @Test
     fun `the live notification is on its own channel and the silent one on the old`() {
         assertThat(notifications.live(null).channelId).isEqualTo(MonitorNotifications.LIVE_CHANNEL_ID)
         assertThat(notifications.quiet().channelId).isEqualTo(MonitorNotifications.QUIET_CHANNEL_ID)

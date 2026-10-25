@@ -77,6 +77,8 @@ class SystemMonitorService : Service() {
             read = ::liveText,
             postLive = { text -> notifications.post(NOTIFICATION_ID, notifications.live(text)) },
             postQuiet = { notifications.post(NOTIFICATION_ID, notifications.quiet()) },
+            removeLive = ::replaceWithSilentForeground,
+            isShowing = { notifications.isShowing(NOTIFICATION_ID) },
         )
     }
 
@@ -316,7 +318,10 @@ class SystemMonitorService : Service() {
             // The figures follow with the first reading.
             notifications.live(null)
         }
+        startForegroundWith(notification)
+    }
 
+    private fun startForegroundWith(notification: android.app.Notification) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             startForeground(
                 NOTIFICATION_ID,
@@ -325,6 +330,23 @@ class SystemMonitorService : Service() {
             )
         } else {
             startForeground(NOTIFICATION_ID, notification)
+        }
+    }
+
+    /**
+     * The silent notification could not replace the live one: its channel is
+     * blocked, and a post to a blocked channel leaves the old notification up. Only
+     * the service itself can take its own notification down, so it drops it and
+     * goes foreground again with the silent one, which the blocked channel keeps
+     * out of sight. Runs on a change in Settings, with the app in front, where
+     * going foreground is allowed.
+     */
+    private fun replaceWithSilentForeground() {
+        try {
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            startForegroundWith(notifications.quiet())
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 

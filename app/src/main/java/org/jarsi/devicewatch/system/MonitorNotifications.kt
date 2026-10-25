@@ -124,6 +124,13 @@ class MonitorNotifications(private val context: Context) {
         }
     }
 
+    /** Whether notification [id] is still posted; assumed so when the system cannot say. */
+    fun isShowing(id: Int): Boolean = try {
+        context.getSystemService(NotificationManager::class.java)?.activeNotifications?.any { it.id == id } ?: true
+    } catch (_: Exception) {
+        true
+    }
+
     private fun openOverview(): PendingIntent = PendingIntent.getActivity(
         context,
         REQUEST_OPEN_OVERVIEW,
