@@ -304,6 +304,14 @@ internal class FakeAppSettingsRepository(
     override fun setNotificationMetrics(metrics: Set<QuickMetric>) {
         notificationFigures = metrics
     }
+
+    private var valueIcons = true
+
+    override fun tileValueIcons(): Boolean = valueIcons
+
+    override fun setTileValueIcons(enabled: Boolean) {
+        valueIcons = enabled
+    }
 }
 
 internal class FakeAppUsageRepository(

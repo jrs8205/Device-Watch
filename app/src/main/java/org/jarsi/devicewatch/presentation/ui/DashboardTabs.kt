@@ -409,6 +409,7 @@ fun SystemDashboardScreen(
                             onShizukuModeChange = viewModel::onShizukuModeChange,
                             onAlertToggle = viewModel::onAlertToggle,
                             onNotificationMetricToggle = viewModel::onNotificationMetricToggle,
+                            onTileValueIconsChange = viewModel::onTileValueIconsChange,
                             onShowIntro = { replayOnboarding = true }
                         )
                     }

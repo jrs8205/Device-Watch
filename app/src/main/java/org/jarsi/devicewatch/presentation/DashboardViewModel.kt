@@ -104,6 +104,8 @@ data class DashboardUiState(
     val enabledAlerts: Set<HealthAlert> = emptySet(),
     /** The figures chosen for the monitor's notification; none keeps it silent. */
     val notificationMetrics: Set<QuickMetric> = emptySet(),
+    /** Quick Settings tiles draw their figure in place of their icon. */
+    val tileValueIcons: Boolean = true,
     /** Foreground/background shares and roaming for the counting period; null until read. */
     val dataBreakdown: DataBreakdown? = null,
     /** What the used storage holds; null until read or when unavailable. */
@@ -154,6 +156,7 @@ class DashboardViewModel @Inject constructor(
                 shizukuStatus = if (access == PrivilegedAccess.SHIZUKU) ShizukuStatus.ON else ShizukuStatus.OFF,
                 enabledAlerts = HealthAlert.entries.filter(settings::alertEnabled).toSet(),
                 notificationMetrics = settings.notificationMetrics(),
+                tileValueIcons = settings.tileValueIcons(),
             )
         }
         viewModelScope.launch {
@@ -420,6 +423,12 @@ class DashboardViewModel @Inject constructor(
         settings.setNotificationMetrics(chosen)
         monitorRelay.notificationMetricsChanged()
         _uiState.update { it.copy(notificationMetrics = chosen) }
+    }
+
+    // Tiles read the setting each time the panel opens, so nothing else needs telling.
+    fun onTileValueIconsChange(enabled: Boolean) {
+        settings.setTileValueIcons(enabled)
+        _uiState.update { it.copy(tileValueIcons = enabled) }
     }
 
     /** Reads fresh stats, pushes them to every installed widget, and updates the screen. */

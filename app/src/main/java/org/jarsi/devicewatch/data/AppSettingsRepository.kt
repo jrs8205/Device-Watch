@@ -114,4 +114,9 @@ interface AppSettingsRepository {
     fun notificationMetrics(): Set<QuickMetric>
 
     fun setNotificationMetrics(metrics: Set<QuickMetric>)
+
+    /** Whether a Quick Settings tile draws its figure in place of its icon; on by default. */
+    fun tileValueIcons(): Boolean
+
+    fun setTileValueIcons(enabled: Boolean)
 }

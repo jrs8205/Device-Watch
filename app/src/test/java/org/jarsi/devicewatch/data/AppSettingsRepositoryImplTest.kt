@@ -13,6 +13,15 @@ class AppSettingsRepositoryImplTest {
     private val period = 20_000L
 
     @Test
+    fun `tiles show their figure as the icon until switched off`() {
+        assertThat(settings.tileValueIcons()).isTrue()
+
+        settings.setTileValueIcons(false)
+
+        assertThat(AppSettingsRepositoryImpl(ApplicationProvider.getApplicationContext()).tileValueIcons()).isFalse()
+    }
+
+    @Test
     fun `no notification figures are chosen by default`() {
         assertThat(settings.notificationMetrics()).isEmpty()
     }

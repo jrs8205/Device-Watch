@@ -89,6 +89,42 @@ object QuickMetricFormatter {
         }
     }
 
+    /**
+     * The figure at its shortest, drawn in place of a small tile's icon: a small
+     * tile shows nothing else. Memory and storage become the share in use, data and
+     * uptime keep one unit. Null when the figure cannot be read.
+     */
+    fun iconText(metric: QuickMetric, stats: SystemStats, dataToday: DataToday?, labels: QuickMetricLabels): String? =
+        when (metric) {
+            QuickMetric.BATTERY -> stats.batteryLevel.takeIf { it >= 0 }?.let { "$it%" }
+            QuickMetric.BATTERY_TEMP -> stats.batteryTemp.takeIf { it >= 0.0 }?.let { "${Math.round(it)}°" }
+            QuickMetric.CPU_TEMP -> stats.cpuTemp.takeIf { it > 0.0 }?.let { "${Math.round(it)}°" }
+            QuickMetric.DATA_TODAY -> dataToday?.totalGb?.let(::dataIconText)
+            QuickMetric.UPTIME -> stats.uptimeMillis.takeIf { it > 0L }?.let { millis ->
+                val hours = millis / 3_600_000L
+                when {
+                    hours >= 24 -> "${hours / 24}${labels.dayUnit}"
+                    hours >= 1 -> "$hours${labels.hourUnit}"
+                    else -> "<1${labels.hourUnit}"
+                }
+            }
+            QuickMetric.CPU_LOAD -> stats.cpuLoadPercent.takeIf { it >= 0 }?.let { "$it%" }
+            QuickMetric.MEMORY -> sharePercent(stats.usedRamGb, stats.totalRamGb)
+            QuickMetric.STORAGE -> sharePercent(stats.usedStorageGb, stats.totalStorageGb)
+        }
+
+    private fun dataIconText(gb: Double): String {
+        val mb = gb * 1024.0
+        return when {
+            mb < 999.5 -> "${Math.round(mb)}M"
+            gb < 9.95 -> String.format(Locale.getDefault(), "%.1fG", gb)
+            else -> String.format(Locale.getDefault(), "%.0fG", gb)
+        }
+    }
+
+    private fun sharePercent(used: Double, total: Double): String? =
+        if (used < 0.0 || total <= 0.0) null else "${Math.round(used / total * 100.0)}%"
+
     /** Uptime in its two largest units: "3 pv 4 t", "4 t 12 min", "12 min". */
     fun uptimeText(millis: Long, dayUnit: String, hourUnit: String, minuteUnit: String): String {
         val minutes = millis / 60_000L

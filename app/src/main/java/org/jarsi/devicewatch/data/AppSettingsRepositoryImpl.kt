@@ -218,6 +218,12 @@ class AppSettingsRepositoryImpl @Inject constructor(
         prefs.edit().putString(KEY_NOTIFICATION_METRICS, quickMetricsToStored(metrics)).apply()
     }
 
+    override fun tileValueIcons(): Boolean = prefs.getBoolean(KEY_TILE_VALUE_ICONS, true)
+
+    override fun setTileValueIcons(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_TILE_VALUE_ICONS, enabled).apply()
+    }
+
     private fun alertKey(prefix: String, alert: HealthAlert): String = "$prefix:${alert.name.lowercase()}"
 
     companion object {
@@ -241,6 +247,7 @@ class AppSettingsRepositoryImpl @Inject constructor(
         const val KEY_ALERT_LATCHED_PREFIX = "alert_latched"
         const val KEY_ALERT_GENERATION_PREFIX = "alert_generation"
         const val KEY_NOTIFICATION_METRICS = "notification_metrics"
+        const val KEY_TILE_VALUE_ICONS = "tile_value_icons"
         const val DEFAULT_CYCLE_START_DAY = 1
     }
 }

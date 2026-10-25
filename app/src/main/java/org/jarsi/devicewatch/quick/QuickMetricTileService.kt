@@ -65,26 +65,32 @@ abstract class QuickMetricTileService : TileService() {
     private suspend fun refresh() {
         val tile = qsTile ?: return
         val labels = quickMetricLabels(this)
-        val reading = try {
+        val (reading, iconText) = try {
             withContext(Dispatchers.Default) {
                 val entry = EntryPointAccessors.fromApplication(applicationContext, QuickEntryPoint::class.java)
                 val source = entry.quickStatsSource()
                 val stats = source.stats()
                 val dataToday = if (metric == QuickMetric.DATA_TODAY) source.dataToday() else null
                 val extendedAccess = entry.appSettings().privilegedAccess() != PrivilegedAccess.OFF
-                QuickMetricFormatter.read(metric, stats, dataToday, extendedAccess, labels)
+                QuickMetricFormatter.read(metric, stats, dataToday, extendedAccess, labels) to
+                    // A small tile shows nothing but its icon, so by default the figure is the icon.
+                    if (entry.appSettings().tileValueIcons()) {
+                        QuickMetricFormatter.iconText(metric, stats, dataToday, labels)
+                    } else {
+                        null
+                    }
             }
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
             e.printStackTrace()
-            QuickMetricReading(metric, UNAVAILABLE_TEXT, null, labels.notAvailable)
+            QuickMetricReading(metric, UNAVAILABLE_TEXT, null, labels.notAvailable) to null
         }
         val look = quickTileAppearance(reading, labels.names.getValue(metric), Build.VERSION.SDK_INT)
         tile.label = look.label
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) tile.subtitle = look.subtitle
         tile.state = look.state
-        tile.icon = Icon.createWithResource(this, quickMetricIconRes(metric))
+        tile.icon = iconText?.let(::quickTileValueIcon) ?: Icon.createWithResource(this, quickMetricIconRes(metric))
         tile.contentDescription = listOfNotNull(look.label, look.subtitle).joinToString(", ")
         tile.updateTile()
     }

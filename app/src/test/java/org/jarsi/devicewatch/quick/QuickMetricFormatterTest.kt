@@ -91,6 +91,38 @@ class QuickMetricFormatterTest {
         assertThat(read(MEMORY, quickStats(usedRamGb = -1.0, totalRamGb = 7.6)).available).isFalse()
     }
 
+    @Test
+    fun `icon text is the figure at its shortest`() {
+        assertThat(iconText(BATTERY, quickStats(batteryLevel = 83))).isEqualTo("83%")
+        assertThat(iconText(BATTERY, quickStats(batteryLevel = 100))).isEqualTo("100%")
+        assertThat(iconText(BATTERY_TEMP, quickStats(batteryTemp = 27.6))).isEqualTo("28°")
+        assertThat(iconText(CPU_TEMP, quickStats(cpuTemp = 35.0))).isEqualTo("35°")
+        assertThat(iconText(CPU_LOAD, quickStats(cpuLoadPercent = 12))).isEqualTo("12%")
+        assertThat(iconText(MEMORY, quickStats(usedRamGb = 5.4, totalRamGb = 7.4))).isEqualTo("73%")
+        assertThat(iconText(STORAGE, quickStats(usedStorageGb = 21.0, totalStorageGb = 110.0))).isEqualTo("19%")
+    }
+
+    @Test
+    fun `icon text for data and uptime keeps one unit`() {
+        assertThat(iconText(DATA_TODAY, quickStats(), DataToday(mobileGb = 0.08, wifiGb = 0.103))).isEqualTo("187M")
+        assertThat(iconText(DATA_TODAY, quickStats(), DataToday(mobileGb = 0.3, wifiGb = 1.1))).isEqualTo("1,4G")
+        assertThat(iconText(DATA_TODAY, quickStats(), DataToday(mobileGb = 2.0, wifiGb = 10.3))).isEqualTo("12G")
+        assertThat(iconText(UPTIME, quickStats(uptimeMillis = ((2 * 24 + 19) * 60) * 60_000L))).isEqualTo("2pv")
+        assertThat(iconText(UPTIME, quickStats(uptimeMillis = 19 * 60 * 60_000L))).isEqualTo("19t")
+        assertThat(iconText(UPTIME, quickStats(uptimeMillis = 45 * 60_000L))).isEqualTo("<1t")
+    }
+
+    @Test
+    fun `a missing figure has no icon text`() {
+        assertThat(iconText(CPU_TEMP, quickStats(cpuTemp = -1.0))).isNull()
+        assertThat(iconText(DATA_TODAY, quickStats(), null)).isNull()
+        assertThat(iconText(MEMORY, quickStats(usedRamGb = 5.4, totalRamGb = -1.0))).isNull()
+        assertThat(iconText(UPTIME, quickStats(uptimeMillis = 0L))).isNull()
+    }
+
+    private fun iconText(metric: QuickMetric, stats: SystemStats, dataToday: DataToday? = null) =
+        QuickMetricFormatter.iconText(metric, stats, dataToday, labels)
+
     private fun read(
         metric: QuickMetric,
         stats: SystemStats,

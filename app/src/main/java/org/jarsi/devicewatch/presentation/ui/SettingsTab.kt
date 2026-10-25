@@ -95,6 +95,7 @@ internal fun SettingsTab(
     onShizukuModeChange: (Boolean) -> Unit,
     onAlertToggle: (HealthAlert, Boolean) -> Unit,
     onNotificationMetricToggle: (QuickMetric, Boolean) -> Unit,
+    onTileValueIconsChange: (Boolean) -> Unit,
     onShowIntro: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -423,6 +424,22 @@ internal fun SettingsTab(
                     onCheckedChange = { onNotificationMetricSwitch(metric, it) }
                 )
             }
+        }
+
+        // Quick Settings tiles (GitHub #7)
+        SettingsSectionCard(titleRes = R.string.quick_tiles_section) {
+            Text(
+                text = stringResource(R.string.quick_tiles_description),
+                fontSize = 11.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            SettingsToggleRow(
+                titleRes = R.string.tile_value_icons_title,
+                descriptionRes = R.string.tile_value_icons_description,
+                checked = uiState.tileValueIcons,
+                onCheckedChange = onTileValueIconsChange,
+            )
         }
 
         // Widget settings

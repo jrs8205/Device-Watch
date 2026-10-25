@@ -769,6 +769,19 @@ class DashboardViewModelTest {
         }
 
     @Test
+    fun `switching the tiles' figure icons stores it and shows it`() =
+        runTest(dispatcher) {
+            val settings = FakeAppSettingsRepository()
+            val viewModel = buildViewModel(settings = settings)
+            assertThat(viewModel.uiState.value.tileValueIcons).isTrue()
+
+            viewModel.onTileValueIconsChange(false)
+
+            assertThat(settings.tileValueIcons()).isFalse()
+            assertThat(viewModel.uiState.value.tileValueIcons).isFalse()
+        }
+
+    @Test
     fun `the chosen notification figures show from the start`() =
         runTest(dispatcher) {
             val settings = FakeAppSettingsRepository()
