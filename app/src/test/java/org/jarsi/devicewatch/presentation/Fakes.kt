@@ -2,6 +2,7 @@ package org.jarsi.devicewatch.presentation
 
 import org.jarsi.devicewatch.system.AlertNotifications
 import org.jarsi.devicewatch.data.HealthAlert
+import org.jarsi.devicewatch.data.QuickMetric
 import org.jarsi.devicewatch.data.ApplyOutcome
 import org.jarsi.devicewatch.data.CpuPolicyId
 import org.jarsi.devicewatch.data.CpuProfile
@@ -166,6 +167,12 @@ internal class FakeMonitorServiceRelay : MonitorServiceRelay {
     override fun dataQuotaChanged() {
         dataQuotaChangedCount++
     }
+
+    var notificationMetricsChanges = 0
+
+    override fun notificationMetricsChanged() {
+        notificationMetricsChanges++
+    }
 }
 
 internal class FakeAppSettingsRepository(
@@ -288,6 +295,14 @@ internal class FakeAppSettingsRepository(
 
     override fun unlatchAlert(alert: HealthAlert) {
         alertsLatched -= alert
+    }
+
+    private var notificationFigures: Set<QuickMetric> = emptySet()
+
+    override fun notificationMetrics(): Set<QuickMetric> = notificationFigures
+
+    override fun setNotificationMetrics(metrics: Set<QuickMetric>) {
+        notificationFigures = metrics
     }
 }
 

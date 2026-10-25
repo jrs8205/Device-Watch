@@ -979,4 +979,10 @@
     <string name="quick_needs_extended_access">vaatii laajennetun käytön</string>
     <string name="quick_needs_usage_access">vaatii käyttötietojen luvan</string>
     <string name="quick_not_available">ei saatavilla</string>
+    <string name="live_notification_section">ILMOITUKSEN LUVUT</string>
+    <string name="live_notification_description">Valitsemasi luvut näkyvät valvonnan ilmoituksessa kahdella rivillä muiden ilmoitusten joukossa, ja sen kuvake näkyy silloin tilarivillä. Kun mitään ei ole valittu, ilmoitus pysyy hiljaisena listan pohjalla.</string>
+    <string name="quick_cpu_temp_setting_description">Useimmat puhelimet antavat sen vain laajennetulla käytöllä.</string>
+    <string name="quick_data_today_setting_description">Vaatii käyttötietojen luvan.</string>
+    <string name="live_notification_blocked">Device Watchin ilmoitukset ovat pois päältä, joten lukuja ei näytetä.</string>
+    <string name="live_notification_allow">Salli ilmoitukset</string>
 </resources>

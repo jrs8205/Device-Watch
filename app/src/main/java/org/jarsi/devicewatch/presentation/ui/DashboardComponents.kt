@@ -268,7 +268,7 @@ internal fun LabelValueRow(
 @Composable
 internal fun SettingsToggleRow(
     @StringRes titleRes: Int,
-    @StringRes descriptionRes: Int,
+    @StringRes descriptionRes: Int?,
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
 ) {
@@ -284,12 +284,14 @@ internal fun SettingsToggleRow(
                 fontWeight = FontWeight.Medium,
                 fontSize = 14.sp
             )
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(
-                text = stringResource(descriptionRes),
-                fontSize = 11.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            if (descriptionRes != null) {
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = stringResource(descriptionRes),
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
         Spacer(modifier = Modifier.width(12.dp))
         Switch(checked = checked, onCheckedChange = withTapHaptic(onCheckedChange))

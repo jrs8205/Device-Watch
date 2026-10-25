@@ -1,6 +1,7 @@
 package org.jarsi.devicewatch.presentation
 
 import org.jarsi.devicewatch.data.HealthAlert
+import org.jarsi.devicewatch.data.QuickMetric
 import org.jarsi.devicewatch.data.CpuPolicyId
 import org.jarsi.devicewatch.data.CpuProfile
 import org.jarsi.devicewatch.data.CpuProfileStatus
@@ -746,6 +747,37 @@ class DashboardViewModelTest {
             viewModel.onAlertToggle(HealthAlert.FAST_DRAIN, false)
 
             assertThat(viewModel.uiState.value.enabledAlerts).isEmpty()
+        }
+
+    @Test
+    fun `toggling a notification figure stores it and tells the monitor`() =
+        runTest(dispatcher) {
+            val settings = FakeAppSettingsRepository()
+            val relay = FakeMonitorServiceRelay()
+            val viewModel = buildViewModel(settings = settings, relay = relay)
+
+            viewModel.onNotificationMetricToggle(QuickMetric.MEMORY, true)
+
+            assertThat(settings.notificationMetrics()).containsExactly(QuickMetric.MEMORY)
+            assertThat(relay.notificationMetricsChanges).isEqualTo(1)
+            assertThat(viewModel.uiState.value.notificationMetrics).containsExactly(QuickMetric.MEMORY)
+
+            viewModel.onNotificationMetricToggle(QuickMetric.MEMORY, false)
+
+            assertThat(viewModel.uiState.value.notificationMetrics).isEmpty()
+            assertThat(relay.notificationMetricsChanges).isEqualTo(2)
+        }
+
+    @Test
+    fun `the chosen notification figures show from the start`() =
+        runTest(dispatcher) {
+            val settings = FakeAppSettingsRepository()
+            settings.setNotificationMetrics(setOf(QuickMetric.BATTERY, QuickMetric.CPU_LOAD))
+
+            val viewModel = buildViewModel(settings = settings)
+
+            assertThat(viewModel.uiState.value.notificationMetrics)
+                .containsExactly(QuickMetric.BATTERY, QuickMetric.CPU_LOAD)
         }
 
     @Test

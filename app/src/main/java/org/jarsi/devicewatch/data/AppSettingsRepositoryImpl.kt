@@ -210,6 +210,14 @@ class AppSettingsRepositoryImpl @Inject constructor(
         alertState.edit().remove(alertKey(KEY_ALERT_LATCHED_PREFIX, alert)).apply()
     }
 
+    // In app_settings, so a restored phone shows the same figures.
+    override fun notificationMetrics(): Set<QuickMetric> =
+        quickMetricsOf(prefs.getString(KEY_NOTIFICATION_METRICS, null))
+
+    override fun setNotificationMetrics(metrics: Set<QuickMetric>) {
+        prefs.edit().putString(KEY_NOTIFICATION_METRICS, quickMetricsToStored(metrics)).apply()
+    }
+
     private fun alertKey(prefix: String, alert: HealthAlert): String = "$prefix:${alert.name.lowercase()}"
 
     companion object {
@@ -232,6 +240,7 @@ class AppSettingsRepositoryImpl @Inject constructor(
         const val KEY_ALERT_ENABLED_PREFIX = "alert_enabled"
         const val KEY_ALERT_LATCHED_PREFIX = "alert_latched"
         const val KEY_ALERT_GENERATION_PREFIX = "alert_generation"
+        const val KEY_NOTIFICATION_METRICS = "notification_metrics"
         const val DEFAULT_CYCLE_START_DAY = 1
     }
 }

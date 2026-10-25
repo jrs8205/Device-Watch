@@ -21,6 +21,9 @@ interface MonitorServiceRelay {
      * day), was changed; re-check it and re-arm the usage watch now.
      */
     fun dataQuotaChanged()
+
+    /** The figures chosen for the notification changed; show them, or the silent notification, now. */
+    fun notificationMetricsChanged()
 }
 
 /**
@@ -36,6 +39,8 @@ class IntentMonitorServiceRelay @Inject constructor(
     override fun chargeLimitChanged() = send(SystemMonitorService.ACTION_CHARGE_LIMIT_CHANGED)
 
     override fun dataQuotaChanged() = send(SystemMonitorService.ACTION_DATA_QUOTA_CHANGED)
+
+    override fun notificationMetricsChanged() = send(SystemMonitorService.ACTION_NOTIFICATION_METRICS_CHANGED)
 
     private fun send(action: String) {
         val intent = Intent(context, SystemMonitorService::class.java).setAction(action)

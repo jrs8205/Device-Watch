@@ -3,6 +3,7 @@ package org.jarsi.devicewatch.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import org.jarsi.devicewatch.data.HealthAlert
+import org.jarsi.devicewatch.data.QuickMetric
 import org.jarsi.devicewatch.data.storageUsedBytes
 import org.jarsi.devicewatch.data.AppSettingsRepository
 import org.jarsi.devicewatch.data.AppUsageRepository
@@ -101,6 +102,8 @@ data class DashboardUiState(
     val cpuCapsKeptUntilRestart: Boolean = false,
     /** The optional alerts the user has switched on. */
     val enabledAlerts: Set<HealthAlert> = emptySet(),
+    /** The figures chosen for the monitor's notification; none keeps it silent. */
+    val notificationMetrics: Set<QuickMetric> = emptySet(),
     /** Foreground/background shares and roaming for the counting period; null until read. */
     val dataBreakdown: DataBreakdown? = null,
     /** What the used storage holds; null until read or when unavailable. */
@@ -150,6 +153,7 @@ class DashboardViewModel @Inject constructor(
                 rootStatus = if (access == PrivilegedAccess.ROOT) RootStatus.ON else RootStatus.OFF,
                 shizukuStatus = if (access == PrivilegedAccess.SHIZUKU) ShizukuStatus.ON else ShizukuStatus.OFF,
                 enabledAlerts = HealthAlert.entries.filter(settings::alertEnabled).toSet(),
+                notificationMetrics = settings.notificationMetrics(),
             )
         }
         viewModelScope.launch {
@@ -409,6 +413,13 @@ class DashboardViewModel @Inject constructor(
         _uiState.update {
             it.copy(enabledAlerts = if (enabled) it.enabledAlerts + alert else it.enabledAlerts - alert)
         }
+    }
+
+    fun onNotificationMetricToggle(metric: QuickMetric, enabled: Boolean) {
+        val chosen = settings.notificationMetrics().let { if (enabled) it + metric else it - metric }
+        settings.setNotificationMetrics(chosen)
+        monitorRelay.notificationMetricsChanged()
+        _uiState.update { it.copy(notificationMetrics = chosen) }
     }
 
     /** Reads fresh stats, pushes them to every installed widget, and updates the screen. */

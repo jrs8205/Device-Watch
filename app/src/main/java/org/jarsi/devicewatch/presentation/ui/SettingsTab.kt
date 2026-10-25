@@ -1,6 +1,10 @@
 package org.jarsi.devicewatch.presentation.ui
 
 import org.jarsi.devicewatch.data.HealthAlert
+import org.jarsi.devicewatch.data.QuickMetric
+import org.jarsi.devicewatch.quick.quickMetricTitleRes
+import androidx.core.app.NotificationManagerCompat
+import androidx.compose.material3.TextButton
 import androidx.core.content.ContextCompat
 import android.content.pm.PackageManager
 import android.Manifest
@@ -90,6 +94,7 @@ internal fun SettingsTab(
     onRootModeChange: (Boolean) -> Unit,
     onShizukuModeChange: (Boolean) -> Unit,
     onAlertToggle: (HealthAlert, Boolean) -> Unit,
+    onNotificationMetricToggle: (QuickMetric, Boolean) -> Unit,
     onShowIntro: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -123,6 +128,25 @@ internal fun SettingsTab(
         ) {
             notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
+    }
+    // The figures live in a notification: one chosen without the permission would
+    // never show, so it is asked for there, as for the alerts.
+    val onNotificationMetricSwitch: (QuickMetric, Boolean) -> Unit = { metric, enabled ->
+        onNotificationMetricToggle(metric, enabled)
+        if (enabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) !=
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
+    // Denied for good, or switched off in Android's settings: only Android's own page can turn them back on.
+    var notificationsEnabled by remember {
+        mutableStateOf(NotificationManagerCompat.from(context).areNotificationsEnabled())
+    }
+    LifecycleResumeEffect(Unit) {
+        notificationsEnabled = NotificationManagerCompat.from(context).areNotificationsEnabled()
+        onPauseOrDispose { }
     }
 
     val dreamPrefs = remember(context) {
@@ -366,6 +390,39 @@ internal fun SettingsTab(
                 checked = HealthAlert.FAST_DRAIN in uiState.enabledAlerts,
                 onCheckedChange = { onAlertSwitch(HealthAlert.FAST_DRAIN, it) }
             )
+        }
+
+        // Figures in the monitor's notification (GitHub #7), none by default
+        SettingsSectionCard(titleRes = R.string.live_notification_section) {
+            Text(
+                text = stringResource(R.string.live_notification_description),
+                fontSize = 11.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            if (uiState.notificationMetrics.isNotEmpty() && !notificationsEnabled) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = stringResource(R.string.live_notification_blocked),
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.error
+                )
+                TextButton(onClick = withTapHaptic { openAppNotificationSettings(context) }) {
+                    Text(stringResource(R.string.live_notification_allow))
+                }
+            }
+            QuickMetric.entries.forEach { metric ->
+                Spacer(modifier = Modifier.height(12.dp))
+                SettingsToggleRow(
+                    titleRes = quickMetricTitleRes(metric),
+                    descriptionRes = when (metric) {
+                        QuickMetric.CPU_TEMP -> R.string.quick_cpu_temp_setting_description
+                        QuickMetric.DATA_TODAY -> R.string.quick_data_today_setting_description
+                        else -> null
+                    },
+                    checked = metric in uiState.notificationMetrics,
+                    onCheckedChange = { onNotificationMetricSwitch(metric, it) }
+                )
+            }
         }
 
         // Widget settings
@@ -776,4 +833,23 @@ internal fun AccessStatusDot(granted: Boolean) {
             .background(if (granted) statusOkColor() else MaterialTheme.colorScheme.error)
             .semantics { contentDescription = stateText }
     )
+}
+
+/** Android's notification page for this app, or its app page where an OEM build lacks the former. */
+private fun openAppNotificationSettings(context: Context) {
+    val notifications = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+        .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    try {
+        context.startActivity(notifications)
+    } catch (_: Exception) {
+        try {
+            context.startActivity(
+                Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, android.net.Uri.fromParts("package", context.packageName, null))
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            )
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
 }

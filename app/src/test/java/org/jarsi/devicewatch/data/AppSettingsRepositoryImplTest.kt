@@ -13,6 +13,31 @@ class AppSettingsRepositoryImplTest {
     private val period = 20_000L
 
     @Test
+    fun `no notification figures are chosen by default`() {
+        assertThat(settings.notificationMetrics()).isEmpty()
+    }
+
+    @Test
+    fun `chosen notification figures are kept with the backed-up settings`() {
+        settings.setNotificationMetrics(setOf(QuickMetric.CPU_LOAD, QuickMetric.BATTERY))
+
+        val again = AppSettingsRepositoryImpl(ApplicationProvider.getApplicationContext())
+        assertThat(again.notificationMetrics()).containsExactly(QuickMetric.BATTERY, QuickMetric.CPU_LOAD)
+        val backedUp = ApplicationProvider.getApplicationContext<android.content.Context>()
+            .getSharedPreferences(AppSettingsRepositoryImpl.PREFS_NAME, android.content.Context.MODE_PRIVATE)
+        assertThat(backedUp.getString("notification_metrics", null)).isEqualTo("BATTERY,CPU_LOAD")
+    }
+
+    @Test
+    fun `an unknown stored notification figure is skipped`() {
+        ApplicationProvider.getApplicationContext<android.content.Context>()
+            .getSharedPreferences(AppSettingsRepositoryImpl.PREFS_NAME, android.content.Context.MODE_PRIVATE)
+            .edit().putString("notification_metrics", "BATTERY,REMOVED").commit()
+
+        assertThat(settings.notificationMetrics()).containsExactly(QuickMetric.BATTERY)
+    }
+
+    @Test
     fun `every alert is off until switched on, each on its own`() {
         assertThat(HealthAlert.entries.map { settings.alertEnabled(it) }).containsExactly(false, false, false)
 

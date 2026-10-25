@@ -109,4 +109,9 @@ interface AppSettingsRepository {
     fun latchAlert(alert: HealthAlert, generation: Long): Boolean
 
     fun unlatchAlert(alert: HealthAlert)
+
+    /** The figures the monitor's notification shows; none chosen keeps it silent at the bottom. */
+    fun notificationMetrics(): Set<QuickMetric>
+
+    fun setNotificationMetrics(metrics: Set<QuickMetric>)
 }

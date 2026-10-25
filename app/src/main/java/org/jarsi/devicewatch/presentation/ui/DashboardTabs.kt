@@ -408,6 +408,7 @@ fun SystemDashboardScreen(
                             onRootModeChange = viewModel::onRootModeChange,
                             onShizukuModeChange = viewModel::onShizukuModeChange,
                             onAlertToggle = viewModel::onAlertToggle,
+                            onNotificationMetricToggle = viewModel::onNotificationMetricToggle,
                             onShowIntro = { replayOnboarding = true }
                         )
                     }
