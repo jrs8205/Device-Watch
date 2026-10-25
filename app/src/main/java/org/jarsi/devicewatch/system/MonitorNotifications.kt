@@ -98,8 +98,9 @@ class MonitorNotifications(private val context: Context) {
 
     /**
      * Replaces the posted notification; returns whether it went out. Without the
-     * permission, or with the app's notifications switched off (which notify()
-     * ignores silently), nothing is posted.
+     * permission, with the app's notifications switched off or with the
+     * notification's own channel blocked (all of which notify() ignores silently),
+     * nothing is posted.
      */
     fun post(id: Int, notification: Notification): Boolean {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
@@ -109,7 +110,11 @@ class MonitorNotifications(private val context: Context) {
             return false
         }
         val manager = NotificationManagerCompat.from(context)
-        if (!manager.areNotificationsEnabled()) return false
+        val reachable = NotificationDelivery.canReachUser(
+            appNotificationsEnabled = manager.areNotificationsEnabled(),
+            channelImportance = manager.getNotificationChannel(notification.channelId)?.importance,
+        )
+        if (!reachable) return false
         return try {
             manager.notify(id, notification)
             true

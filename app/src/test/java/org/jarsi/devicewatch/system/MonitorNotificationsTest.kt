@@ -1,7 +1,10 @@
 package org.jarsi.devicewatch.system
 
+import android.Manifest
 import android.app.Application
 import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import com.google.common.truth.Truth.assertThat
@@ -9,6 +12,7 @@ import org.jarsi.devicewatch.R
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
@@ -51,6 +55,24 @@ class MonitorNotificationsTest {
             .isEqualTo(context.getString(R.string.monitor_notification_title))
         assertThat(n.extras.getCharSequence(Notification.EXTRA_TEXT).toString())
             .isEqualTo(context.getString(R.string.monitor_notification_text))
+    }
+
+    @Test
+    fun `a blocked figures channel counts as not posted`() {
+        // External review round 1: with only "Live figures" blocked, the app's notifications
+        // are still on, so the post counted as made and an unchanged figure stayed off the
+        // screen after the channel was allowed again.
+        shadowOf(context as Application).grantPermissions(Manifest.permission.POST_NOTIFICATIONS)
+        val manager = context.getSystemService(NotificationManager::class.java)
+        manager.createNotificationChannel(
+            NotificationChannel(MonitorNotifications.LIVE_CHANNEL_ID, "Live", NotificationManager.IMPORTANCE_NONE)
+        )
+        manager.createNotificationChannel(
+            NotificationChannel(MonitorNotifications.QUIET_CHANNEL_ID, "Quiet", NotificationManager.IMPORTANCE_MIN)
+        )
+
+        assertThat(notifications.post(1001, notifications.live(LiveNotificationText(first, null)))).isFalse()
+        assertThat(notifications.post(1001, notifications.quiet())).isTrue()
     }
 
     @Test
