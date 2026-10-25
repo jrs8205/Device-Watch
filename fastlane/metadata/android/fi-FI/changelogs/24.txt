@@ -1,0 +1,5 @@
+• Pika-asetusten painikkeet, yksi kullekin luvulle: akku, akun ja suorittimen lämpötila, data tänään, käyntiaika, suorittimen kuorma, muisti, tallennustila; pienessä painikkeessa luku näkyy kuvakkeena (GitHub #7)
+• Yksi luku -widget: 1×1-kotinäyttöwidget valitsemallasi luvulla
+• Elävät luvut valvonnan ilmoituksessa, valitaan Asetuksista (oletuksena pois)
+• Painikkeen, widgetin tai ilmoituksen napautus avaa Yleiskatsauksen
+• Suorittimen lämpötila vaatii useimmissa puhelimissa laajennetun käytön

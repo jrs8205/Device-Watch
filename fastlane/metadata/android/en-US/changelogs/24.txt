@@ -1,0 +1,5 @@
+• Quick Settings tiles, one per figure: battery, battery and processor temperature, data today, uptime, processor load, memory, storage; a small tile shows the figure as its icon (GitHub #7)
+• Single figure widget: a 1×1 home-screen widget with the figure you pick
+• Live figures in the monitor's notification, chosen in Settings (off by default)
+• Tapping a tile, the widget or the notification opens the Overview
+• Processor temperature on most phones needs extended access

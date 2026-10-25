@@ -30,6 +30,9 @@ The default app language is English. Finnish users get a localized app name and 
 
 - Home screen widget for battery, memory, CPU, storage, Wi-Fi, mobile network, data usage, uptime, today's screen time, and last update time
 - Compact 2×2 widget for battery, uptime and mobile/Wi-Fi data, with the counting period shown above each data amount
+- Single figure 1×1 widget: one figure of your choice (battery, battery or processor temperature, data today, uptime, processor load, memory or storage), picked when the widget is added and changed with a long press
+- Quick Settings tiles, one per figure, added from the panel's edit mode: a wide tile shows the figure's name and value like Android's own tiles, and a small tile, which shows only its icon, draws the figure in its place (switchable in Settings). Android lets no app put widgets in the panel, only tiles
+- Live figures in the monitor's notification, off by default: the figures chosen in Settings on two lines among the other notifications, all of them when expanded; a swipe hides it until the screen next comes on, and with none chosen it stays silent at the bottom as before
 - Widget background opacity slider, and a black-background switch for people whose other widgets are black
 - Tapping the widget anywhere opens the app
 - Data counters per calendar day or per one-month billing cycle with a configurable start day (month lengths handled automatically); the selection applies to the widget and the in-app data rows
@@ -138,12 +141,17 @@ data/           SystemStatsRepository + AppUsageRepository (per-app usage, on de
                 NotificationCounting, ChargeSessions, AlertLogic, DataQuotaLogic,
                 Camera/Audio/AppPackage logic (pure, unit-tested calculations)
                 SystemStats / AppUsage / DeviceInfo models (+ UNAVAILABLE_* sentinels)
-widget/         Glance DashboardWidget and CompactWidget, WidgetStateUpdater (DataStore
+quick/          QuickMetricFormatter (the eight quick figures as text), QuickStatsSource
+                (one shared reading for tiles opened together, today's data from
+                midnight), the Quick Settings tiles and the figure drawn as their icon
+widget/         Glance DashboardWidget, CompactWidget and SingleMetricWidget (with its
+                configuration activity), WidgetStateUpdater (DataStore
                 writes), WidgetController (port the ViewModel talks to), receivers,
                 actions, and the font cap and the fit to the widget's height
                 (WidgetTextScale)
 system/         SystemMonitorService (foreground) with the charge-limit, data-quota and
-                health-alert notifiers, MonitorDreamService (screensaver) with
+                health-alert notifiers and its own notification in two forms
+                (MonitorNotifications, LiveNotificationController), MonitorDreamService (screensaver) with
                 DreamNotifications, NotificationCounterService (notification listener)
 di/             Hilt modules and entry points
 ```
@@ -209,8 +217,8 @@ Release builds are minified with R8 and resource shrinking. The release APK is u
 
 ## Testing
 
-1065 JVM unit tests (JUnit 4 + Truth; Robolectric only for the Glance render, backup-rule and
-settings-store tests) cover the pure logic behind every screen, service and widget:
+1126 JVM unit tests (JUnit 4 + Truth; Robolectric only for the Glance render, notification, backup-rule
+and settings-store tests) cover the pure logic behind every screen, service and widget:
 
 ```powershell
 .\gradlew.bat :app:testDebugUnitTest
@@ -243,7 +251,12 @@ settings-store tests) cover the pure logic behind every screen, service and widg
   `AlertStateBackupTest`, `BackupRulesTest`
 - **Alerts and notifications** — `AlertLogicTest`, `DataQuotaLogicTest`,
   `DataQuotaSettingsChangeTest`, `ChargeLimitLogicTest`, `HealthAlertControllerTest`,
-  `NotificationDeliveryTest`
+  `NotificationDeliveryTest`, `LiveNotificationTest` (the two lines, and when the live figures are
+  posted again), `LiveNotificationControllerTest` (readings and changes of choice take turns),
+  `MonitorNotificationsTest` (the expanded view, the channels, a blocked channel)
+- **Quick figures** — `QuickMetricTest`, `QuickMetricFormatterTest` (each figure, in Finnish and
+  English), `QuickMetricLabelsTest`, `QuickStatsSourceTest` (tiles opened together share one read),
+  `QuickTileAppearanceTest`, `QuickTileIconTest`
 - **ViewModels and exports** — `DashboardViewModelTest`, `AppsViewModelTest`,
   `HistoryViewModelTest`, `SinceChargeViewModelTest`, `LiveTrafficViewModelTest`,
   `PeriodComparisonTest`, `CsvExporterTest`, `HtmlReportBuilderTest`, `ReportPaletteTest`
@@ -252,7 +265,7 @@ settings-store tests) cover the pure logic behind every screen, service and widg
   `LabelValueRowTest`, `AppScaleTest`, `AppPaletteTest` (the WCAG AAA contrast of both looks)
 - **Widgets** — `WidgetFormattingTest`, `WidgetTextScaleTest` (sizes in plain dp, the fit to
   the widget's height), `CompactFitTest` (text fitting, the floor for names and the ellipsis),
-  `CompactUptimeTest`, `CompactWidgetRenderTest`
+  `CompactUptimeTest`, `CompactWidgetRenderTest`, `SingleMetricWidgetRenderTest`
 - **Screensaver** — `ClockFitTest`, `DreamLogicTest` (night-dim window, charging watts),
   `DreamNotificationLogicTest` (which notifications show, grouping, arrivals, row fit),
   `ActiveNotificationsStoreTest`, `BurnInShiftTest`, `DeviceNameTest` (tidying, shortening,
