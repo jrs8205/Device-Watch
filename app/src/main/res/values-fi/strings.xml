@@ -985,4 +985,6 @@
     <string name="quick_data_today_setting_description">Vaatii käyttötietojen luvan.</string>
     <string name="live_notification_blocked">Device Watchin ilmoitukset ovat pois päältä, joten lukuja ei näytetä.</string>
     <string name="live_notification_allow">Salli ilmoitukset</string>
+    <string name="monitor_live_channel_name">Elävät luvut</string>
+    <string name="monitor_live_channel_description">Asetuksissa valitut luvut, päivitetään näytön ollessa päällä.</string>
 </resources>

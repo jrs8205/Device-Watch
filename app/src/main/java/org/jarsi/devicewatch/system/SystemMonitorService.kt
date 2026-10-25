@@ -1,8 +1,5 @@
 package org.jarsi.devicewatch.system
 
-import android.app.Notification
-import android.app.NotificationChannel
-import android.app.NotificationManager
 import android.app.Service
 import android.app.usage.NetworkStatsManager
 import android.content.BroadcastReceiver
@@ -16,7 +13,6 @@ import android.os.IBinder
 import android.os.Looper
 import android.os.PowerManager
 import android.os.SystemClock
-import androidx.core.app.NotificationCompat
 import org.jarsi.devicewatch.R
 import android.os.BatteryManager
 import java.util.Locale
@@ -38,7 +34,12 @@ import org.jarsi.devicewatch.data.QuotaSettingsStamp
 import org.jarsi.devicewatch.data.SystemStats
 import org.jarsi.devicewatch.data.SystemStatsRepository
 import org.jarsi.devicewatch.data.UsageHistory
+import org.jarsi.devicewatch.data.PrivilegedAccess
+import org.jarsi.devicewatch.data.QuickMetric
 import org.jarsi.devicewatch.data.recordTotals
+import org.jarsi.devicewatch.quick.QuickMetricFormatter
+import org.jarsi.devicewatch.quick.QuickStatsSource
+import org.jarsi.devicewatch.quick.quickMetricLabels
 import org.jarsi.devicewatch.presentation.ui.durationText
 import org.jarsi.devicewatch.widget.WidgetStateUpdater
 import dagger.hilt.android.AndroidEntryPoint
@@ -50,6 +51,8 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.time.LocalDate
 import javax.inject.Inject
 
@@ -67,6 +70,12 @@ class SystemMonitorService : Service() {
     @Inject lateinit var batteryStatus: BatteryStatusReader
     @Inject lateinit var chargeStartScreensaver: ChargeStartScreensaver
     @Inject lateinit var cpuProfiles: CpuProfiles
+    @Inject lateinit var quickStats: QuickStatsSource
+
+    private val notifications by lazy { MonitorNotifications(this) }
+    private val liveGate = LiveNotificationGate()
+    /** One live-notification update at a time, so an older reading never lands after a newer one. */
+    private val liveMutex = Mutex()
 
     private var lastUsageRefreshMs = 0L
 
@@ -107,6 +116,8 @@ class SystemMonitorService : Service() {
         when (intent?.action) {
             ACTION_CHARGE_LIMIT_CHANGED -> onChargeLimitChanged()
             ACTION_DATA_QUOTA_CHANGED -> onDataQuotaChanged()
+            ACTION_NOTIFICATION_METRICS_CHANGED -> onNotificationMetricsChanged()
+            ACTION_LIVE_NOTIFICATION_DISMISSED -> liveGate.onDismissed()
         }
         return START_STICKY
     }
@@ -123,6 +134,20 @@ class SystemMonitorService : Service() {
                 val stats = updateWidgetStats(applicationContext)
                 if (stats != null) maybeNotifyDataQuota(stats)
             }
+        }
+    }
+
+    /**
+     * Settings just changed the figures the notification shows: none puts the
+     * silent notification back at once, some post them at once with a fresh
+     * reading, whatever a swipe held back.
+     */
+    private fun onNotificationMetricsChanged() {
+        liveGate.onSettingsChanged()
+        if (appSettings.notificationMetrics().isEmpty()) {
+            notifications.post(NOTIFICATION_ID, notifications.quiet())
+        } else {
+            serviceScope.launch { updateWidgetStats(applicationContext) }
         }
     }
 
@@ -184,6 +209,8 @@ class SystemMonitorService : Service() {
                 when (intent.action) {
                     Intent.ACTION_SCREEN_ON -> {
                         isScreenOn = true
+                        // A live notification swiped away comes back with the screen.
+                        liveGate.onScreenOn()
                         startUpdateLoop()
                     }
                     Intent.ACTION_SCREEN_OFF -> {
@@ -282,37 +309,13 @@ class SystemMonitorService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     private fun startNotification() {
-        // IMPORTANCE_MIN keeps the mandatory foreground-service notification out of the
-        // status bar and collapsed at the bottom of the silent section. A channel's
-        // importance cannot be lowered after creation, so this is a NEW channel id and
-        // the old LOW-importance channel is deleted.
-        val channelId = "system_monitor_channel_min"
-        val channelName = getString(R.string.monitor_channel_name)
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            manager.deleteNotificationChannel("system_monitor_channel")
-            val channel = NotificationChannel(
-                channelId,
-                channelName,
-                NotificationManager.IMPORTANCE_MIN
-            ).apply {
-                description = getString(R.string.monitor_channel_description)
-                setShowBadge(false)
-            }
-            manager.createNotificationChannel(channel)
+        notifications.ensureChannels()
+        val notification = if (appSettings.notificationMetrics().isEmpty()) {
+            notifications.quiet()
+        } else {
+            // The figures follow with the first reading.
+            notifications.live(null)
         }
-
-        val notification: Notification = NotificationCompat.Builder(this, channelId)
-            .setContentTitle(getString(R.string.monitor_notification_title))
-            .setContentText(getString(R.string.monitor_notification_text))
-            .setSmallIcon(android.R.drawable.ic_menu_info_details)
-            .setPriority(NotificationCompat.PRIORITY_MIN)
-            .setOngoing(true)
-            .setSilent(true)
-            .setShowWhen(false)
-            .setVisibility(NotificationCompat.VISIBILITY_SECRET)
-            .build()
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             startForeground(
@@ -421,12 +424,42 @@ class SystemMonitorService : Service() {
         return try {
             val stats = repository.getStats()
             WidgetStateUpdater.updateAll(context.applicationContext, stats)
+            refreshLiveNotification(stats)
             stats
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
             e.printStackTrace()
             null
+        }
+    }
+
+    /**
+     * Puts [stats] into the live notification when figures are chosen for it. It
+     * rides on every reading the widgets get — the 5 s loop with the screen on and
+     * the battery broadcasts — and adds no polling of its own. Today's data is read
+     * only when it is one of the figures.
+     */
+    private suspend fun refreshLiveNotification(stats: SystemStats) {
+        val chosen = appSettings.notificationMetrics()
+        if (chosen.isEmpty()) return
+        try {
+            liveMutex.withLock {
+                val dataToday = if (QuickMetric.DATA_TODAY in chosen) quickStats.dataToday() else null
+                val labels = quickMetricLabels(applicationContext)
+                val extendedAccess = appSettings.privilegedAccess() != PrivilegedAccess.OFF
+                val readings = QuickMetric.entries.filter { it in chosen }
+                    .map { QuickMetricFormatter.read(it, stats, dataToday, extendedAccess, labels) }
+                val text = liveNotificationText(readings, labels)
+                if (liveGate.shouldPost(text?.bigText.orEmpty())) {
+                    notifications.post(NOTIFICATION_ID, notifications.live(text))
+                }
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            // The figures are a convenience; the monitor must not stop over them.
+            e.printStackTrace()
         }
     }
 
@@ -627,5 +660,7 @@ class SystemMonitorService : Service() {
         const val ACTION_CHARGE_LIMIT_CHANGED = "org.jarsi.devicewatch.action.CHARGE_LIMIT_CHANGED"
         const val ACTION_DATA_QUOTA_CHANGED = "org.jarsi.devicewatch.action.DATA_QUOTA_CHANGED"
         const val ACTION_NOTIFICATION_METRICS_CHANGED = "org.jarsi.devicewatch.action.NOTIFICATION_METRICS_CHANGED"
+        /** From the live notification's delete intent: the user swiped it away. */
+        const val ACTION_LIVE_NOTIFICATION_DISMISSED = "org.jarsi.devicewatch.action.LIVE_NOTIFICATION_DISMISSED"
     }
 }

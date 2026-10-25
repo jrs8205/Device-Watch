@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The app's logo (the gauge arc and the pulse of ic_launcher_monochrome) as a status-bar icon. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="704"
+    android:viewportHeight="704">
+    <group
+        android:translateX="-160"
+        android:translateY="-160">
+        <path
+            android:pathData="M775,440 A273,273 0 1,0 355,735"
+            android:strokeColor="#FFFFFFFF"
+            android:strokeLineCap="round"
+            android:strokeWidth="92" />
+        <path
+            android:pathData="M318,515 L455,515 L497,405 L540,615 L583,362 L625,515 L705,515"
+            android:strokeColor="#FFFFFFFF"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round"
+            android:strokeWidth="34" />
+    </group>
+</vector>
