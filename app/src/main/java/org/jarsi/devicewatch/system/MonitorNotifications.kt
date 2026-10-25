@@ -84,7 +84,9 @@ class MonitorNotifications(private val context: Context) {
             builder
                 .setContentTitle(text.title)
                 .setContentText(text.text)
-                .setStyle(NotificationCompat.BigTextStyle().bigText(text.bigText))
+            // Expanded, the title stays on top: the expanded text is the second line
+            // alone, wrapped, or the first would show twice.
+            if (text.text != null) builder.setStyle(NotificationCompat.BigTextStyle().bigText(text.text))
         }
         return builder.build()
     }

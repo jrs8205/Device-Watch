@@ -27,7 +27,7 @@ class LiveNotificationTest {
         )!!
         assertThat(t.title).isEqualTo("Akku 78% · Akku 31,4 °C · CPU 23%")
         assertThat(t.text).isEqualTo("RAM 5,1 / 7,6 GB · Data 1,4 GB")
-        assertThat(t.bigText).isEqualTo("Akku 78% · Akku 31,4 °C · CPU 23%\nRAM 5,1 / 7,6 GB · Data 1,4 GB")
+        assertThat(t.content).isEqualTo("Akku 78% · Akku 31,4 °C · CPU 23%\nRAM 5,1 / 7,6 GB · Data 1,4 GB")
     }
 
     @Test
@@ -38,7 +38,7 @@ class LiveNotificationTest {
         )!!
         assertThat(t.title).isEqualTo("Akku 78% · CPU 23% · RAM 5,1 / 7,6 GB")
         assertThat(t.text).isNull()
-        assertThat(t.bigText).isEqualTo("Akku 78% · CPU 23% · RAM 5,1 / 7,6 GB")
+        assertThat(t.content).isEqualTo("Akku 78% · CPU 23% · RAM 5,1 / 7,6 GB")
     }
 
     @Test

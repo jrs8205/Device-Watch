@@ -3,8 +3,14 @@ package org.jarsi.devicewatch.system
 import org.jarsi.devicewatch.quick.QuickMetricLabels
 import org.jarsi.devicewatch.quick.QuickMetricReading
 
-/** The live notification's two lines, and both together for its expanded view. */
-data class LiveNotificationText(val title: String, val text: String?, val bigText: String)
+/**
+ * The live notification's two lines. Expanded, Android shows [title] above the
+ * expanded text, so that text is [text] alone, wrapped to show every figure.
+ */
+data class LiveNotificationText(val title: String, val text: String?) {
+    /** Both lines, which is what tells one posting from the next. */
+    val content: String get() = listOfNotNull(title, text).joinToString("\n")
+}
 
 /**
  * The chosen figures as the notification shows them: each with its short name
@@ -19,7 +25,7 @@ fun liveNotificationText(readings: List<QuickMetricReading>, labels: QuickMetric
     if (entries.isEmpty()) return null
     val title = entries.take(FIRST_LINE).joinToString(SEPARATOR)
     val text = entries.drop(FIRST_LINE).joinToString(SEPARATOR).ifEmpty { null }
-    return LiveNotificationText(title, text, listOfNotNull(title, text).joinToString("\n"))
+    return LiveNotificationText(title, text)
 }
 
 private const val FIRST_LINE = 3

@@ -451,7 +451,7 @@ class SystemMonitorService : Service() {
                 val readings = QuickMetric.entries.filter { it in chosen }
                     .map { QuickMetricFormatter.read(it, stats, dataToday, extendedAccess, labels) }
                 val text = liveNotificationText(readings, labels)
-                if (liveGate.shouldPost(text?.bigText.orEmpty())) {
+                if (liveGate.shouldPost(text?.content.orEmpty())) {
                     notifications.post(NOTIFICATION_ID, notifications.live(text))
                 }
             }
