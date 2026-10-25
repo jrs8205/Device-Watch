@@ -90,6 +90,8 @@ fun SystemDashboardScreen(
     kernelViewModel: KernelViewModel = hiltViewModel(),
     privacyViewModel: PrivacyViewModel = hiltViewModel(),
     systemAppsViewModel: SystemAppsViewModel = hiltViewModel(),
+    /** Grows each time a tile, the single-figure widget or the notification asks for the Overview. */
+    openOverviewRequest: Int = 0,
 ) {
     val context = LocalContext.current
     val view = LocalView.current
@@ -154,6 +156,18 @@ fun SystemDashboardScreen(
     BackHandler(enabled = showSystemApps) { showSystemApps = false }
     LaunchedEffect(extendedAccessOn) {
         if (!extendedAccessOn) showSystemApps = false
+    }
+
+    // Every figure a tile, the widget or the notification shows is on the Overview.
+    LaunchedEffect(openOverviewRequest) {
+        if (openOverviewRequest > 0) {
+            showHistory = false
+            showSinceCharge = false
+            showKernel = false
+            showPrivacy = false
+            showSystemApps = false
+            pagerState.scrollToPage(DashboardTab.Overview.ordinal)
+        }
     }
 
     // First-run intro state: shown until completed, and replayable from Settings.
