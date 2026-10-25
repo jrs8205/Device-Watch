@@ -986,5 +986,8 @@
     <string name="live_notification_blocked">Device Watchin ilmoitukset ovat pois päältä, joten lukuja ei näytetä.</string>
     <string name="live_notification_allow">Salli ilmoitukset</string>
     <string name="monitor_live_channel_name">Elävät luvut</string>
+    <string name="single_widget_label">Yksi luku</string>
+    <string name="single_widget_description">Yksi valitsemasi luku: akku, lämpötila, data tänään, käyntiaika, suoritin, muisti tai tallennustila.</string>
+    <string name="single_widget_pick_title">Valitse luku</string>
     <string name="monitor_live_channel_description">Asetuksissa valitut luvut, päivitetään näytön ollessa päällä.</string>
 </resources>

@@ -25,7 +25,6 @@ import org.jarsi.devicewatch.R
 class MonitorNotifications(private val context: Context) {
 
     fun ensureChannels() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val manager = context.getSystemService(NotificationManager::class.java) ?: return
         // IMPORTANCE_MIN keeps the silent form out of the status bar and collapsed at the
         // bottom of the silent section. Importance cannot be lowered after creation either,

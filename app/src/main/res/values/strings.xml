@@ -996,5 +996,8 @@
     <string name="live_notification_blocked">Notifications are off for Device Watch, so the figures are not shown.</string>
     <string name="live_notification_allow">Allow notifications</string>
     <string name="monitor_live_channel_name">Live figures</string>
+    <string name="single_widget_label">Single figure</string>
+    <string name="single_widget_description">One figure of your choice: battery, temperature, data today, uptime, processor, memory or storage.</string>
+    <string name="single_widget_pick_title">Choose the figure</string>
     <string name="monitor_live_channel_description">The figures chosen in Settings, kept up to date while the screen is on.</string>
 </resources>

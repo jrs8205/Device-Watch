@@ -60,7 +60,8 @@ class GlanceWidgetController @Inject constructor(
     private suspend fun <T> readFirst(key: Preferences.Key<T>): T? {
         val manager = GlanceAppWidgetManager(context)
         val ids = manager.getGlanceIds(DashboardWidget::class.java) +
-            manager.getGlanceIds(CompactWidget::class.java)
+            manager.getGlanceIds(CompactWidget::class.java) +
+            manager.getGlanceIds(SingleMetricWidget::class.java)
         for (glanceId in ids) {
             try {
                 getAppWidgetState(context, PreferencesGlanceStateDefinition, glanceId)[key]?.let { return it }
@@ -83,6 +84,10 @@ class GlanceWidgetController @Inject constructor(
         for (glanceId in manager.getGlanceIds(CompactWidget::class.java)) {
             write(glanceId, key, value)
             CompactWidget().update(context, glanceId)
+        }
+        for (glanceId in manager.getGlanceIds(SingleMetricWidget::class.java)) {
+            write(glanceId, key, value)
+            SingleMetricWidget().update(context, glanceId)
         }
     }
 

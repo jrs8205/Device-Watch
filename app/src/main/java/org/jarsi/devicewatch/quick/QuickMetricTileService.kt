@@ -1,5 +1,6 @@
 package org.jarsi.devicewatch.quick
 
+import android.annotation.SuppressLint
 import android.app.PendingIntent
 import android.graphics.drawable.Icon
 import android.os.Build
@@ -88,6 +89,8 @@ abstract class QuickMetricTileService : TileService() {
         tile.updateTile()
     }
 
+    // The Intent form only runs before Android 14, where it is the only form there is.
+    @SuppressLint("StartActivityAndCollapseDeprecated")
     private fun openOverview() {
         val intent = MainActivity.openOverviewIntent(this)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {

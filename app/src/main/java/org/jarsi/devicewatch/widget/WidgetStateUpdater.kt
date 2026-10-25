@@ -7,7 +7,16 @@ import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.state.getAppWidgetState
 import androidx.glance.appwidget.state.updateAppWidgetState
 import androidx.glance.state.PreferencesGlanceStateDefinition
+import org.jarsi.devicewatch.data.DataToday
+import org.jarsi.devicewatch.data.PrivilegedAccess
+import org.jarsi.devicewatch.data.QuickMetric
 import org.jarsi.devicewatch.data.SystemStats
+import org.jarsi.devicewatch.data.singleMetricOf
+import org.jarsi.devicewatch.quick.QuickEntryPoint
+import org.jarsi.devicewatch.quick.QuickMetricFormatter
+import org.jarsi.devicewatch.quick.QuickMetricReading
+import org.jarsi.devicewatch.quick.quickMetricLabels
+import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.CancellationException
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -40,7 +49,7 @@ object WidgetStateUpdater {
         }
     }
 
-    /** Writes [stats] to every installed widget (both sizes); returns whether any widget exists. */
+    /** Writes [stats] to every installed widget (all kinds); returns whether any widget exists. */
     suspend fun updateAll(context: Context, stats: SystemStats): Boolean {
         val manager = GlanceAppWidgetManager(context)
         val now = currentTime()
@@ -54,7 +63,51 @@ object WidgetStateUpdater {
             writeAndUpdate(context, CompactWidget(), glanceId, stats, now)
         }
 
-        return dashboardIds.isNotEmpty() || compactIds.isNotEmpty()
+        val singleIds = manager.getGlanceIds(SingleMetricWidget::class.java)
+        if (singleIds.isNotEmpty()) updateSingles(context, singleIds, stats, now)
+
+        return dashboardIds.isNotEmpty() || compactIds.isNotEmpty() || singleIds.isNotEmpty()
+    }
+
+    /**
+     * Gives each single-figure widget its figure, formatted here so the widget only
+     * draws text. Today's data is read once for all of them, and only when one shows it.
+     */
+    private suspend fun updateSingles(context: Context, ids: List<GlanceId>, stats: SystemStats, timestamp: String) {
+        val entry = EntryPointAccessors.fromApplication(context.applicationContext, QuickEntryPoint::class.java)
+        val labels = quickMetricLabels(context)
+        val extendedAccess = entry.appSettings().privilegedAccess() != PrivilegedAccess.OFF
+        val black = GlanceWidgetController(context).currentBlackBackground()
+        var dataToday: DataToday? = null
+        var dataTodayRead = false
+        for (glanceId in ids) {
+            val metric = try {
+                singleMetricOf(getAppWidgetState(context, PreferencesGlanceStateDefinition, glanceId)[RefreshStatsAction.SINGLE_METRIC])
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                QuickMetric.BATTERY
+            }
+            if (metric == QuickMetric.DATA_TODAY && !dataTodayRead) {
+                dataToday = entry.quickStatsSource().dataToday()
+                dataTodayRead = true
+            }
+            val reading = QuickMetricFormatter.read(metric, stats, dataToday, extendedAccess, labels)
+            updateAppWidgetState(context, PreferencesGlanceStateDefinition, glanceId) { prefs ->
+                prefs.toMutablePreferences().apply {
+                    writeStats(stats, timestamp)
+                    writeAppearance(context, black)
+                    writeReading(reading)
+                }
+            }
+            SingleMetricWidget().update(context, glanceId)
+        }
+    }
+
+    private fun MutablePreferences.writeReading(reading: QuickMetricReading) {
+        this[RefreshStatsAction.SINGLE_VALUE] = reading.value
+        reading.detail?.let { this[RefreshStatsAction.SINGLE_DETAIL] = it } ?: remove(RefreshStatsAction.SINGLE_DETAIL)
+        reading.unavailableReason?.let { this[RefreshStatsAction.SINGLE_REASON] = it } ?: remove(RefreshStatsAction.SINGLE_REASON)
     }
 
     /** Writes [stats] to a single full-size widget instance. */

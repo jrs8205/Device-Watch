@@ -111,6 +111,28 @@
                 android:resource="@xml/compact_widget_info" />
         </receiver>
 
+        <receiver
+            android:name=".widget.SingleMetricWidgetReceiver"
+            android:exported="true"
+            android:label="@string/single_widget_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/single_metric_widget_info" />
+        </receiver>
+
+        <!-- Picks the single-figure widget's figure when it is added, and on a long press. -->
+        <activity
+            android:name=".widget.SingleMetricConfigActivity"
+            android:exported="true"
+            android:theme="@style/Theme.ModernWidget">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
+            </intent-filter>
+        </activity>
+
         <!-- Quick Settings tiles, one per figure (GitHub #7). -->
         <service
             android:name=".quick.BatteryTileService"

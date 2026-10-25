@@ -78,5 +78,12 @@ class RefreshStatsAction : ActionCallback {
 
         /** Pre-formatted screen-time text written by SystemMonitorService (~1/min). */
         val SCREEN_TIME_TODAY = stringPreferencesKey("screen_time_today")
+
+        /** The single-figure widget's chosen [org.jarsi.devicewatch.data.QuickMetric] name. */
+        val SINGLE_METRIC = stringPreferencesKey("single_metric")
+        /** Its figure as formatted at the last reading, with the line under it or why it is missing. */
+        val SINGLE_VALUE = stringPreferencesKey("single_value")
+        val SINGLE_DETAIL = stringPreferencesKey("single_detail")
+        val SINGLE_REASON = stringPreferencesKey("single_reason")
     }
 }
