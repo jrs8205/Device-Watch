@@ -111,6 +111,88 @@
                 android:resource="@xml/compact_widget_info" />
         </receiver>
 
+        <!-- Quick Settings tiles, one per figure (GitHub #7). -->
+        <service
+            android:name=".quick.BatteryTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_widget_battery"
+            android:label="@string/quick_battery_tile"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+        <service
+            android:name=".quick.BatteryTempTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_quick_thermometer"
+            android:label="@string/quick_battery_temp_tile"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+        <service
+            android:name=".quick.CpuTempTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_quick_thermometer"
+            android:label="@string/quick_cpu_temp_tile"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+        <service
+            android:name=".quick.DataTodayTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_widget_swap"
+            android:label="@string/quick_data_today_tile"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+        <service
+            android:name=".quick.UptimeTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_widget_schedule"
+            android:label="@string/quick_uptime_tile"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+        <service
+            android:name=".quick.CpuLoadTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_widget_cpu"
+            android:label="@string/quick_cpu_load_tile"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+        <service
+            android:name=".quick.MemoryTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_widget_memory"
+            android:label="@string/quick_memory_tile"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+        <service
+            android:name=".quick.StorageTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_widget_storage"
+            android:label="@string/quick_storage_tile"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
         <!-- Shares the CSV exports written under cacheDir/exports/. -->
         <provider
             android:name="androidx.core.content.FileProvider"

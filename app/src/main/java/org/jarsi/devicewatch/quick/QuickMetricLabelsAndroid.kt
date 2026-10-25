@@ -1,6 +1,7 @@
 package org.jarsi.devicewatch.quick
 
 import android.content.Context
+import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import org.jarsi.devicewatch.R
 import org.jarsi.devicewatch.data.QuickMetric
@@ -17,6 +18,18 @@ internal fun quickMetricNameRes(metric: QuickMetric): Triple<Int, Int, Int> = wh
     QuickMetric.CPU_LOAD -> Triple(R.string.quick_cpu_load_title, R.string.quick_cpu_load_tile, R.string.quick_cpu_load_short)
     QuickMetric.MEMORY -> Triple(R.string.quick_memory_title, R.string.quick_memory_tile, R.string.quick_memory_short)
     QuickMetric.STORAGE -> Triple(R.string.quick_storage_title, R.string.quick_storage_tile, R.string.quick_storage_short)
+}
+
+/** A figure's tile icon; both temperatures share the thermometer and are told apart by their label. */
+@DrawableRes
+internal fun quickMetricIconRes(metric: QuickMetric): Int = when (metric) {
+    QuickMetric.BATTERY -> R.drawable.ic_widget_battery
+    QuickMetric.BATTERY_TEMP, QuickMetric.CPU_TEMP -> R.drawable.ic_quick_thermometer
+    QuickMetric.DATA_TODAY -> R.drawable.ic_widget_swap
+    QuickMetric.UPTIME -> R.drawable.ic_widget_schedule
+    QuickMetric.CPU_LOAD -> R.drawable.ic_widget_cpu
+    QuickMetric.MEMORY -> R.drawable.ic_widget_memory
+    QuickMetric.STORAGE -> R.drawable.ic_widget_storage
 }
 
 /** A figure's title, for the pickers. */
