@@ -60,9 +60,15 @@ class FloatingFigureController(
     }
 
     /** The card was switched on or off, or its figures changed; the caller follows with a fresh reading. */
-    suspend fun onSettingsChanged() = mutex.withLock {
-        val stats = lastStats
-        if (stats == null) hideOnMain() else apply(stats)
+    suspend fun onSettingsChanged() {
+        // A switch-off never waits behind a reading under way (its data-of-the-day query
+        // can be slow): the card comes down first, and the reading's own last check keeps
+        // it down. The lock is taken afterwards only to settle the state in order.
+        if (!appSettings.overlayShown()) hideOnMain()
+        mutex.withLock {
+            val stats = lastStats
+            if (stats == null) hideOnMain() else apply(stats)
+        }
     }
 
     /** With the screen off the card comes down at once; the next reading brings it back. */
