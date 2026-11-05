@@ -1473,6 +1473,7 @@ class SystemStatsRepositoryImpl @Inject constructor(
         val batteryCurrentNowRaw =
             batteryManager?.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW) ?: Int.MIN_VALUE
         val batteryCharging = status == BatteryManager.BATTERY_STATUS_CHARGING
+        val batteryCurrentMicroamps = DeviceLocalFlags.batteryCurrentMicroamps(context, batteryCurrentNowRaw)
         val batteryCycleCount = readBatteryCycleCount(batteryStatusIntent) ?: UNAVAILABLE_INT
         val batteryCapacityPercent = readBatteryHealthPercent() ?: UNAVAILABLE_INT
 
@@ -1678,6 +1679,7 @@ class SystemStatsRepositoryImpl @Inject constructor(
             batteryVoltage = batteryVoltage,
             batteryCurrentNowRaw = batteryCurrentNowRaw,
             batteryCharging = batteryCharging,
+            batteryCurrentMicroamps = batteryCurrentMicroamps,
             timeRemainingText = timeRemainingText,
             batteryCycleCount = batteryCycleCount,
             batteryCapacityPercent = batteryCapacityPercent,

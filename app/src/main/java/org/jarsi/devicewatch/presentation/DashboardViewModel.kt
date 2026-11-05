@@ -183,6 +183,11 @@ class DashboardViewModel @Inject constructor(
             settings.privilegedAccessFlow.collect(::onPrivilegedAccess)
         }
         viewModelScope.launch {
+            // The card's own hide button, a long press on it and the tile all store false
+            // while this screen may be in front; the switch follows them.
+            settings.overlayShownFlow.collect { shown -> _uiState.update { it.copy(overlayShown = shown) } }
+        }
+        viewModelScope.launch {
             cpuProfiles.status.collect { status ->
                 _uiState.update { it.copy(cpuCapsKeptUntilRestart = status.notice == CpuProfileNotice.KEPT_UNTIL_RESTART) }
             }

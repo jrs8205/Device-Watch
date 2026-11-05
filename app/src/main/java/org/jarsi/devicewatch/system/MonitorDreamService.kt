@@ -57,6 +57,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.graphics.drawable.toBitmap
 import org.jarsi.devicewatch.R
+import org.jarsi.devicewatch.data.DeviceLocalFlags
 import org.jarsi.devicewatch.data.batteryPowerWatts
 import org.jarsi.devicewatch.ui.theme.ProvideBoundedDensity
 import androidx.lifecycle.Lifecycle
@@ -213,9 +214,11 @@ fun ScreensaverContent(context: Context) {
                 // and the sign convention varies; batteryPowerWatts() normalizes both and returns
                 // null for missing/implausible readings (then no wattage is shown).
                 chargeWatts = if (charging && batteryManager != null) {
+                    val currentRaw = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW)
                     batteryPowerWatts(
-                        batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW),
-                        volt / 1000.0
+                        currentRaw,
+                        volt / 1000.0,
+                        microamps = DeviceLocalFlags.batteryCurrentMicroamps(context, currentRaw),
                     )
                 } else {
                     null

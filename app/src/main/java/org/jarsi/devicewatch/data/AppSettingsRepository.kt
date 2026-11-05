@@ -126,6 +126,9 @@ interface AppSettingsRepository {
 
     fun setOverlayShown(shown: Boolean)
 
+    /** [overlayShown] as it changes, from the card's own hide button and the tile as much as from Settings. */
+    val overlayShownFlow: StateFlow<Boolean>
+
     /** The figures on the floating card, at most three; none chosen means the default pair. */
     fun overlayMetrics(): Set<QuickMetric>
 

@@ -23,6 +23,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.annotation.MainThread
 import org.jarsi.devicewatch.R
+import org.jarsi.devicewatch.presentation.ui.clampedFontScale
 import org.jarsi.devicewatch.quick.QuickMetricReading
 
 /**
@@ -72,7 +73,17 @@ class FloatingFigureWindow(
         this.landscape = landscape
         this.position = position ?: OVERLAY_DEFAULT_POSITION
         if (root != null) hide()
-        val card = buildCard(readings, black)
+        // Side by side first; if that row would not fit the card's share of the width
+        // (a large font, long values), the figures stack instead.
+        var layout = overlayLayout(readings.size, landscape)
+        var card = buildCard(readings, black, layout)
+        if (layout == OverlayLayout.ROW && readings.size > 1) {
+            card.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED)
+            if (!overlayRowFits(card.measuredWidth, room().width)) {
+                layout = OverlayLayout.COLUMN
+                card = buildCard(readings, black, layout)
+            }
+        }
         val lp = WindowManager.LayoutParams(
             ViewGroup.LayoutParams.WRAP_CONTENT,
             ViewGroup.LayoutParams.WRAP_CONTENT,
@@ -104,10 +115,14 @@ class FloatingFigureWindow(
         params = lp
     }
 
-    /** New figures for a card already up; one with other figures is rebuilt in place. */
+    /**
+     * New figures for a card already up; one with other figures, or one whose values
+     * have outgrown its share of the width, is rebuilt in place.
+     */
     fun update(readings: List<QuickMetricReading>) {
         val card = root ?: return
-        if (readings.map { it.metric.name } != shownMetrics) {
+        val outgrown = card.width > 0 && !overlayRowFits(card.width, room().width)
+        if (readings.map { it.metric.name } != shownMetrics || outgrown) {
             val black = (card.background as? GradientDrawable)?.color?.defaultColor == Color.BLACK
             show(readings, position, landscape, black)
             return
@@ -136,7 +151,7 @@ class FloatingFigureWindow(
 
     // The touch listener hands a tap to performClick, so accessibility services see the click.
     @SuppressLint("ClickableViewAccessibility")
-    private fun buildCard(readings: List<QuickMetricReading>, black: Boolean): LinearLayout {
+    private fun buildCard(readings: List<QuickMetricReading>, black: Boolean, layout: OverlayLayout): LinearLayout {
         val card = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER_HORIZONTAL
@@ -151,7 +166,7 @@ class FloatingFigureWindow(
             isLongClickable = true
         }
         val figureRow = LinearLayout(context).apply {
-            orientation = when (overlayLayout(readings.size, landscape)) {
+            orientation = when (layout) {
                 OverlayLayout.ROW -> LinearLayout.HORIZONTAL
                 OverlayLayout.COLUMN -> LinearLayout.VERTICAL
             }
@@ -162,15 +177,17 @@ class FloatingFigureWindow(
             val value = TextView(context).apply {
                 typeface = Typeface.MONOSPACE
                 setTypeface(typeface, Typeface.BOLD)
-                setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f)
+                setTextSize(TypedValue.COMPLEX_UNIT_PX, sp(16f))
                 setTextColor(Color.WHITE)
                 maxLines = 1
+                ellipsize = android.text.TextUtils.TruncateAt.END
                 gravity = Gravity.CENTER_HORIZONTAL
             }
             val label = TextView(context).apply {
-                setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
+                setTextSize(TypedValue.COMPLEX_UNIT_PX, sp(11f))
                 setTextColor(LABEL_COLOUR)
                 maxLines = 1
+                ellipsize = android.text.TextUtils.TruncateAt.END
                 gravity = Gravity.CENTER_HORIZONTAL
             }
             val figure = LinearLayout(context).apply {
@@ -272,7 +289,8 @@ class FloatingFigureWindow(
 
     /**
      * After every layout that changed the card's size (buttons shown or hidden, a
-     * longer value) the card is kept on screen at its share of the room.
+     * longer value) the card is kept on screen: at its share of the room, or, while
+     * a drag is under way, where the finger has it.
      */
     private fun keepOnScreenAfterLayout(card: View) {
         card.addOnLayoutChangeListener { v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom ->
@@ -283,7 +301,7 @@ class FloatingFigureWindow(
                 if (root !== v) return@post
                 val lp = params ?: return@post
                 val room = room()
-                val (x, y) = overlayPixels(position, w, h, room.width, room.height)
+                val (x, y) = overlayPlaceAfterResize(gesture.isDragging, lp.x, lp.y, position, w, h, room.width, room.height)
                 if (x != lp.x || y != lp.y) {
                     lp.x = x
                     lp.y = y
@@ -363,6 +381,10 @@ class FloatingFigureWindow(
 
     private fun dp(value: Float): Float =
         TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, value, context.resources.displayMetrics)
+
+    /** Text in sp under the app's own bound on the font size setting, as every screen of the app. */
+    private fun sp(value: Float): Float =
+        value * context.resources.displayMetrics.density * clampedFontScale(context.resources.configuration.fontScale)
 
     private data class Room(val width: Int, val height: Int)
 

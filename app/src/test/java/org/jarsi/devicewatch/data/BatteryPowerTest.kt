@@ -28,6 +28,26 @@ class BatteryPowerTest {
     }
 
     @Test
+    fun `a phone that has reported a large current reports microamps`() {
+        // 100 000 mA would be 100 A: only a µA phone ever reports that much.
+        assertThat(batteryCurrentUnitIsMicroamps(150_000)).isTrue()
+        assertThat(batteryCurrentUnitIsMicroamps(-100_000)).isTrue()
+        assertThat(batteryCurrentUnitIsMicroamps(2000)).isFalse()
+        assertThat(batteryCurrentUnitIsMicroamps(Int.MIN_VALUE)).isFalse()
+    }
+
+    @Test
+    fun `a known microamp phone is never rescaled`() {
+        // Review round 1: −10 000 µA at 4 V on battery became 40 W through the milliamp rescale.
+        assertThat(batteryPowerWatts(-10_000, 4.0, microamps = true)!!).isWithin(0.0001).of(0.04)
+        assertThat(batteryPowerWatts(2_000_000, 4.4, microamps = true)!!).isWithin(0.001).of(8.8)
+        assertThat(batteryPowerWatts(0, 4.4, microamps = true)).isNull()
+        assertThat(batteryPowerWatts(60_000_000, 5.0, microamps = true)).isNull() // 300 W
+        // Unit still unknown: the old reading of the band stays, documented here.
+        assertThat(batteryPowerWatts(-10_000, 4.0, microamps = false)!!).isWithin(0.001).of(40.0)
+    }
+
+    @Test
     fun `a trickle while plugged in is read as microamps only`() {
         // Review: held at a charge limit or full on the charger the current is near zero, and the
         // milliamp rescale turned 3000 µA into 13 W.

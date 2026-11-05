@@ -253,12 +253,21 @@ class SystemMonitorService : Service() {
                         // The card comes down with the screen and back with the next reading.
                         overlay.onScreenChanged(false)
                     }
+                    // A screensaver keeps the device interactive, so these are the card's only
+                    // word that it is running; nothing of the app's may sit on the screensaver.
+                    Intent.ACTION_DREAMING_STARTED -> overlay.onDreamingChanged(true)
+                    Intent.ACTION_DREAMING_STOPPED -> {
+                        overlay.onDreamingChanged(false)
+                        serviceScope.launch { updateWidgetStats(applicationContext) }
+                    }
                 }
             }
         }
         val filter = IntentFilter().apply {
             addAction(Intent.ACTION_SCREEN_ON)
             addAction(Intent.ACTION_SCREEN_OFF)
+            addAction(Intent.ACTION_DREAMING_STARTED)
+            addAction(Intent.ACTION_DREAMING_STOPPED)
         }
         registerReceiver(screenReceiver, filter)
     }

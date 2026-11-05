@@ -128,6 +128,13 @@ class QuickMetricFormatterTest {
     }
 
     @Test
+    fun `battery power on a known microamp phone keeps a small discharge small`() {
+        val idle = quickStats(batteryVoltage = 4.0, batteryCurrentNowRaw = -20_000, batteryCurrentMicroamps = true)
+        assertThat(read(BATTERY_POWER, idle).value).isEqualTo("0,1 W")
+        assertThat(iconText(BATTERY_POWER, idle)).isEqualTo("0,1W")
+    }
+
+    @Test
     fun `battery power is missing without a current reading`() {
         val r = read(BATTERY_POWER, quickStats(batteryVoltage = 4.4))
         assertThat(r.available).isFalse()

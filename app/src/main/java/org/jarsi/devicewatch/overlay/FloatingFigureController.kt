@@ -41,6 +41,9 @@ class FloatingFigureController(
     private var shownBlack: Boolean? = null
     private var destroyed = false
 
+    /** The screensaver is running: the device stays interactive, but the card must not sit on it. */
+    @Volatile private var dreaming = false
+
     /** Shows [stats] on the card when it is on and allowed; hides or turns it off otherwise. */
     suspend fun refresh(stats: SystemStats) = mutex.withLock {
         lastStats = stats
@@ -58,6 +61,12 @@ class FloatingFigureController(
         if (!on) hideOnMain()
     }
 
+    /** A screensaver starting takes the card down at once; its end is followed by a reading. */
+    fun onDreamingChanged(on: Boolean) {
+        dreaming = on
+        if (on) hideOnMain()
+    }
+
     /** The next reading re-measures and re-places the card for the new orientation or size. */
     fun onConfigurationChanged() {
         mainHandler.post { shownLandscape = null }
@@ -69,7 +78,7 @@ class FloatingFigureController(
     }
 
     private suspend fun apply(stats: SystemStats) {
-        when (overlayAction(appSettings.overlayShown(), hasPermission(), isScreenOn())) {
+        when (overlayAction(appSettings.overlayShown(), hasPermission(), isScreenOn(), dreaming)) {
             OverlayAction.TURN_OFF -> {
                 appSettings.setOverlayShown(false)
                 hideOnMain()
@@ -82,7 +91,7 @@ class FloatingFigureController(
                 mainHandler.post {
                     // A hide (×, long press, screen off, destroy) that landed while this reading was
                     // on its way wins: the card must not come back for a cycle after it was dismissed.
-                    if (destroyed || !appSettings.overlayShown() || !isScreenOn()) return@post
+                    if (destroyed || dreaming || !appSettings.overlayShown() || !isScreenOn()) return@post
                     try {
                         val w = window()
                         if (w.isShowing && landscape == shownLandscape && black == shownBlack) {

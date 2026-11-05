@@ -82,6 +82,50 @@ class FloatingFigureLogicTest {
     }
 
     @Test
+    fun `the card is hidden while the screensaver runs`() {
+        // Review round 1: a dream keeps the device interactive, so no screen-off ever came.
+        assertThat(overlayAction(shown = true, permission = true, screenOn = true, dreaming = true))
+            .isEqualTo(OverlayAction.HIDE)
+        assertThat(overlayAction(shown = true, permission = false, screenOn = true, dreaming = true))
+            .isEqualTo(OverlayAction.TURN_OFF)
+    }
+
+    @Test
+    fun `a resize during a drag keeps the dragged place, otherwise the stored share`() {
+        // Review round 1: a value growing mid-drag snapped the card back to its stored share.
+        val stored = OverlayPosition(1f, 0f)
+        assertThat(overlayPlaceAfterResize(dragging = true, currentX = 20, currentY = 500, position = stored, cardW = 300, cardH = 100, screenW = 1080, screenH = 2400))
+            .isEqualTo(20 to 500)
+        // Still clamped to the room while dragging.
+        assertThat(overlayPlaceAfterResize(dragging = true, currentX = 900, currentY = 2350, position = stored, cardW = 300, cardH = 100, screenW = 1080, screenH = 2400))
+            .isEqualTo(780 to 2300)
+        assertThat(overlayPlaceAfterResize(dragging = false, currentX = 20, currentY = 500, position = stored, cardW = 300, cardH = 100, screenW = 1080, screenH = 2400))
+            .isEqualTo(780 to 0)
+    }
+
+    @Test
+    fun `two figures stack when the row would not fit the width`() {
+        // Review round 1: at 200 % font on a 360 dp screen two figures side by side clipped the values.
+        assertThat(overlayLayout(2, landscape = false, rowFits = false)).isEqualTo(OverlayLayout.COLUMN)
+        assertThat(overlayLayout(2, landscape = true, rowFits = false)).isEqualTo(OverlayLayout.COLUMN)
+        assertThat(overlayLayout(2, landscape = false, rowFits = true)).isEqualTo(OverlayLayout.ROW)
+        assertThat(overlayLayout(1, landscape = false, rowFits = false)).isEqualTo(OverlayLayout.ROW)
+        assertThat(overlayRowFits(rowWidthPx = 900, roomWidthPx = 1080)).isTrue()
+        assertThat(overlayRowFits(rowWidthPx = 1000, roomWidthPx = 1080)).isFalse()
+    }
+
+    @Test
+    fun `the gesture says whether a drag is under way`() {
+        val gesture = OverlayGesture(slopPx = 8f, longPressMs = 500L)
+        gesture.down(0f, 0f, atMs = 0L)
+        assertThat(gesture.isDragging).isFalse()
+        gesture.move(30f, 0f, atMs = 50L)
+        assertThat(gesture.isDragging).isTrue()
+        gesture.up(atMs = 100L)
+        assertThat(gesture.isDragging).isFalse()
+    }
+
+    @Test
     fun `the tile is active only with the card up and allowed`() {
         assertThat(overlayTileLook(permission = true, shown = true)).isEqualTo(OverlayTileLook(active = true, needsPermission = false))
         assertThat(overlayTileLook(permission = false, shown = true)).isEqualTo(OverlayTileLook(active = false, needsPermission = true))

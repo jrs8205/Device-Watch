@@ -52,9 +52,21 @@ fun overlayPositionChoice(landscape: Boolean, portrait: OverlayPosition?, landsc
 
 enum class OverlayLayout { ROW, COLUMN }
 
-/** Three figures stack in portrait, where long values would not fit side by side. */
-fun overlayLayout(count: Int, landscape: Boolean): OverlayLayout =
-    if (count >= OVERLAY_MAX_FIGURES && !landscape) OverlayLayout.COLUMN else OverlayLayout.ROW
+/** The card takes at most this share of the room's width: never the whole screen. */
+const val OVERLAY_MAX_WIDTH_SHARE = 0.9f
+
+/**
+ * Three figures stack in portrait, where long values would not fit side by side; so
+ * do two or more whenever the measured row would not fit the width (a large font).
+ */
+fun overlayLayout(count: Int, landscape: Boolean, rowFits: Boolean = true): OverlayLayout = when {
+    count >= OVERLAY_MAX_FIGURES && !landscape -> OverlayLayout.COLUMN
+    count > 1 && !rowFits -> OverlayLayout.COLUMN
+    else -> OverlayLayout.ROW
+}
+
+/** Whether a row this wide fits the card's share of the room. */
+fun overlayRowFits(rowWidthPx: Int, roomWidthPx: Int): Boolean = rowWidthPx <= roomWidthPx * OVERLAY_MAX_WIDTH_SHARE
 
 /**
  * The card's top-left corner in pixels for a stored share of the room it has; a card
@@ -68,6 +80,27 @@ fun overlayPixels(position: OverlayPosition?, cardW: Int, cardH: Int, screenW: I
     val y = (p.yFraction * roomY).roundToInt().coerceIn(0, roomY)
     return x to y
 }
+
+/**
+ * Where the card goes after its size changed (the buttons, a longer value): while a
+ * drag is under way the dragged place, only clamped into the room, so a reading that
+ * lands mid-drag does not snap the card back; otherwise its stored share.
+ */
+fun overlayPlaceAfterResize(
+    dragging: Boolean,
+    currentX: Int,
+    currentY: Int,
+    position: OverlayPosition,
+    cardW: Int,
+    cardH: Int,
+    screenW: Int,
+    screenH: Int,
+): Pair<Int, Int> =
+    if (dragging) {
+        currentX.coerceIn(0, max(0, screenW - cardW)) to currentY.coerceIn(0, max(0, screenH - cardH))
+    } else {
+        overlayPixels(position, cardW, cardH, screenW, screenH)
+    }
 
 /** The inverse of [overlayPixels]: the card's corner as a share of the room it has. */
 fun overlayFraction(xPx: Int, yPx: Int, cardW: Int, cardH: Int, screenW: Int, screenH: Int): OverlayPosition {
@@ -85,10 +118,11 @@ enum class OverlayAction { SHOW, HIDE, TURN_OFF }
  * permission has gone is turned off for good, so the tile tells the truth; one
  * switched on with the screen off is only hidden until the screen comes back.
  */
-fun overlayAction(shown: Boolean, permission: Boolean, screenOn: Boolean): OverlayAction = when {
+fun overlayAction(shown: Boolean, permission: Boolean, screenOn: Boolean, dreaming: Boolean = false): OverlayAction = when {
     !shown -> OverlayAction.HIDE
     !permission -> OverlayAction.TURN_OFF
-    screenOn -> OverlayAction.SHOW
+    // A screensaver keeps the device interactive, so it is a case of its own.
+    screenOn && !dreaming -> OverlayAction.SHOW
     else -> OverlayAction.HIDE
 }
 
@@ -111,6 +145,9 @@ class OverlayGesture(private val slopPx: Float, private val longPressMs: Long) {
     private var downAt = 0L
     private var dragging = false
 
+    /** True from the move that crossed the slop until the touch ends. */
+    val isDragging: Boolean get() = dragging
+
     fun down(x: Float, y: Float, atMs: Long) {
         downX = x
         downY = y
@@ -130,9 +167,13 @@ class OverlayGesture(private val slopPx: Float, private val longPressMs: Long) {
     /** True once a still touch has lasted long enough to be a long press. */
     fun longPressDue(atMs: Long): Boolean = !dragging && atMs - downAt >= longPressMs
 
-    fun up(atMs: Long): OverlayTap = when {
-        dragging -> OverlayTap.NONE
-        longPressDue(atMs) -> OverlayTap.LONG_PRESS
-        else -> OverlayTap.TAP
+    fun up(atMs: Long): OverlayTap {
+        val result = when {
+            dragging -> OverlayTap.NONE
+            longPressDue(atMs) -> OverlayTap.LONG_PRESS
+            else -> OverlayTap.TAP
+        }
+        dragging = false
+        return result
     }
 }

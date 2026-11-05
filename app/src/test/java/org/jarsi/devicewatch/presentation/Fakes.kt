@@ -320,14 +320,14 @@ internal class FakeAppSettingsRepository(
         valueIcons = enabled
     }
 
-    private var overlayUp = false
+    override val overlayShownFlow = MutableStateFlow(false)
     private var overlayFigures: Set<QuickMetric> = emptySet()
     private val overlayPositions = mutableMapOf<Boolean, OverlayPosition>()
 
-    override fun overlayShown(): Boolean = overlayUp
+    override fun overlayShown(): Boolean = overlayShownFlow.value
 
     override fun setOverlayShown(shown: Boolean) {
-        overlayUp = shown
+        overlayShownFlow.value = shown
     }
 
     override fun overlayMetrics(): Set<QuickMetric> = overlayFigures

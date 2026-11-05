@@ -21,6 +21,18 @@ internal object DeviceLocalFlags {
         AppSettingsRepositoryImpl.KEY_RUNTIME_PERMISSIONS_REQUESTED,
     )
 
+    /** This phone reports the battery current in µA (see [batteryCurrentUnitIsMicroamps]); a fact about the hardware. */
+    const val KEY_BATTERY_CURRENT_MICROAMPS = "battery_current_microamps"
+
+    /** Whether the unit is known to be µA, learning it from [currentRaw] when a reading settles it. */
+    fun batteryCurrentMicroamps(context: Context, currentRaw: Int): Boolean {
+        val prefs = prefs(context)
+        if (prefs.getBoolean(KEY_BATTERY_CURRENT_MICROAMPS, false)) return true
+        if (!batteryCurrentUnitIsMicroamps(currentRaw)) return false
+        prefs.edit().putBoolean(KEY_BATTERY_CURRENT_MICROAMPS, true).apply()
+        return true
+    }
+
     @SuppressLint("ApplySharedPref") // the copy must be on disk before the original goes
     @Synchronized
     fun prefs(context: Context): SharedPreferences {

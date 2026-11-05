@@ -233,7 +233,13 @@ class AppSettingsRepositoryImpl @Inject constructor(
 
     override fun setOverlayShown(shown: Boolean) {
         prefs.edit().putBoolean(KEY_OVERLAY_SHOWN, shown).apply()
+        overlayShownState.value = shown
     }
+
+    // The monitor, the tile and Settings share this one instance, so the flow sees every change.
+    private val overlayShownState = MutableStateFlow(overlayShown())
+
+    override val overlayShownFlow: StateFlow<Boolean> = overlayShownState.asStateFlow()
 
     override fun overlayMetrics(): Set<QuickMetric> = quickMetricsOf(prefs.getString(KEY_OVERLAY_METRICS, null))
 

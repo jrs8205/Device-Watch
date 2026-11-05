@@ -112,7 +112,7 @@ object QuickMetricFormatter {
     /** The battery's power; held on the charger a trickle is read as µA only, never rescaled. */
     private fun batteryPowerWattsOf(stats: SystemStats): Double? =
         if (heldOnCharger(stats)) batteryTricklePowerWatts(stats.batteryCurrentNowRaw, stats.batteryVoltage)
-        else batteryPowerWatts(stats.batteryCurrentNowRaw, stats.batteryVoltage)
+        else batteryPowerWatts(stats.batteryCurrentNowRaw, stats.batteryVoltage, stats.batteryCurrentMicroamps)
 
     /**
      * The figure at its shortest, drawn in place of a small tile's icon: a small

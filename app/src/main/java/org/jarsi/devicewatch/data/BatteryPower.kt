@@ -13,14 +13,24 @@ import kotlin.math.abs
  * ever shows a fabricated value. The floor admits an idle phone's discharge (tens of mA),
  * which the screensaver never needed because it reads only while charging.
  */
-fun batteryPowerWatts(currentRaw: Int, voltageVolts: Double): Double? {
+fun batteryPowerWatts(currentRaw: Int, voltageVolts: Double, microamps: Boolean = false): Double? {
     if (currentRaw == 0 || currentRaw == Int.MIN_VALUE || voltageVolts <= 0.0) return null
-    val plausibleWatts = 0.05..150.0
     val wattsAsMicroAmps = abs(currentRaw.toDouble()) / 1_000_000.0 * voltageVolts
+    // A phone known to report µA is never rescaled: a 10 mA idle draw is 0.04 W, not 40 W.
+    if (microamps) return wattsAsMicroAmps.takeIf { it <= 150.0 }
+    val plausibleWatts = 0.05..150.0
     if (wattsAsMicroAmps in plausibleWatts) return wattsAsMicroAmps
     val wattsAsMilliAmps = wattsAsMicroAmps * 1000.0
     return wattsAsMilliAmps.takeIf { it in plausibleWatts }
 }
+
+/**
+ * True once a reading settles the unit: 100 000 mA would be 100 A, so a reading
+ * that large can only be µA. Remembered per phone, never backed up, so a tiny
+ * current later is read as the fraction of a watt it is.
+ */
+fun batteryCurrentUnitIsMicroamps(currentRaw: Int): Boolean =
+    currentRaw != Int.MIN_VALUE && abs(currentRaw) >= 100_000
 
 /**
  * The battery's power while the phone is plugged in but not charging: full, or held

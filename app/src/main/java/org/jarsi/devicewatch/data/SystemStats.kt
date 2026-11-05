@@ -115,6 +115,8 @@ data class SystemStats(
     val batteryCurrentNowRaw: Int = Int.MIN_VALUE,
     /** True while the battery status is "charging"; the word beside the battery's power. */
     val batteryCharging: Boolean = false,
+    /** True once this phone has reported a current only µA could explain; then no reading is ever rescaled. */
+    val batteryCurrentMicroamps: Boolean = false,
 )
 
 /** The span a data figure covers; UNKNOWN when there is no figure to cover one. */

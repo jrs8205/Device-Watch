@@ -924,6 +924,23 @@ class DashboardViewModelTest {
         }
 
     @Test
+    fun `the switch follows a hide made on the card while Settings is in front`() =
+        runTest(dispatcher) {
+            // Review round 1: × or a long press on the card stores false; the screen never
+            // left the front, so no resume check ran, and the switch stayed on.
+            val settings = FakeAppSettingsRepository()
+            val viewModel = buildViewModel(settings = settings)
+            viewModel.onOverlayShownChange(true, permission = true)
+            advanceUntilIdle()
+            assertThat(viewModel.uiState.value.overlayShown).isTrue()
+
+            settings.setOverlayShown(false)
+            advanceUntilIdle()
+
+            assertThat(viewModel.uiState.value.overlayShown).isFalse()
+        }
+
+    @Test
     fun `the card's settings show from the start`() =
         runTest(dispatcher) {
             val settings = FakeAppSettingsRepository()
