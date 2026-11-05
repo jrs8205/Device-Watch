@@ -37,6 +37,7 @@ import org.jarsi.devicewatch.data.UsageHistory
 import org.jarsi.devicewatch.data.PrivilegedAccess
 import org.jarsi.devicewatch.data.QuickMetric
 import org.jarsi.devicewatch.data.recordTotals
+import org.jarsi.devicewatch.overlay.FloatingFigureController
 import org.jarsi.devicewatch.quick.QuickMetricFormatter
 import org.jarsi.devicewatch.quick.QuickStatsSource
 import org.jarsi.devicewatch.quick.quickMetricLabels
@@ -82,6 +83,17 @@ class SystemMonitorService : Service() {
         )
     }
 
+    /** The floating card over other apps; fed every reading the widgets get, like the live notification. */
+    private val overlay by lazy {
+        FloatingFigureController(
+            context = this,
+            appSettings = appSettings,
+            quickStats = quickStats,
+            mainHandler = Handler(Looper.getMainLooper()),
+            isScreenOn = { isScreenOn },
+        )
+    }
+
     private var lastUsageRefreshMs = 0L
 
     /** Latest level from BATTERY_CHANGED; POWER_DISCONNECTED carries no battery extras. */
@@ -123,8 +135,26 @@ class SystemMonitorService : Service() {
             ACTION_DATA_QUOTA_CHANGED -> onDataQuotaChanged()
             ACTION_NOTIFICATION_METRICS_CHANGED -> onNotificationMetricsChanged()
             ACTION_LIVE_NOTIFICATION_DISMISSED -> live.onDismissed()
+            ACTION_OVERLAY_CHANGED -> onOverlayChanged()
         }
         return START_STICKY
+    }
+
+    /**
+     * Settings or the tile just switched the card, or changed its figures: it is
+     * brought in step with the last reading at once, and a fresh reading follows.
+     */
+    private fun onOverlayChanged() {
+        serviceScope.launch {
+            try {
+                overlay.onSettingsChanged()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+            updateWidgetStats(applicationContext)
+        }
     }
 
     /**
@@ -203,6 +233,7 @@ class SystemMonitorService : Service() {
         }
         stopUpdateLoop()
         serviceJob.cancel()
+        overlay.destroy()
     }
 
     private fun registerScreenTracker() {
@@ -213,11 +244,14 @@ class SystemMonitorService : Service() {
                         isScreenOn = true
                         // A live notification swiped away comes back with the screen.
                         live.onScreenOn()
+                        overlay.onScreenChanged(true)
                         startUpdateLoop()
                     }
                     Intent.ACTION_SCREEN_OFF -> {
                         isScreenOn = false
                         stopUpdateLoop()
+                        // The card comes down with the screen and back with the next reading.
+                        overlay.onScreenChanged(false)
                     }
                 }
             }
@@ -233,6 +267,8 @@ class SystemMonitorService : Service() {
         configurationReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent) {
                 if (intent.action == Intent.ACTION_CONFIGURATION_CHANGED) {
+                    // The card is re-placed for the new orientation by the reading that follows.
+                    overlay.onConfigurationChanged()
                     serviceScope.launch {
                         updateWidgetStats(context)
                     }
@@ -447,6 +483,7 @@ class SystemMonitorService : Service() {
             val stats = repository.getStats()
             WidgetStateUpdater.updateAll(context.applicationContext, stats)
             refreshLiveNotification(stats)
+            refreshOverlay(stats)
             stats
         } catch (e: CancellationException) {
             throw e
@@ -469,6 +506,21 @@ class SystemMonitorService : Service() {
             throw e
         } catch (e: Exception) {
             // The figures are a convenience; the monitor must not stop over them.
+            e.printStackTrace()
+        }
+    }
+
+    /**
+     * Puts [stats] on the floating card when it is on. Like the live notification
+     * it rides on every reading and adds no polling; a card the system refuses is
+     * turned off inside the controller, and nothing here may stop the monitor.
+     */
+    private suspend fun refreshOverlay(stats: SystemStats) {
+        try {
+            overlay.refresh(stats)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
             e.printStackTrace()
         }
     }

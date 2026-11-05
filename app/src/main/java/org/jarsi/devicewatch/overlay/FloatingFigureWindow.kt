@@ -59,7 +59,7 @@ class FloatingFigureWindow(
     private var dragStartY = 0
     private var longPressFired = false
 
-    private val hideButtons = Runnable { buttons?.visibility = View.GONE; relayout() }
+    private val hideButtons = Runnable { buttons?.visibility = View.GONE }
     private val longPress = Runnable {
         longPressFired = true
         onHide()
@@ -113,7 +113,6 @@ class FloatingFigureWindow(
             return
         }
         bind(readings)
-        relayout()
     }
 
     fun hide() {
@@ -193,10 +192,14 @@ class FloatingFigureWindow(
             addView(button(R.drawable.ic_overlay_close, R.string.overlay_close) { onHide() })
             addView(button(R.drawable.ic_open_in_new, R.string.overlay_open_app) { onOpenApp() })
         }
-        card.addView(figureRow)
+        // Explicit wrap-content: a vertical LinearLayout's default is match-parent, and a
+        // match-parent row is left out of the card's width once the button row appears,
+        // which squeezed the figures to the buttons' width (emulator, 5.11.).
+        card.addView(figureRow, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT))
         card.addView(buttonRow, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
             topMargin = dp(2f).toInt()
         })
+        keepOnScreenAfterLayout(card)
         card.setOnTouchListener { _, event -> onTouch(event) }
         // Accessibility services click and long-click without touching.
         card.setOnClickListener { revealButtons() }
@@ -258,25 +261,34 @@ class FloatingFigureWindow(
         return Room(width = size.x, height = size.y)
     }
 
-    private fun measured(card: View): Pair<Int, Int> {
-        card.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED)
-        return card.measuredWidth to card.measuredHeight
-    }
-
+    /** The card's size before it is attached; an attached view is never measured by hand, the layout pass does that. */
     private fun pixelsFor(card: View, lp: WindowManager.LayoutParams): Pair<Int, Int> {
-        val (w, h) = measured(card)
+        card.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED)
         val room = room()
-        return overlayPixels(position, w, h, room.width, room.height)
+        return overlayPixels(position, card.measuredWidth, card.measuredHeight, room.width, room.height)
     }
 
-    /** Re-measures the card and keeps it on screen at its share of the room. */
-    private fun relayout() {
-        val card = root ?: return
-        val lp = params ?: return
-        val (x, y) = pixelsFor(card, lp)
-        lp.x = x
-        lp.y = y
-        applyLayout(card, lp)
+    /**
+     * After every layout that changed the card's size (buttons shown or hidden, a
+     * longer value) the card is kept on screen at its share of the room.
+     */
+    private fun keepOnScreenAfterLayout(card: View) {
+        card.addOnLayoutChangeListener { v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom ->
+            val w = right - left
+            val h = bottom - top
+            if (w == oldRight - oldLeft && h == oldBottom - oldTop) return@addOnLayoutChangeListener
+            handler.post {
+                if (root !== v) return@post
+                val lp = params ?: return@post
+                val room = room()
+                val (x, y) = overlayPixels(position, w, h, room.width, room.height)
+                if (x != lp.x || y != lp.y) {
+                    lp.x = x
+                    lp.y = y
+                    applyLayout(v, lp)
+                }
+            }
+        }
     }
 
     private fun applyLayout(card: View, lp: WindowManager.LayoutParams) {
@@ -344,7 +356,6 @@ class FloatingFigureWindow(
     private fun revealButtons() {
         val row = buttons ?: return
         row.visibility = View.VISIBLE
-        relayout()
         handler.removeCallbacks(hideButtons)
         handler.postDelayed(hideButtons, OVERLAY_BUTTONS_VISIBLE_MS)
     }
