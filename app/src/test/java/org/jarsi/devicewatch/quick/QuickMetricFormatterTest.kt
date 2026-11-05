@@ -4,6 +4,7 @@ import com.google.common.truth.Truth.assertThat
 import org.jarsi.devicewatch.data.DataToday
 import org.jarsi.devicewatch.data.QuickMetric
 import org.jarsi.devicewatch.data.QuickMetric.BATTERY
+import org.jarsi.devicewatch.data.QuickMetric.BATTERY_POWER
 import org.jarsi.devicewatch.data.QuickMetric.BATTERY_TEMP
 import org.jarsi.devicewatch.data.QuickMetric.CPU_LOAD
 import org.jarsi.devicewatch.data.QuickMetric.CPU_TEMP
@@ -92,6 +93,37 @@ class QuickMetricFormatterTest {
     }
 
     @Test
+    fun `battery power shows watts and the charging word`() {
+        val r = read(BATTERY_POWER, quickStats(batteryVoltage = 4.4, batteryCurrentNowRaw = 2_000_000, batteryCharging = true))
+        assertThat(r.value).isEqualTo("8,8 W")
+        assertThat(r.detail).isEqualTo("lataa")
+        assertThat(r.available).isTrue()
+    }
+
+    @Test
+    fun `battery power on battery says discharging`() {
+        // The sign of the current means different things on different phones; the status decides.
+        val r = read(BATTERY_POWER, quickStats(batteryVoltage = 4.4, batteryCurrentNowRaw = -2_000_000, batteryCharging = false))
+        assertThat(r.value).isEqualTo("8,8 W")
+        assertThat(r.detail).isEqualTo("purkaa")
+    }
+
+    @Test
+    fun `battery power is missing without a current reading`() {
+        val r = read(BATTERY_POWER, quickStats(batteryVoltage = 4.4))
+        assertThat(r.available).isFalse()
+        assertThat(r.value).isEqualTo("—")
+        assertThat(r.unavailableReason).isEqualTo("ei saatavilla")
+    }
+
+    @Test
+    fun `battery power icon text`() {
+        assertThat(iconText(BATTERY_POWER, quickStats(batteryVoltage = 4.4, batteryCurrentNowRaw = 2_000_000))).isEqualTo("8,8W")
+        assertThat(iconText(BATTERY_POWER, quickStats(batteryVoltage = 4.4, batteryCurrentNowRaw = 5_000_000))).isEqualTo("22W")
+        assertThat(iconText(BATTERY_POWER, quickStats(batteryVoltage = 4.4))).isNull()
+    }
+
+    @Test
     fun `icon text is the figure at its shortest`() {
         assertThat(iconText(BATTERY, quickStats(batteryLevel = 83))).isEqualTo("83%")
         assertThat(iconText(BATTERY, quickStats(batteryLevel = 100))).isEqualTo("100%")
@@ -140,5 +172,7 @@ class QuickMetricFormatterTest {
         needsExtendedAccess = "vaatii laajennetun käytön",
         needsUsageAccess = "vaatii käyttötietojen luvan",
         notAvailable = "ei saatavilla",
+        charging = "lataa",
+        discharging = "purkaa",
     )
 }

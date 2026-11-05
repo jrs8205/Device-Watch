@@ -108,6 +108,13 @@ data class SystemStats(
     val gpuTemp: Double = UNAVAILABLE_DOUBLE,
     /** The phone's surface ("skin") temperature in °C as its thermal service reckons it, through a privileged shell. */
     val skinTemp: Double = UNAVAILABLE_DOUBLE,
+    /**
+     * Raw `BATTERY_PROPERTY_CURRENT_NOW` (µA on most phones, mA on some, sign by maker);
+     * [batteryPowerWatts] makes sense of it. `Int.MIN_VALUE` when the phone gave none.
+     */
+    val batteryCurrentNowRaw: Int = Int.MIN_VALUE,
+    /** True while the battery status is "charging"; the word beside the battery's power. */
+    val batteryCharging: Boolean = false,
 )
 
 /** The span a data figure covers; UNKNOWN when there is no figure to cover one. */

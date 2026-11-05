@@ -974,6 +974,11 @@
     <string name="quick_storage_title">Tallennustila</string>
     <string name="quick_storage_tile">Tallennus</string>
     <string name="quick_storage_short">Tila</string>
+    <string name="quick_battery_power_title">Akun teho</string>
+    <string name="quick_battery_power_tile">Teho</string>
+    <string name="quick_battery_power_short">Teho</string>
+    <string name="quick_power_charging">lataa</string>
+    <string name="quick_power_discharging">purkaa</string>
     <string name="quick_mobile_short">mob</string>
     <string name="quick_wifi_short">wifi</string>
     <string name="quick_needs_extended_access">vaatii laajennetun käytön</string>

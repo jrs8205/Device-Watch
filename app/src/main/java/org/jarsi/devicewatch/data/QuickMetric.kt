@@ -9,7 +9,7 @@ import java.time.ZoneId
  * notification lists the chosen figures in it, and the widget's picker too. A
  * figure added here appears in every picker; a tile needs its own service as well.
  */
-enum class QuickMetric { BATTERY, BATTERY_TEMP, CPU_TEMP, DATA_TODAY, UPTIME, CPU_LOAD, MEMORY, STORAGE }
+enum class QuickMetric { BATTERY, BATTERY_TEMP, CPU_TEMP, DATA_TODAY, UPTIME, CPU_LOAD, MEMORY, STORAGE, BATTERY_POWER }
 
 /** A stored comma-separated selection; names no longer known are skipped. */
 fun quickMetricsOf(stored: String?): Set<QuickMetric> =

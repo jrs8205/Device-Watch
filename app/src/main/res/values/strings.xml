@@ -984,6 +984,11 @@
     <string name="quick_storage_title">Storage</string>
     <string name="quick_storage_tile">Storage</string>
     <string name="quick_storage_short">Disk</string>
+    <string name="quick_battery_power_title">Battery power</string>
+    <string name="quick_battery_power_tile">Power</string>
+    <string name="quick_battery_power_short">Power</string>
+    <string name="quick_power_charging">charging</string>
+    <string name="quick_power_discharging">discharging</string>
     <string name="quick_mobile_short">mob</string>
     <string name="quick_wifi_short">wifi</string>
     <string name="quick_needs_extended_access">needs extended access</string>

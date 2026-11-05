@@ -4,6 +4,7 @@ import org.jarsi.devicewatch.data.DataToday
 import org.jarsi.devicewatch.data.QuickMetric
 import org.jarsi.devicewatch.data.SystemStats
 import org.jarsi.devicewatch.data.UNAVAILABLE_TEXT
+import org.jarsi.devicewatch.data.batteryPowerWatts
 import org.jarsi.devicewatch.widget.compactDataAmountText
 import org.jarsi.devicewatch.widget.formatDouble
 import org.jarsi.devicewatch.widget.percentText
@@ -27,6 +28,9 @@ data class QuickMetricLabels(
     val needsExtendedAccess: String,
     val needsUsageAccess: String,
     val notAvailable: String,
+    /** The word beside the battery's power while it charges, and while it runs down. */
+    val charging: String,
+    val discharging: String,
 )
 
 /**
@@ -86,6 +90,11 @@ object QuickMetricFormatter {
             QuickMetric.STORAGE ->
                 if (stats.usedStorageGb < 0.0 || stats.totalStorageGb <= 0.0) missing()
                 else shown(String.format(Locale.getDefault(), "%.0f / %.0f GB", stats.usedStorageGb, stats.totalStorageGb))
+            // Charging or discharging comes from the battery status: the sign of the current differs by maker.
+            QuickMetric.BATTERY_POWER ->
+                batteryPowerWatts(stats.batteryCurrentNowRaw, stats.batteryVoltage)
+                    ?.let { shown(formatDouble(it, 1, " W"), if (stats.batteryCharging) labels.charging else labels.discharging) }
+                    ?: missing()
         }
     }
 
@@ -111,6 +120,10 @@ object QuickMetricFormatter {
             QuickMetric.CPU_LOAD -> stats.cpuLoadPercent.takeIf { it >= 0 }?.let { "$it%" }
             QuickMetric.MEMORY -> sharePercent(stats.usedRamGb, stats.totalRamGb)
             QuickMetric.STORAGE -> sharePercent(stats.usedStorageGb, stats.totalStorageGb)
+            QuickMetric.BATTERY_POWER -> batteryPowerWatts(stats.batteryCurrentNowRaw, stats.batteryVoltage)?.let { watts ->
+                if (watts < 9.95) String.format(Locale.getDefault(), "%.1fW", watts)
+                else String.format(Locale.getDefault(), "%.0fW", watts)
+            }
         }
 
     private fun dataIconText(gb: Double): String {

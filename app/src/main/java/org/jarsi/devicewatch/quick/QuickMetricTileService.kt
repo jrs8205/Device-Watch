@@ -151,3 +151,7 @@ class MemoryTileService : QuickMetricTileService() {
 class StorageTileService : QuickMetricTileService() {
     override val metric = QuickMetric.STORAGE
 }
+
+class BatteryPowerTileService : QuickMetricTileService() {
+    override val metric = QuickMetric.BATTERY_POWER
+}

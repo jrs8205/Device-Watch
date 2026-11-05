@@ -57,6 +57,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.graphics.drawable.toBitmap
 import org.jarsi.devicewatch.R
+import org.jarsi.devicewatch.data.batteryPowerWatts
 import org.jarsi.devicewatch.ui.theme.ProvideBoundedDensity
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
@@ -72,7 +73,6 @@ import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
-import kotlin.math.abs
 
 class MonitorDreamService : DreamService(), LifecycleOwner, ViewModelStoreOwner, SavedStateRegistryOwner {
 
@@ -210,10 +210,10 @@ fun ScreensaverContent(context: Context) {
                     context.getSystemService(Context.BATTERY_SERVICE) as? BatteryManager
 
                 // Live charging power. CURRENT_NOW is documented as µA but some OEMs report mA
-                // and the sign convention varies; chargingWatts() normalizes both and returns
+                // and the sign convention varies; batteryPowerWatts() normalizes both and returns
                 // null for missing/implausible readings (then no wattage is shown).
                 chargeWatts = if (charging && batteryManager != null) {
-                    chargingWatts(
+                    batteryPowerWatts(
                         batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW),
                         volt / 1000.0
                     )
@@ -1197,18 +1197,3 @@ internal fun isInNightWindow(nowMinutes: Int, startMinutes: Int, endMinutes: Int
     }
 }
 
-/**
- * Charging power in watts from BATTERY_PROPERTY_CURRENT_NOW and the battery voltage.
- * CURRENT_NOW is documented as µA, but some OEMs report mA and the sign convention for
- * charge/discharge also varies — so the magnitude is used, and a reading that is only
- * plausible as mA is rescaled. Returns null when the reading is missing or implausible
- * (never show a fabricated value).
- */
-internal fun chargingWatts(currentRaw: Int, voltageVolts: Double): Double? {
-    if (currentRaw == 0 || currentRaw == Int.MIN_VALUE || voltageVolts <= 0.0) return null
-    val plausibleWatts = 0.5..150.0
-    val wattsAsMicroAmps = abs(currentRaw.toDouble()) / 1_000_000.0 * voltageVolts
-    if (wattsAsMicroAmps in plausibleWatts) return wattsAsMicroAmps
-    val wattsAsMilliAmps = wattsAsMicroAmps * 1000.0
-    return wattsAsMilliAmps.takeIf { it in plausibleWatts }
-}

@@ -18,6 +18,8 @@ internal fun quickMetricNameRes(metric: QuickMetric): Triple<Int, Int, Int> = wh
     QuickMetric.CPU_LOAD -> Triple(R.string.quick_cpu_load_title, R.string.quick_cpu_load_tile, R.string.quick_cpu_load_short)
     QuickMetric.MEMORY -> Triple(R.string.quick_memory_title, R.string.quick_memory_tile, R.string.quick_memory_short)
     QuickMetric.STORAGE -> Triple(R.string.quick_storage_title, R.string.quick_storage_tile, R.string.quick_storage_short)
+    QuickMetric.BATTERY_POWER ->
+        Triple(R.string.quick_battery_power_title, R.string.quick_battery_power_tile, R.string.quick_battery_power_short)
 }
 
 /** A figure's tile icon, each its own: a small tile shows nothing else. */
@@ -31,6 +33,7 @@ internal fun quickMetricIconRes(metric: QuickMetric): Int = when (metric) {
     QuickMetric.CPU_LOAD -> R.drawable.ic_widget_cpu
     QuickMetric.MEMORY -> R.drawable.ic_quick_memory
     QuickMetric.STORAGE -> R.drawable.ic_widget_storage
+    QuickMetric.BATTERY_POWER -> R.drawable.ic_quick_power
 }
 
 /** A figure's title, for the pickers. */
@@ -51,4 +54,6 @@ fun quickMetricLabels(context: Context): QuickMetricLabels = QuickMetricLabels(
     needsExtendedAccess = context.getString(R.string.quick_needs_extended_access),
     needsUsageAccess = context.getString(R.string.quick_needs_usage_access),
     notAvailable = context.getString(R.string.quick_not_available),
+    charging = context.getString(R.string.quick_power_charging),
+    discharging = context.getString(R.string.quick_power_discharging),
 )

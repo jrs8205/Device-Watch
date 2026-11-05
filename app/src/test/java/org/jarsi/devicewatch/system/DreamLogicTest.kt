@@ -1,11 +1,12 @@
 package org.jarsi.devicewatch.system
 
 import com.google.common.truth.Truth.assertThat
+import org.jarsi.devicewatch.data.batteryPowerWatts
 import org.junit.Test
 
 /**
- * Pure-JVM tests for the screensaver's night-dim window and charging-wattage math
- * (both extracted as pure functions in MonitorDreamService.kt).
+ * Pure-JVM tests for the screensaver's night-dim window (a pure function in
+ * MonitorDreamService.kt) and its use of the shared battery-power math.
  */
 class DreamLogicTest {
 
@@ -34,22 +35,22 @@ class DreamLogicTest {
 
     @Test
     fun `microamp devices give plausible watts regardless of sign`() {
-        assertThat(chargingWatts(2_000_000, 4.4)!!).isWithin(0.001).of(8.8)
-        assertThat(chargingWatts(-2_000_000, 4.4)!!).isWithin(0.001).of(8.8)
+        assertThat(batteryPowerWatts(2_000_000, 4.4)!!).isWithin(0.001).of(8.8)
+        assertThat(batteryPowerWatts(-2_000_000, 4.4)!!).isWithin(0.001).of(8.8)
     }
 
     @Test
     fun `milliamp-reporting devices are rescaled`() {
         // Some OEMs report BATTERY_PROPERTY_CURRENT_NOW in mA instead of the documented µA.
-        assertThat(chargingWatts(2000, 4.4)!!).isWithin(0.001).of(8.8)
+        assertThat(batteryPowerWatts(2000, 4.4)!!).isWithin(0.001).of(8.8)
     }
 
     @Test
     fun `unavailable or implausible readings give null`() {
-        assertThat(chargingWatts(0, 4.4)).isNull()
-        assertThat(chargingWatts(Int.MIN_VALUE, 4.4)).isNull()
-        assertThat(chargingWatts(50, 4.0)).isNull() // 0.2 W even as mA — implausible
-        assertThat(chargingWatts(60_000_000, 5.0)).isNull() // 300 W — implausible
-        assertThat(chargingWatts(2_000_000, 0.0)).isNull() // no voltage reading
+        assertThat(batteryPowerWatts(0, 4.4)).isNull()
+        assertThat(batteryPowerWatts(Int.MIN_VALUE, 4.4)).isNull()
+        assertThat(batteryPowerWatts(50, 4.0)!!).isWithin(0.001).of(0.2) // mA; an idle phone's draw
+        assertThat(batteryPowerWatts(60_000_000, 5.0)).isNull() // 300 W — implausible
+        assertThat(batteryPowerWatts(2_000_000, 0.0)).isNull() // no voltage reading
     }
 }

@@ -1469,6 +1469,10 @@ class SystemStatsRepositoryImpl @Inject constructor(
         }
 
         val batteryManager = context.getSystemService(Context.BATTERY_SERVICE) as? BatteryManager
+        // Raw current for the "Battery power" figure; batteryPowerWatts() reads its unit and sign.
+        val batteryCurrentNowRaw =
+            batteryManager?.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW) ?: Int.MIN_VALUE
+        val batteryCharging = status == BatteryManager.BATTERY_STATUS_CHARGING
         val batteryCycleCount = readBatteryCycleCount(batteryStatusIntent) ?: UNAVAILABLE_INT
         val batteryCapacityPercent = readBatteryHealthPercent() ?: UNAVAILABLE_INT
 
@@ -1672,6 +1676,8 @@ class SystemStatsRepositoryImpl @Inject constructor(
             batteryHealth = batteryHealth,
             batteryTemp = batteryTemp,
             batteryVoltage = batteryVoltage,
+            batteryCurrentNowRaw = batteryCurrentNowRaw,
+            batteryCharging = batteryCharging,
             timeRemainingText = timeRemainingText,
             batteryCycleCount = batteryCycleCount,
             batteryCapacityPercent = batteryCapacityPercent,

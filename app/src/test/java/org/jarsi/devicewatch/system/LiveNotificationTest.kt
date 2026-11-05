@@ -109,5 +109,7 @@ class LiveNotificationTest {
         needsExtendedAccess = "vaatii laajennetun käytön",
         needsUsageAccess = "vaatii käyttötietojen luvan",
         notAvailable = "ei saatavilla",
+        charging = "lataa",
+        discharging = "purkaa",
     )
 }

@@ -1,0 +1,10 @@
+<!-- Battery power: a lightning bolt, the rate the battery charges or runs down at, in watts. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M13,2L4.5,13.5H11L10,22L19.5,10H13.5L13,2z" />
+</vector>
