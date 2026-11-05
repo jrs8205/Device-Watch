@@ -93,11 +93,14 @@ Android backup and phone transfer carry user settings only. History, notificatio
 
 [<img src="https://fdroid.gitlab.io/artwork/badge/get-it-on.png" alt="Get it on F-Droid" height="80">](https://f-droid.org/packages/org.jarsi.devicewatch)
 [<img src="assets/get-it-on-aptoide.svg" alt="Download from Aptoide" height="80">](https://aptoide-mmp.aptoide.com/api/v1/download?package_name=org.jarsi.devicewatch&oemid=584d342f9e68b0c33244b78f3cc21a24&redirect_url=https%3A%2F%2Fws.catappult.io%2Fapi%2FdirectToConsumer%2Forg.jarsi.devicewatch%2Fdownload)
+[<img src="assets/get-it-on-obtainium.png" alt="Get it on Obtainium" height="80">](https://apps.obtainium.imranr.dev/redirect?r=obtainium://app/%7B%22id%22%3A%22org.jarsi.devicewatch%22%2C%22url%22%3A%22https%3A%2F%2Fgithub.com%2Fjrs8205%2FDevice-Watch%22%2C%22author%22%3A%22jrs8205%22%2C%22name%22%3A%22Device-Watch%22%7D)
 
 Device Watch is available on
 [**F-Droid**](https://f-droid.org/packages/org.jarsi.devicewatch), which also delivers updates
 automatically, and on [**Aptoide**](https://device-watch.en.aptoide.com/app), which also offers a
 [direct APK download](https://aptoide-mmp.aptoide.com/api/v1/download?package_name=org.jarsi.devicewatch&oemid=584d342f9e68b0c33244b78f3cc21a24&redirect_url=https%3A%2F%2Fws.catappult.io%2Fapi%2FdirectToConsumer%2Forg.jarsi.devicewatch%2Fdownload).
+[**Obtainium**](https://github.com/ImranR98/Obtainium) can follow the GitHub releases and install each
+new version: tap the badge above on your phone, or add `https://github.com/jrs8205/Device-Watch` in Obtainium.
 Alternatively, download the latest signed APK from the
 [**Releases**](https://github.com/jrs8205/Device-Watch/releases/latest) page, or from its mirror on
 [**SourceForge**](https://sourceforge.net/projects/device-watch/), and open it on your device to
