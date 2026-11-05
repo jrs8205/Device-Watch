@@ -9,7 +9,7 @@ class UsageHistoryLogicTest {
 
     @Test
     fun `today's totals record the screen-on time along with screen time and unlocks`() {
-        // Codex round 10: only the Home refresh recorded screen-on, so a week without
+        // Review round 10: only the Home refresh recorded screen-on, so a week without
         // opening the app left days of it uncollected while the service kept running.
         val history = FakeUsageHistory()
         val day = LocalDate.of(2026, 9, 28)

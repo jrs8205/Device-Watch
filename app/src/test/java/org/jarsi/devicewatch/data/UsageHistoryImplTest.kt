@@ -18,7 +18,7 @@ class UsageHistoryImplTest {
 
     @Test
     fun `an older storage reading never replaces a newer one`() {
-        // Codex round 8: the Home refresh read 64 GiB, the service then stored a
+        // Review round 8: the Home refresh read 64 GiB, the service then stored a
         // newer 80 GiB, and the refresh's late write put 64 GiB back.
         history.recordStorageUsed(day, 80 * gib, readAtElapsedMillis = 2_000L)
         history.recordStorageUsed(day, 64 * gib, readAtElapsedMillis = 1_000L)
@@ -28,7 +28,7 @@ class UsageHistoryImplTest {
 
     @Test
     fun `after a restart the first reading is taken, whatever the clock says`() {
-        // Codex round 9: a wall-clock stamp kept on disk refused every later reading
+        // Review round 9: a wall-clock stamp kept on disk refused every later reading
         // once the clock was set back. The order now comes from the monotonic clock,
         // which starts over at boot, so nothing of it may outlive the process.
         history.recordStorageUsed(day, 80 * gib, readAtElapsedMillis = 5_000_000L)
@@ -41,7 +41,7 @@ class UsageHistoryImplTest {
 
     @Test
     fun `a late reading from before midnight cannot replace the day's last one`() {
-        // Codex release review: the service's first reading of the new day forgot
+        // Release review: the service's first reading of the new day forgot
         // the old day's order, and a Home refresh that had read before midnight
         // then put its older figure back as the old day's last.
         history.recordStorageUsed(day, 80 * gib, readAtElapsedMillis = 2_000L)

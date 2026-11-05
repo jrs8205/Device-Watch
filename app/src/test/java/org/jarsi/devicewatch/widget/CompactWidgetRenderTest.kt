@@ -19,7 +19,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * Renders the compact widget from its stored state. Codex round 10: its data
+ * Renders the compact widget from its stored state. Review round 10: its data
  * cells read the period figures but were headed only MOBILE and WI-FI, so a
  * switch from the day to the billing cycle changed what the numbers meant with
  * nothing on the widget to say so.

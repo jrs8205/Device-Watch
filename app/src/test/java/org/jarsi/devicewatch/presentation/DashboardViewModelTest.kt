@@ -661,7 +661,7 @@ class DashboardViewModelTest {
     @Test
     fun `given two refreshes finishing out of order, then the older one's breakdown is dropped`() =
         runTest(dispatcher) {
-            // Codex round 6: switching day to billing cycle while the day's breakdown
+            // Review round 6: switching day to billing cycle while the day's breakdown
             // was still being read let that late read overwrite the cycle's.
             val dayRead = kotlinx.coroutines.CompletableDeferred<DataBreakdown>()
             val cycleRead = kotlinx.coroutines.CompletableDeferred<DataBreakdown>()
@@ -968,7 +968,7 @@ class DashboardViewModelTest {
     @Test
     fun `switching an alert off takes its notification down`() =
         runTest(dispatcher) {
-            // Codex round 8: an alert already in the shade stayed there after being
+            // Review round 8: an alert already in the shade stayed there after being
             // switched off, since a disabled alert is never evaluated again.
             val alertNotifications = FakeAlertNotifications()
             val viewModel = buildViewModel(alertNotifications = alertNotifications)
@@ -998,7 +998,7 @@ class DashboardViewModelTest {
     @Test
     fun `given a platform without screen events, then screen-on time is unavailable, not zero`() =
         runTest(dispatcher) {
-            // Codex round 6: Android 8 has no SCREEN_INTERACTIVE events; the empty
+            // Review round 6: Android 8 has no SCREEN_INTERACTIVE events; the empty
             // history summed to "0 min" as if measured.
             val appUsage = FakeAppUsageRepository(supportsScreenOn = false)
             val viewModel = buildViewModel(appUsage = appUsage)

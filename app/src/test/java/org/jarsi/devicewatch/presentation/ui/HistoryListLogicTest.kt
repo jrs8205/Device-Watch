@@ -65,7 +65,7 @@ class HistoryListLogicTest {
 
     @Test
     fun `each metric's row shows its own value, durations as durations`() {
-        // Codex round 6: the screen-on list showed the screen-time field.
+        // Review round 6: the screen-on list showed the screen-time field.
         val day = HistoryDay(
             day = LocalDate.of(2026, 7, 1),
             screenTimeMillis = 3_600_000L,

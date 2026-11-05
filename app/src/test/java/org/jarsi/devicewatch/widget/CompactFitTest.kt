@@ -58,7 +58,7 @@ class CompactFitTest {
 
     @Test
     fun `text that would overflow shrinks in proportion`() {
-        // 100.00 GB at 16 dp measured 75 dp in a 39 dp cell (Codex round 3).
+        // 100.00 GB at 16 dp measured 75 dp in a 39 dp cell (review round 3).
         assertThat(shrinkToFitDp(sizeDp = 16f, widthAtSizeDp = 75f, availableDp = 39f))
             .isWithin(1e-4f).of(16f * 39f / 75f)
     }
@@ -92,7 +92,7 @@ class CompactFitTest {
 
     /**
      * Glyph widths that round up to a quarter dp, as Paint's do: shrinking in proportion
-     * then lands a hair too wide, as Codex found with "SINCE BOOT" at 420 dpi.
+     * then lands a hair too wide, as a review found with "SINCE BOOT" at 420 dpi.
      */
     private val quantizedWidth = { text: String, sizeDp: Float ->
         text.length * kotlin.math.ceil(sizeDp * 0.5f * 4f) / 4f

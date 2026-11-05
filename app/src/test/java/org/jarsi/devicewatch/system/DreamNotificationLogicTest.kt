@@ -94,7 +94,7 @@ class DreamNotificationLogicTest {
 }
 
 /**
- * Codex round 10: the row took eight groups unconditionally, which overflows a 344 dp clock
+ * Review round 10: the row took eight groups unconditionally, which overflows a 344 dp clock
  * block once counts are two digits. The fit keeps whole groups from the front and reserves
  * room for the "+N" label whenever something is folded away.
  */

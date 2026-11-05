@@ -323,7 +323,7 @@ class AppsViewModelTest {
     @Test
     fun `coming back from the app's settings re-reads the open sheet's permissions`() =
         runTest(dispatcher) {
-            // Codex round 8: camera revoked in the system settings, back in the app,
+            // Review round 8: camera revoked in the system settings, back in the app,
             // and the open sheet still listed the camera as allowed.
             val repository = FakeAppUsageRepository(
                 apps = listOf(app("a", 5_000L)),

@@ -256,7 +256,7 @@ class ExtraStatsLogicTest {
 
     @Test
     fun `app sizes are summed once per app uid`() {
-        // Codex round 5: the user-wide queryStatsForUser figure folds the whole
+        // Review round 5: the user-wide queryStatsForUser figure folds the whole
         // shared storage into dataBytes, so a 300 MB download showed up as apps
         // (twice, on the emulator). Per-UID figures hold only each app's own files;
         // packages sharing a UID report the same figures and count once.
@@ -442,7 +442,7 @@ class ExtraStatsLogicTest {
 
     @Test
     fun `today's screen-on from a pass reaching back before midnight counts only today`() {
-        // Codex round 10: the monitor service now records screen-on from its usage
+        // Review round 10: the monitor service now records screen-on from its usage
         // pass, which starts 12 hours before midnight.
         val events = listOf(
             ScreenEvent(at(20, 23), on = true),
@@ -470,7 +470,7 @@ class ExtraStatsLogicTest {
 
     @Test
     fun `a shutdown ends the interval even without a screen-off event`() {
-        // Codex round 6: use 10-11, shutdown, next-day use 12-13 read as 27 hours.
+        // Review round 6: use 10-11, shutdown, next-day use 12-13 read as 27 hours.
         val events = listOf(
             ScreenEvent(at(20, 10), on = true),
             ScreenEvent(at(20, 11), ScreenEventKind.SHUTDOWN),
@@ -515,7 +515,7 @@ class ExtraStatsLogicTest {
 
     @Test
     fun `a window that opens with a shutdown says nothing about the screen before it`() {
-        // Codex round 7: shutdown 6, startup 8, screen on 8:01-8:31 read as 6 h 30 min.
+        // Review round 7: shutdown 6, startup 8, screen on 8:01-8:31 read as 6 h 30 min.
         val events = listOf(
             ScreenEvent(at(20, 6), ScreenEventKind.SHUTDOWN),
             ScreenEvent(at(20, 8), ScreenEventKind.STARTUP),
@@ -757,7 +757,7 @@ class ExtraStatsLogicTest {
 
     @Test
     fun `Android 10 reports LTE RSSNR in tenths of a decibel`() {
-        // AOSP converts to whole dB only from Android 11 (Codex round 6).
+        // AOSP converts to whole dB only from Android 11 (review round 6).
         assertThat(ExtraStatsLogic.lteRssnrDb(raw = 120, sdkInt = 29)).isEqualTo(12)
         assertThat(ExtraStatsLogic.lteRssnrDb(raw = -36, sdkInt = 29)).isEqualTo(-4)
         assertThat(ExtraStatsLogic.lteRssnrDb(raw = 12, sdkInt = 30)).isEqualTo(12)
@@ -775,7 +775,7 @@ class ExtraStatsLogicTest {
 
     @Test
     fun `no dual-frequency claim is derived from the power-measurement flags`() {
-        // Codex round 6: hasPowerMultibandTracking() says the chip can report the
+        // Review round 6: hasPowerMultibandTracking() says the chip can report the
         // power a multiband fix costs, not that it receives two frequencies.
         assertThat(GnssCapability.entries.map { it.name }).doesNotContain("MULTIBAND")
     }
@@ -851,7 +851,7 @@ class ExtraStatsLogicTest {
 
     @Test
     fun `strong biometrics are known only where Android can ask for Class 3`() {
-        // Codex round 7: Android 10's argument-less canAuthenticate() is a weak
+        // Review round 7: Android 10's argument-less canAuthenticate() is a weak
         // check; its success says nothing about Class 3 biometrics.
         assertThat(ExtraStatsLogic.strongBiometricState(sdkInt = 29, code = 0)).isNull()
         assertThat(ExtraStatsLogic.strongBiometricState(sdkInt = 30, code = 0)).isEqualTo(BiometricState.ENROLLED)

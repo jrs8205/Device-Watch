@@ -722,7 +722,7 @@ private fun NotificationIconRow(
     )
     val measurer = rememberTextMeasurer()
     val resolver = LocalFontFamilyResolver.current
-    // Codex round 10: eight groups with two-digit counts overflow a 344 dp clock block, so
+    // Review round 10: eight groups with two-digit counts overflow a 344 dp clock block, so
     // the row keeps only the groups whose measured widths fit, "+N" included.
     BoxWithConstraints(modifier = modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
         val fit = remember(groups, maxWidth, iconSizePx, countTextStyle, density, resolver) {
@@ -777,7 +777,7 @@ private fun NotificationIconRowContent(
     ) {
         fit.shown.forEach { group ->
             key(group.packageName) {
-                // Codex round 10: a URI-backed icon reads a content provider, so the decode
+                // Review round 10: a URI-backed icon reads a content provider, so the decode
                 // runs off the main thread and the icon appears when it is ready.
                 val bitmap by produceState<ImageBitmap?>(null, group.newestPostTime, iconSizePx) {
                     value = withContext(Dispatchers.IO) {

@@ -25,7 +25,7 @@ class DataQuotaLogicTest {
 
     @Test
     fun `a reading taken under another counting period is stale even with the same quota`() {
-        // Codex round 4: a late billing-cycle reading (12 GB used) arriving after the
+        // Review round 4: a late billing-cycle reading (12 GB used) arriving after the
         // switch to daily counting (7.5 GB used) re-armed the watch for 8 GB instead
         // of the 0.5 GB left to the day's warning.
         assertThat(DataQuotaLogic.classifyReading(reading(10.0, generation = 5), current(10.0, generation = 6)))

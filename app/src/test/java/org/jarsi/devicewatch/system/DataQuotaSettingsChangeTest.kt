@@ -13,7 +13,7 @@ import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 
 /**
- * Codex release review: with a quota alert on screen, removing the quota or
+ * Release review: with a quota alert on screen, removing the quota or
  * raising it from 10 to 100 GB left the old alert standing, although it no
  * longer held. The service's answer to a data-settings change starts here.
  */

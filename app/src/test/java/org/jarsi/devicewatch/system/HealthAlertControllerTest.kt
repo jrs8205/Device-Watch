@@ -33,7 +33,7 @@ class HealthAlertControllerTest {
 
     @Test
     fun `an alert switched off while it was being posted is neither latched nor left showing`() {
-        // Codex round 8: the switch-off cleared the latch, then the post finished and
+        // Review round 8: the switch-off cleared the latch, then the post finished and
         // wrote it back, so the alert switched on again stayed silent.
         settings.setAlertEnabled(alert, true)
 

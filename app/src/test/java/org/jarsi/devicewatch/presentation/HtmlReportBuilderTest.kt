@@ -395,7 +395,7 @@ class HtmlReportBuilderTest {
 
     @Test
     fun `charging shading runs from the plug-in reading to the unplug reading`() {
-        // Codex release review: shaded 10.00–10.20 for a charge from 10.10 to 10.30.
+        // Release review: shaded 10.00–10.20 for a charge from 10.10 to 10.30.
         // The store writes a plug or unplug with its own time, so those readings are
         // the moments, as ChargeSessions and the in-app chart already read them.
         val minute = 60_000L

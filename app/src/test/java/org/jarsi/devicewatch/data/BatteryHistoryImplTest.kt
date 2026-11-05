@@ -64,7 +64,7 @@ class BatteryHistoryImplTest {
 
     @Test
     fun `an unplug right after a stored sample still ends the charge, at its own time and level`() {
-        // Codex round 8: the charge reminder's 80 % sample is stored, the user unplugs
+        // Review round 8: the charge reminder's 80 % sample is stored, the user unplugs
         // 10 s later; that too-soon flip was dropped and the charge read as running
         // on until the next discharging sample, 20 minutes and two levels later.
         val history = history()
@@ -101,7 +101,7 @@ class BatteryHistoryImplTest {
 
     @Test
     fun `bounce with several updates in between still leaves one charge`() {
-        // Codex round 9: unplug +5 s, another unplugged update +6 s, plugged again
+        // Review round 9: unplug +5 s, another unplugged update +6 s, plugged again
         // +8 s; the second update confirmed the unplug at once and split the charge.
         val history = history()
         val plugged = sample(t0, level = 50, charging = true)
@@ -116,7 +116,7 @@ class BatteryHistoryImplTest {
 
     @Test
     fun `an unplug that outlasts the bounce window stays, even when the next update is the replug`() {
-        // Codex round 10: unplugged 10 s after a stored sample and plugged back in five
+        // Review round 10: unplugged 10 s after a stored sample and plugged back in five
         // minutes later with no update in between; the replug dropped the unplug as
         // bounce and the two charges read as one.
         val history = history()
@@ -134,7 +134,7 @@ class BatteryHistoryImplTest {
 
     @Test
     fun `a clock set back while an unplug is held does not stop the history`() {
-        // Codex round 10: the held unplug waited for a later sample a bounce window
+        // Review round 10: the held unplug waited for a later sample a bounce window
         // after it on the wall clock; set back an hour, every later sample was earlier
         // than the held one and nothing was stored until the clock caught up.
         val history = history()

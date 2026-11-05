@@ -31,7 +31,7 @@ object WidgetStateUpdater {
 
     /**
      * Gives a widget instance the shared black-background choice before its first render, so a
-     * widget added after the switch was set looks like the others (Codex round 11, GitHub #2).
+     * widget added after the switch was set looks like the others (review round 11, GitHub #2).
      * Runs on every render, so it writes only when the instance's stored value differs.
      */
     internal suspend fun initializeAppearance(context: Context, glanceId: GlanceId) {
