@@ -233,6 +233,38 @@ what kept the phone awake usually names it.
 The page starts tracking from the first charge event after installation — either the battery
 reaching full on the charger, or the charger being unplugged. It fills in from that point on.
 
+## Floating figure
+
+### Why does the app ask to display over other apps?
+
+The floating figure is a small card drawn over whatever app is in front — a game, a video, a
+browser — with one to three figures you choose in Settings. Android lets an app draw over other
+apps only with the *Display over other apps* permission, which you grant on a system page; Device
+Watch asks for it only when you switch the card on, and uses it for nothing but that card. If you
+take the permission away while the card is up, the card goes and the switch turns itself off; the
+monitor keeps running.
+
+Bring the card up and take it down with the *Floating figure* tile in Quick Settings (add it from
+the panel's edit mode). On the card itself a tap shows a hide and an open button for a few
+seconds, and a long press hides it at once; a tap never opens the app by itself, so a stray touch
+in a game costs nothing. Drag it where you like: its place is remembered separately for portrait
+and landscape.
+
+### The card does not appear over a game
+
+- **Lock screen and screensaver**: Android draws nothing over them, so the card appears only once
+  the phone is unlocked and awake. With the screen off the card is taken down and comes back with
+  the next reading after the screen is on.
+- **System pages**: Android hides every app's overlay over its own permission pages and some
+  other system screens. The card comes back when you leave them.
+- **Xiaomi, Redmi and POCO (MIUI, HyperOS)**: besides *Display over other apps*, these phones have
+  a second switch, *Display pop-up windows while running in the background*, under the app's
+  permissions in system settings. Without it the card may show only while Device Watch itself is
+  in front.
+- **Battery optimisation**: the card is drawn by the monitor service that also feeds the widgets.
+  If your phone stops that service in the background, the card goes with it; the widgets will have
+  stopped updating too. See the monitoring notification question below.
+
 ## Counters and history
 
 ### The notification count is lower than the number of notifications I see

@@ -30,8 +30,10 @@ The default app language is English. Finnish users get a localized app name and 
 
 - Home screen widget for battery, memory, CPU, storage, Wi-Fi, mobile network, data usage, uptime, today's screen time, and last update time
 - Compact 2×2 widget for battery, uptime and mobile/Wi-Fi data, with the counting period shown above each data amount
-- Single figure 1×1 widget: one figure of your choice (battery, battery or processor temperature, data today, uptime, processor load, memory or storage), picked when the widget is added and changed with a long press
+- Single figure 1×1 widget: one figure of your choice (battery, battery or processor temperature, data today, uptime, processor load, memory, storage or battery power), picked when the widget is added and changed with a long press
 - Quick Settings tiles, one per figure, added from the panel's edit mode: a wide tile shows the figure's name and value like Android's own tiles, and a small tile, which shows only its icon, draws the figure in its place (switchable in Settings). Android lets no app put widgets in the panel, only tiles
+- Floating figure, off by default: a small dark card with one to three figures of your choice over other apps, including full-screen games and video, where the tiles, widgets and notification are out of sight. Brought up and taken down with the Floating figure tile in Quick Settings; dragged anywhere, its place remembered for portrait and landscape; a tap shows a hide and an open button, a long press hides it. It needs the *Display over other apps* permission, asked for only when you switch it on
+- Battery power as a ninth figure on the tiles, the single-figure widget, the notification and the floating card: the rate the battery charges or runs down at, in watts, with the direction from the battery's status
 - Live figures in the monitor's notification, off by default: the figures chosen in Settings on two lines among the other notifications, all of them when expanded; a swipe hides it until the screen next comes on, and with none chosen it stays silent at the bottom as before
 - Widget background opacity slider, and a black-background switch for people whose other widgets are black
 - Tapping the widget anywhere opens the app
