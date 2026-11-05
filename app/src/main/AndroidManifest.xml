@@ -26,6 +26,9 @@
     <!-- Normal permission, granted on install: only reads whether a strong biometric
          is enrolled for the Device tab; the app never authenticates anyone. -->
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+    <!-- Special permission the user grants in system settings when they switch on the
+         floating figure; the app draws only that small card with it. -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
 
     <application
         android:name=".MonitorApp"

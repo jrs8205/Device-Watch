@@ -40,6 +40,10 @@ internal fun quickMetricIconRes(metric: QuickMetric): Int = when (metric) {
 @StringRes
 internal fun quickMetricTitleRes(metric: QuickMetric): Int = quickMetricNameRes(metric).first
 
+/** A figure's tile label, for the floating card. */
+@StringRes
+fun quickMetricTileLabelRes(metric: QuickMetric): Int = quickMetricNameRes(metric).second
+
 /** The figures' words in the context's current language. */
 fun quickMetricLabels(context: Context): QuickMetricLabels = QuickMetricLabels(
     names = QuickMetric.entries.associateWith { metric ->

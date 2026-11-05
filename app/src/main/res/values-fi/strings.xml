@@ -996,6 +996,9 @@
     <string name="quick_tiles_description">Lisää Laitevahdin painikkeet pika-asetusten muokkaustilasta (kynäkuvake). Leveässä painikkeessa näkyy luvun nimi ja arvo.</string>
     <string name="tile_value_icons_title">Luku kuvakkeena</string>
     <string name="tile_value_icons_description">Pieni painike näyttää vain kuvakkeensa, joten luku piirretään sen paikalle.</string>
+    <string name="overlay_card_description">Kelluva luku</string>
+    <string name="overlay_close">Piilota</string>
+    <string name="overlay_open_app">Avaa Laitevahti</string>
     <string name="single_widget_description">Yksi valitsemasi luku: akku, lämpötila, data tänään, käyntiaika, suoritin, muisti tai tallennustila.</string>
     <string name="single_widget_pick_title">Valitse luku</string>
     <string name="monitor_live_channel_description">Asetuksissa valitut luvut, päivitetään näytön ollessa päällä.</string>
