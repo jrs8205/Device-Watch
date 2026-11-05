@@ -30,6 +30,8 @@ import org.jarsi.devicewatch.data.SystemStatsRepository
 import org.jarsi.devicewatch.data.UNAVAILABLE_INT
 import org.jarsi.devicewatch.data.UsageHistory
 import org.jarsi.devicewatch.data.recordTotals
+import org.jarsi.devicewatch.overlay.limitOverlaySelection
+import org.jarsi.devicewatch.overlay.overlayMetricsOrDefault
 import org.jarsi.devicewatch.system.AlertNotifications
 import org.jarsi.devicewatch.system.MonitorServiceRelay
 import java.time.LocalDate
@@ -106,6 +108,12 @@ data class DashboardUiState(
     val notificationMetrics: Set<QuickMetric> = emptySet(),
     /** Quick Settings tiles draw their figure in place of their icon. */
     val tileValueIcons: Boolean = true,
+    /** The floating card is switched on. */
+    val overlayShown: Boolean = false,
+    /** The figures on the floating card, at most three; none means the default pair. */
+    val overlayMetrics: Set<QuickMetric> = emptySet(),
+    /** Whether the system lets the app draw over other apps, as last checked on the screen. */
+    val overlayPermission: Boolean = false,
     /** Foreground/background shares and roaming for the counting period; null until read. */
     val dataBreakdown: DataBreakdown? = null,
     /** What the used storage holds; null until read or when unavailable. */
@@ -157,6 +165,8 @@ class DashboardViewModel @Inject constructor(
                 enabledAlerts = HealthAlert.entries.filter(settings::alertEnabled).toSet(),
                 notificationMetrics = settings.notificationMetrics(),
                 tileValueIcons = settings.tileValueIcons(),
+                overlayShown = settings.overlayShown(),
+                overlayMetrics = settings.overlayMetrics(),
             )
         }
         viewModelScope.launch {
@@ -429,6 +439,54 @@ class DashboardViewModel @Inject constructor(
     fun onTileValueIconsChange(enabled: Boolean) {
         settings.setTileValueIcons(enabled)
         _uiState.update { it.copy(tileValueIcons = enabled) }
+    }
+
+    /** The switch was flipped on without the permission; the screen opens the permission page meanwhile. */
+    private var pendingOverlayEnable = false
+
+    /**
+     * The floating card's switch. Without the permission it stays off and the
+     * switch is remembered: [onOverlayPermissionChecked] turns the card on once the
+     * user comes back with the permission granted.
+     */
+    fun onOverlayShownChange(enabled: Boolean, permission: Boolean) {
+        if (enabled && !permission) {
+            pendingOverlayEnable = true
+            _uiState.update { it.copy(overlayShown = false, overlayPermission = false) }
+            return
+        }
+        pendingOverlayEnable = false
+        setOverlayShown(enabled)
+    }
+
+    private fun setOverlayShown(enabled: Boolean) {
+        val chosen = overlayMetricsOrDefault(settings.overlayMetrics())
+        if (enabled && chosen != settings.overlayMetrics()) settings.setOverlayMetrics(chosen)
+        settings.setOverlayShown(enabled)
+        monitorRelay.overlayChanged()
+        _uiState.update { it.copy(overlayShown = enabled, overlayMetrics = settings.overlayMetrics()) }
+    }
+
+    /** A figure on the card switched on or off; a fourth is refused and nothing changes. */
+    fun onOverlayMetricToggle(metric: QuickMetric, enabled: Boolean) {
+        val current = settings.overlayMetrics()
+        val chosen = limitOverlaySelection(current, metric, enabled)
+        if (chosen == current) return
+        settings.setOverlayMetrics(chosen)
+        monitorRelay.overlayChanged()
+        _uiState.update { it.copy(overlayMetrics = chosen) }
+    }
+
+    /**
+     * The screen checked the permission on coming to the front. The switch shows
+     * what is stored, since the monitor turns the card off when the permission goes;
+     * a switch flipped before the permission page completes now.
+     */
+    fun onOverlayPermissionChecked(granted: Boolean) {
+        val pending = pendingOverlayEnable
+        pendingOverlayEnable = false
+        _uiState.update { it.copy(overlayPermission = granted, overlayShown = settings.overlayShown()) }
+        if (granted && pending && !settings.overlayShown()) setOverlayShown(true)
     }
 
     /** Reads fresh stats, pushes them to every installed widget, and updates the screen. */

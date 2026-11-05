@@ -271,6 +271,8 @@ internal fun SettingsToggleRow(
     @StringRes descriptionRes: Int?,
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
+    /** A row that cannot be switched on just now (the card's fourth figure) is dimmed. */
+    enabled: Boolean = true,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -282,7 +284,8 @@ internal fun SettingsToggleRow(
                 overflow = TextOverflow.Ellipsis,
                 text = stringResource(titleRes),
                 fontWeight = FontWeight.Medium,
-                fontSize = 14.sp
+                fontSize = 14.sp,
+                color = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
             )
             if (descriptionRes != null) {
                 Spacer(modifier = Modifier.height(2.dp))
@@ -294,7 +297,7 @@ internal fun SettingsToggleRow(
             }
         }
         Spacer(modifier = Modifier.width(12.dp))
-        Switch(checked = checked, onCheckedChange = withTapHaptic(onCheckedChange))
+        Switch(checked = checked, onCheckedChange = withTapHaptic(onCheckedChange), enabled = enabled)
     }
 }
 

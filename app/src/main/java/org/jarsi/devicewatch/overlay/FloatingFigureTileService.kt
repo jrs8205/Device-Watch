@@ -4,12 +4,12 @@ import android.annotation.SuppressLint
 import android.app.PendingIntent
 import android.content.Intent
 import android.graphics.drawable.Icon
-import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
 import androidx.core.content.ContextCompat
+import androidx.core.net.toUri
 import dagger.hilt.android.EntryPointAccessors
 import org.jarsi.devicewatch.R
 import org.jarsi.devicewatch.quick.QuickEntryPoint
@@ -65,7 +65,7 @@ class FloatingFigureTileService : TileService() {
     // The Intent form only runs before Android 14, where it is the only form there is.
     @SuppressLint("StartActivityAndCollapseDeprecated")
     private fun openPermissionPage() {
-        val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName"))
+        val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, "package:$packageName".toUri())
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             startActivityAndCollapse(

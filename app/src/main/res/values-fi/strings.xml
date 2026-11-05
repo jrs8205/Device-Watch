@@ -1001,6 +1001,13 @@
     <string name="overlay_open_app">Avaa Laitevahti</string>
     <string name="overlay_tile_label">Kelluva luku</string>
     <string name="overlay_tile_needs_permission">vaatii luvan</string>
+    <string name="overlay_section">KELLUVA LUKU</string>
+    <string name="overlay_description">Pieni kortti muiden sovellusten päällä, myös koko näytön pelien ja videoiden päällä. Esiin ja pois pika-asetusten Kelluva luku -painikkeella; kortin napautus näyttää piilotuspainikkeen, pitkä painallus piilottaa.</string>
+    <string name="overlay_shown_title">Näytä kelluva luku</string>
+    <string name="overlay_permission_explained">Android kutsuu lupaa nimellä \"Näytä muiden sovellusten päällä\". Laitevahti piirtää sillä vain tämän kortin.</string>
+    <string name="overlay_grant">Anna lupa</string>
+    <string name="overlay_max_figures">Enintään kolme lukua</string>
+    <string name="overlay_tile_hint">Lisää Kelluva luku -painike pika-asetusten muokkaustilasta.</string>
     <string name="single_widget_description">Yksi valitsemasi luku: akku, lämpötila, data tänään, käyntiaika, suoritin, muisti tai tallennustila.</string>
     <string name="single_widget_pick_title">Valitse luku</string>
     <string name="monitor_live_channel_description">Asetuksissa valitut luvut, päivitetään näytön ollessa päällä.</string>

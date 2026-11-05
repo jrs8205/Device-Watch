@@ -410,6 +410,9 @@ fun SystemDashboardScreen(
                             onAlertToggle = viewModel::onAlertToggle,
                             onNotificationMetricToggle = viewModel::onNotificationMetricToggle,
                             onTileValueIconsChange = viewModel::onTileValueIconsChange,
+                            onOverlayShownChange = viewModel::onOverlayShownChange,
+                            onOverlayMetricToggle = viewModel::onOverlayMetricToggle,
+                            onOverlayPermissionChecked = viewModel::onOverlayPermissionChecked,
                             onShowIntro = { replayOnboarding = true }
                         )
                     }

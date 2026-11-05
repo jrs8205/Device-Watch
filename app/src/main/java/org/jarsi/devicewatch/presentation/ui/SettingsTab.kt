@@ -3,6 +3,8 @@ package org.jarsi.devicewatch.presentation.ui
 import org.jarsi.devicewatch.data.HealthAlert
 import org.jarsi.devicewatch.data.QuickMetric
 import org.jarsi.devicewatch.quick.quickMetricTitleRes
+import org.jarsi.devicewatch.overlay.OVERLAY_MAX_FIGURES
+import androidx.core.net.toUri
 import androidx.core.app.NotificationManagerCompat
 import androidx.compose.material3.TextButton
 import androidx.core.content.ContextCompat
@@ -96,9 +98,17 @@ internal fun SettingsTab(
     onAlertToggle: (HealthAlert, Boolean) -> Unit,
     onNotificationMetricToggle: (QuickMetric, Boolean) -> Unit,
     onTileValueIconsChange: (Boolean) -> Unit,
+    onOverlayShownChange: (enabled: Boolean, permission: Boolean) -> Unit,
+    onOverlayMetricToggle: (QuickMetric, Boolean) -> Unit,
+    onOverlayPermissionChecked: (Boolean) -> Unit,
     onShowIntro: () -> Unit,
 ) {
     val context = LocalContext.current
+    // The overlay permission is granted on a system page; it is read again on every return.
+    LifecycleResumeEffect(Unit) {
+        onOverlayPermissionChecked(Settings.canDrawOverlays(context))
+        onPauseOrDispose { }
+    }
 
     // Runtime-permission status mirrors the intro's permission page, so Settings
     // shows all three grants — not just the two special-access ones.
@@ -439,6 +449,65 @@ internal fun SettingsTab(
                 descriptionRes = R.string.tile_value_icons_description,
                 checked = uiState.tileValueIcons,
                 onCheckedChange = onTileValueIconsChange,
+            )
+        }
+
+        // The floating card over other apps (GitHub #2)
+        SettingsSectionCard(titleRes = R.string.overlay_section) {
+            Text(
+                text = stringResource(R.string.overlay_description),
+                fontSize = 11.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            SettingsToggleRow(
+                titleRes = R.string.overlay_shown_title,
+                descriptionRes = null,
+                checked = uiState.overlayShown,
+                onCheckedChange = { enabled ->
+                    val permission = Settings.canDrawOverlays(context)
+                    onOverlayShownChange(enabled, permission)
+                    if (enabled && !permission) openOverlayPermissionPage(context)
+                },
+            )
+            if (!uiState.overlayPermission) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = stringResource(R.string.overlay_permission_explained),
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                TextButton(onClick = withTapHaptic { openOverlayPermissionPage(context) }) {
+                    Text(stringResource(R.string.overlay_grant))
+                }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = stringResource(R.string.overlay_max_figures),
+                fontSize = 11.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            val full = uiState.overlayMetrics.size >= OVERLAY_MAX_FIGURES
+            QuickMetric.entries.forEach { metric ->
+                Spacer(modifier = Modifier.height(12.dp))
+                val chosen = metric in uiState.overlayMetrics
+                SettingsToggleRow(
+                    titleRes = quickMetricTitleRes(metric),
+                    descriptionRes = when (metric) {
+                        QuickMetric.CPU_TEMP -> R.string.quick_cpu_temp_setting_description
+                        QuickMetric.DATA_TODAY -> R.string.quick_data_today_setting_description
+                        else -> null
+                    },
+                    checked = chosen,
+                    onCheckedChange = { onOverlayMetricToggle(metric, it) },
+                    enabled = chosen || !full,
+                )
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = stringResource(R.string.overlay_tile_hint),
+                fontSize = 11.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
 
@@ -868,5 +937,16 @@ private fun openAppNotificationSettings(context: Context) {
         } catch (e: Exception) {
             e.printStackTrace()
         }
+    }
+}
+
+/** The system's "Display over other apps" page for this app. */
+private fun openOverlayPermissionPage(context: Context) {
+    try {
+        context.startActivity(
+            Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, "package:${context.packageName}".toUri())
+        )
+    } catch (e: android.content.ActivityNotFoundException) {
+        context.startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION))
     }
 }

@@ -134,6 +134,8 @@ class FloatingFigureWindow(
 
     // ---- building ----
 
+    // The touch listener hands a tap to performClick, so accessibility services see the click.
+    @SuppressLint("ClickableViewAccessibility")
     private fun buildCard(readings: List<QuickMetricReading>, black: Boolean): LinearLayout {
         val card = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
@@ -305,7 +307,6 @@ class FloatingFigureWindow(
 
     // A tap goes through performClick, so accessibility services see the click; the
     // long press and the drag are the touch listener's own.
-    @SuppressLint("ClickableViewAccessibility")
     private fun onTouch(event: MotionEvent): Boolean {
         val card = root ?: return false
         val lp = params ?: return false

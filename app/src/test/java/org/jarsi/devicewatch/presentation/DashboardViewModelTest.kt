@@ -782,6 +782,125 @@ class DashboardViewModelTest {
         }
 
     @Test
+    fun `turning the card on with nothing chosen stores the default figures and tells the monitor`() =
+        runTest(dispatcher) {
+            val settings = FakeAppSettingsRepository()
+            val relay = FakeMonitorServiceRelay()
+            val viewModel = buildViewModel(settings = settings, relay = relay)
+
+            viewModel.onOverlayShownChange(true, permission = true)
+
+            assertThat(settings.overlayShown()).isTrue()
+            assertThat(settings.overlayMetrics()).containsExactly(QuickMetric.BATTERY_TEMP, QuickMetric.BATTERY_POWER)
+            assertThat(relay.overlayChanges).isEqualTo(1)
+            assertThat(viewModel.uiState.value.overlayShown).isTrue()
+            assertThat(viewModel.uiState.value.overlayMetrics)
+                .containsExactly(QuickMetric.BATTERY_TEMP, QuickMetric.BATTERY_POWER)
+
+            viewModel.onOverlayShownChange(false, permission = true)
+
+            assertThat(settings.overlayShown()).isFalse()
+            assertThat(viewModel.uiState.value.overlayShown).isFalse()
+            assertThat(relay.overlayChanges).isEqualTo(2)
+        }
+
+    @Test
+    fun `turning the card on without the permission leaves it off`() =
+        runTest(dispatcher) {
+            val settings = FakeAppSettingsRepository()
+            val relay = FakeMonitorServiceRelay()
+            val viewModel = buildViewModel(settings = settings, relay = relay)
+
+            viewModel.onOverlayShownChange(true, permission = false)
+
+            assertThat(settings.overlayShown()).isFalse()
+            assertThat(viewModel.uiState.value.overlayShown).isFalse()
+            assertThat(relay.overlayChanges).isEqualTo(0)
+        }
+
+    @Test
+    fun `a fourth card figure is not stored`() =
+        runTest(dispatcher) {
+            val settings = FakeAppSettingsRepository()
+            val relay = FakeMonitorServiceRelay()
+            val viewModel = buildViewModel(settings = settings, relay = relay)
+            viewModel.onOverlayMetricToggle(QuickMetric.BATTERY, true)
+            viewModel.onOverlayMetricToggle(QuickMetric.CPU_LOAD, true)
+            viewModel.onOverlayMetricToggle(QuickMetric.MEMORY, true)
+            assertThat(relay.overlayChanges).isEqualTo(3)
+
+            viewModel.onOverlayMetricToggle(QuickMetric.STORAGE, true)
+
+            assertThat(settings.overlayMetrics()).containsExactly(QuickMetric.BATTERY, QuickMetric.CPU_LOAD, QuickMetric.MEMORY)
+            assertThat(viewModel.uiState.value.overlayMetrics)
+                .containsExactly(QuickMetric.BATTERY, QuickMetric.CPU_LOAD, QuickMetric.MEMORY)
+            assertThat(relay.overlayChanges).isEqualTo(3)
+
+            viewModel.onOverlayMetricToggle(QuickMetric.CPU_LOAD, false)
+
+            assertThat(settings.overlayMetrics()).containsExactly(QuickMetric.BATTERY, QuickMetric.MEMORY)
+            assertThat(relay.overlayChanges).isEqualTo(4)
+        }
+
+    @Test
+    fun `permission found on return turns a pending switch into a shown card`() =
+        runTest(dispatcher) {
+            val settings = FakeAppSettingsRepository()
+            val relay = FakeMonitorServiceRelay()
+            val viewModel = buildViewModel(settings = settings, relay = relay)
+            viewModel.onOverlayShownChange(true, permission = false)
+            assertThat(viewModel.uiState.value.overlayPermission).isFalse()
+
+            viewModel.onOverlayPermissionChecked(true)
+
+            assertThat(viewModel.uiState.value.overlayPermission).isTrue()
+            assertThat(settings.overlayShown()).isTrue()
+            assertThat(settings.overlayMetrics()).containsExactly(QuickMetric.BATTERY_TEMP, QuickMetric.BATTERY_POWER)
+            assertThat(relay.overlayChanges).isEqualTo(1)
+            assertThat(viewModel.uiState.value.overlayShown).isTrue()
+
+            // Checked again on a later return: nothing more happens.
+            viewModel.onOverlayPermissionChecked(true)
+            assertThat(relay.overlayChanges).isEqualTo(1)
+        }
+
+    @Test
+    fun `permission still missing on return leaves the card off, and a lost permission shows it off`() =
+        runTest(dispatcher) {
+            val settings = FakeAppSettingsRepository()
+            val relay = FakeMonitorServiceRelay()
+            val viewModel = buildViewModel(settings = settings, relay = relay)
+            viewModel.onOverlayShownChange(true, permission = false)
+
+            viewModel.onOverlayPermissionChecked(false)
+
+            assertThat(settings.overlayShown()).isFalse()
+            assertThat(viewModel.uiState.value.overlayShown).isFalse()
+            assertThat(relay.overlayChanges).isEqualTo(0)
+
+            // The card was on; the permission was taken away in system settings and the monitor turned it off.
+            viewModel.onOverlayShownChange(true, permission = true)
+            settings.setOverlayShown(false)
+            viewModel.onOverlayPermissionChecked(false)
+
+            assertThat(viewModel.uiState.value.overlayShown).isFalse()
+            assertThat(viewModel.uiState.value.overlayPermission).isFalse()
+        }
+
+    @Test
+    fun `the card's settings show from the start`() =
+        runTest(dispatcher) {
+            val settings = FakeAppSettingsRepository()
+            settings.setOverlayShown(true)
+            settings.setOverlayMetrics(setOf(QuickMetric.UPTIME))
+
+            val viewModel = buildViewModel(settings = settings)
+
+            assertThat(viewModel.uiState.value.overlayShown).isTrue()
+            assertThat(viewModel.uiState.value.overlayMetrics).containsExactly(QuickMetric.UPTIME)
+        }
+
+    @Test
     fun `the chosen notification figures show from the start`() =
         runTest(dispatcher) {
             val settings = FakeAppSettingsRepository()
