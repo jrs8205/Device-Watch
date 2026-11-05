@@ -3,7 +3,8 @@ Laitevahti on Android-laitemonitori, jossa on kotinäytön widget, sovelluskohta
 Ominaisuudet:
 
 * Muunneltava kotinäytön widget: akku, muisti, suoritin, tallennustila, Wi-Fi, mobiiliverkko, datankäyttö, käyttöaika, päivän ruutuaika ja viimeisin päivityshetki; lisäksi pieni 2×2-widget datalukujen jaksomerkinnöillä ja 1×1-widget yhdellä valitulla luvulla
-* Pika-asetusten painikkeet ja ilmoituksen elävät luvut: akku, lämpötilat, data tänään, käyntiaika, suoritin, muisti ja tallennus
+* Pika-asetusten painikkeet ja ilmoituksen elävät luvut: akku, akun teho, lämpötilat, data tänään, käyntiaika, suoritin, muisti ja tallennus
+* Kelluva luku: pieni kortti 1–3 näistä luvuista muiden sovellusten, myös koko näytön pelien ja videoiden päällä, esiin ja pois pika-asetuksista
 * Datalaskurit kalenteripäivittäin tai kuukauden laskutusjaksoittain valittavalla alkupäivällä
 * Välilehtinäkymä: Etusivu (akkurengas, käyttölaskurit, järjestelmämittarit ja verkkoliikennemittari), Sovellukset (käyttötilastot), Laite (laitteisto-, SIM-, Wi-Fi-, kamera- ja äänitiedot) ja Asetukset
 * Ruutuaika-donitsi eniten käytetyistä sovelluksista, suurimmat datankuluttajat ja viimeksi avatut -lista sovellusten poistolla

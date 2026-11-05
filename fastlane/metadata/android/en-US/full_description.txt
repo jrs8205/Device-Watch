@@ -3,7 +3,8 @@ Device Watch is an Android device monitor with a home-screen widget, per-app usa
 Features:
 
 * Resizable home-screen widget: battery, memory, CPU, storage, Wi-Fi, mobile network, data usage, uptime, today's screen time and last update time; compact 2×2 widget with data-period labels; 1×1 widget with one figure of your choice
-* Quick Settings tiles and live notification figures of your choice: battery, temperatures, data today, uptime, CPU load, memory, storage
+* Quick Settings tiles and live notification figures of your choice: battery, battery power, temperatures, data today, uptime, CPU load, memory, storage
+* Floating figure: a small card with one to three of those figures over other apps, full-screen games and video included, brought up and taken down from Quick Settings
 * Data counters per calendar day or per one-month billing cycle with a configurable start day
 * Tabbed dashboard: Home (live battery ring, usage counters, system meters and live network traffic), Apps (usage insights), Device (hardware, SIM, Wi-Fi, camera and audio details) and Settings
 * Screen-time donut of your most-used apps, top data consumers and a last-opened list with per-app uninstall

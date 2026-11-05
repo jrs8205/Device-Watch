@@ -1,0 +1,2 @@
+• Kelluva luku: pieni kortti 1–3 valitsemallasi luvulla muiden sovellusten, myös koko näytön pelien ja videoiden päällä; esiin ja pois pika-asetusten Kelluva luku -painikkeella, raahattavissa, pitkä painallus piilottaa; vaatii Näytä muiden sovellusten päällä -luvan, joka kysytään vasta kytkettäessä (GitHub #2)
+• Akun teho yhdeksäntenä lukuna painikkeisiin, Yksi luku -widgetiin, ilmoitukseen ja korttiin: lataus- tai purkuteho watteina

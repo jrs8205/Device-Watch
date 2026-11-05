@@ -1,0 +1,2 @@
+• Floating figure: a small card with one to three figures of your choice over other apps, full-screen games and video included; brought up and taken down with the Floating figure tile in Quick Settings, dragged anywhere, a long press hides it; needs the Display over other apps permission, asked for when you switch it on (GitHub #2)
+• Battery power as a ninth figure on the tiles, the single figure widget, the notification and the card: the charging or discharging rate in watts

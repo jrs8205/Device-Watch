@@ -219,8 +219,8 @@ Release builds are minified with R8 and resource shrinking. The release APK is u
 
 ## Testing
 
-1126 JVM unit tests (JUnit 4 + Truth; Robolectric only for the Glance render, notification, backup-rule
-and settings-store tests) cover the pure logic behind every screen, service and widget:
+1175 JVM unit tests (JUnit 4 + Truth; Robolectric only for the Glance render, notification, backup-rule,
+settings-store and floating-card window tests) cover the pure logic behind every screen, service and widget:
 
 ```powershell
 .\gradlew.bat :app:testDebugUnitTest
