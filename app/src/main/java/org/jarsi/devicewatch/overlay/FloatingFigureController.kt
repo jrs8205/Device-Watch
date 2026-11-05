@@ -31,6 +31,13 @@ class FloatingFigureController(
     private val mainHandler: Handler,
     private val isScreenOn: () -> Boolean,
     private val hasPermission: () -> Boolean = { Settings.canDrawOverlays(context) },
+    /**
+     * Whether the app's own screensaver is up right now. The dreaming broadcasts are
+     * not sticky, so a monitor started in the middle of a screensaver would not hear
+     * of it; a third-party screensaver has no public state to ask and is known only
+     * from its broadcasts.
+     */
+    private val isDreaming: () -> Boolean = { false },
 ) {
     private val mutex = Mutex()
     private var lastStats: SystemStats? = null
@@ -41,8 +48,10 @@ class FloatingFigureController(
     private var shownBlack: Boolean? = null
     private var destroyed = false
 
-    /** The screensaver is running: the device stays interactive, but the card must not sit on it. */
-    @Volatile private var dreaming = false
+    /** A screensaver's start was broadcast and its end not yet: the device stays interactive, but the card must not sit on it. */
+    @Volatile private var dreamingBroadcast = false
+
+    private fun dreaming(): Boolean = dreamingBroadcast || isDreaming()
 
     /** Shows [stats] on the card when it is on and allowed; hides or turns it off otherwise. */
     suspend fun refresh(stats: SystemStats) = mutex.withLock {
@@ -63,7 +72,7 @@ class FloatingFigureController(
 
     /** A screensaver starting takes the card down at once; its end is followed by a reading. */
     fun onDreamingChanged(on: Boolean) {
-        dreaming = on
+        dreamingBroadcast = on
         if (on) hideOnMain()
     }
 
@@ -78,7 +87,7 @@ class FloatingFigureController(
     }
 
     private suspend fun apply(stats: SystemStats) {
-        when (overlayAction(appSettings.overlayShown(), hasPermission(), isScreenOn(), dreaming)) {
+        when (overlayAction(appSettings.overlayShown(), hasPermission(), isScreenOn(), dreaming())) {
             OverlayAction.TURN_OFF -> {
                 appSettings.setOverlayShown(false)
                 hideOnMain()
@@ -91,7 +100,7 @@ class FloatingFigureController(
                 mainHandler.post {
                     // A hide (×, long press, screen off, destroy) that landed while this reading was
                     // on its way wins: the card must not come back for a cycle after it was dismissed.
-                    if (destroyed || dreaming || !appSettings.overlayShown() || !isScreenOn()) return@post
+                    if (destroyed || dreaming() || !appSettings.overlayShown() || !isScreenOn()) return@post
                     try {
                         val w = window()
                         if (w.isShowing && landscape == shownLandscape && black == shownBlack) {

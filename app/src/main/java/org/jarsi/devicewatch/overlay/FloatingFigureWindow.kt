@@ -190,11 +190,14 @@ class FloatingFigureWindow(
                 ellipsize = android.text.TextUtils.TruncateAt.END
                 gravity = Gravity.CENTER_HORIZONTAL
             }
+            // Explicit wrap-content again (external review round 2): a text given the
+            // column's match-parent width is not re-measured when it grows by a character
+            // at the same height, and ends in an ellipsis instead of widening the card.
             val figure = LinearLayout(context).apply {
                 orientation = LinearLayout.VERTICAL
                 gravity = Gravity.CENTER_HORIZONTAL
-                addView(value)
-                addView(label)
+                addView(value, wrapContent())
+                addView(label, wrapContent())
             }
             val lp = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
             if (index > 0) {
@@ -230,6 +233,9 @@ class FloatingFigureWindow(
         bind(readings)
         return card
     }
+
+    private fun wrapContent() =
+        LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
 
     private fun button(iconRes: Int, descriptionRes: Int, onClick: () -> Unit): ImageButton =
         ImageButton(context).apply {

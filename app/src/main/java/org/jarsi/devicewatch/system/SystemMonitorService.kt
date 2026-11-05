@@ -91,6 +91,8 @@ class SystemMonitorService : Service() {
             quickStats = quickStats,
             mainHandler = Handler(Looper.getMainLooper()),
             isScreenOn = { isScreenOn },
+            // Same process: a monitor restarted under the app's own screensaver keeps the card down.
+            isDreaming = { MonitorDreamService.isDreaming },
         )
     }
 
