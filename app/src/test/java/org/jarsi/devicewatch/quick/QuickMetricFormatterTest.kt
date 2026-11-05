@@ -1,6 +1,7 @@
 package org.jarsi.devicewatch.quick
 
 import com.google.common.truth.Truth.assertThat
+import org.jarsi.devicewatch.data.ChargeSource
 import org.jarsi.devicewatch.data.DataToday
 import org.jarsi.devicewatch.data.QuickMetric
 import org.jarsi.devicewatch.data.QuickMetric.BATTERY
@@ -106,6 +107,24 @@ class QuickMetricFormatterTest {
         val r = read(BATTERY_POWER, quickStats(batteryVoltage = 4.4, batteryCurrentNowRaw = -2_000_000, batteryCharging = false))
         assertThat(r.value).isEqualTo("8,8 W")
         assertThat(r.detail).isEqualTo("purkaa")
+    }
+
+    @Test
+    fun `battery power held on the charger shows the status word and no rescaled trickle`() {
+        // Full, or held at a charge limit: plugged in, not charging, a few milliamps flowing.
+        val held = quickStats(
+            batteryVoltage = 4.35, batteryCurrentNowRaw = 3000, batteryCharging = false,
+            chargeSource = ChargeSource.AC, batteryStatus = "Täynnä",
+        )
+        val r = read(BATTERY_POWER, held)
+        assertThat(r.value).isEqualTo("0,0 W")
+        assertThat(r.detail).isEqualTo("Täynnä")
+        assertThat(r.available).isTrue()
+        assertThat(iconText(BATTERY_POWER, held)).isEqualTo("0,0W")
+        // Plugged in, not charging, and no current reading at all.
+        val none = quickStats(batteryVoltage = 4.35, chargeSource = ChargeSource.USB, batteryStatus = "Täynnä")
+        assertThat(read(BATTERY_POWER, none).available).isFalse()
+        assertThat(iconText(BATTERY_POWER, none)).isNull()
     }
 
     @Test

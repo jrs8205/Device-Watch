@@ -1008,7 +1008,7 @@
     <string name="overlay_grant">Anna lupa</string>
     <string name="overlay_max_figures">Enintään kolme lukua</string>
     <string name="overlay_tile_hint">Lisää Kelluva luku -painike pika-asetusten muokkaustilasta.</string>
-    <string name="single_widget_description">Yksi valitsemasi luku: akku, lämpötila, data tänään, käyntiaika, suoritin, muisti tai tallennustila.</string>
+    <string name="single_widget_description">Yksi valitsemasi luku: akku, lämpötila, data tänään, käyntiaika, suoritin, muisti, tallennustila tai akun teho.</string>
     <string name="single_widget_pick_title">Valitse luku</string>
     <string name="monitor_live_channel_description">Asetuksissa valitut luvut, päivitetään näytön ollessa päällä.</string>
 </resources>

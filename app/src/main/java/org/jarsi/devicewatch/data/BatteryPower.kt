@@ -21,3 +21,15 @@ fun batteryPowerWatts(currentRaw: Int, voltageVolts: Double): Double? {
     val wattsAsMilliAmps = wattsAsMicroAmps * 1000.0
     return wattsAsMilliAmps.takeIf { it in plausibleWatts }
 }
+
+/**
+ * The battery's power while the phone is plugged in but not charging: full, or held
+ * at a charge limit. The current is then near zero, so the reading is taken as µA
+ * only (a few thousand µA must not be rescaled into a dozen watts) and zero is a
+ * real value. Null for a missing reading, no voltage, or an implausible size.
+ */
+fun batteryTricklePowerWatts(currentRaw: Int, voltageVolts: Double): Double? {
+    if (currentRaw == Int.MIN_VALUE || voltageVolts <= 0.0) return null
+    val watts = abs(currentRaw.toDouble()) / 1_000_000.0 * voltageVolts
+    return watts.takeIf { it <= 150.0 }
+}

@@ -1,5 +1,6 @@
 package org.jarsi.devicewatch.quick
 
+import org.jarsi.devicewatch.data.ChargeSource
 import org.jarsi.devicewatch.data.SystemStats
 import org.jarsi.devicewatch.data.UNAVAILABLE_DOUBLE
 import org.jarsi.devicewatch.data.UNAVAILABLE_INT
@@ -13,6 +14,7 @@ internal fun quickStats(
     batteryVoltage: Double = UNAVAILABLE_DOUBLE,
     batteryCurrentNowRaw: Int = Int.MIN_VALUE,
     batteryCharging: Boolean = false,
+    chargeSource: ChargeSource = ChargeSource.NONE,
     cpuTemp: Double = UNAVAILABLE_DOUBLE,
     cpuLoadPercent: Int = UNAVAILABLE_INT,
     usedRamGb: Double = UNAVAILABLE_DOUBLE,
@@ -69,4 +71,5 @@ internal fun quickStats(
     uptimeText = UNAVAILABLE_TEXT,
     uptimeMillis = uptimeMillis,
     readAtElapsedMillis = readAtElapsedMillis,
+    chargeSource = chargeSource,
 )

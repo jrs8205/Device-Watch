@@ -26,9 +26,13 @@ val OVERLAY_DEFAULT_POSITION = OverlayPosition(1f, 0f)
 /** What the card shows when nothing has been chosen: the figures a gamer asked for (#2). */
 fun overlayDefaultMetrics(): Set<QuickMetric> = setOf(QuickMetric.BATTERY_TEMP, QuickMetric.BATTERY_POWER)
 
-/** A selection after one switch is flipped; a fourth figure is refused and the selection kept. */
+/**
+ * A selection after one switch is flipped: a fourth figure is refused, and so is
+ * taking the last one away, so the card always has something to show and the rows
+ * always agree with it.
+ */
 fun limitOverlaySelection(current: Set<QuickMetric>, metric: QuickMetric, enabled: Boolean): Set<QuickMetric> = when {
-    !enabled -> current - metric
+    !enabled -> if (current.size <= 1 && metric in current) current else current - metric
     metric in current -> current
     current.size >= OVERLAY_MAX_FIGURES -> current
     else -> current + metric
@@ -37,6 +41,14 @@ fun limitOverlaySelection(current: Set<QuickMetric>, metric: QuickMetric, enable
 /** The figures to show: the chosen ones, or the default pair when none is chosen. */
 fun overlayMetricsOrDefault(chosen: Set<QuickMetric>): Set<QuickMetric> =
     if (chosen.isEmpty()) overlayDefaultMetrics() else chosen
+
+/**
+ * Where to show the card in an orientation: the place it was dragged to there, else
+ * the place it was dragged to in the other orientation (the same corner, so it does
+ * not jump on the first rotation), else nowhere stored yet.
+ */
+fun overlayPositionChoice(landscape: Boolean, portrait: OverlayPosition?, landscapePosition: OverlayPosition?): OverlayPosition? =
+    if (landscape) landscapePosition ?: portrait else portrait ?: landscapePosition
 
 enum class OverlayLayout { ROW, COLUMN }
 

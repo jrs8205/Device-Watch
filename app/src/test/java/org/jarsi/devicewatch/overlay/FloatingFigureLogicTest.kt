@@ -20,6 +20,24 @@ class FloatingFigureLogicTest {
     }
 
     @Test
+    fun `the last figure cannot be switched off`() {
+        // Review: an empty stored selection made Settings and the card disagree.
+        assertThat(limitOverlaySelection(setOf(MEMORY), MEMORY, false)).containsExactly(MEMORY)
+        assertThat(limitOverlaySelection(setOf(MEMORY, BATTERY), MEMORY, false)).containsExactly(BATTERY)
+    }
+
+    @Test
+    fun `a card never dragged in this orientation keeps the other orientation's place`() {
+        // Review: the card jumped to the default corner on the first rotation after a drag.
+        val portrait = OverlayPosition(0f, 1f)
+        val landscape = OverlayPosition(0.5f, 0.5f)
+        assertThat(overlayPositionChoice(landscape = true, portrait = portrait, landscapePosition = null)).isEqualTo(portrait)
+        assertThat(overlayPositionChoice(landscape = true, portrait = portrait, landscapePosition = landscape)).isEqualTo(landscape)
+        assertThat(overlayPositionChoice(landscape = false, portrait = null, landscapePosition = landscape)).isEqualTo(landscape)
+        assertThat(overlayPositionChoice(landscape = false, portrait = null, landscapePosition = null)).isNull()
+    }
+
+    @Test
     fun `nothing chosen means the default pair`() {
         assertThat(overlayMetricsOrDefault(emptySet())).containsExactly(BATTERY_TEMP, BATTERY_POWER)
         assertThat(overlayMetricsOrDefault(setOf(MEMORY))).containsExactly(MEMORY)

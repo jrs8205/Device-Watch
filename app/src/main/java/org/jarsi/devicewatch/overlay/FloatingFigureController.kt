@@ -39,6 +39,7 @@ class FloatingFigureController(
     private var window: FloatingFigureWindow? = null
     private var shownLandscape: Boolean? = null
     private var shownBlack: Boolean? = null
+    private var destroyed = false
 
     /** Shows [stats] on the card when it is on and allowed; hides or turns it off otherwise. */
     suspend fun refresh(stats: SystemStats) = mutex.withLock {
@@ -63,6 +64,7 @@ class FloatingFigureController(
     }
 
     fun destroy() {
+        mainHandler.post { destroyed = true }
         hideOnMain()
     }
 
@@ -78,13 +80,27 @@ class FloatingFigureController(
                 val landscape = context.resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
                 val black = WidgetAppearanceSettings.blackBackground(context) == true
                 mainHandler.post {
-                    val w = window()
-                    if (w.isShowing && landscape == shownLandscape && black == shownBlack) {
-                        w.update(readings)
-                    } else {
-                        w.show(readings, appSettings.overlayPosition(landscape), landscape, black)
-                        shownLandscape = landscape
-                        shownBlack = black
+                    // A hide (×, long press, screen off, destroy) that landed while this reading was
+                    // on its way wins: the card must not come back for a cycle after it was dismissed.
+                    if (destroyed || !appSettings.overlayShown() || !isScreenOn()) return@post
+                    try {
+                        val w = window()
+                        if (w.isShowing && landscape == shownLandscape && black == shownBlack) {
+                            w.update(readings)
+                        } else {
+                            val position = overlayPositionChoice(
+                                landscape,
+                                portrait = appSettings.overlayPosition(landscape = false),
+                                landscapePosition = appSettings.overlayPosition(landscape = true),
+                            )
+                            w.show(readings, position, landscape, black)
+                            shownLandscape = landscape
+                            shownBlack = black
+                        }
+                    } catch (e: RuntimeException) {
+                        // Whatever the window manager refused: the card goes, the monitor stays.
+                        e.printStackTrace()
+                        turnOff()
                     }
                 }
             }

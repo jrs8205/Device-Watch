@@ -2,6 +2,7 @@ package org.jarsi.devicewatch.overlay
 
 import com.google.common.truth.Truth.assertThat
 import org.junit.Test
+import java.util.Locale
 
 /** The floating card's stored place: "x,y" as shares of the screen, so it survives a change of screen size. */
 class OverlayPositionTest {
@@ -19,6 +20,19 @@ class OverlayPositionTest {
         assertThat(overlayPositionOf("a,b")).isNull()
         assertThat(overlayPositionOf("1.5,0")).isNull()
         assertThat(overlayPositionOf("0.5")).isNull()
+    }
+
+    @Test
+    fun `the stored form uses a dot whatever the phone's language`() {
+        val saved = Locale.getDefault()
+        Locale.setDefault(Locale.forLanguageTag("fi-FI"))
+        try {
+            val stored = overlayPositionToStored(OverlayPosition(0.25f, 0.5f))
+            assertThat(stored).isEqualTo("0.2500,0.5000")
+            assertThat(overlayPositionOf(stored)).isEqualTo(OverlayPosition(0.25f, 0.5f))
+        } finally {
+            Locale.setDefault(saved)
+        }
     }
 
     @Test

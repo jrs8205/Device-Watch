@@ -11,6 +11,7 @@ import android.service.quicksettings.TileService
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import dagger.hilt.android.EntryPointAccessors
+import org.jarsi.devicewatch.MainActivity
 import org.jarsi.devicewatch.R
 import org.jarsi.devicewatch.quick.QuickEntryPoint
 import org.jarsi.devicewatch.system.SystemMonitorService
@@ -42,11 +43,20 @@ class FloatingFigureTileService : TileService() {
             openPermissionPage()
             return
         }
-        appSettings.setOverlayShown(!appSettings.overlayShown())
-        ContextCompat.startForegroundService(
-            this,
-            Intent(this, SystemMonitorService::class.java).setAction(SystemMonitorService.ACTION_OVERLAY_CHANGED),
-        )
+        val shown = !appSettings.overlayShown()
+        appSettings.setOverlayShown(shown)
+        try {
+            ContextCompat.startForegroundService(
+                this,
+                Intent(this, SystemMonitorService::class.java).setAction(SystemMonitorService.ACTION_OVERLAY_CHANGED),
+            )
+        } catch (e: Exception) {
+            // The monitor was not running and Android 15+ let a tile start no foreground
+            // service: the app in front may, so it is opened and starts the monitor, which
+            // shows the card from the stored setting.
+            e.printStackTrace()
+            if (shown) collapseInto(MainActivity.openOverviewIntent(this), REQUEST_OPEN_APP)
+        }
         render()
     }
 
@@ -62,27 +72,37 @@ class FloatingFigureTileService : TileService() {
         tile.updateTile()
     }
 
-    // The Intent form only runs before Android 14, where it is the only form there is.
-    @SuppressLint("StartActivityAndCollapseDeprecated")
     private fun openPermissionPage() {
         val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, "package:$packageName".toUri())
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            startActivityAndCollapse(
-                PendingIntent.getActivity(
-                    this,
-                    REQUEST_PERMISSION_PAGE,
-                    intent,
-                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        collapseInto(intent, REQUEST_PERMISSION_PAGE)
+    }
+
+    // The Intent form only runs before Android 14, where it is the only form there is.
+    @SuppressLint("StartActivityAndCollapseDeprecated")
+    private fun collapseInto(intent: Intent, requestCode: Int) {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                startActivityAndCollapse(
+                    PendingIntent.getActivity(
+                        this,
+                        requestCode,
+                        intent,
+                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+                    )
                 )
-            )
-        } else {
-            @Suppress("DEPRECATION") // the Intent form is the only one before Android 14
-            startActivityAndCollapse(intent)
+            } else {
+                @Suppress("DEPRECATION") // the Intent form is the only one before Android 14
+                startActivityAndCollapse(intent)
+            }
+        } catch (e: Exception) {
+            // No activity for the page on this phone: nothing to do, and never a crash from a tile.
+            e.printStackTrace()
         }
     }
 
     private companion object {
         const val REQUEST_PERMISSION_PAGE = 1104
+        const val REQUEST_OPEN_APP = 1105
     }
 }

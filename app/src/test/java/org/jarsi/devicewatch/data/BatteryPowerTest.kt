@@ -28,6 +28,18 @@ class BatteryPowerTest {
     }
 
     @Test
+    fun `a trickle while plugged in is read as microamps only`() {
+        // Review: held at a charge limit or full on the charger the current is near zero, and the
+        // milliamp rescale turned 3000 µA into 13 W.
+        assertThat(batteryTricklePowerWatts(3000, 4.35)!!).isWithin(0.0001).of(0.01305)
+        assertThat(batteryTricklePowerWatts(0, 4.4)).isEqualTo(0.0)
+        assertThat(batteryTricklePowerWatts(-250_000, 4.0)!!).isWithin(0.001).of(1.0)
+        assertThat(batteryTricklePowerWatts(Int.MIN_VALUE, 4.4)).isNull()
+        assertThat(batteryTricklePowerWatts(3000, 0.0)).isNull()
+        assertThat(batteryTricklePowerWatts(60_000_000, 5.0)).isNull() // 300 W
+    }
+
+    @Test
     fun `unavailable or implausible give null`() {
         assertThat(batteryPowerWatts(0, 4.4)).isNull()
         assertThat(batteryPowerWatts(Int.MIN_VALUE, 4.4)).isNull()

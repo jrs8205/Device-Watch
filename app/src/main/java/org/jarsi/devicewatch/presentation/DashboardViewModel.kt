@@ -166,7 +166,8 @@ class DashboardViewModel @Inject constructor(
                 notificationMetrics = settings.notificationMetrics(),
                 tileValueIcons = settings.tileValueIcons(),
                 overlayShown = settings.overlayShown(),
-                overlayMetrics = settings.overlayMetrics(),
+                // The rows show what the card shows: the default pair until something is stored.
+                overlayMetrics = overlayMetricsOrDefault(settings.overlayMetrics()),
             )
         }
         viewModelScope.launch {
@@ -464,12 +465,13 @@ class DashboardViewModel @Inject constructor(
         if (enabled && chosen != settings.overlayMetrics()) settings.setOverlayMetrics(chosen)
         settings.setOverlayShown(enabled)
         monitorRelay.overlayChanged()
-        _uiState.update { it.copy(overlayShown = enabled, overlayMetrics = settings.overlayMetrics()) }
+        _uiState.update { it.copy(overlayShown = enabled, overlayMetrics = chosen) }
     }
 
-    /** A figure on the card switched on or off; a fourth is refused and nothing changes. */
+    /** A figure on the card switched on or off; a fourth, or taking the last away, is refused and nothing changes. */
     fun onOverlayMetricToggle(metric: QuickMetric, enabled: Boolean) {
-        val current = settings.overlayMetrics()
+        // Toggled against what the card shows, so a tile-first user builds on the default pair.
+        val current = overlayMetricsOrDefault(settings.overlayMetrics())
         val chosen = limitOverlaySelection(current, metric, enabled)
         if (chosen == current) return
         settings.setOverlayMetrics(chosen)

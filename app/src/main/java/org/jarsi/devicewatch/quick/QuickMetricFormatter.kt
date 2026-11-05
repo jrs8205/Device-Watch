@@ -1,10 +1,12 @@
 package org.jarsi.devicewatch.quick
 
+import org.jarsi.devicewatch.data.ChargeSource
 import org.jarsi.devicewatch.data.DataToday
 import org.jarsi.devicewatch.data.QuickMetric
 import org.jarsi.devicewatch.data.SystemStats
 import org.jarsi.devicewatch.data.UNAVAILABLE_TEXT
 import org.jarsi.devicewatch.data.batteryPowerWatts
+import org.jarsi.devicewatch.data.batteryTricklePowerWatts
 import org.jarsi.devicewatch.widget.compactDataAmountText
 import org.jarsi.devicewatch.widget.formatDouble
 import org.jarsi.devicewatch.widget.percentText
@@ -91,12 +93,26 @@ object QuickMetricFormatter {
                 if (stats.usedStorageGb < 0.0 || stats.totalStorageGb <= 0.0) missing()
                 else shown(String.format(Locale.getDefault(), "%.0f / %.0f GB", stats.usedStorageGb, stats.totalStorageGb))
             // Charging or discharging comes from the battery status: the sign of the current differs by maker.
-            QuickMetric.BATTERY_POWER ->
-                batteryPowerWatts(stats.batteryCurrentNowRaw, stats.batteryVoltage)
-                    ?.let { shown(formatDouble(it, 1, " W"), if (stats.batteryCharging) labels.charging else labels.discharging) }
-                    ?: missing()
+            QuickMetric.BATTERY_POWER -> batteryPowerWattsOf(stats)?.let { watts ->
+                val word = when {
+                    stats.batteryCharging -> labels.charging
+                    // Plugged in, not charging (full, or held at a limit): the status says which.
+                    heldOnCharger(stats) -> stats.batteryStatus.takeIf { it != UNAVAILABLE_TEXT }
+                    else -> labels.discharging
+                }
+                shown(formatDouble(watts, 1, " W"), word)
+            } ?: missing()
         }
     }
+
+    /** Plugged in but not charging: full, or held at a charge limit. */
+    private fun heldOnCharger(stats: SystemStats): Boolean =
+        stats.chargeSource != ChargeSource.NONE && !stats.batteryCharging
+
+    /** The battery's power; held on the charger a trickle is read as µA only, never rescaled. */
+    private fun batteryPowerWattsOf(stats: SystemStats): Double? =
+        if (heldOnCharger(stats)) batteryTricklePowerWatts(stats.batteryCurrentNowRaw, stats.batteryVoltage)
+        else batteryPowerWatts(stats.batteryCurrentNowRaw, stats.batteryVoltage)
 
     /**
      * The figure at its shortest, drawn in place of a small tile's icon: a small
@@ -120,7 +136,7 @@ object QuickMetricFormatter {
             QuickMetric.CPU_LOAD -> stats.cpuLoadPercent.takeIf { it >= 0 }?.let { "$it%" }
             QuickMetric.MEMORY -> sharePercent(stats.usedRamGb, stats.totalRamGb)
             QuickMetric.STORAGE -> sharePercent(stats.usedStorageGb, stats.totalStorageGb)
-            QuickMetric.BATTERY_POWER -> batteryPowerWatts(stats.batteryCurrentNowRaw, stats.batteryVoltage)?.let { watts ->
+            QuickMetric.BATTERY_POWER -> batteryPowerWattsOf(stats)?.let { watts ->
                 if (watts < 9.95) String.format(Locale.getDefault(), "%.1fW", watts)
                 else String.format(Locale.getDefault(), "%.0fW", watts)
             }

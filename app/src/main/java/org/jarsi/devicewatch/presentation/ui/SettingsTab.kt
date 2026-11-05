@@ -946,7 +946,11 @@ private fun openOverlayPermissionPage(context: Context) {
         context.startActivity(
             Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, "package:${context.packageName}".toUri())
         )
-    } catch (e: android.content.ActivityNotFoundException) {
-        context.startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION))
+    } catch (_: Exception) {
+        try {
+            context.startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION))
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 }

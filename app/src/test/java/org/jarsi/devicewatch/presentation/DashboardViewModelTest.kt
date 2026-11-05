@@ -823,23 +823,24 @@ class DashboardViewModelTest {
         runTest(dispatcher) {
             val settings = FakeAppSettingsRepository()
             val relay = FakeMonitorServiceRelay()
+            // One figure stored, so the toggles build on it and not on the default pair.
+            settings.setOverlayMetrics(setOf(QuickMetric.BATTERY))
             val viewModel = buildViewModel(settings = settings, relay = relay)
-            viewModel.onOverlayMetricToggle(QuickMetric.BATTERY, true)
             viewModel.onOverlayMetricToggle(QuickMetric.CPU_LOAD, true)
             viewModel.onOverlayMetricToggle(QuickMetric.MEMORY, true)
-            assertThat(relay.overlayChanges).isEqualTo(3)
+            assertThat(relay.overlayChanges).isEqualTo(2)
 
             viewModel.onOverlayMetricToggle(QuickMetric.STORAGE, true)
 
             assertThat(settings.overlayMetrics()).containsExactly(QuickMetric.BATTERY, QuickMetric.CPU_LOAD, QuickMetric.MEMORY)
             assertThat(viewModel.uiState.value.overlayMetrics)
                 .containsExactly(QuickMetric.BATTERY, QuickMetric.CPU_LOAD, QuickMetric.MEMORY)
-            assertThat(relay.overlayChanges).isEqualTo(3)
+            assertThat(relay.overlayChanges).isEqualTo(2)
 
             viewModel.onOverlayMetricToggle(QuickMetric.CPU_LOAD, false)
 
             assertThat(settings.overlayMetrics()).containsExactly(QuickMetric.BATTERY, QuickMetric.MEMORY)
-            assertThat(relay.overlayChanges).isEqualTo(4)
+            assertThat(relay.overlayChanges).isEqualTo(3)
         }
 
     @Test
@@ -885,6 +886,41 @@ class DashboardViewModelTest {
 
             assertThat(viewModel.uiState.value.overlayShown).isFalse()
             assertThat(viewModel.uiState.value.overlayPermission).isFalse()
+        }
+
+    @Test
+    fun `with nothing stored the rows show the default pair and a toggle builds on it`() =
+        runTest(dispatcher) {
+            // Review: the tile turns the card on without storing figures, and the rows showed none checked.
+            val settings = FakeAppSettingsRepository()
+            settings.setOverlayShown(true)
+            val relay = FakeMonitorServiceRelay()
+            val viewModel = buildViewModel(settings = settings, relay = relay)
+            assertThat(viewModel.uiState.value.overlayMetrics)
+                .containsExactly(QuickMetric.BATTERY_TEMP, QuickMetric.BATTERY_POWER)
+
+            viewModel.onOverlayMetricToggle(QuickMetric.CPU_LOAD, true)
+
+            assertThat(settings.overlayMetrics())
+                .containsExactly(QuickMetric.BATTERY_TEMP, QuickMetric.BATTERY_POWER, QuickMetric.CPU_LOAD)
+            assertThat(viewModel.uiState.value.overlayMetrics)
+                .containsExactly(QuickMetric.BATTERY_TEMP, QuickMetric.BATTERY_POWER, QuickMetric.CPU_LOAD)
+            assertThat(relay.overlayChanges).isEqualTo(1)
+        }
+
+    @Test
+    fun `the last card figure cannot be switched off`() =
+        runTest(dispatcher) {
+            val settings = FakeAppSettingsRepository()
+            settings.setOverlayMetrics(setOf(QuickMetric.UPTIME))
+            val relay = FakeMonitorServiceRelay()
+            val viewModel = buildViewModel(settings = settings, relay = relay)
+
+            viewModel.onOverlayMetricToggle(QuickMetric.UPTIME, false)
+
+            assertThat(settings.overlayMetrics()).containsExactly(QuickMetric.UPTIME)
+            assertThat(viewModel.uiState.value.overlayMetrics).containsExactly(QuickMetric.UPTIME)
+            assertThat(relay.overlayChanges).isEqualTo(0)
         }
 
     @Test
