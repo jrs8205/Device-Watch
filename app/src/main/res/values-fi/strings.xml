@@ -999,6 +999,8 @@
     <string name="overlay_card_description">Kelluva luku</string>
     <string name="overlay_close">Piilota</string>
     <string name="overlay_open_app">Avaa Laitevahti</string>
+    <string name="overlay_tile_label">Kelluva luku</string>
+    <string name="overlay_tile_needs_permission">vaatii luvan</string>
     <string name="single_widget_description">Yksi valitsemasi luku: akku, lämpötila, data tänään, käyntiaika, suoritin, muisti tai tallennustila.</string>
     <string name="single_widget_pick_title">Valitse luku</string>
     <string name="monitor_live_channel_description">Asetuksissa valitut luvut, päivitetään näytön ollessa päällä.</string>
