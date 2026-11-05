@@ -33,6 +33,7 @@ import org.jarsi.devicewatch.data.NotificationStats
 import org.jarsi.devicewatch.data.UsageHistory
 import org.jarsi.devicewatch.data.UsageDayTally
 import org.jarsi.devicewatch.data.UsageTotals
+import org.jarsi.devicewatch.overlay.OverlayPosition
 import org.jarsi.devicewatch.system.MonitorServiceRelay
 import java.time.LocalDate
 
@@ -173,6 +174,12 @@ internal class FakeMonitorServiceRelay : MonitorServiceRelay {
     override fun notificationMetricsChanged() {
         notificationMetricsChanges++
     }
+
+    var overlayChanges = 0
+
+    override fun overlayChanged() {
+        overlayChanges++
+    }
 }
 
 internal class FakeAppSettingsRepository(
@@ -311,6 +318,28 @@ internal class FakeAppSettingsRepository(
 
     override fun setTileValueIcons(enabled: Boolean) {
         valueIcons = enabled
+    }
+
+    private var overlayUp = false
+    private var overlayFigures: Set<QuickMetric> = emptySet()
+    private val overlayPositions = mutableMapOf<Boolean, OverlayPosition>()
+
+    override fun overlayShown(): Boolean = overlayUp
+
+    override fun setOverlayShown(shown: Boolean) {
+        overlayUp = shown
+    }
+
+    override fun overlayMetrics(): Set<QuickMetric> = overlayFigures
+
+    override fun setOverlayMetrics(metrics: Set<QuickMetric>) {
+        overlayFigures = metrics
+    }
+
+    override fun overlayPosition(landscape: Boolean): OverlayPosition? = overlayPositions[landscape]
+
+    override fun setOverlayPosition(landscape: Boolean, position: OverlayPosition) {
+        overlayPositions[landscape] = position
     }
 }
 

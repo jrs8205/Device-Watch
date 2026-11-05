@@ -1,6 +1,7 @@
 package org.jarsi.devicewatch.data
 
 import kotlinx.coroutines.flow.StateFlow
+import org.jarsi.devicewatch.overlay.OverlayPosition
 
 /** Charge-reminder slider bounds; 0 (off) is the only value outside this range. */
 const val CHARGE_LIMIT_MIN = 50
@@ -119,4 +120,19 @@ interface AppSettingsRepository {
     fun tileValueIcons(): Boolean
 
     fun setTileValueIcons(enabled: Boolean)
+
+    /** Whether the floating card is up; off by default, and turned off when its permission goes. */
+    fun overlayShown(): Boolean
+
+    fun setOverlayShown(shown: Boolean)
+
+    /** The figures on the floating card, at most three; none chosen means the default pair. */
+    fun overlayMetrics(): Set<QuickMetric>
+
+    fun setOverlayMetrics(metrics: Set<QuickMetric>)
+
+    /** Where the card was last left in this orientation; null until it has been dragged. */
+    fun overlayPosition(landscape: Boolean): OverlayPosition?
+
+    fun setOverlayPosition(landscape: Boolean, position: OverlayPosition)
 }

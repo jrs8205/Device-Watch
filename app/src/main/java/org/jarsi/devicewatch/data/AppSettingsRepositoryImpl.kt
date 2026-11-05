@@ -6,6 +6,9 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import org.jarsi.devicewatch.overlay.OverlayPosition
+import org.jarsi.devicewatch.overlay.overlayPositionOf
+import org.jarsi.devicewatch.overlay.overlayPositionToStored
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -224,6 +227,30 @@ class AppSettingsRepositoryImpl @Inject constructor(
         prefs.edit().putBoolean(KEY_TILE_VALUE_ICONS, enabled).apply()
     }
 
+    // The card's settings live in app_settings too, so a restored phone brings the card back
+    // the same; the monitor turns it off again if the restored phone lacks the permission.
+    override fun overlayShown(): Boolean = prefs.getBoolean(KEY_OVERLAY_SHOWN, false)
+
+    override fun setOverlayShown(shown: Boolean) {
+        prefs.edit().putBoolean(KEY_OVERLAY_SHOWN, shown).apply()
+    }
+
+    override fun overlayMetrics(): Set<QuickMetric> = quickMetricsOf(prefs.getString(KEY_OVERLAY_METRICS, null))
+
+    override fun setOverlayMetrics(metrics: Set<QuickMetric>) {
+        prefs.edit().putString(KEY_OVERLAY_METRICS, quickMetricsToStored(metrics)).apply()
+    }
+
+    override fun overlayPosition(landscape: Boolean): OverlayPosition? =
+        overlayPositionOf(prefs.getString(overlayPositionKey(landscape), null))
+
+    override fun setOverlayPosition(landscape: Boolean, position: OverlayPosition) {
+        prefs.edit().putString(overlayPositionKey(landscape), overlayPositionToStored(position)).apply()
+    }
+
+    private fun overlayPositionKey(landscape: Boolean): String =
+        if (landscape) KEY_OVERLAY_POSITION_LANDSCAPE else KEY_OVERLAY_POSITION_PORTRAIT
+
     private fun alertKey(prefix: String, alert: HealthAlert): String = "$prefix:${alert.name.lowercase()}"
 
     companion object {
@@ -248,6 +275,10 @@ class AppSettingsRepositoryImpl @Inject constructor(
         const val KEY_ALERT_GENERATION_PREFIX = "alert_generation"
         const val KEY_NOTIFICATION_METRICS = "notification_metrics"
         const val KEY_TILE_VALUE_ICONS = "tile_value_icons"
+        const val KEY_OVERLAY_SHOWN = "overlay_shown"
+        const val KEY_OVERLAY_METRICS = "overlay_metrics"
+        const val KEY_OVERLAY_POSITION_PORTRAIT = "overlay_position_portrait"
+        const val KEY_OVERLAY_POSITION_LANDSCAPE = "overlay_position_landscape"
         const val DEFAULT_CYCLE_START_DAY = 1
     }
 }

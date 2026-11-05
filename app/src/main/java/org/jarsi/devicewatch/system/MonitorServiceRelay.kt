@@ -24,6 +24,9 @@ interface MonitorServiceRelay {
 
     /** The figures chosen for the notification changed; show them, or the silent notification, now. */
     fun notificationMetricsChanged()
+
+    /** The floating card was switched on or off, or its figures changed; bring it in step now. */
+    fun overlayChanged()
 }
 
 /**
@@ -41,6 +44,8 @@ class IntentMonitorServiceRelay @Inject constructor(
     override fun dataQuotaChanged() = send(SystemMonitorService.ACTION_DATA_QUOTA_CHANGED)
 
     override fun notificationMetricsChanged() = send(SystemMonitorService.ACTION_NOTIFICATION_METRICS_CHANGED)
+
+    override fun overlayChanged() = send(SystemMonitorService.ACTION_OVERLAY_CHANGED)
 
     private fun send(action: String) {
         val intent = Intent(context, SystemMonitorService::class.java).setAction(action)

@@ -680,6 +680,7 @@ class SystemMonitorService : Service() {
         const val ACTION_CHARGE_LIMIT_CHANGED = "org.jarsi.devicewatch.action.CHARGE_LIMIT_CHANGED"
         const val ACTION_DATA_QUOTA_CHANGED = "org.jarsi.devicewatch.action.DATA_QUOTA_CHANGED"
         const val ACTION_NOTIFICATION_METRICS_CHANGED = "org.jarsi.devicewatch.action.NOTIFICATION_METRICS_CHANGED"
+        const val ACTION_OVERLAY_CHANGED = "org.jarsi.devicewatch.action.OVERLAY_CHANGED"
         /** From the live notification's delete intent: the user swiped it away. */
         const val ACTION_LIVE_NOTIFICATION_DISMISSED = "org.jarsi.devicewatch.action.LIVE_NOTIFICATION_DISMISSED"
     }
