@@ -53,4 +53,44 @@ class DreamLogicTest {
         assertThat(batteryPowerWatts(60_000_000, 5.0)).isNull() // 300 W — implausible
         assertThat(batteryPowerWatts(2_000_000, 0.0)).isNull() // no voltage reading
     }
+
+    @Test
+    fun `the bolt pulses only while the battery is still filling`() {
+        assertThat(dreamChargeState(STATUS_CHARGING, plugged = true, level = 43))
+            .isEqualTo(DreamChargeState.CHARGING)
+        assertThat(DreamChargeState.CHARGING.pulses).isTrue()
+        assertThat(DreamChargeState.entries.filter { it.pulses }).containsExactly(DreamChargeState.CHARGING)
+    }
+
+    @Test
+    fun `a full battery on the charger is full whatever the status says`() {
+        // Phones go on reporting CHARGING at 100 % for a while before they say FULL.
+        assertThat(dreamChargeState(STATUS_CHARGING, plugged = true, level = 100)).isEqualTo(DreamChargeState.FULL)
+        assertThat(dreamChargeState(STATUS_FULL, plugged = true, level = 100)).isEqualTo(DreamChargeState.FULL)
+        assertThat(dreamChargeState(STATUS_NOT_CHARGING, plugged = true, level = 100)).isEqualTo(DreamChargeState.FULL)
+    }
+
+    @Test
+    fun `plugged in without charging is held, not on battery and not charging`() {
+        // A charge limit, a pause for heat, or a charger too weak to fill the battery.
+        assertThat(dreamChargeState(STATUS_NOT_CHARGING, plugged = true, level = 80)).isEqualTo(DreamChargeState.HELD)
+        assertThat(dreamChargeState(STATUS_FULL, plugged = true, level = 80)).isEqualTo(DreamChargeState.HELD)
+        assertThat(dreamChargeState(STATUS_DISCHARGING, plugged = true, level = 43)).isEqualTo(DreamChargeState.HELD)
+    }
+
+    @Test
+    fun `off the charger is on battery, at a hundred percent too`() {
+        assertThat(dreamChargeState(STATUS_DISCHARGING, plugged = false, level = 43))
+            .isEqualTo(DreamChargeState.ON_BATTERY)
+        assertThat(dreamChargeState(STATUS_DISCHARGING, plugged = false, level = 100))
+            .isEqualTo(DreamChargeState.ON_BATTERY)
+        assertThat(dreamChargeState(-1, plugged = false, level = 50)).isEqualTo(DreamChargeState.ON_BATTERY)
+    }
+
+    private companion object {
+        const val STATUS_CHARGING = android.os.BatteryManager.BATTERY_STATUS_CHARGING
+        const val STATUS_DISCHARGING = android.os.BatteryManager.BATTERY_STATUS_DISCHARGING
+        const val STATUS_NOT_CHARGING = android.os.BatteryManager.BATTERY_STATUS_NOT_CHARGING
+        const val STATUS_FULL = android.os.BatteryManager.BATTERY_STATUS_FULL
+    }
 }

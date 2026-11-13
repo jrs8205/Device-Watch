@@ -127,6 +127,8 @@ dependencies {
     testImplementation(libs.androidx.test.ext.junit)
     testImplementation(libs.androidx.arch.core.testing)
     testImplementation(libs.androidx.glance.appwidget.testing)
+    // Compose layouts measured on the JVM (Robolectric), for text that must fit
+    testImplementation(libs.androidx.compose.ui.test.junit4)
 
     // Instrumented / Compose UI testing
     androidTestImplementation(platform(libs.androidx.compose.bom))

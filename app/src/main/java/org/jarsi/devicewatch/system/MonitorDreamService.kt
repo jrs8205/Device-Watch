@@ -167,7 +167,7 @@ class MonitorDreamService : DreamService(), LifecycleOwner, ViewModelStoreOwner,
 @Composable
 fun ScreensaverContent(context: Context) {
     var batteryLevel by remember { mutableIntStateOf(50) }
-    var isCharging by remember { mutableStateOf(false) }
+    var chargeState by remember { mutableStateOf(DreamChargeState.ON_BATTERY) }
     var batteryTemp by remember { mutableDoubleStateOf(25.6) }
     var batteryVoltage by remember { mutableDoubleStateOf(3.88) }
     var chargeFullAtMs by remember { mutableLongStateOf(-1L) }
@@ -187,12 +187,15 @@ fun ScreensaverContent(context: Context) {
                     batteryLevel = (level * 100) / scale
                 }
 
+                // One state drives the icon, the word, the pulse, the wattage and the estimate, so
+                // they cannot disagree: only a battery that is still filling counts as charging.
                 val status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1)
-                val charging = status == BatteryManager.BATTERY_STATUS_CHARGING ||
-                               status == BatteryManager.BATTERY_STATUS_FULL
-                isCharging = charging
+                val plugged = intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0) != 0
+                val state = dreamChargeState(status, plugged, batteryLevel)
+                chargeState = state
+                val charging = state == DreamChargeState.CHARGING
 
-                if (batteryLevel >= 100 && charging) {
+                if (state == DreamChargeState.FULL) {
                     if (!hasSentFullBatteryNotification) {
                         BatteryFullNotifier.show(context.applicationContext)
                         hasSentFullBatteryNotification = true
@@ -362,7 +365,7 @@ fun ScreensaverContent(context: Context) {
 
     val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
 
-    val fullTimeStr = if (isCharging && batteryLevel < 100) {
+    val fullTimeStr = if (chargeState == DreamChargeState.CHARGING) {
         if (chargeFullAtMs > 0L) {
             chargeCompletionText(context, chargeFullAtMs, clockMillis, currentLocale, is24Hour)
         } else {
@@ -378,7 +381,7 @@ fun ScreensaverContent(context: Context) {
         append(" V  ·  ")
         append(String.format(currentLocale, "%.1f", batteryTemp))
         append(" °C")
-        if (isCharging) {
+        if (chargeState == DreamChargeState.CHARGING) {
             chargeWatts?.let {
                 append("  ·  ")
                 append(String.format(currentLocale, "%.1f", it))
@@ -388,9 +391,9 @@ fun ScreensaverContent(context: Context) {
     }
     val batteryGradientColors = getBatteryGradientColors(batteryLevel)
 
-    // Soft pulse on the charging bolt; composed only while charging so no animation
-    // frames are produced when the device is on battery.
-    val boltAlpha = if (isCharging) {
+    // Soft pulse on the charging bolt; composed only while the battery is filling, so a
+    // full or held battery shows a steady icon and produces no animation frames.
+    val boltAlpha = if (chargeState.pulses) {
         val boltTransition = rememberInfiniteTransition(label = "boltPulse")
         val pulsedAlpha by boltTransition.animateFloat(
             initialValue = 0.45f,
@@ -501,7 +504,7 @@ fun ScreensaverContent(context: Context) {
 
                     BatteryBlockLandscape(
                         modifier = Modifier.weight(0.42f),
-                        isCharging = isCharging,
+                        chargeState = chargeState,
                         batteryLevel = batteryLevel,
                         batteryGradientColors = batteryGradientColors,
                         detailsStr = detailsStr,
@@ -538,7 +541,7 @@ fun ScreensaverContent(context: Context) {
 
                     BatteryBlockPortrait(
                         modifier = Modifier.fillMaxWidth().widthIn(max = 360.dp),
-                        isCharging = isCharging,
+                        chargeState = chargeState,
                         batteryLevel = batteryLevel,
                         batteryGradientColors = batteryGradientColors,
                         detailsStr = detailsStr,
@@ -836,9 +839,9 @@ private fun loadNotificationIcon(context: Context, icon: android.graphics.drawab
 }
 
 @Composable
-fun BatteryBlockLandscape(
+internal fun BatteryBlockLandscape(
     modifier: Modifier = Modifier,
-    isCharging: Boolean,
+    chargeState: DreamChargeState,
     batteryLevel: Int,
     batteryGradientColors: List<Color>,
     detailsStr: String,
@@ -851,22 +854,14 @@ fun BatteryBlockLandscape(
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                text = if (isCharging) "⚡" else "🔋",
+                text = chargeState.icon,
                 fontSize = 30.sp,
-                color = if (isCharging) Color(0xFFFBBF24) else Color(0xFF34D399),
+                color = if (chargeState == DreamChargeState.ON_BATTERY) Color(0xFF34D399) else Color(0xFFFBBF24),
                 modifier = Modifier.graphicsLayer { alpha = boltAlpha }
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = if (isCharging) {
-                    if (batteryLevel == 100) {
-                        stringResource(R.string.dream_battery_full)
-                    } else {
-                        stringResource(R.string.dream_charging)
-                    }
-                } else {
-                    stringResource(R.string.dream_on_battery)
-                },
+                text = stringResource(chargeState.label),
                 autoSize = fitUpTo(22.sp),
                 maxLines = 1,
                 softWrap = false,
@@ -941,9 +936,9 @@ fun BatteryBlockLandscape(
 }
 
 @Composable
-fun BatteryBlockPortrait(
+internal fun BatteryBlockPortrait(
     modifier: Modifier = Modifier,
-    isCharging: Boolean,
+    chargeState: DreamChargeState,
     batteryLevel: Int,
     batteryGradientColors: List<Color>,
     detailsStr: String,
@@ -956,22 +951,14 @@ fun BatteryBlockPortrait(
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                text = if (isCharging) "⚡" else "🔋",
+                text = chargeState.icon,
                 fontSize = 32.sp,
-                color = if (isCharging) Color(0xFFFBBF24) else Color(0xFF34D399),
+                color = if (chargeState == DreamChargeState.ON_BATTERY) Color(0xFF34D399) else Color(0xFFFBBF24),
                 modifier = Modifier.graphicsLayer { alpha = boltAlpha }
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = if (isCharging) {
-                    if (batteryLevel == 100) {
-                        stringResource(R.string.dream_battery_full)
-                    } else {
-                        stringResource(R.string.dream_charging)
-                    }
-                } else {
-                    stringResource(R.string.dream_on_battery)
-                },
+                text = stringResource(chargeState.label),
                 autoSize = fitUpTo(26.sp),
                 maxLines = 1,
                 softWrap = false,
@@ -1156,6 +1143,41 @@ fun batteryTintDeep(level: Int): Color {
         level <= 20 -> Color(0xFF4A1210)
         level <= 60 -> Color(0xFF46360A)
         else -> Color(0xFF0E4A36)
+    }
+}
+
+/**
+ * What the screensaver's battery block says about the charger. The bolt pulses only in
+ * [CHARGING]; the other states show a steady icon.
+ */
+internal enum class DreamChargeState(val icon: String, @param:androidx.annotation.StringRes val label: Int) {
+    /** The battery is filling. */
+    CHARGING("⚡", R.string.dream_charging),
+
+    /** On the charger at 100 %. */
+    FULL("⚡", R.string.dream_battery_full),
+
+    /** On the charger without filling: a charge limit, a pause for heat, or a weak charger. */
+    HELD("🔌", R.string.dream_plugged_not_charging),
+
+    ON_BATTERY("🔋", R.string.dream_on_battery);
+
+    val pulses: Boolean get() = this == CHARGING
+}
+
+/**
+ * The charge state from the battery broadcast's status, plug and level. A full battery on
+ * the charger is [DreamChargeState.FULL] whatever the status says: phones go on reporting
+ * CHARGING at 100 % for a while. FULL below 100 % is a phone held at its charge limit.
+ */
+internal fun dreamChargeState(status: Int, plugged: Boolean, level: Int): DreamChargeState {
+    val charging = status == BatteryManager.BATTERY_STATUS_CHARGING
+    val full = status == BatteryManager.BATTERY_STATUS_FULL
+    return when {
+        level >= 100 && (plugged || charging || full) -> DreamChargeState.FULL
+        charging -> DreamChargeState.CHARGING
+        plugged || full -> DreamChargeState.HELD
+        else -> DreamChargeState.ON_BATTERY
     }
 }
 
