@@ -189,30 +189,6 @@ class EdgeGeometryTest {
     }
 
     @Test
-    fun `the core over its glow is as bright as the line should be`() {
-        // The glow's two strokes lie under the core. At full brightness the core hides
-        // them; resting, all three show through each other, and the core is drawn fainter
-        // so that together they come to the rest's 35 %, not more.
-        fun together(top: Float, vararg under: Float): Float =
-            1f - under.fold(1f - top) { remaining, alpha -> remaining * (1f - alpha) }
-
-        assertThat(edgeTopAlpha(1f, 0.22f, 0.10f)).isEqualTo(1f)
-
-        val rested = EDGE_REST_ALPHA
-        val innerGlow = 0.22f * rested
-        val outerGlow = 0.10f * rested
-        val core = edgeTopAlpha(rested, innerGlow, outerGlow)
-        assertThat(core).isLessThan(rested)
-        assertThat(together(core, innerGlow, outerGlow)).isWithin(0.001f).of(rested)
-
-        // Nothing under it: the top layer is simply the target.
-        assertThat(edgeTopAlpha(0.35f)).isWithin(0.0001f).of(0.35f)
-        // Never outside 0..1, whatever lies under it.
-        assertThat(edgeTopAlpha(0.1f, 0.5f)).isEqualTo(0f)
-        assertThat(edgeTopAlpha(0f)).isEqualTo(0f)
-    }
-
-    @Test
     fun `the colour stops`() {
         assertThat(edgeColor(5, wideGamut = false)).isEqualTo(Color(0xFFFF1F3D))
         assertThat(edgeColor(10, wideGamut = false)).isEqualTo(Color(0xFFFF1F3D))

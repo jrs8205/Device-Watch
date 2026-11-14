@@ -34,7 +34,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.toRect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathMeasure
 import androidx.compose.ui.graphics.StrokeCap
@@ -177,19 +179,27 @@ internal fun BoxScope.EdgeBackground(state: DreamUiState, swapped: Boolean) {
                 val outerGlow = Stroke(width = core + 2 * EDGE_GLOW_OUTER.toPx(), cap = StrokeCap.Round)
                 val innerGlow = Stroke(width = core + 2 * EDGE_GLOW_INNER.toPx(), cap = StrokeCap.Round)
                 val coreStroke = Stroke(width = core, cap = StrokeCap.Round)
+                val restPaint = Paint()
 
                 onDrawBehind {
                     drawRect(Color.Black)
                     rotate(degrees = if (swapped) 180f else 0f) {
-                        val alpha = brightness.value
                         drawPath(route, EDGE_TRACK, style = Stroke(width = core))
+                        // Everything lit is one picture, and resting dims that picture as a
+                        // whole. Dimmed one by one, the glow, the core, the halo and the
+                        // head would show through each other and add up to more than the
+                        // rest allows wherever they overlap.
+                        val restAlpha = brightness.value
+                        val resting = restAlpha < 1f
+                        val canvas = drawContext.canvas
+                        if (resting) {
+                            restPaint.alpha = restAlpha
+                            canvas.saveLayer(size.toRect(), restPaint)
+                        }
                         if (fraction > 0f) {
-                            val outerAlpha = EDGE_GLOW_OUTER_ALPHA * alpha
-                            val innerAlpha = EDGE_GLOW_INNER_ALPHA * alpha
-                            val coreAlpha = edgeTopAlpha(alpha, innerAlpha, outerAlpha)
-                            drawPath(lit, lineColor.copy(alpha = outerAlpha), style = outerGlow)
-                            drawPath(lit, lineColor.copy(alpha = innerAlpha), style = innerGlow)
-                            drawPath(lit, lineColor.copy(alpha = coreAlpha), style = coreStroke)
+                            drawPath(lit, lineColor.copy(alpha = EDGE_GLOW_OUTER_ALPHA), style = outerGlow)
+                            drawPath(lit, lineColor.copy(alpha = EDGE_GLOW_INNER_ALPHA), style = innerGlow)
+                            drawPath(lit, lineColor, style = coreStroke)
                         }
                         // A full battery is a closed loop with no head.
                         if (chargeState != DreamChargeState.FULL) {
@@ -199,20 +209,20 @@ internal fun BoxScope.EdgeBackground(state: DreamUiState, swapped: Boolean) {
                             } else {
                                 EDGE_HEAD_PULSE_MIN + (EDGE_HEAD_PULSE_MAX - EDGE_HEAD_PULSE_MIN) * beat
                             }
-                            val headAlpha = alpha * if (beat == null) {
+                            val headAlpha = if (beat == null) {
                                 1f
                             } else {
                                 EDGE_HEAD_PULSE_MIN_ALPHA + (1f - EDGE_HEAD_PULSE_MIN_ALPHA) * beat
                             }
                             val center = Offset(headX, headY)
-                            val haloAlpha = EDGE_HEAD_HALO_ALPHA * headAlpha
-                            drawCircle(lineColor.copy(alpha = haloAlpha), radius = diameter, center = center)
                             drawCircle(
-                                headColor.copy(alpha = edgeTopAlpha(headAlpha, haloAlpha)),
-                                radius = diameter / 2f,
+                                lineColor.copy(alpha = EDGE_HEAD_HALO_ALPHA * headAlpha),
+                                radius = diameter,
                                 center = center,
                             )
+                            drawCircle(headColor.copy(alpha = headAlpha), radius = diameter / 2f, center = center)
                         }
+                        if (resting) canvas.restore()
                     }
                 }
             }

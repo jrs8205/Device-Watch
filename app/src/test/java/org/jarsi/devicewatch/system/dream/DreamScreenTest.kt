@@ -2,10 +2,14 @@ package org.jarsi.devicewatch.system.dream
 
 import android.app.Application
 import android.graphics.Bitmap
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import android.graphics.Canvas
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ViewRootForTest
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -398,6 +402,60 @@ class DreamScreenTest {
         assertThat(brightness(260, 7)).isGreaterThan(0.6f)      // top, right of centre: lit
         assertThat(brightness(353, 400)).isGreaterThan(0.6f)    // right side: lit
         assertThat(brightness(100, 7)).isLessThan(0.2f)         // top, left of centre: the dark track
+    }
+
+    /** That [rested] shows [lit] at the rest's brightness over [backdrop], channel by channel. */
+    private fun assertRested(what: String, lit: Int, rested: Int, backdrop: Int) {
+        val channels = listOf<(Int) -> Int>(
+            android.graphics.Color::red,
+            android.graphics.Color::green,
+            android.graphics.Color::blue,
+        )
+        for ((index, channel) in channels.withIndex()) {
+            val expected = EDGE_REST_ALPHA * channel(lit) + (1f - EDGE_REST_ALPHA) * channel(backdrop)
+            assertWithMessage("$what, channel $index").that(channel(rested).toFloat()).isWithin(4f).of(expected)
+        }
+    }
+
+    @Test
+    fun `a resting Edge line is one dimmed picture, its head included`() {
+        // Held at 70 % the head stands still on the right side. After ten minutes without a
+        // change the lit drawing is shown at 35 % as a whole: the head lies over the line
+        // and its own halo, and they must not show through each other and add up to more.
+        val start = SAMPLE_NOW_MS - SAMPLE_NOW_MS % 60_000L
+        var shown by mutableStateOf(
+            sample().copy(batteryLevel = 70, chargeState = DreamChargeState.HELD, clockMillis = start)
+        )
+        compose.setContent {
+            CompositionLocalProvider(LocalDreamMoving provides true) {
+                Box(Modifier.fillMaxSize()) { EdgeBackground(state = shown, swapped = false) }
+            }
+        }
+        val lit = drawScreen()
+
+        // Twelve minutes on the line is back in the lane it started in, and has rested.
+        shown = shown.copy(clockMillis = start + 12 * 60_000L)
+        compose.waitForIdle()
+        val rested = drawScreen()
+
+        val inset = EDGE_LANE_INSETS_DP[edgeLane(start / 60_000L)]
+        val radius = edgeCornerRadius(null, inset, 360f, 780f)
+        val (headX, headY) = edgePoint(0.70f, 360f, 780f, inset, radius)
+        val head = headX.toInt() to headY.toInt()
+        val line = inset.toInt() to 400              // the core, on the left side
+        val glow = inset.toInt() + 3 to 400          // beside the core: glow over black
+        val track = lit.getPixel(head.first, 700)    // the unlit track, further down the right side
+
+        assertThat(android.graphics.Color.green(lit.getPixel(head.first, head.second))).isGreaterThan(240)
+        assertThat(android.graphics.Color.green(lit.getPixel(line.first, line.second))).isGreaterThan(240)
+        assertRested("the core", lit.getPixel(line.first, line.second), rested.getPixel(line.first, line.second), track)
+        assertRested(
+            "the glow",
+            lit.getPixel(glow.first, glow.second),
+            rested.getPixel(glow.first, glow.second),
+            android.graphics.Color.BLACK,
+        )
+        assertRested("the head", lit.getPixel(head.first, head.second), rested.getPixel(head.first, head.second), track)
     }
 
     @Test
