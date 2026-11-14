@@ -17,9 +17,9 @@ private const val CALENDAR_MAX_ROWS_READ = 50
 private const val DAY_MS = 24L * 60 * 60 * 1000
 
 /**
- * The calendar's events from [nowMs] to seven days on, earliest first, for the Gauges
- * style: only from calendars the user keeps visible, and without invitations they have
- * declined. Read-only, and nothing is kept: the caller holds the list while the
+ * The calendar's events that run at [nowMs] or begin within seven days of it, in the
+ * calendar's order, for the Gauges style: only from calendars the user keeps visible, and
+ * without invitations they have declined. Read-only, and nothing is kept: the caller holds the list while the
  * screensaver is up and drops it with it.
  *
  * Returns nothing when the permission is missing, and then does not touch the calendar at
@@ -32,9 +32,14 @@ internal fun readDreamCalendarEvents(context: Context, nowMs: Long, zone: ZoneId
         PackageManager.PERMISSION_GRANTED
     if (!granted) return emptyList()
 
+    // The calendar picks instances by their stored instants, and an all-day event is stored
+    // from UTC midnight to UTC midnight: west of Greenwich the day still runs hours after
+    // its stored end, and east of it the day begins hours before its stored beginning. So
+    // the calendar is asked a day wider at both ends, more than any time zone differs from
+    // UTC, and what does not belong is dropped below, once the times are the phone's own.
     val uri = CalendarContract.Instances.CONTENT_URI.buildUpon().also { builder ->
-        ContentUris.appendId(builder, nowMs)
-        ContentUris.appendId(builder, nowMs + CALENDAR_HORIZON_DAYS * DAY_MS)
+        ContentUris.appendId(builder, nowMs - DAY_MS)
+        ContentUris.appendId(builder, nowMs + (CALENDAR_HORIZON_DAYS + 1) * DAY_MS)
     }.build()
     val projection = arrayOf(
         CalendarContract.Instances.TITLE,
@@ -55,13 +60,14 @@ internal fun readDreamCalendarEvents(context: Context, nowMs: Long, zone: ZoneId
                     val begin = cursor.getLong(1)
                     val end = cursor.getLong(2)
                     val allDay = cursor.getInt(3) != 0
-                    if (allDay) {
+                    val event = if (allDay) {
                         // Stored from UTC midnight to UTC midnight: see allDayLocal.
                         val (localBegin, localEnd) = allDayLocal(begin, end, zone)
-                        add(DreamCalendarEvent(title, localBegin, localEnd, allDay = true))
+                        DreamCalendarEvent(title, localBegin, localEnd, allDay = true)
                     } else {
-                        add(DreamCalendarEvent(title, begin, end, allDay = false))
+                        DreamCalendarEvent(title, begin, end, allDay = false)
                     }
+                    if (event.isUpcoming(nowMs)) add(event)
                 }
             }
         } ?: emptyList()

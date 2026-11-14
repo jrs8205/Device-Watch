@@ -64,8 +64,15 @@ class DreamCalendarReaderTest {
             lastSortOrder = sortOrder
             failure?.let { throw it }
             val columns = projection ?: emptyArray()
+            // As the calendar's own provider does it: by the stored instants, whatever the
+            // time zone, also for an all-day event's UTC midnights.
+            val (rangeBegin, rangeEnd) = uri.pathSegments.takeLast(2).map { it.toLong() }
             return MatrixCursor(columns).apply {
-                for (row in rows) addRow(columns.map { row[it] })
+                for (row in rows) {
+                    val begin = row[CalendarContract.Instances.BEGIN] as Long
+                    val end = row[CalendarContract.Instances.END] as Long
+                    if (begin <= rangeEnd && end >= rangeBegin) addRow(columns.map { row[it] })
+                }
             }
         }
 
@@ -147,16 +154,72 @@ class DreamCalendarReaderTest {
     }
 
     @Test
-    fun `the query asks for the next seven days of visible, not-declined instances`() {
+    fun `an all-day event still running west of Greenwich is read`() {
+        // Los Angeles, the evening of the 14th. The day's all-day event is stored as ending
+        // at UTC midnight, four hours ago there, but the day itself still runs.
+        grantPermission()
+        val calendar = installCalendar()
+        val losAngeles = ZoneId.of("America/Los_Angeles")
+        fun local(day: Int, hour: Int): Long =
+            ZonedDateTime.of(2026, 11, day, hour, 0, 0, 0, losAngeles).toInstant().toEpochMilli()
+        calendar.rows = listOf(row("Birthday", utcMidnight(14), utcMidnight(15), allDay = true))
+
+        val events = readDreamCalendarEvents(context, local(14, 20), losAngeles)
+
+        assertThat(events).containsExactly(
+            DreamCalendarEvent("Birthday", local(14, 0), local(15, 0), allDay = true)
+        )
+    }
+
+    @Test
+    fun `an all-day event that begins within the week east of Greenwich is read`() {
+        // Helsinki, an hour past midnight. The all-day event a week on begins, by the
+        // phone's own time, an hour before the week is out; its stored beginning, UTC
+        // midnight, is an hour after it.
+        grantPermission()
+        val calendar = installCalendar()
+        calendar.rows = listOf(row("Joulumarkkinat", utcMidnight(20), utcMidnight(21), allDay = true))
+
+        val events = readDreamCalendarEvents(context, at(13, 1), helsinki)
+
+        assertThat(events).containsExactly(
+            DreamCalendarEvent("Joulumarkkinat", at(20, 0), at(21, 0), allDay = true)
+        )
+    }
+
+    @Test
+    fun `what has ended or lies beyond the week is left out`() {
+        // The calendar is asked a day wider at both ends than the week, for the all-day
+        // events' sake; what that brings along and does not belong is dropped here.
+        grantPermission()
+        val calendar = installCalendar()
+        calendar.rows = listOf(
+            // Yesterday's all-day event: stored as ending at 02:00 Helsinki time today.
+            row("Eilinen", utcMidnight(12), utcMidnight(13), allDay = true),
+            row("Päättynyt", at(12, 22), at(12, 23), allDay = false),
+            row("Käynnissä", at(12, 23), at(13, 2), allDay = false),
+            row("Liian kaukana", at(20, 10), at(20, 11), allDay = false),
+        )
+
+        val events = readDreamCalendarEvents(context, at(13, 1), helsinki)
+
+        assertThat(events).containsExactly(
+            DreamCalendarEvent("Käynnissä", at(12, 23), at(13, 2), allDay = false)
+        )
+    }
+
+    @Test
+    fun `the query asks a day wider than the week, for visible, not-declined instances`() {
         grantPermission()
         val calendar = installCalendar()
 
         readDreamCalendarEvents(context, now, helsinki)
 
+        val day = 24 * 3_600_000L
         val uri = checkNotNull(calendar.lastUri)
         assertThat(uri.authority).isEqualTo(CalendarContract.AUTHORITY)
         assertThat(uri.pathSegments.takeLast(2))
-            .containsExactly(now.toString(), (now + 7 * 24 * 3_600_000L).toString()).inOrder()
+            .containsExactly((now - day).toString(), (now + 8 * day).toString()).inOrder()
         val selection = checkNotNull(calendar.lastSelection)
         assertThat(selection).contains(CalendarContract.Instances.VISIBLE)
         assertThat(selection).contains(CalendarContract.Instances.SELF_ATTENDEE_STATUS)

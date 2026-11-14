@@ -42,6 +42,10 @@ internal fun allDayLocal(beginUtcMs: Long, endUtcMs: Long, zone: ZoneId): Pair<L
     return localMidnight(beginUtcMs) to localMidnight(endUtcMs)
 }
 
+/** Whether the event runs at [nowMs] or begins within [horizonDays] after it. */
+internal fun DreamCalendarEvent.isUpcoming(nowMs: Long, horizonDays: Int = CALENDAR_HORIZON_DAYS): Boolean =
+    endMs > nowMs && beginMs <= nowMs + horizonDays * DAY_MS
+
 /**
  * The next events worth a row: those running now and those that begin within the horizon,
  * earliest first, [max] at most. An event that has ended is left out.
@@ -51,13 +55,10 @@ internal fun upcomingEvents(
     nowMs: Long,
     max: Int = CALENDAR_MAX_EVENTS,
     horizonDays: Int = CALENDAR_HORIZON_DAYS,
-): List<DreamCalendarEvent> {
-    val horizonMs = nowMs + horizonDays * DAY_MS
-    return events
-        .filter { it.endMs > nowMs && it.beginMs <= horizonMs }
-        .sortedBy { it.beginMs }
-        .take(max)
-}
+): List<DreamCalendarEvent> = events
+    .filter { it.isUpcoming(nowMs, horizonDays) }
+    .sortedBy { it.beginMs }
+    .take(max)
 
 /**
  * When an event is, as short as it can be said, in capitals: the time alone for one that
