@@ -1,4 +1,4 @@
-package org.jarsi.devicewatch.system
+package org.jarsi.devicewatch.system.dream
 
 import com.google.common.truth.Truth.assertThat
 import org.junit.Test

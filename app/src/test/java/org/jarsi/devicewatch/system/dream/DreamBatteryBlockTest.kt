@@ -1,4 +1,4 @@
-package org.jarsi.devicewatch.system
+package org.jarsi.devicewatch.system.dream
 
 import android.app.Application
 import androidx.compose.foundation.layout.width
@@ -18,7 +18,6 @@ import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import com.google.common.truth.Truth.assertWithMessage
 import org.jarsi.devicewatch.presentation.ui.MAX_FONT_SCALE
-import org.jarsi.devicewatch.system.dream.DreamChargeState
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -77,7 +76,7 @@ class DreamBatteryBlockTest {
 
     private companion object {
         /**
-         * The block's width on a 480 dp wide screen, from ScreensaverContent's landscape row:
+         * The block's width on a 480 dp wide screen, from the Glow style's landscape row:
          * 28 dp padding on both sides, the 1.5 dp divider and the 18 dp gap come off, and the
          * block takes 0.42 of what is left.
          */

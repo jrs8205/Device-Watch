@@ -688,6 +688,8 @@
     </plurals>
 
     <string name="dream_date_pattern">EEEE d. MMMM</string>
+    <string name="dream_date_pattern_short">EEE d. MMMM</string>
+    <string name="dream_date_pattern_compact">EEE d.M.</string>
     <string name="dream_battery_full">Täynnä</string>
     <string name="dream_charging">Latautuu</string>
     <string name="dream_on_battery">Akkuvirralla</string>

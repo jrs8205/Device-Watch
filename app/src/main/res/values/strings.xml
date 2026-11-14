@@ -694,6 +694,8 @@
     </plurals>
 
     <string name="dream_date_pattern">EEEE, MMMM d</string>
+    <string name="dream_date_pattern_short">EEE, MMMM d</string>
+    <string name="dream_date_pattern_compact">EEE MMM d</string>
     <string name="dream_battery_full">Full</string>
     <string name="dream_charging">Charging</string>
     <string name="dream_on_battery">On battery</string>
