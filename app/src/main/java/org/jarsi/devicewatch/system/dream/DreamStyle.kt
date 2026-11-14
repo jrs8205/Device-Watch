@@ -16,6 +16,9 @@ internal enum class DreamStyle(val id: String) {
 
     /** The clock inside a ring that fills with the battery. */
     RING("ring"),
+
+    /** The app's own look: monospaced figures on named rows, calendar events among them. */
+    GAUGES("gauges"),
 }
 
 internal fun dreamStyleOf(id: String?): DreamStyle =
@@ -42,4 +45,5 @@ internal fun DreamStyle.supports(field: DreamField): Boolean = when (this) {
     DreamStyle.RING ->
         field == DreamField.SECONDS || field == DreamField.DATE ||
             field == DreamField.NOTIFICATIONS || field == DreamField.BATTERY_DETAILS
+    DreamStyle.GAUGES -> true
 }

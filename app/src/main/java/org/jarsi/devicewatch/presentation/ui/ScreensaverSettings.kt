@@ -377,6 +377,7 @@ private fun dreamStyleNameRes(style: DreamStyle): Int = when (style) {
     DreamStyle.MINIMAL -> R.string.dream_style_minimal
     DreamStyle.NIGHT -> R.string.dream_style_night
     DreamStyle.RING -> R.string.dream_style_ring
+    DreamStyle.GAUGES -> R.string.dream_style_gauges
 }
 
 /** One on/off setting of the screensaver: shown from the file and written straight back. */

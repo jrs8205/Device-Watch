@@ -52,6 +52,11 @@ class DreamStyleTest {
         )
     }
 
+    @Test
+    fun `Gauges shows everything`() {
+        assertThat(shownBy(DreamStyle.GAUGES)).containsExactlyElementsIn(DreamField.entries)
+    }
+
     private fun shownBy(style: DreamStyle): List<DreamField> =
         DreamField.entries.filter { style.supports(it) }
 }

@@ -335,6 +335,13 @@
     <string name="dream_style_minimal">Pelkistetty</string>
     <string name="dream_style_night">Yö</string>
     <string name="dream_style_ring">Rengas</string>
+    <string name="dream_style_gauges">Mittaristo</string>
+    <string name="dream_row_battery">AKKU</string>
+    <string name="dream_row_power">TEHO</string>
+    <string name="dream_row_temperature">LÄMPÖ</string>
+    <string name="dream_row_full">TÄYNNÄ</string>
+    <string name="dream_row_alarm">HERÄTYS</string>
+    <string name="dream_row_notifications">ILMOITUKSET</string>
     <string name="dream_night_style_title">Yö-tyyli yöhimmennyksen aikana</string>
     <string name="dream_night_style_description">Yöhimmennyksen aikana näytönsäästäjä vaihtaa Yö-tyyliin ja sen jälkeen takaisin.</string>
     <string name="dream_percent_spaced">%1$d\u00A0%%</string>

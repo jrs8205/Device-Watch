@@ -149,6 +149,39 @@ class DreamScreenTest {
     }
 
     @Test
+    fun `Gauges draws the sample in portrait`() {
+        show(options = DreamOptions(style = DreamStyle.GAUGES), landscape = false)
+        assertGaugesSampleIsOnScreen()
+    }
+
+    @Test
+    @Config(qualifiers = "w780dp-h360dp-land-mdpi")
+    fun `Gauges draws the sample in landscape`() {
+        show(options = DreamOptions(style = DreamStyle.GAUGES), landscape = true)
+        assertGaugesSampleIsOnScreen()
+    }
+
+    private fun assertGaugesSampleIsOnScreen() {
+        val state = sample()
+        compose.onNodeWithText("PIXEL 8A").assertExists()
+        compose.onNodeWithText(state.compactDateText.uppercase(Locale.US), substring = true).assertExists()
+        compose.onNodeWithText(state.timeText).assertExists()
+        compose.onNodeWithText(":${state.secondsText}").assertExists()
+        val rows = listOf(
+            R.string.dream_row_battery to "64% \u26A1",
+            R.string.dream_row_power to "11.0 W",
+            R.string.dream_row_temperature to "26.3 \u00B0C",
+            R.string.dream_row_full to "~${state.fullClockText}",
+            R.string.dream_row_alarm to state.alarmText,
+        )
+        for ((label, value) in rows) {
+            compose.onNodeWithText(context.getString(label)).assertExists()
+            compose.onNodeWithText(value).assertExists()
+        }
+        compose.onNodeWithText(context.getString(R.string.dream_row_notifications)).assertExists()
+    }
+
+    @Test
     fun `the flip button is gone`() {
         show(landscape = false)
 

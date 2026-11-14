@@ -6,10 +6,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.unit.Density
 import androidx.test.core.app.ApplicationProvider
+import org.jarsi.devicewatch.R
 import org.jarsi.devicewatch.presentation.ui.MAX_FONT_SCALE
 import org.junit.Rule
 import org.junit.Test
@@ -48,6 +50,13 @@ class DreamStyleFitTest {
     @Config(qualifiers = "fi-w320dp-h640dp-port-mdpi")
     fun `narrow portrait in Finnish`() = assertEveryStyleFits(landscape = false)
 
+    /** What the notification row calls itself: "N unread notifications". */
+    private fun unreadDescription(state: DreamUiState): String {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val total = state.notificationGroups.sumOf { it.count }
+        return context.resources.getQuantityString(R.plurals.dream_unread_notifications, total, total)
+    }
+
     private fun assertEveryStyleFits(landscape: Boolean) {
         val context = ApplicationProvider.getApplicationContext<Application>()
         var options by mutableStateOf(DreamOptions())
@@ -62,9 +71,13 @@ class DreamStyleFitTest {
                 options = DreamOptions(style = style)
                 state = worstCaseDreamUiState(context, chargeState)
                 compose.waitForIdle()
-                if (options.shows(DreamField.NOTIFICATIONS)) {
-                    // The icons are decoded off the main thread; the row has its height, and
-                    // its counts, only once they are in.
+                // The icons are decoded off the main thread; the row has its height, and
+                // its counts, only once they are in. A style may leave the row out when it
+                // runs out of room (Gauges on its side), so the wait is for a row that is
+                // on the screen: it names itself to screen readers as soon as it is.
+                val rowIsShown = compose.onAllNodes(hasContentDescription(unreadDescription(state)))
+                    .fetchSemanticsNodes().isNotEmpty()
+                if (rowIsShown) {
                     compose.waitUntil(timeoutMillis = 5_000) {
                         compose.onAllNodesWithText(WORST_CASE_FIRST_COUNT.toString())
                             .fetchSemanticsNodes().isNotEmpty()

@@ -36,6 +36,7 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.Dp
@@ -188,6 +189,7 @@ internal fun NotificationIconRow(
     pulseToken: Int,
     iconSize: Dp,
     modifier: Modifier = Modifier,
+    alignment: Alignment = Alignment.Center,
 ) {
     val context = LocalContext.current
     val density = LocalDensity.current
@@ -213,7 +215,7 @@ internal fun NotificationIconRow(
     val resolver = LocalFontFamilyResolver.current
     // Review round 10: eight groups with two-digit counts overflow a 344 dp clock block, so
     // the row keeps only the groups whose measured widths fit, "+N" included.
-    BoxWithConstraints(modifier = modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+    BoxWithConstraints(modifier = modifier.fillMaxWidth(), contentAlignment = alignment) {
         val fit = remember(groups, maxWidth, iconSizePx, countTextStyle, density, resolver) {
             fun labelWidth(text: String): Float = measurer.measure(
                 text = text,
@@ -333,7 +335,8 @@ private fun loadNotificationIcon(context: Context, icon: android.graphics.drawab
  * available width, density, or font resolver changes (not on every clock tick).
  *
  * A style whose clock has no seconds beside it passes a [secondsRatio] and [secondsMinSp]
- * of zero and no [gap]; [timeWeight] is the weight the style draws the time in.
+ * of zero and no [gap]; [timeWeight] and [fontFamily] are the weight and the face the
+ * style draws the time in.
  */
 @Composable
 internal fun rememberFittedClockSize(
@@ -344,12 +347,14 @@ internal fun rememberFittedClockSize(
     secondsMinSp: Int = 22,
     gap: Dp = 8.dp,
     timeWeight: FontWeight = FontWeight.ExtraBold,
+    fontFamily: FontFamily? = null,
 ): Int {
     val measurer = rememberTextMeasurer()
     val density = LocalDensity.current
     val resolver = LocalFontFamilyResolver.current
     return remember(
-        availableWidth, maxClockSp, minClockSp, secondsRatio, secondsMinSp, gap, timeWeight, density, resolver,
+        availableWidth, maxClockSp, minClockSp, secondsRatio, secondsMinSp, gap, timeWeight, fontFamily,
+        density, resolver,
     ) {
         if (availableWidth <= 0.dp) return@remember minClockSp
         val referenceSp = 100f
@@ -358,6 +363,7 @@ internal fun rememberFittedClockSize(
             style = TextStyle(
                 fontSize = referenceSp.sp,
                 fontWeight = timeWeight,
+                fontFamily = fontFamily,
                 fontFeatureSettings = "tnum",
                 letterSpacing = 0.sp,
             ),
@@ -371,6 +377,7 @@ internal fun rememberFittedClockSize(
             style = TextStyle(
                 fontSize = referenceSp.sp,
                 fontWeight = FontWeight.Bold,
+                fontFamily = fontFamily,
                 fontFeatureSettings = "tnum",
             ),
             softWrap = false,
