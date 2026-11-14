@@ -13,6 +13,9 @@ import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
+import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isSelectable
 import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
@@ -113,6 +116,36 @@ class ScreensaverSettingsTest {
 
             assertWithMessage(key).that(prefs.getBoolean(key, before)).isEqualTo(!before)
         }
+    }
+
+    /** The style picker's item with this name. */
+    private fun styleItem(@StringRes name: Int): SemanticsNodeInteraction =
+        compose.onNode(hasText(context.getString(name)) and isSelectable())
+
+    @Test
+    fun `choosing a style writes its id`() {
+        show()
+
+        styleItem(R.string.dream_style_glow).toggle()
+
+        assertThat(prefs.getString("dream_style", null)).isEqualTo("glow")
+    }
+
+    @Test
+    fun `the stored style is the selected one`() {
+        prefs.edit().putString("dream_style", "glow").commit()
+
+        show()
+
+        styleItem(R.string.dream_style_glow).assertIsSelected()
+    }
+
+    @Test
+    fun `without a stored style Glow is selected`() {
+        show()
+
+        styleItem(R.string.dream_style_glow).assertIsSelected()
+        assertThat(prefs.contains("dream_style")).isFalse()
     }
 
     @Test
