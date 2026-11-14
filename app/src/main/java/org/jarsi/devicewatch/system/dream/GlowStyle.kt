@@ -203,6 +203,13 @@ internal fun BoxWithConstraintsScope.GlowContent(state: DreamUiState, options: D
     }
 }
 
+/**
+ * How small the landscape block's estimate line may get. The sentence with a date in it is the
+ * longest text on the screensaver: on a 480 dp wide phone on its side, at the largest font
+ * scale, it needs a third more room than the usual 12 sp floor leaves it.
+ */
+private const val NARROW_ESTIMATE_FLOOR_SP = 8f
+
 @Composable
 internal fun BatteryBlockLandscape(
     modifier: Modifier = Modifier,
@@ -289,7 +296,7 @@ internal fun BatteryBlockLandscape(
             Spacer(modifier = Modifier.height(6.dp))
             Text(
                 text = fullTimeStr,
-                autoSize = fitUpTo(24.sp),
+                autoSize = fitUpTo(24.sp, floorSp = NARROW_ESTIMATE_FLOOR_SP),
                 maxLines = 1,
                 softWrap = false,
                 fontWeight = FontWeight.Bold,

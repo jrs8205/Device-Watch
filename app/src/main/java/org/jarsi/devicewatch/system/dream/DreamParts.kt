@@ -53,6 +53,12 @@ import org.jarsi.devicewatch.system.fitNotificationRow
 // The pieces the screensaver's styles share: the clock block, the notification row, the
 // text fitting and the battery's colours.
 
+/**
+ * Test tag for a text that is meant to end in an ellipsis when it is too long (a calendar
+ * event's title). Every other text on the screensaver must fit; the fit test skips these.
+ */
+internal const val DREAM_TRUNCATES_TAG = "dream-truncates"
+
 @Composable
 internal fun ClockBlock(
     modifier: Modifier = Modifier,
@@ -392,10 +398,11 @@ internal fun fittedClockSp(
 
 /**
  * Screensaver lines stay on one line: they shrink from [max] toward a floor
- * when a long localized date or a wide details line would otherwise wrap.
+ * when a long localized date or a wide details line would otherwise wrap. A line that is
+ * still too wide at the usual floor on the narrowest screens gets a lower [floorSp].
  */
-internal fun fitUpTo(max: TextUnit): TextAutoSize =
-    TextAutoSize.StepBased(minFontSize = minOf(12f, max.value).sp, maxFontSize = max, stepSize = 1.sp)
+internal fun fitUpTo(max: TextUnit, floorSp: Float = 12f): TextAutoSize =
+    TextAutoSize.StepBased(minFontSize = minOf(floorSp, max.value).sp, maxFontSize = max, stepSize = 1.sp)
 
 internal fun getBatteryGradientColors(level: Int): List<Color> {
     return when {
