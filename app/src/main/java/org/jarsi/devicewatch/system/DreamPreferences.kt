@@ -7,6 +7,8 @@ package org.jarsi.devicewatch.system
  */
 object DreamPreferences {
     const val PREFS_NAME = "monitor_dream_preferences"
+    // The chosen style's id (DreamStyle.id); missing or unknown means the Glow style.
+    const val KEY_STYLE = "dream_style"
     const val KEY_LAYOUT_SWAPPED = "layout_swapped"
     const val KEY_FORCE_PORTRAIT = "force_portrait"
     const val KEY_DIM_SCREENSAVER = "dim_screensaver"

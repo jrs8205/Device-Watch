@@ -5,7 +5,6 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.content.SharedPreferences
 import android.content.pm.ActivityInfo
 import android.os.BatteryManager
 import android.service.dreams.DreamService
@@ -59,6 +58,10 @@ import androidx.core.graphics.drawable.toBitmap
 import org.jarsi.devicewatch.R
 import org.jarsi.devicewatch.data.DeviceLocalFlags
 import org.jarsi.devicewatch.data.batteryPowerWatts
+import org.jarsi.devicewatch.system.dream.DreamChargeState
+import org.jarsi.devicewatch.system.dream.currentMinuteOfDay
+import org.jarsi.devicewatch.system.dream.dreamChargeState
+import org.jarsi.devicewatch.system.dream.shouldDimNow
 import org.jarsi.devicewatch.ui.theme.ProvideBoundedDensity
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
@@ -72,7 +75,6 @@ import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import java.text.SimpleDateFormat
-import java.util.Calendar
 import java.util.Date
 
 class MonitorDreamService : DreamService(), LifecycleOwner, ViewModelStoreOwner, SavedStateRegistryOwner {
@@ -1145,80 +1147,3 @@ fun batteryTintDeep(level: Int): Color {
         else -> Color(0xFF0E4A36)
     }
 }
-
-/**
- * What the screensaver's battery block says about the charger. The bolt pulses only in
- * [CHARGING]; the other states show a steady icon.
- */
-internal enum class DreamChargeState(val icon: String, @param:androidx.annotation.StringRes val label: Int) {
-    /** The battery is filling. */
-    CHARGING("⚡", R.string.dream_charging),
-
-    /** On the charger at 100 %. */
-    FULL("⚡", R.string.dream_battery_full),
-
-    /** On the charger without filling: a charge limit, a pause for heat, or a weak charger. */
-    HELD("🔌", R.string.dream_plugged_not_charging),
-
-    ON_BATTERY("🔋", R.string.dream_on_battery);
-
-    val pulses: Boolean get() = this == CHARGING
-}
-
-/**
- * The charge state from the battery broadcast's status, plug and level. A full battery on
- * the charger is [DreamChargeState.FULL] whatever the status says: phones go on reporting
- * CHARGING at 100 % for a while. FULL below 100 % is a phone held at its charge limit.
- */
-internal fun dreamChargeState(status: Int, plugged: Boolean, level: Int): DreamChargeState {
-    val charging = status == BatteryManager.BATTERY_STATUS_CHARGING
-    val full = status == BatteryManager.BATTERY_STATUS_FULL
-    return when {
-        level >= 100 && (plugged || charging || full) -> DreamChargeState.FULL
-        charging -> DreamChargeState.CHARGING
-        plugged || full -> DreamChargeState.HELD
-        else -> DreamChargeState.ON_BATTERY
-    }
-}
-
-/** Minutes since local midnight, for the night-dim window check. */
-internal fun currentMinuteOfDay(): Int {
-    val calendar = Calendar.getInstance()
-    return calendar.get(Calendar.HOUR_OF_DAY) * 60 + calendar.get(Calendar.MINUTE)
-}
-
-/**
- * Effective dim state: the manual dim switch, or the automatic night window when enabled.
- * Pure apart from the SharedPreferences reads so the window logic itself is unit-testable
- * via [isInNightWindow].
- */
-internal fun shouldDimNow(prefs: SharedPreferences, nowMinutes: Int): Boolean {
-    if (prefs.getBoolean(DreamPreferences.KEY_DIM_SCREENSAVER, false)) return true
-    if (!prefs.getBoolean(DreamPreferences.KEY_NIGHT_DIM, false)) return false
-    return isInNightWindow(
-        nowMinutes,
-        prefs.getInt(
-            DreamPreferences.KEY_NIGHT_DIM_START_MINUTES,
-            DreamPreferences.DEFAULT_NIGHT_DIM_START_MINUTES
-        ),
-        prefs.getInt(
-            DreamPreferences.KEY_NIGHT_DIM_END_MINUTES,
-            DreamPreferences.DEFAULT_NIGHT_DIM_END_MINUTES
-        )
-    )
-}
-
-/**
- * Whether [nowMinutes] (minutes since midnight) falls inside the window from [startMinutes]
- * (inclusive) to [endMinutes] (exclusive). A window that crosses midnight (e.g. 22:00–07:00)
- * is handled; an empty window (start == end) never matches.
- */
-internal fun isInNightWindow(nowMinutes: Int, startMinutes: Int, endMinutes: Int): Boolean {
-    if (startMinutes == endMinutes) return false
-    return if (startMinutes < endMinutes) {
-        nowMinutes >= startMinutes && nowMinutes < endMinutes
-    } else {
-        nowMinutes >= startMinutes || nowMinutes < endMinutes
-    }
-}
-

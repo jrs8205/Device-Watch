@@ -1,12 +1,12 @@
-package org.jarsi.devicewatch.system
+package org.jarsi.devicewatch.system.dream
 
 import com.google.common.truth.Truth.assertThat
 import org.jarsi.devicewatch.data.batteryPowerWatts
 import org.junit.Test
 
 /**
- * Pure-JVM tests for the screensaver's night-dim window (a pure function in
- * MonitorDreamService.kt) and its use of the shared battery-power math.
+ * Pure-JVM tests for the screensaver's night-dim window (pure functions in
+ * DreamDim.kt), its charge state and its use of the shared battery-power math.
  */
 class DreamLogicTest {
 

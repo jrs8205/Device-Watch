@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import com.google.common.truth.Truth.assertWithMessage
 import org.jarsi.devicewatch.presentation.ui.MAX_FONT_SCALE
+import org.jarsi.devicewatch.system.dream.DreamChargeState
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
