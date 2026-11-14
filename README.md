@@ -228,8 +228,9 @@ Release builds are minified with R8 and resource shrinking. The release APK is u
 
 ## Testing
 
-1175 JVM unit tests (JUnit 4 + Truth; Robolectric only for the Glance render, notification, backup-rule,
-settings-store and floating-card window tests) cover the pure logic behind every screen, service and widget:
+1349 JVM unit tests (JUnit 4 + Truth; Robolectric only for the Glance render, notification, backup-rule,
+settings-store, floating-card window and screensaver screen, settings and calendar tests) cover the logic
+behind every screen, service and widget:
 
 ```powershell
 .\gradlew.bat :app:testDebugUnitTest
@@ -281,7 +282,13 @@ settings-store and floating-card window tests) cover the pure logic behind every
   `DreamNotificationLogicTest` (which notifications show, grouping, arrivals, row fit),
   `ActiveNotificationsStoreTest`, `BurnInShiftTest`, `DeviceNameTest` (tidying, shortening,
   model codes left out), `ChargeStartLogicTest` (when charging starts the screensaver, and how),
-  `ChargeStartCommandTest` (the start command's own check of the screen, through a real `sh`)
+  `ChargeStartCommandTest` (the start command's own check of the screen, through a real `sh`),
+  `DreamStyleTest` and `DreamOptionsTest` (what each style can show, the settings read once, the
+  brightness scale), `DreamUiStateTest`, `DreamScreenTest` and `DreamStyleFitTest` (every style drawn,
+  and fitted at its narrowest), `EdgeGeometryTest` and `EdgePathTest` (the Edge line's route, colours,
+  lanes and rest), `DreamCalendarTest` and `DreamCalendarReaderTest` (which events are listed),
+  `DreamWindowTest` (wide colour and brightness reaching the window), `ScreensaverSettingsTest` (each
+  control writes its key)
 
 ## Build Outputs
 

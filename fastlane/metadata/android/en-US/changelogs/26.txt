@@ -1,0 +1,5 @@
+• Six screensaver styles to pick in Settings: Glow (the look so far), Minimal, Ring, Gauges, Night and Edge, where the battery level runs as a bright line around the screen
+• Switches for what the screensaver shows, and five accent colours for the seconds
+• Gauges can list the next calendar events; the permission is asked for only if you switch them on
+• Own brightness: a slider for the screensaver's brightness
+• The charging bolt stops pulsing at 100 %

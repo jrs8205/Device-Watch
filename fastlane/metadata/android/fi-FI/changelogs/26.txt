@@ -1,0 +1,5 @@
+• Kuusi näytönsäästäjän tyyliä, valitaan Asetuksista: Hehku (tähänastinen ulkoasu), Pelkistetty, Rengas, Mittaristo, Yö ja Reuna, jossa akun taso kulkee kirkkaana viivana näytön reunaa pitkin
+• Kytkimet sille, mitä näytönsäästäjä näyttää, ja viisi korostusväriä sekunneille
+• Mittaristo voi näyttää seuraavat kalenteritapahtumat; lupa kysytään vain kytkettäessä
+• Oma kirkkaus: liukusäädin näytönsäästäjän kirkkaudelle
+• Latauksen salama lakkaa sykkimästä, kun akku on 100 %
