@@ -22,6 +22,7 @@ import org.jarsi.devicewatch.system.dream.LocalDreamWideGamut
 import org.jarsi.devicewatch.system.dream.currentMinuteOfDay
 import org.jarsi.devicewatch.system.dream.readDreamOptions
 import org.jarsi.devicewatch.system.dream.shouldDimNow
+import org.jarsi.devicewatch.system.dream.useWideColorGamut
 import org.jarsi.devicewatch.ui.theme.ProvideBoundedDensity
 
 /**
@@ -79,7 +80,7 @@ class MonitorDreamService : DreamService(), LifecycleOwner, ViewModelStoreOwner,
         // the window is switched to wide colour and the style draws its Display P3 colours.
         val wideGamut = options.style == DreamStyle.EDGE && resources.configuration.isScreenWideColorGamut
         if (wideGamut) {
-            window?.colorMode = ActivityInfo.COLOR_MODE_WIDE_COLOR_GAMUT
+            window?.useWideColorGamut()
         }
 
         val composeView = ComposeView(this).apply {
