@@ -110,9 +110,6 @@ internal fun ScreensaverSettingsSection(
     // While the brightness slider moves, this page itself is shown at the chosen level:
     // there is no other way to judge a brightness than to see it.
     val pageWindow = remember(context) { (context as? Activity)?.window }
-    DisposableEffect(pageWindow) {
-        onDispose { pageWindow?.showBrightness(WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE) }
-    }
 
     // The calendar permission is asked for here and nowhere else, and only when the calendar
     // rows are switched on. It can also be granted or taken away on Android's own page, so
@@ -370,6 +367,17 @@ internal fun ScreensaverSettingsSection(
         )
 
         if (ownBrightness.checked) {
+            // The slider can go away in the middle of a move, with no word of the move having
+            // ended: the switch above turned off with another finger, or the page closed.
+            // Whenever it goes, the page gives the phone's brightness back, and a level that
+            // was never stored is forgotten, so the slider comes back where the screensaver's
+            // level is.
+            DisposableEffect(pageWindow) {
+                onDispose {
+                    pageWindow?.showBrightness(WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE)
+                    brightnessPercent = storedBrightnessPercent(prefs)
+                }
+            }
             Spacer(modifier = Modifier.height(10.dp))
             Text(
                 maxLines = 1,

@@ -31,6 +31,7 @@ import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.test.core.app.ApplicationProvider
 import com.google.common.truth.Truth.assertThat
@@ -369,6 +370,47 @@ class ScreensaverSettingsTest {
         assertThat(window.attributes.screenBrightness).isEqualTo(none)
         // From the middle of the slider to the right of it.
         assertThat(prefs.getInt("brightness_percent", -1)).isGreaterThan(50)
+    }
+
+    /** Moves the slider and switches Own brightness off while that finger is still down. */
+    private fun switchOffInTheMiddleOfAMove() {
+        compose.onNode(isSlider).performTouchInput {
+            down(center)
+            moveBy(Offset(60f, 0f))
+        }
+        compose.waitForIdle()
+        assertThat(compose.activity.window.attributes.screenBrightness).isGreaterThan(0f)
+
+        switchBeside(R.string.dream_brightness_title).toggle()
+        compose.waitForIdle()
+        compose.onAllNodes(isSlider).assertCountEquals(0)
+        // The finger lifts where the slider was; nothing is left there to hear of it.
+        compose.onRoot().performTouchInput { up() }
+        compose.waitForIdle()
+    }
+
+    @Test
+    fun `switching own brightness off in the middle of a move gives the phone's brightness back`() {
+        prefs.edit().putBoolean("own_brightness", true).putInt("brightness_percent", 30).commit()
+        show()
+
+        switchOffInTheMiddleOfAMove()
+
+        assertThat(compose.activity.window.attributes.screenBrightness)
+            .isEqualTo(WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE)
+    }
+
+    @Test
+    fun `a move cut short by the switch leaves the level as it was stored`() {
+        prefs.edit().putBoolean("own_brightness", true).putInt("brightness_percent", 30).commit()
+        show()
+
+        switchOffInTheMiddleOfAMove()
+        assertThat(prefs.getInt("brightness_percent", -1)).isEqualTo(30)
+
+        // Switched on again, the slider stands where the screensaver's level is.
+        switchBeside(R.string.dream_brightness_title).toggle()
+        compose.onNodeWithText(brightnessLabel(30)).assertExists()
     }
 
     @Test
