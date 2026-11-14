@@ -10,9 +10,14 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
+import android.view.WindowManager
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.SemanticsNodeInteraction
+import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
@@ -297,21 +302,73 @@ class ScreensaverSettingsTest {
         assertThat(countOf(R.string.dream_calendar_title)).isEqualTo(0)
     }
 
+    private val isSlider = SemanticsMatcher.keyIsDefined(SemanticsActions.SetProgress)
+
+    private fun brightnessLabel(percent: Int): String = context.getString(R.string.dream_brightness_level, percent)
+
     @Test
-    fun `the full brightness switch appears only for Edge and writes its key`() {
+    fun `the brightness slider comes with its switch and writes the level`() {
         show()
-        assertThat(countOf(R.string.dream_edge_brightness_title)).isEqualTo(0)
+        compose.onAllNodes(isSlider).assertCountEquals(0)
+        switchBeside(R.string.dream_brightness_title).assertIsOff()
 
-        styleItem(R.string.dream_style_edge).toggle()
-        assertThat(countOf(R.string.dream_edge_brightness_title)).isEqualTo(1)
-        switchBeside(R.string.dream_edge_brightness_title).assertIsOff()
+        switchBeside(R.string.dream_brightness_title).toggle()
+        assertThat(prefs.getBoolean("own_brightness", false)).isTrue()
+        // Until the slider is moved the level is the default.
+        compose.onNodeWithText(brightnessLabel(30)).assertExists()
 
-        switchBeside(R.string.dream_edge_brightness_title).toggle()
-        assertThat(prefs.getBoolean("edge_full_brightness", false)).isTrue()
-        switchBeside(R.string.dream_edge_brightness_title).assertIsOn()
+        compose.onNode(isSlider).performSemanticsAction(SemanticsActions.SetProgress) { it(70f) }
+        compose.waitForIdle()
+        assertThat(prefs.getInt("brightness_percent", -1)).isEqualTo(70)
+        compose.onNodeWithText(brightnessLabel(70)).assertExists()
 
-        styleItem(R.string.dream_style_ring).toggle()
-        assertThat(countOf(R.string.dream_edge_brightness_title)).isEqualTo(0)
+        // Switched off, the slider goes and the level is kept for the next time.
+        switchBeside(R.string.dream_brightness_title).toggle()
+        assertThat(prefs.getBoolean("own_brightness", true)).isFalse()
+        compose.onAllNodes(isSlider).assertCountEquals(0)
+        assertThat(prefs.getInt("brightness_percent", -1)).isEqualTo(70)
+    }
+
+    @Test
+    fun `the stored brightness level is where the slider stands`() {
+        prefs.edit().putBoolean("own_brightness", true).putInt("brightness_percent", 45).commit()
+
+        show()
+
+        compose.onNodeWithText(brightnessLabel(45)).assertExists()
+    }
+
+    @Test
+    fun `a brightness level of the wrong type shows as the default`() {
+        prefs.edit().putBoolean("own_brightness", true).putString("brightness_percent", "70").commit()
+
+        show()
+
+        compose.onNodeWithText(brightnessLabel(30)).assertExists()
+    }
+
+    @Test
+    fun `moving the brightness slider shows that brightness on the page, and letting go gives the phone's back`() {
+        prefs.edit().putBoolean("own_brightness", true).putInt("brightness_percent", 30).commit()
+        show()
+        val window = compose.activity.window
+        val none = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+        assertThat(window.attributes.screenBrightness).isEqualTo(none)
+
+        compose.onNode(isSlider).performTouchInput {
+            down(center)
+            moveBy(Offset(60f, 0f))
+        }
+        compose.waitForIdle()
+        val shown = window.attributes.screenBrightness
+        assertThat(shown).isGreaterThan(0f)
+        assertThat(shown).isAtMost(1f)
+
+        compose.onNode(isSlider).performTouchInput { up() }
+        compose.waitForIdle()
+        assertThat(window.attributes.screenBrightness).isEqualTo(none)
+        // From the middle of the slider to the right of it.
+        assertThat(prefs.getInt("brightness_percent", -1)).isGreaterThan(50)
     }
 
     @Test

@@ -34,8 +34,11 @@ object DreamPreferences {
     const val KEY_SHOW_CALENDAR = "show_calendar"
     const val KEY_SHOW_CALENDAR_TITLES = "show_calendar_titles"
 
-    // The Edge style at the screen's full brightness (never while the screensaver is dimmed).
-    const val KEY_EDGE_FULL_BRIGHTNESS = "edge_full_brightness"
+    // The screensaver's own screen brightness instead of the phone's: the switch, and the
+    // level in per cent. Never in force while the screensaver is dimmed.
+    const val KEY_OWN_BRIGHTNESS = "own_brightness"
+    const val KEY_BRIGHTNESS_PERCENT = "brightness_percent"
+    const val DEFAULT_BRIGHTNESS_PERCENT = 30
 
     // The colour of the clock's seconds (DreamAccent.id); missing or unknown means sky blue.
     const val KEY_ACCENT = "accent_color"

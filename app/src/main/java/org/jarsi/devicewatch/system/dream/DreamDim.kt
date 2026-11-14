@@ -4,6 +4,7 @@ import android.content.SharedPreferences
 import android.view.WindowManager
 import org.jarsi.devicewatch.system.DreamPreferences
 import java.util.Calendar
+import kotlin.math.pow
 
 /** Minutes since local midnight, for the night-dim window check. */
 internal fun currentMinuteOfDay(): Int {
@@ -59,15 +60,29 @@ internal fun effectiveDreamStyle(
     nightWindowActive: Boolean,
 ): DreamStyle = if (nightStyleAuto && nightWindowActive) DreamStyle.NIGHT else selected
 
+/** The power of the brightness scale: see [dreamBrightnessOf]. */
+private const val BRIGHTNESS_CURVE = 2.2
+
 /**
- * The brightness the screensaver's window asks for: the screen's full brightness for the
- * Edge style when its switch is on, otherwise none of its own, which leaves the phone's
- * brightness as it is. Never while the screensaver is dimmed: [dimNow] is the manual dim
- * switch or the night window, and dimming is the stronger wish.
+ * The window brightness, 0..1, for a level of 1..100 per cent; 100 is the brightest a
+ * window can ask for. The eye judges brightness by ratio, not by difference, so the scale
+ * is a power curve: its steps look about even, where even steps of light would crowd all
+ * that a dim room needs into the slider's first few per cent.
  */
-internal fun dreamWindowBrightness(options: DreamOptions, dimNow: Boolean): Float =
-    if (options.style == DreamStyle.EDGE && options.edgeFullBrightness && !dimNow) {
-        WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_FULL
-    } else {
+internal fun dreamBrightnessOf(percent: Int): Float =
+    (percent.coerceIn(1, 100) / 100.0).pow(BRIGHTNESS_CURVE).toFloat()
+
+/**
+ * The brightness the screensaver's window asks for: the user's own level when one is
+ * set, in every style, otherwise none of its own, which leaves the phone's brightness
+ * as it is. Never while the screensaver is dimmed: [dimNow] is the manual dim switch or
+ * the night window, and dimming is the stronger wish.
+ */
+internal fun dreamWindowBrightness(options: DreamOptions, dimNow: Boolean): Float {
+    val percent = options.brightnessPercent
+    return if (percent == null || dimNow) {
         WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+    } else {
+        dreamBrightnessOf(percent)
     }
+}

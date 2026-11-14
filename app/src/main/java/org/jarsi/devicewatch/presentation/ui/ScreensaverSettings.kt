@@ -5,6 +5,8 @@ import android.app.Activity
 import android.content.Context
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
+import android.view.Window
+import android.view.WindowManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
@@ -28,8 +30,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -59,9 +63,12 @@ import org.jarsi.devicewatch.system.dream.DreamField
 import org.jarsi.devicewatch.system.dream.DreamOptions
 import org.jarsi.devicewatch.system.dream.DreamPreview
 import org.jarsi.devicewatch.system.dream.DreamStyle
+import org.jarsi.devicewatch.system.dream.dreamBrightnessOf
 import org.jarsi.devicewatch.system.dream.readDreamOptions
 import org.jarsi.devicewatch.system.dream.rememberSampleDreamUiState
+import org.jarsi.devicewatch.system.dream.storedBrightnessPercent
 import org.jarsi.devicewatch.system.dream.supports
+import kotlin.math.roundToInt
 
 /** Space between two rows of one group, and between two groups of the section. */
 private val ROW_GAP = 16.dp
@@ -98,7 +105,14 @@ internal fun ScreensaverSettingsSection(
     val startOnCharge = rememberDreamSwitch(prefs, DreamPreferences.KEY_START_ON_CHARGE, false)
     val showCalendar = rememberDreamSwitch(prefs, DreamPreferences.KEY_SHOW_CALENDAR, false)
     val showCalendarTitles = rememberDreamSwitch(prefs, DreamPreferences.KEY_SHOW_CALENDAR_TITLES, true)
-    val edgeFullBrightness = rememberDreamSwitch(prefs, DreamPreferences.KEY_EDGE_FULL_BRIGHTNESS, false)
+    val ownBrightness = rememberDreamSwitch(prefs, DreamPreferences.KEY_OWN_BRIGHTNESS, false)
+    var brightnessPercent by remember { mutableIntStateOf(storedBrightnessPercent(prefs)) }
+    // While the brightness slider moves, this page itself is shown at the chosen level:
+    // there is no other way to judge a brightness than to see it.
+    val pageWindow = remember(context) { (context as? Activity)?.window }
+    DisposableEffect(pageWindow) {
+        onDispose { pageWindow?.showBrightness(WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE) }
+    }
 
     // The calendar permission is asked for here and nowhere else, and only when the calendar
     // rows are switched on. It can also be granted or taken away on Android's own page, so
@@ -233,17 +247,6 @@ internal fun ScreensaverSettingsSection(
             )
         }
 
-        if (style == DreamStyle.EDGE) {
-            Spacer(modifier = Modifier.height(GROUP_GAP))
-
-            SettingsToggleRow(
-                titleRes = R.string.dream_edge_brightness_title,
-                descriptionRes = R.string.dream_edge_brightness_description,
-                checked = edgeFullBrightness.checked,
-                onCheckedChange = edgeFullBrightness::set,
-            )
-        }
-
         Spacer(modifier = Modifier.height(GROUP_GAP))
 
         // Shown information. A switch for something the chosen style has no place for is
@@ -358,7 +361,45 @@ internal fun ScreensaverSettingsSection(
 
         Spacer(modifier = Modifier.height(GROUP_GAP))
 
-        // Dimming
+        // Brightness and dimming
+        SettingsToggleRow(
+            titleRes = R.string.dream_brightness_title,
+            descriptionRes = R.string.dream_brightness_description,
+            checked = ownBrightness.checked,
+            onCheckedChange = ownBrightness::set,
+        )
+
+        if (ownBrightness.checked) {
+            Spacer(modifier = Modifier.height(10.dp))
+            Text(
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                text = stringResource(R.string.dream_brightness_level, brightnessPercent),
+                fontWeight = FontWeight.Medium,
+                fontSize = 14.sp
+            )
+            Slider(
+                value = brightnessPercent.toFloat(),
+                onValueChange = { value ->
+                    brightnessPercent = value.roundToInt()
+                    pageWindow?.showBrightness(dreamBrightnessOf(brightnessPercent))
+                },
+                onValueChangeFinished = withTapHaptic {
+                    prefs.edit().putInt(DreamPreferences.KEY_BRIGHTNESS_PERCENT, brightnessPercent).apply()
+                    pageWindow?.showBrightness(WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE)
+                },
+                valueRange = 1f..100f,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Text(
+                text = stringResource(R.string.dream_brightness_hint),
+                fontSize = 11.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        Spacer(modifier = Modifier.height(ROW_GAP))
+
         SettingsToggleRow(
             titleRes = R.string.dim_screensaver_title,
             descriptionRes = R.string.dim_screensaver_description,
@@ -542,6 +583,11 @@ private fun DreamStylePicker(
 }
 
 /** Whether the calendar permission has been asked for on this phone; not backed up. */
+/** Shows the settings page itself at [brightness], or at the phone's own again. */
+private fun Window.showBrightness(brightness: Float) {
+    attributes = attributes.apply { screenBrightness = brightness }
+}
+
 private const val KEY_CALENDAR_PERMISSION_REQUESTED = "calendar_permission_requested"
 
 private fun hasCalendarPermission(context: Context): Boolean =

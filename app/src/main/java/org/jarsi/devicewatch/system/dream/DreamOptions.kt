@@ -43,8 +43,8 @@ internal data class DreamOptions(
     val showCalendarTitles: Boolean = true,
     /** Switch to the Night style for the hours of the night dim. */
     val nightStyleAuto: Boolean = false,
-    /** Show the Edge style at the screen's full brightness. */
-    val edgeFullBrightness: Boolean = false,
+    /** The screensaver's own screen brightness in per cent; null keeps the phone's. */
+    val brightnessPercent: Int? = null,
 ) {
     /** Whether the field is drawn: the style has a place for it and its switch is on. */
     fun shows(field: DreamField): Boolean = style.supports(field) && when (field) {
@@ -81,8 +81,26 @@ internal fun readDreamOptions(prefs: SharedPreferences): DreamOptions {
         showCalendar = prefs.booleanOr(DreamPreferences.KEY_SHOW_CALENDAR, defaults.showCalendar),
         showCalendarTitles = prefs.booleanOr(DreamPreferences.KEY_SHOW_CALENDAR_TITLES, defaults.showCalendarTitles),
         nightStyleAuto = prefs.booleanOr(DreamPreferences.KEY_NIGHT_STYLE_AUTO, defaults.nightStyleAuto),
-        edgeFullBrightness = prefs.booleanOr(DreamPreferences.KEY_EDGE_FULL_BRIGHTNESS, defaults.edgeFullBrightness),
+        brightnessPercent = if (prefs.booleanOr(DreamPreferences.KEY_OWN_BRIGHTNESS, false)) {
+            storedBrightnessPercent(prefs)
+        } else {
+            null
+        },
     )
+}
+
+/**
+ * The stored brightness level, 1..100, whether or not the screensaver's own brightness is
+ * switched on: the settings page shows it either way. Missing or of another type, it is
+ * the default.
+ */
+internal fun storedBrightnessPercent(prefs: SharedPreferences): Int {
+    val stored = try {
+        prefs.getInt(DreamPreferences.KEY_BRIGHTNESS_PERCENT, DreamPreferences.DEFAULT_BRIGHTNESS_PERCENT)
+    } catch (_: ClassCastException) {
+        DreamPreferences.DEFAULT_BRIGHTNESS_PERCENT
+    }
+    return stored.coerceIn(1, 100)
 }
 
 private fun SharedPreferences.booleanOr(key: String, default: Boolean): Boolean =

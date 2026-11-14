@@ -350,8 +350,10 @@
     <string name="dream_night_style_title">Night style during night dim</string>
     <string name="dream_night_style_description">Between the night dim times the screensaver switches to the Night style, and back afterwards.</string>
     <string name="dream_percent_spaced">%1$d%%</string>
-    <string name="dream_edge_brightness_title">Full brightness</string>
-    <string name="dream_edge_brightness_description">The Edge style is shown at full screen brightness, but not while the screensaver is dimmed.</string>
+    <string name="dream_brightness_title">Own brightness</string>
+    <string name="dream_brightness_description">The screensaver uses the brightness set below, in every style, instead of following the phone. Not in force while the screensaver is dimmed.</string>
+    <string name="dream_brightness_level">Brightness %1$d%%</string>
+    <string name="dream_brightness_hint">While you move the slider, this page is shown at the chosen brightness.</string>
     <string name="dream_calendar_title">Show calendar</string>
     <string name="dream_calendar_description">Up to three coming events on the Gauges style. Needs permission to read the calendar.</string>
     <string name="dream_calendar_titles_title">Show event titles</string>

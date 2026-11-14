@@ -85,9 +85,8 @@ class MonitorDreamService : DreamService(), LifecycleOwner, ViewModelStoreOwner,
         if (wideGamut) {
             window?.useWideColorGamut()
         }
-        // The Edge style can ask for the screen's full brightness (user setting), though not
-        // while the screensaver is dimmed. The clock loop asks again once a minute, like the
-        // dimming above.
+        // The screensaver's own brightness (user setting), though not while it is dimmed.
+        // The clock loop asks again once a minute, like the dimming above.
         window?.setDreamBrightness(dreamWindowBrightness(options, dimNow))
 
         val composeView = ComposeView(this).apply {

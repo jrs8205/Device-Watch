@@ -223,27 +223,64 @@ class DreamOptionsTest {
     }
 
     @Test
-    fun `Edge's full brightness is off until it is switched on`() {
-        assertThat(readDreamOptions(prefs).edgeFullBrightness).isFalse()
+    fun `the screensaver keeps the phone's brightness until its own is switched on`() {
+        assertThat(readDreamOptions(prefs).brightnessPercent).isNull()
 
-        prefs.edit().putBoolean("edge_full_brightness", true).commit()
-        assertThat(readDreamOptions(prefs).edgeFullBrightness).isTrue()
+        // A level alone, without the switch, changes nothing.
+        prefs.edit().putInt("brightness_percent", 55).commit()
+        assertThat(readDreamOptions(prefs).brightnessPercent).isNull()
 
-        // Stored with another type, as a backup from elsewhere might: the default.
-        prefs.edit().putString("edge_full_brightness", "true").commit()
-        assertThat(readDreamOptions(prefs).edgeFullBrightness).isFalse()
+        prefs.edit().putBoolean("own_brightness", true).commit()
+        assertThat(readDreamOptions(prefs).brightnessPercent).isEqualTo(55)
     }
 
     @Test
-    fun `full brightness is asked for only by Edge, only when switched on, and never while dimmed`() {
-        val none = android.view.WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
-        val edge = DreamOptions(style = DreamStyle.EDGE, edgeFullBrightness = true)
+    fun `own brightness without a stored level starts at the default, and a level stays within 1 to 100`() {
+        prefs.edit().putBoolean("own_brightness", true).commit()
+        assertThat(readDreamOptions(prefs).brightnessPercent).isEqualTo(30)
 
-        assertThat(dreamWindowBrightness(edge, dimNow = false)).isEqualTo(1f)
-        assertThat(dreamWindowBrightness(edge, dimNow = true)).isEqualTo(none)
-        assertThat(dreamWindowBrightness(edge.copy(edgeFullBrightness = false), dimNow = false)).isEqualTo(none)
-        for (style in DreamStyle.entries - DreamStyle.EDGE) {
-            assertThat(dreamWindowBrightness(edge.copy(style = style), dimNow = false)).isEqualTo(none)
+        prefs.edit().putInt("brightness_percent", 0).commit()
+        assertThat(readDreamOptions(prefs).brightnessPercent).isEqualTo(1)
+
+        prefs.edit().putInt("brightness_percent", 250).commit()
+        assertThat(readDreamOptions(prefs).brightnessPercent).isEqualTo(100)
+    }
+
+    @Test
+    fun `brightness values of another type fall back to their defaults`() {
+        // As a backup from elsewhere might store them.
+        prefs.edit().putBoolean("own_brightness", true).putString("brightness_percent", "70").commit()
+        assertThat(readDreamOptions(prefs).brightnessPercent).isEqualTo(30)
+
+        prefs.edit().putString("own_brightness", "true").putInt("brightness_percent", 70).commit()
+        assertThat(readDreamOptions(prefs).brightnessPercent).isNull()
+    }
+
+    @Test
+    fun `own brightness is asked for in every style, and never while dimmed`() {
+        val none = android.view.WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+        for (style in DreamStyle.entries) {
+            val own = DreamOptions(style = style, brightnessPercent = 40)
+            assertThat(dreamWindowBrightness(own, dimNow = false)).isEqualTo(dreamBrightnessOf(40))
+            assertThat(dreamWindowBrightness(own, dimNow = true)).isEqualTo(none)
+            assertThat(dreamWindowBrightness(DreamOptions(style = style), dimNow = false)).isEqualTo(none)
         }
+    }
+
+    @Test
+    fun `the brightness scale runs from nearly dark to the brightest a window can ask for`() {
+        assertThat(dreamBrightnessOf(100)).isEqualTo(1f)
+        // Never the negative value that means "no brightness of my own".
+        assertThat(dreamBrightnessOf(1)).isGreaterThan(0f)
+        assertThat(dreamBrightnessOf(1)).isLessThan(0.001f)
+        // Every step is brighter than the one before.
+        for (percent in 2..100) {
+            assertThat(dreamBrightnessOf(percent)).isGreaterThan(dreamBrightnessOf(percent - 1))
+        }
+        // The eye judges by ratio: half the scale is about a fifth of the light.
+        assertThat(dreamBrightnessOf(50)).isWithin(0.03f).of(0.22f)
+        // Outside the scale: the nearer end.
+        assertThat(dreamBrightnessOf(0)).isEqualTo(dreamBrightnessOf(1))
+        assertThat(dreamBrightnessOf(140)).isEqualTo(1f)
     }
 }

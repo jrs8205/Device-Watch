@@ -73,7 +73,7 @@ The default app language is English. Finnish users get a localized app name and 
 - Screensaver clock follows the device 12/24-hour setting, with a second-aligned tick
 - Six screensaver styles to choose from in Settings, each with a thumbnail drawn by the screensaver's own code: Glow (the original look, and the default), Minimal, Ring, Gauges, Night and Edge; every style works upright, on its side and flipped upside down
 - Glow: a battery-level-tinted background gradient and a softly pulsing charge indicator
-- Edge: the battery level as a bright line round the screen's edge, running from red to green with the level, its head pulsing while the battery charges; against burn-in the line changes place once a minute and dims after ten minutes without a change; an optional *Full brightness* switch shows it at the screen's full brightness, except while the screensaver is dimmed
+- Edge: the battery level as a bright line round the screen's edge, running from red to green with the level, its head pulsing while the battery charges; against burn-in the line changes place once a minute and dims after ten minutes without a change
 - Night: the clock, the next alarm and the battery in dim red on black, and an option to switch to it automatically for the night-dim hours
 - Gauges: monospaced figures on named rows, and optionally the next three calendar events (off by default; the calendar permission is asked for only when you switch the rows on, and the titles can be hidden)
 - Switches for what the screensaver shows (device name, seconds, date, next alarm, notification icons, battery details, time to full) and five accent colours for the seconds
@@ -82,6 +82,7 @@ The default app language is English. Finnish users get a localized app name and 
 - The phone's name (Android's device name, tidied and shortened, e.g. "Pixel 10 Pro") on a small line above the screensaver clock; can be turned off
 - Optional start as soon as charging begins with the screen off, even with Always On Display on: at once through the dream manager with extended access, otherwise by waking the screen so the lock screen times out into the screensaver; nothing happens while the screen is on, and Android's own screensaver choice and "when to start" are respected
 - Icons of unread notifications under the screensaver clock (one per app, with a count), pulsing when a new one arrives; needs notification access and can be turned off in Settings
+- *Own brightness* in Settings: a slider sets the screensaver's brightness for every style instead of following the phone's, and the settings page shows the level while the slider moves; it is not in force while the screensaver is dimmed
 - *Flip upside down* in Settings for a stand that holds the phone upside down; the choice is remembered, and Glow's gradient and Edge's line turn with it
 - Battery full notification while the screensaver is active
 - English default resources with Finnish localization
