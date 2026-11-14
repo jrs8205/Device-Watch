@@ -43,7 +43,6 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -71,7 +70,6 @@ import org.jarsi.devicewatch.data.DataCounterMode
 import org.jarsi.devicewatch.presentation.DashboardUiState
 import org.jarsi.devicewatch.presentation.RootStatus
 import org.jarsi.devicewatch.presentation.ShizukuStatus
-import org.jarsi.devicewatch.system.DreamPreferences
 import kotlin.math.roundToInt
 
 /**
@@ -158,76 +156,6 @@ internal fun SettingsTab(
     LifecycleResumeEffect(Unit) {
         notificationsEnabled = NotificationManagerCompat.from(context).areNotificationsEnabled()
         onPauseOrDispose { }
-    }
-
-    val dreamPrefs = remember(context) {
-        context.getSharedPreferences(DreamPreferences.PREFS_NAME, Context.MODE_PRIVATE)
-    }
-    var forcePortraitScreensaver by remember {
-        mutableStateOf(dreamPrefs.getBoolean(DreamPreferences.KEY_FORCE_PORTRAIT, false))
-    }
-    var dimScreensaver by remember {
-        mutableStateOf(dreamPrefs.getBoolean(DreamPreferences.KEY_DIM_SCREENSAVER, false))
-    }
-    var nightDimScreensaver by remember {
-        mutableStateOf(dreamPrefs.getBoolean(DreamPreferences.KEY_NIGHT_DIM, false))
-    }
-    var showDreamNotifications by remember {
-        mutableStateOf(dreamPrefs.getBoolean(DreamPreferences.KEY_SHOW_NOTIFICATIONS, true))
-    }
-    var verticalShiftOnly by remember {
-        mutableStateOf(dreamPrefs.getBoolean(DreamPreferences.KEY_VERTICAL_SHIFT_ONLY, false))
-    }
-    var showDreamDeviceName by remember {
-        mutableStateOf(dreamPrefs.getBoolean(DreamPreferences.KEY_SHOW_DEVICE_NAME, true))
-    }
-    var startDreamOnCharge by remember {
-        mutableStateOf(dreamPrefs.getBoolean(DreamPreferences.KEY_START_ON_CHARGE, false))
-    }
-    var nightDimStartMinutes by remember {
-        mutableIntStateOf(
-            dreamPrefs.getInt(
-                DreamPreferences.KEY_NIGHT_DIM_START_MINUTES,
-                DreamPreferences.DEFAULT_NIGHT_DIM_START_MINUTES
-            )
-        )
-    }
-    var nightDimEndMinutes by remember {
-        mutableIntStateOf(
-            dreamPrefs.getInt(
-                DreamPreferences.KEY_NIGHT_DIM_END_MINUTES,
-                DreamPreferences.DEFAULT_NIGHT_DIM_END_MINUTES
-            )
-        )
-    }
-    var showNightDimStartPicker by remember { mutableStateOf(false) }
-    var showNightDimEndPicker by remember { mutableStateOf(false) }
-
-    if (showNightDimStartPicker) {
-        NightDimTimePickerDialog(
-            initialMinutes = nightDimStartMinutes,
-            onConfirm = { minutes ->
-                nightDimStartMinutes = minutes
-                dreamPrefs.edit()
-                    .putInt(DreamPreferences.KEY_NIGHT_DIM_START_MINUTES, minutes)
-                    .apply()
-                showNightDimStartPicker = false
-            },
-            onDismiss = { showNightDimStartPicker = false }
-        )
-    }
-    if (showNightDimEndPicker) {
-        NightDimTimePickerDialog(
-            initialMinutes = nightDimEndMinutes,
-            onConfirm = { minutes ->
-                nightDimEndMinutes = minutes
-                dreamPrefs.edit()
-                    .putInt(DreamPreferences.KEY_NIGHT_DIM_END_MINUTES, minutes)
-                    .apply()
-                showNightDimEndPicker = false
-            },
-            onDismiss = { showNightDimEndPicker = false }
-        )
     }
 
     fun openSpecialAccessSettings(action: String) {
@@ -645,169 +573,10 @@ internal fun SettingsTab(
         }
 
         // Screensaver settings
-        SettingsSectionCard(titleRes = R.string.screensaver_settings_section) {
-            Spacer(modifier = Modifier.height(4.dp))
-
-            SettingsToggleRow(
-                titleRes = R.string.force_portrait_title,
-                descriptionRes = R.string.force_portrait_description,
-                checked = forcePortraitScreensaver,
-                onCheckedChange = { checked ->
-                    forcePortraitScreensaver = checked
-                    dreamPrefs.edit()
-                        .putBoolean(DreamPreferences.KEY_FORCE_PORTRAIT, checked)
-                        .apply()
-                }
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            SettingsToggleRow(
-                titleRes = R.string.dim_screensaver_title,
-                descriptionRes = R.string.dim_screensaver_description,
-                checked = dimScreensaver,
-                onCheckedChange = { checked ->
-                    dimScreensaver = checked
-                    dreamPrefs.edit()
-                        .putBoolean(DreamPreferences.KEY_DIM_SCREENSAVER, checked)
-                        .apply()
-                }
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            SettingsToggleRow(
-                titleRes = R.string.night_dim_title,
-                descriptionRes = R.string.night_dim_description,
-                checked = nightDimScreensaver,
-                onCheckedChange = { checked ->
-                    nightDimScreensaver = checked
-                    dreamPrefs.edit()
-                        .putBoolean(DreamPreferences.KEY_NIGHT_DIM, checked)
-                        .apply()
-                }
-            )
-
-            if (nightDimScreensaver) {
-                Spacer(modifier = Modifier.height(10.dp))
-                Row(modifier = Modifier.fillMaxWidth()) {
-                    OutlinedButton(
-                        onClick = withTapHaptic { showNightDimStartPicker = true },
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Text(
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            text = stringResource(
-                                R.string.night_dim_start_label,
-                                minutesText(nightDimStartMinutes)
-                            ),
-                            fontSize = 12.sp
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    OutlinedButton(
-                        onClick = withTapHaptic { showNightDimEndPicker = true },
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Text(
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            text = stringResource(
-                                R.string.night_dim_end_label,
-                                minutesText(nightDimEndMinutes)
-                            ),
-                            fontSize = 12.sp
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            SettingsToggleRow(
-                titleRes = R.string.dream_notifications_title,
-                descriptionRes = R.string.dream_notifications_description,
-                checked = showDreamNotifications,
-                onCheckedChange = { checked ->
-                    showDreamNotifications = checked
-                    dreamPrefs.edit()
-                        .putBoolean(DreamPreferences.KEY_SHOW_NOTIFICATIONS, checked)
-                        .apply()
-                }
-            )
-
-            if (showDreamNotifications && !uiState.notificationAccessEnabled) {
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = stringResource(R.string.dream_notifications_access_missing),
-                    fontSize = 11.sp,
-                    color = MaterialTheme.colorScheme.error
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            SettingsToggleRow(
-                titleRes = R.string.dream_vertical_shift_title,
-                descriptionRes = R.string.dream_vertical_shift_description,
-                checked = verticalShiftOnly,
-                onCheckedChange = { checked ->
-                    verticalShiftOnly = checked
-                    dreamPrefs.edit()
-                        .putBoolean(DreamPreferences.KEY_VERTICAL_SHIFT_ONLY, checked)
-                        .apply()
-                }
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            SettingsToggleRow(
-                titleRes = R.string.dream_device_name_title,
-                descriptionRes = R.string.dream_device_name_description,
-                checked = showDreamDeviceName,
-                onCheckedChange = { checked ->
-                    showDreamDeviceName = checked
-                    dreamPrefs.edit()
-                        .putBoolean(DreamPreferences.KEY_SHOW_DEVICE_NAME, checked)
-                        .apply()
-                }
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            SettingsToggleRow(
-                titleRes = R.string.dream_start_on_charge_title,
-                descriptionRes = R.string.dream_start_on_charge_description,
-                checked = startDreamOnCharge,
-                onCheckedChange = { checked ->
-                    startDreamOnCharge = checked
-                    dreamPrefs.edit()
-                        .putBoolean(DreamPreferences.KEY_START_ON_CHARGE, checked)
-                        .apply()
-                }
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            OutlinedButton(
-                onClick = withTapHaptic { openSpecialAccessSettings(Settings.ACTION_DREAM_SETTINGS) },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Text(stringResource(R.string.open_screensaver_settings), fontSize = 12.sp)
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Text(
-                text = stringResource(R.string.screensaver_charging_hint),
-                fontSize = 11.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
+        ScreensaverSettingsSection(
+            notificationAccessEnabled = uiState.notificationAccessEnabled,
+            onOpenDreamSettings = { openSpecialAccessSettings(Settings.ACTION_DREAM_SETTINGS) },
+        )
 
         // Special access — the dot is green when granted, red when missing
         SettingsSectionCard(titleRes = R.string.special_access_section) {

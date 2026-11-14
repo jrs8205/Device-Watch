@@ -334,6 +334,8 @@
     <string name="screensaver_settings_section">SCREENSAVER</string>
     <string name="force_portrait_title">Force portrait orientation</string>
     <string name="force_portrait_description">Keep the screensaver upright even when the device is in landscape.</string>
+    <string name="dream_flip_title">Flip upside down</string>
+    <string name="dream_flip_description">For a stand that holds the phone upside down: the screensaver turns 180°.</string>
     <string name="dim_screensaver_title">Dim the screensaver</string>
     <string name="dim_screensaver_description">Lower the screen brightness while the screensaver is showing (easier on the eyes overnight).</string>
     <string name="night_dim_title">Dim at night</string>

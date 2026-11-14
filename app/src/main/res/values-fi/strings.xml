@@ -330,6 +330,8 @@
     <string name="screensaver_settings_section">NÄYTÖNSÄÄSTÄJÄ</string>
     <string name="force_portrait_title">Pakota pystyasento</string>
     <string name="force_portrait_description">Pidä näytönsäästäjä pystyssä, vaikka laite olisi vaaka-asennossa.</string>
+    <string name="dream_flip_title">Käännä ylösalaisin</string>
+    <string name="dream_flip_description">Telineelle, jossa puhelin on ylösalaisin: näytönsäästäjä kääntyy 180°.</string>
     <string name="dim_screensaver_title">Himmennä näytönsäästäjä</string>
     <string name="dim_screensaver_description">Laske näytön kirkkautta näytönsäästäjän aikana (miellyttävämpi silmille yöllä).</string>
     <string name="night_dim_title">Himmennä yöllä</string>
