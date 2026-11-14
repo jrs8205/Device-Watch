@@ -2,6 +2,9 @@ package org.jarsi.devicewatch.system.dream
 
 import android.app.Application
 import android.graphics.Bitmap
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import android.graphics.Canvas
 import androidx.compose.ui.platform.ViewRootForTest
 import androidx.compose.ui.test.assertCountEquals
@@ -12,6 +15,7 @@ import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.test.core.app.ApplicationProvider
 import com.google.common.truth.Truth.assertThat
+import com.google.common.truth.Truth.assertWithMessage
 import org.jarsi.devicewatch.R
 import org.junit.Rule
 import org.junit.Test
@@ -38,10 +42,140 @@ class DreamScreenTest {
     private fun sample(): DreamUiState =
         sampleDreamUiState(context, nowMs = SAMPLE_NOW_MS, locale = Locale.US, is24Hour = true)
 
+    /** What is on the screen; a test may change it after [show]. */
+    private var shownOptions by mutableStateOf(DreamOptions())
+
     private fun show(options: DreamOptions = DreamOptions(), landscape: Boolean, onTap: (() -> Unit)? = null) {
         val state = sample()
+        shownOptions = options
         compose.setContent {
-            DreamScreen(state = state, options = options, landscape = landscape, onTap = onTap, moving = false)
+            DreamScreen(state = state, options = shownOptions, landscape = landscape, onTap = onTap, moving = false)
+        }
+    }
+
+    /** How many texts on the screen are, or contain, [text]. */
+    private fun countOf(text: String, substring: Boolean = false): Int =
+        compose.onAllNodesWithText(text, substring = substring).fetchSemanticsNodes().size
+
+    /**
+     * For every style in [texts]: the text is on the screen with the switch on and gone
+     * with it off. [texts] gives, per style, the text that stands for the field there
+     * (a part of a longer line when [substring] is set).
+     */
+    private fun assertSwitchHides(
+        texts: Map<DreamStyle, String>,
+        substring: Boolean = false,
+        off: DreamOptions.() -> DreamOptions,
+    ) {
+        show(landscape = false)
+        for ((style, text) in texts) {
+            shownOptions = DreamOptions(style = style)
+            compose.waitForIdle()
+            assertWithMessage("$style with the switch on: \"$text\"").that(countOf(text, substring)).isAtLeast(1)
+
+            shownOptions = DreamOptions(style = style).off()
+            compose.waitForIdle()
+            assertWithMessage("$style with the switch off: \"$text\"").that(countOf(text, substring)).isEqualTo(0)
+        }
+    }
+
+    @Test
+    fun `switched-off seconds are not drawn`() {
+        val state = sample()
+        assertSwitchHides(
+            mapOf(
+                DreamStyle.GLOW to ":${state.secondsText}",
+                DreamStyle.EDGE to ":${state.secondsText}",
+                DreamStyle.GAUGES to ":${state.secondsText}",
+                DreamStyle.RING to state.secondsText,
+            ),
+        ) { copy(showSeconds = false) }
+    }
+
+    @Test
+    fun `a switched-off date is not drawn`() {
+        val state = sample()
+        assertSwitchHides(
+            mapOf(
+                DreamStyle.GLOW to state.dateText,
+                DreamStyle.EDGE to state.dateText,
+                DreamStyle.MINIMAL to state.shortDateText.uppercase(Locale.US),
+                DreamStyle.RING to state.shortDateText.uppercase(Locale.US),
+                DreamStyle.GAUGES to state.compactDateText.uppercase(Locale.US),
+            ),
+            substring = true,
+        ) { copy(showDate = false) }
+    }
+
+    @Test
+    fun `a switched-off alarm is not drawn`() {
+        val state = sample()
+        assertSwitchHides(
+            mapOf(
+                DreamStyle.GLOW to state.alarmText,
+                DreamStyle.EDGE to state.alarmText,
+                DreamStyle.NIGHT to state.alarmText.uppercase(Locale.US),
+                DreamStyle.GAUGES to context.getString(R.string.dream_row_alarm),
+            ),
+            substring = true,
+        ) { copy(showAlarm = false) }
+    }
+
+    @Test
+    fun `switched-off battery details are not drawn`() {
+        assertSwitchHides(
+            mapOf(
+                DreamStyle.GLOW to "3.82 V",
+                DreamStyle.EDGE to "3.82 V",
+                DreamStyle.MINIMAL to "11.0 W",
+                DreamStyle.RING to "26.3 \u00B0C",
+                DreamStyle.GAUGES to context.getString(R.string.dream_row_temperature),
+            ),
+            substring = true,
+        ) { copy(showBatteryDetails = false) }
+    }
+
+    @Test
+    fun `a switched-off estimate is not drawn`() {
+        val state = sample()
+        assertSwitchHides(
+            mapOf(
+                DreamStyle.GLOW to state.fullTimeText,
+                DreamStyle.EDGE to state.fullTimeText,
+                DreamStyle.GAUGES to context.getString(R.string.dream_row_full),
+            ),
+        ) { copy(showEstimate = false) }
+    }
+
+    @Test
+    fun `a switched-off device name is not drawn`() {
+        assertSwitchHides(
+            mapOf(
+                DreamStyle.GLOW to "Pixel 8a",
+                DreamStyle.EDGE to "Pixel 8a",
+                DreamStyle.GAUGES to "PIXEL 8A",
+            ),
+        ) { copy(showDeviceName = false) }
+    }
+
+    @Test
+    fun `with everything switched off the clock and the level are still there`() {
+        val state = sample()
+        show(landscape = false)
+        for (style in DreamStyle.entries) {
+            shownOptions = DreamOptions(
+                style = style,
+                showDeviceName = false,
+                showNotifications = false,
+                showSeconds = false,
+                showDate = false,
+                showAlarm = false,
+                showBatteryDetails = false,
+                showEstimate = false,
+            )
+            compose.waitForIdle()
+            assertWithMessage("$style: the time").that(countOf(state.timeText)).isEqualTo(1)
+            assertWithMessage("$style: the level").that(countOf("64%", substring = true)).isAtLeast(1)
         }
     }
 

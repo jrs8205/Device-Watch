@@ -75,12 +75,21 @@ internal fun BoxWithConstraintsScope.GlowContent(state: DreamUiState, options: D
     val chargeState = state.chargeState
     val batteryLevel = state.batteryLevel
     val detailsStr = glowDetailsText(state)
-    val fullTimeStr = state.fullTimeText
+    val showDetails = options.shows(DreamField.BATTERY_DETAILS)
+    val fullTimeStr = if (options.shows(DreamField.ESTIMATE)) state.fullTimeText else ""
+    val showSeconds = options.shows(DreamField.SECONDS)
+    val showDate = options.shows(DreamField.DATE)
+    // The column beside the time: the seconds, or AM/PM alone on a 12-hour clock.
+    val hasClockSide = showSeconds || state.amPmText.isNotEmpty()
     val batteryGradientColors = getBatteryGradientColors(batteryLevel)
     val deviceName = state.deviceName.takeIf { options.shows(DreamField.DEVICE_NAME) }
     val notificationGroups =
         if (options.shows(DreamField.NOTIFICATIONS)) state.notificationGroups else emptyList()
-    val alarmText = if (state.alarmText.isNotEmpty()) "⏰ " + state.alarmText else ""
+    val alarmText = if (options.shows(DreamField.ALARM) && state.alarmText.isNotEmpty()) {
+        "⏰ " + state.alarmText
+    } else {
+        ""
+    }
 
     // Soft pulse on the charging bolt; composed only while the battery is filling, so a
     // full or held battery shows a steady icon and produces no animation frames.
@@ -115,6 +124,9 @@ internal fun BoxWithConstraintsScope.GlowContent(state: DreamUiState, options: D
         availableWidth = clockAvailableWidth,
         maxClockSp = if (landscape) 82 else 120,
         minClockSp = if (landscape) 48 else 56,
+        secondsRatio = if (hasClockSide) 0.25f else 0f,
+        secondsMinSp = if (hasClockSide) 22 else 0,
+        gap = if (hasClockSide) 8.dp else 0.dp,
     )
     val secondsSize = (clockSize * 0.25f).toInt().coerceAtLeast(22)
 
@@ -138,6 +150,9 @@ internal fun BoxWithConstraintsScope.GlowContent(state: DreamUiState, options: D
                 deviceName = deviceName,
                 notificationGroups = notificationGroups,
                 notificationPulseToken = state.notificationPulseToken,
+                showSeconds = showSeconds,
+                showDate = showDate,
+                accent = options.accent.color,
             )
 
             Box(
@@ -156,7 +171,8 @@ internal fun BoxWithConstraintsScope.GlowContent(state: DreamUiState, options: D
                 batteryGradientColors = batteryGradientColors,
                 detailsStr = detailsStr,
                 fullTimeStr = fullTimeStr,
-                boltAlpha = boltAlpha
+                boltAlpha = boltAlpha,
+                showDetails = showDetails
             )
         }
     } else {
@@ -181,6 +197,9 @@ internal fun BoxWithConstraintsScope.GlowContent(state: DreamUiState, options: D
                 deviceName = deviceName,
                 notificationGroups = notificationGroups,
                 notificationPulseToken = state.notificationPulseToken,
+                showSeconds = showSeconds,
+                showDate = showDate,
+                accent = options.accent.color,
             )
 
             Spacer(modifier = Modifier.weight(1f))
@@ -192,7 +211,8 @@ internal fun BoxWithConstraintsScope.GlowContent(state: DreamUiState, options: D
                 batteryGradientColors = batteryGradientColors,
                 detailsStr = detailsStr,
                 fullTimeStr = fullTimeStr,
-                boltAlpha = boltAlpha
+                boltAlpha = boltAlpha,
+                showDetails = showDetails
             )
 
             Spacer(modifier = Modifier.weight(1f))
@@ -215,7 +235,8 @@ internal fun BatteryBlockLandscape(
     batteryGradientColors: List<Color>,
     detailsStr: String,
     fullTimeStr: String,
-    boltAlpha: Float = 1f
+    boltAlpha: Float = 1f,
+    showDetails: Boolean = true
 ) {
     Column(
         modifier = modifier,
@@ -277,17 +298,19 @@ internal fun BatteryBlockLandscape(
             )
         }
 
-        Spacer(modifier = Modifier.height(14.dp))
+        if (showDetails) {
+            Spacer(modifier = Modifier.height(14.dp))
 
-        Text(
-            text = detailsStr,
-            autoSize = fitUpTo(24.sp),
-            maxLines = 1,
-            softWrap = false,
-            fontWeight = FontWeight.Medium,
-            color = Color(0xFF9AA0A8),
-            style = TextStyle(fontFeatureSettings = "tnum")
-        )
+            Text(
+                text = detailsStr,
+                autoSize = fitUpTo(24.sp),
+                maxLines = 1,
+                softWrap = false,
+                fontWeight = FontWeight.Medium,
+                color = Color(0xFF9AA0A8),
+                style = TextStyle(fontFeatureSettings = "tnum")
+            )
+        }
 
         if (fullTimeStr.isNotEmpty()) {
             Spacer(modifier = Modifier.height(6.dp))
@@ -312,7 +335,8 @@ internal fun BatteryBlockPortrait(
     batteryGradientColors: List<Color>,
     detailsStr: String,
     fullTimeStr: String,
-    boltAlpha: Float = 1f
+    boltAlpha: Float = 1f,
+    showDetails: Boolean = true
 ) {
     Column(
         modifier = modifier,
@@ -374,17 +398,19 @@ internal fun BatteryBlockPortrait(
             )
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        if (showDetails) {
+            Spacer(modifier = Modifier.height(16.dp))
 
-        Text(
-            text = detailsStr,
-            autoSize = fitUpTo(24.sp),
-            maxLines = 1,
-            softWrap = false,
-            fontWeight = FontWeight.Medium,
-            color = Color(0xFF9AA0A8),
-            style = TextStyle(fontFeatureSettings = "tnum")
-        )
+            Text(
+                text = detailsStr,
+                autoSize = fitUpTo(24.sp),
+                maxLines = 1,
+                softWrap = false,
+                fontWeight = FontWeight.Medium,
+                color = Color(0xFF9AA0A8),
+                style = TextStyle(fontFeatureSettings = "tnum")
+            )
+        }
 
         if (fullTimeStr.isNotEmpty()) {
             Spacer(modifier = Modifier.height(6.dp))

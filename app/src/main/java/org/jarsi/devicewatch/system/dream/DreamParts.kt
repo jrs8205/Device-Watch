@@ -88,6 +88,9 @@ internal fun ClockBlock(
     deviceName: String? = null,
     notificationGroups: List<NotificationIconGroup> = emptyList(),
     notificationPulseToken: Int = 0,
+    showSeconds: Boolean = true,
+    showDate: Boolean = true,
+    accent: Color = Color(0xFF38BDF8),
 ) {
     Column(
         modifier = modifier,
@@ -114,38 +117,46 @@ internal fun ClockBlock(
                 style = TextStyle(fontFeatureSettings = "tnum"),
                 letterSpacing = 0.sp
             )
-            Spacer(modifier = Modifier.width(8.dp))
-            Column(modifier = Modifier.padding(bottom = 16.dp)) {
-                Text(
-                    text = ":$secondsText",
-                    autoSize = fitUpTo(secondsSize.sp),
-                    maxLines = 1,
-                    softWrap = false,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF38BDF8),
-                    style = TextStyle(fontFeatureSettings = "tnum")
-                )
-                if (amPmText.isNotEmpty()) {
-                    Text(
-                        text = amPmText,
-                        autoSize = fitUpTo((secondsSize * 0.6f).sp),
-                        maxLines = 1,
-                        softWrap = false,
-                        fontWeight = FontWeight.Medium,
-                        color = Color(0xFF8B929C)
-                    )
+            // The column beside the time holds the seconds and, on a 12-hour clock, AM/PM.
+            // With the seconds switched off on a 24-hour clock there is nothing to hold.
+            if (showSeconds || amPmText.isNotEmpty()) {
+                Spacer(modifier = Modifier.width(8.dp))
+                Column(modifier = Modifier.padding(bottom = 16.dp)) {
+                    if (showSeconds) {
+                        Text(
+                            text = ":$secondsText",
+                            autoSize = fitUpTo(secondsSize.sp),
+                            maxLines = 1,
+                            softWrap = false,
+                            fontWeight = FontWeight.Bold,
+                            color = accent,
+                            style = TextStyle(fontFeatureSettings = "tnum")
+                        )
+                    }
+                    if (amPmText.isNotEmpty()) {
+                        Text(
+                            text = amPmText,
+                            autoSize = fitUpTo((secondsSize * 0.6f).sp),
+                            maxLines = 1,
+                            softWrap = false,
+                            fontWeight = FontWeight.Medium,
+                            color = Color(0xFF8B929C)
+                        )
+                    }
                 }
             }
         }
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = dateText,
-            autoSize = fitUpTo(dateSize.sp),
-            maxLines = 1,
-            softWrap = false,
-            fontWeight = FontWeight.Medium,
-            color = Color(0xFF8B929C)
-        )
+        if (showDate) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = dateText,
+                autoSize = fitUpTo(dateSize.sp),
+                maxLines = 1,
+                softWrap = false,
+                fontWeight = FontWeight.Medium,
+                color = Color(0xFF8B929C)
+            )
+        }
         if (alarmText.isNotEmpty()) {
             Spacer(modifier = Modifier.height(6.dp))
             Text(

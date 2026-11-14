@@ -38,7 +38,6 @@ private val GAUGES_TIME = Color(0xFFF2F2F2)
 private val GAUGES_VALUE = Color(0xFFE6E8EA)
 private val GAUGES_LABEL = Color(0xFF7D848E)
 private val GAUGES_HAIRLINE = Color(0xFF26282B)
-private val GAUGES_SECONDS = Color(0xFF38BDF8)
 
 /** The header line's and the rows' text sizes; a row's label is drawn at 0.6 of its value. */
 private const val GAUGES_HEADER_SP = 13f
@@ -214,7 +213,7 @@ private fun GaugesClock(state: DreamUiState, options: DreamOptions, clockSize: I
                         fontSize = (clockSize * GAUGES_SECONDS_RATIO).coerceAtLeast(12f).sp,
                         fontFamily = FontFamily.Monospace,
                         fontWeight = FontWeight.Medium,
-                        color = GAUGES_SECONDS,
+                        color = options.accent.color,
                         maxLines = 1,
                         softWrap = false
                     )

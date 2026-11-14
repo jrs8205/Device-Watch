@@ -229,7 +229,14 @@ internal fun BoxWithConstraintsScope.EdgeContent(state: DreamUiState, options: D
     val deviceName = state.deviceName.takeIf { options.shows(DreamField.DEVICE_NAME) }
     val notificationGroups =
         if (options.shows(DreamField.NOTIFICATIONS)) state.notificationGroups else emptyList()
-    val alarmText = if (state.alarmText.isNotEmpty()) "⏰ " + state.alarmText else ""
+    val alarmText = if (options.shows(DreamField.ALARM) && state.alarmText.isNotEmpty()) {
+        "⏰ " + state.alarmText
+    } else {
+        ""
+    }
+    val showSeconds = options.shows(DreamField.SECONDS)
+    val showDate = options.shows(DreamField.DATE)
+    val hasClockSide = showSeconds || state.amPmText.isNotEmpty()
 
     val clockAvailableWidth = if (landscape) {
         (maxWidth - horizontalPadding * 2 - 1.5.dp - insets.centerGap) * 0.58f
@@ -240,6 +247,9 @@ internal fun BoxWithConstraintsScope.EdgeContent(state: DreamUiState, options: D
         availableWidth = clockAvailableWidth,
         maxClockSp = if (landscape) 82 else 120,
         minClockSp = if (landscape) 40 else 48,
+        secondsRatio = if (hasClockSide) 0.25f else 0f,
+        secondsMinSp = if (hasClockSide) 22 else 0,
+        gap = if (hasClockSide) 8.dp else 0.dp,
     )
     val secondsSize = (clockSize * 0.25f).toInt().coerceAtLeast(22)
 
@@ -263,6 +273,9 @@ internal fun BoxWithConstraintsScope.EdgeContent(state: DreamUiState, options: D
                 deviceName = deviceName,
                 notificationGroups = notificationGroups,
                 notificationPulseToken = state.notificationPulseToken,
+                showSeconds = showSeconds,
+                showDate = showDate,
+                accent = options.accent.color,
             )
             Box(
                 modifier = Modifier
@@ -301,6 +314,9 @@ internal fun BoxWithConstraintsScope.EdgeContent(state: DreamUiState, options: D
                 deviceName = deviceName,
                 notificationGroups = notificationGroups,
                 notificationPulseToken = state.notificationPulseToken,
+                showSeconds = showSeconds,
+                showDate = showDate,
+                accent = options.accent.color,
             )
             Spacer(modifier = Modifier.weight(1f))
             EdgeBattery(

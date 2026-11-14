@@ -22,6 +22,16 @@ object DreamPreferences {
     // The phone's name (Android's device name) on a small line above the clock.
     const val KEY_SHOW_DEVICE_NAME = "show_device_name"
 
+    // What else the screensaver shows, as far as the chosen style has a place for it.
+    const val KEY_SHOW_SECONDS = "show_seconds"
+    const val KEY_SHOW_DATE = "show_date"
+    const val KEY_SHOW_ALARM = "show_alarm"
+    const val KEY_SHOW_BATTERY_DETAILS = "show_battery_details"
+    const val KEY_SHOW_ESTIMATE = "show_estimate"
+
+    // The colour of the clock's seconds (DreamAccent.id); missing or unknown means sky blue.
+    const val KEY_ACCENT = "accent_color"
+
     // Start the screensaver as soon as charging begins on a phone that is not in use.
     const val KEY_START_ON_CHARGE = "start_on_charge"
 

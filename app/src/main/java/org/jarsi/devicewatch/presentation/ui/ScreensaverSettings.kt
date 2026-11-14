@@ -3,18 +3,23 @@ package org.jarsi.devicewatch.presentation.ui
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.annotation.StringRes
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -27,21 +32,28 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.jarsi.devicewatch.R
 import org.jarsi.devicewatch.system.DreamPreferences
+import org.jarsi.devicewatch.system.dream.DreamAccent
+import org.jarsi.devicewatch.system.dream.DreamField
 import org.jarsi.devicewatch.system.dream.DreamOptions
 import org.jarsi.devicewatch.system.dream.DreamPreview
 import org.jarsi.devicewatch.system.dream.DreamStyle
 import org.jarsi.devicewatch.system.dream.readDreamOptions
 import org.jarsi.devicewatch.system.dream.rememberSampleDreamUiState
+import org.jarsi.devicewatch.system.dream.supports
 
 /** Space between two rows of one group, and between two groups of the section. */
 private val ROW_GAP = 16.dp
@@ -50,8 +62,8 @@ private val GROUP_GAP = 24.dp
 /**
  * The screensaver's settings. They live in the screensaver's own preferences file, which it
  * reads when it starts, so this section keeps its own state rather than going through the
- * dashboard's view model. Groups, top to bottom: the style, shown information, orientation,
- * dimming, movement, start.
+ * dashboard's view model. Groups, top to bottom: the style, shown information, the accent
+ * colour, orientation, dimming, movement, start.
  */
 @Composable
 internal fun ScreensaverSettingsSection(
@@ -64,6 +76,11 @@ internal fun ScreensaverSettingsSection(
     }
     val showDeviceName = rememberDreamSwitch(prefs, DreamPreferences.KEY_SHOW_DEVICE_NAME, true)
     val showNotifications = rememberDreamSwitch(prefs, DreamPreferences.KEY_SHOW_NOTIFICATIONS, true)
+    val showSeconds = rememberDreamSwitch(prefs, DreamPreferences.KEY_SHOW_SECONDS, true)
+    val showDate = rememberDreamSwitch(prefs, DreamPreferences.KEY_SHOW_DATE, true)
+    val showAlarm = rememberDreamSwitch(prefs, DreamPreferences.KEY_SHOW_ALARM, true)
+    val showBatteryDetails = rememberDreamSwitch(prefs, DreamPreferences.KEY_SHOW_BATTERY_DETAILS, true)
+    val showEstimate = rememberDreamSwitch(prefs, DreamPreferences.KEY_SHOW_ESTIMATE, true)
     val layoutSwapped = rememberDreamSwitch(prefs, DreamPreferences.KEY_LAYOUT_SWAPPED, false)
     val forcePortrait = rememberDreamSwitch(prefs, DreamPreferences.KEY_FORCE_PORTRAIT, false)
     val dim = rememberDreamSwitch(prefs, DreamPreferences.KEY_DIM_SCREENSAVER, false)
@@ -118,13 +135,21 @@ internal fun ScreensaverSettingsSection(
         )
     }
 
-    var style by remember { mutableStateOf(readDreamOptions(prefs).style) }
+    val stored = remember(prefs) { readDreamOptions(prefs) }
+    var style by remember { mutableStateOf(stored.style) }
+    var accent by remember { mutableStateOf(stored.accent) }
     // What the thumbnails draw with: the same options the screensaver would read right now.
     val previewOptions = DreamOptions(
         style = style,
         verticalShiftOnly = verticalShiftOnly.checked,
         showDeviceName = showDeviceName.checked,
         showNotifications = showNotifications.checked,
+        showSeconds = showSeconds.checked,
+        showDate = showDate.checked,
+        showAlarm = showAlarm.checked,
+        showBatteryDetails = showBatteryDetails.checked,
+        showEstimate = showEstimate.checked,
+        accent = accent,
     )
 
     SettingsSectionCard(titleRes = R.string.screensaver_settings_section) {
@@ -141,12 +166,64 @@ internal fun ScreensaverSettingsSection(
 
         Spacer(modifier = Modifier.height(GROUP_GAP))
 
-        // Shown information
+        // Shown information. A switch for something the chosen style has no place for is
+        // dimmed: it keeps its value for the styles that do.
         SettingsToggleRow(
             titleRes = R.string.dream_device_name_title,
             descriptionRes = R.string.dream_device_name_description,
             checked = showDeviceName.checked,
             onCheckedChange = showDeviceName::set,
+            enabled = style.supports(DreamField.DEVICE_NAME),
+        )
+
+        Spacer(modifier = Modifier.height(ROW_GAP))
+
+        SettingsToggleRow(
+            titleRes = R.string.dream_show_seconds,
+            descriptionRes = null,
+            checked = showSeconds.checked,
+            onCheckedChange = showSeconds::set,
+            enabled = style.supports(DreamField.SECONDS),
+        )
+
+        Spacer(modifier = Modifier.height(ROW_GAP))
+
+        SettingsToggleRow(
+            titleRes = R.string.dream_show_date,
+            descriptionRes = null,
+            checked = showDate.checked,
+            onCheckedChange = showDate::set,
+            enabled = style.supports(DreamField.DATE),
+        )
+
+        Spacer(modifier = Modifier.height(ROW_GAP))
+
+        SettingsToggleRow(
+            titleRes = R.string.dream_show_alarm,
+            descriptionRes = null,
+            checked = showAlarm.checked,
+            onCheckedChange = showAlarm::set,
+            enabled = style.supports(DreamField.ALARM),
+        )
+
+        Spacer(modifier = Modifier.height(ROW_GAP))
+
+        SettingsToggleRow(
+            titleRes = R.string.dream_show_battery_details,
+            descriptionRes = null,
+            checked = showBatteryDetails.checked,
+            onCheckedChange = showBatteryDetails::set,
+            enabled = style.supports(DreamField.BATTERY_DETAILS),
+        )
+
+        Spacer(modifier = Modifier.height(ROW_GAP))
+
+        SettingsToggleRow(
+            titleRes = R.string.dream_show_estimate,
+            descriptionRes = null,
+            checked = showEstimate.checked,
+            onCheckedChange = showEstimate::set,
+            enabled = style.supports(DreamField.ESTIMATE),
         )
 
         Spacer(modifier = Modifier.height(ROW_GAP))
@@ -156,6 +233,7 @@ internal fun ScreensaverSettingsSection(
             descriptionRes = R.string.dream_notifications_description,
             checked = showNotifications.checked,
             onCheckedChange = showNotifications::set,
+            enabled = style.supports(DreamField.NOTIFICATIONS),
         )
 
         if (showNotifications.checked && !notificationAccessEnabled) {
@@ -166,6 +244,18 @@ internal fun ScreensaverSettingsSection(
                 color = MaterialTheme.colorScheme.error
             )
         }
+
+        Spacer(modifier = Modifier.height(GROUP_GAP))
+
+        // Accent colour: the colour of the seconds, so it has a use only where they show.
+        DreamAccentPicker(
+            selected = accent,
+            enabled = style.supports(DreamField.SECONDS) && showSeconds.checked,
+            onSelect = { chosen ->
+                accent = chosen
+                prefs.edit().putString(DreamPreferences.KEY_ACCENT, chosen.id).apply()
+            },
+        )
 
         Spacer(modifier = Modifier.height(GROUP_GAP))
 
@@ -369,6 +459,71 @@ private fun DreamStylePicker(
             }
         }
     }
+}
+
+/** Size of one swatch in the accent row: also its touch target. */
+private val ACCENT_SWATCH_SIZE = 40.dp
+
+/**
+ * The accent colours as a row of round swatches; the chosen one has a ring round it. Each
+ * swatch is named by its colour for a screen reader. The whole row is dimmed when the
+ * accent has nothing to colour.
+ */
+@Composable
+private fun DreamAccentPicker(
+    selected: DreamAccent,
+    enabled: Boolean,
+    onSelect: (DreamAccent) -> Unit,
+) {
+    Text(
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        text = stringResource(R.string.dream_accent_title),
+        fontWeight = FontWeight.Medium,
+        fontSize = 14.sp,
+        color = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    Spacer(modifier = Modifier.height(10.dp))
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .selectableGroup()
+            .alpha(if (enabled) 1f else 0.38f),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        for (accent in DreamAccent.entries) {
+            val isSelected = accent == selected
+            val name = stringResource(dreamAccentNameRes(accent))
+            Box(
+                modifier = Modifier
+                    .size(ACCENT_SWATCH_SIZE)
+                    .clip(CircleShape)
+                    .selectable(
+                        selected = isSelected,
+                        enabled = enabled,
+                        role = Role.RadioButton,
+                        onClick = withTapHaptic { onSelect(accent) },
+                    )
+                    .semantics { contentDescription = name }
+                    .border(
+                        width = 2.dp,
+                        color = if (isSelected) MaterialTheme.colorScheme.onSurface else Color.Transparent,
+                        shape = CircleShape,
+                    )
+                    .padding(5.dp)
+                    .background(accent.color, CircleShape),
+            )
+        }
+    }
+}
+
+@StringRes
+private fun dreamAccentNameRes(accent: DreamAccent): Int = when (accent) {
+    DreamAccent.SKY -> R.string.dream_accent_sky
+    DreamAccent.TEAL -> R.string.dream_accent_teal
+    DreamAccent.VIOLET -> R.string.dream_accent_violet
+    DreamAccent.ROSE -> R.string.dream_accent_rose
+    DreamAccent.NEUTRAL -> R.string.dream_accent_neutral
 }
 
 @StringRes

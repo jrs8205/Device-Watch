@@ -47,7 +47,6 @@ private val RING_TRACK = Color(0xFF1B1D1F)
 private val RING_TEXT = Color(0xFFEDEDED)
 private val RING_DIM = Color(0xFF8B929C)
 private val RING_DATE = Color(0xFF7B8189)
-private val RING_SECONDS = Color(0xFF38BDF8)
 
 /** The ring's stroke as a share of its diameter. */
 private const val RING_STROKE = 0.035f
@@ -233,7 +232,7 @@ private fun RingClock(state: DreamUiState, options: DreamOptions, diameter: Dp) 
                             text = state.secondsText,
                             fontSize = (clockSize * 0.26f).sp,
                             fontWeight = FontWeight.SemiBold,
-                            color = RING_SECONDS,
+                            color = options.accent.color,
                             maxLines = 1,
                             softWrap = false,
                             style = TextStyle(fontFeatureSettings = "tnum")

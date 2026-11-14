@@ -129,4 +129,74 @@ class DreamOptionsTest {
         prefs.edit().putBoolean("dim_screensaver", true).commit()
         assertThat(shouldDimNow(prefs, noon)).isTrue()
     }
+
+    @Test
+    fun `the new switches default to on and the accent to sky`() {
+        val options = readDreamOptions(prefs)
+
+        assertThat(options.showSeconds).isTrue()
+        assertThat(options.showDate).isTrue()
+        assertThat(options.showAlarm).isTrue()
+        assertThat(options.showBatteryDetails).isTrue()
+        assertThat(options.showEstimate).isTrue()
+        assertThat(options.accent).isEqualTo(DreamAccent.SKY)
+    }
+
+    @Test
+    fun `each new key is read`() {
+        prefs.edit()
+            .putBoolean("show_seconds", false)
+            .putBoolean("show_date", false)
+            .putBoolean("show_alarm", false)
+            .putBoolean("show_battery_details", false)
+            .putBoolean("show_estimate", false)
+            .putString("accent_color", "rose")
+            .commit()
+
+        val options = readDreamOptions(prefs)
+
+        assertThat(options.showSeconds).isFalse()
+        assertThat(options.showDate).isFalse()
+        assertThat(options.showAlarm).isFalse()
+        assertThat(options.showBatteryDetails).isFalse()
+        assertThat(options.showEstimate).isFalse()
+        assertThat(options.accent).isEqualTo(DreamAccent.ROSE)
+    }
+
+    @Test
+    fun `an unknown accent id means sky`() {
+        assertThat(dreamAccentOf(null)).isEqualTo(DreamAccent.SKY)
+        assertThat(dreamAccentOf("")).isEqualTo(DreamAccent.SKY)
+        assertThat(dreamAccentOf("ultraviolet")).isEqualTo(DreamAccent.SKY)
+        for (accent in DreamAccent.entries) {
+            assertThat(dreamAccentOf(accent.id)).isEqualTo(accent)
+        }
+        assertThat(DreamAccent.entries.map { it.id }).containsNoDuplicates()
+
+        prefs.edit().putInt("accent_color", 4).commit()
+        assertThat(readDreamOptions(prefs).accent).isEqualTo(DreamAccent.SKY)
+    }
+
+    @Test
+    fun `every field's switch decides whether it is shown`() {
+        val everything = DreamOptions(style = DreamStyle.GAUGES)
+        assertThat(DreamField.entries.filter { !everything.shows(it) }).isEmpty()
+
+        assertThat(everything.copy(showDeviceName = false).shows(DreamField.DEVICE_NAME)).isFalse()
+        assertThat(everything.copy(showSeconds = false).shows(DreamField.SECONDS)).isFalse()
+        assertThat(everything.copy(showDate = false).shows(DreamField.DATE)).isFalse()
+        assertThat(everything.copy(showAlarm = false).shows(DreamField.ALARM)).isFalse()
+        assertThat(everything.copy(showNotifications = false).shows(DreamField.NOTIFICATIONS)).isFalse()
+        assertThat(everything.copy(showBatteryDetails = false).shows(DreamField.BATTERY_DETAILS)).isFalse()
+        assertThat(everything.copy(showEstimate = false).shows(DreamField.ESTIMATE)).isFalse()
+    }
+
+    @Test
+    fun `a switch cannot bring back what the style has no place for`() {
+        val minimal = DreamOptions(style = DreamStyle.MINIMAL, showSeconds = true, showAlarm = true)
+
+        assertThat(minimal.shows(DreamField.SECONDS)).isFalse()
+        assertThat(minimal.shows(DreamField.ALARM)).isFalse()
+        assertThat(minimal.shows(DreamField.DATE)).isTrue()
+    }
 }

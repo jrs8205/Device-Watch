@@ -346,6 +346,17 @@
     <string name="dream_night_style_title">Yö-tyyli yöhimmennyksen aikana</string>
     <string name="dream_night_style_description">Yöhimmennyksen aikana näytönsäästäjä vaihtaa Yö-tyyliin ja sen jälkeen takaisin.</string>
     <string name="dream_percent_spaced">%1$d\u00A0%%</string>
+    <string name="dream_show_seconds">Sekunnit</string>
+    <string name="dream_show_date">Päivämäärä</string>
+    <string name="dream_show_alarm">Seuraava herätys</string>
+    <string name="dream_show_battery_details">Akun tiedot</string>
+    <string name="dream_show_estimate">Valmistumisarvio</string>
+    <string name="dream_accent_title">Korostusväri</string>
+    <string name="dream_accent_sky">Taivaansininen</string>
+    <string name="dream_accent_teal">Turkoosi</string>
+    <string name="dream_accent_violet">Violetti</string>
+    <string name="dream_accent_rose">Roosa</string>
+    <string name="dream_accent_neutral">Neutraali</string>
     <string name="dream_flip_title">Käännä ylösalaisin</string>
     <string name="dream_flip_description">Telineelle, jossa puhelin on ylösalaisin: näytönsäästäjä kääntyy 180°.</string>
     <string name="dim_screensaver_title">Himmennä näytönsäästäjä</string>

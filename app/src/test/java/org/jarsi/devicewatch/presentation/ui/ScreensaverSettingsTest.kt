@@ -17,6 +17,7 @@ import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isSelectable
 import androidx.compose.ui.test.isToggleable
@@ -166,6 +167,93 @@ class ScreensaverSettingsTest {
 
         switchBeside(R.string.dream_night_style_title).toggle()
         assertThat(prefs.getBoolean("night_style_auto", false)).isTrue()
+    }
+
+    /** The accent row's swatch with this colour name. */
+    private fun accentItem(@StringRes name: Int): SemanticsNodeInteraction =
+        compose.onNode(hasContentDescription(context.getString(name)) and isSelectable())
+
+    @Test
+    fun `a switch the style cannot show is disabled`() {
+        prefs.edit().putString("dream_style", "minimal").commit()
+
+        show()
+
+        for (title in listOf(
+            R.string.dream_device_name_title,
+            R.string.dream_show_seconds,
+            R.string.dream_show_alarm,
+            R.string.dream_show_estimate,
+        )) {
+            switchBeside(title).assertIsNotEnabled()
+        }
+        for (title in listOf(
+            R.string.dream_show_date,
+            R.string.dream_notifications_title,
+            R.string.dream_show_battery_details,
+        )) {
+            switchBeside(title).assertIsEnabled()
+        }
+    }
+
+    @Test
+    fun `choosing another style changes which switches can be used`() {
+        show()
+        switchBeside(R.string.dream_show_seconds).assertIsEnabled()
+
+        styleItem(R.string.dream_style_night).toggle()
+
+        switchBeside(R.string.dream_show_seconds).assertIsNotEnabled()
+        switchBeside(R.string.dream_show_alarm).assertIsEnabled()
+    }
+
+    @Test
+    fun `the new switches write their keys`() {
+        prefs.edit().putString("dream_style", "gauges").commit()
+        show()
+
+        val rows = listOf(
+            R.string.dream_show_seconds to "show_seconds",
+            R.string.dream_show_date to "show_date",
+            R.string.dream_show_alarm to "show_alarm",
+            R.string.dream_show_battery_details to "show_battery_details",
+            R.string.dream_show_estimate to "show_estimate",
+        )
+        for ((title, key) in rows) {
+            switchBeside(title).assertIsOn()
+            switchBeside(title).toggle()
+            compose.waitForIdle()
+
+            assertWithMessage(key).that(prefs.getBoolean(key, true)).isFalse()
+        }
+    }
+
+    @Test
+    fun `choosing an accent writes its id`() {
+        show()
+        accentItem(R.string.dream_accent_sky).assertIsSelected()
+
+        accentItem(R.string.dream_accent_rose).toggle()
+
+        assertThat(prefs.getString("accent_color", null)).isEqualTo("rose")
+        accentItem(R.string.dream_accent_rose).assertIsSelected()
+        accentItem(R.string.dream_accent_sky).assertIsNotSelected()
+    }
+
+    @Test
+    fun `the accent row is disabled without seconds`() {
+        show()
+        accentItem(R.string.dream_accent_teal).assertIsEnabled()
+
+        // The seconds are switched off...
+        switchBeside(R.string.dream_show_seconds).toggle()
+        accentItem(R.string.dream_accent_teal).assertIsNotEnabled()
+
+        // ...or the style has none.
+        switchBeside(R.string.dream_show_seconds).toggle()
+        accentItem(R.string.dream_accent_teal).assertIsEnabled()
+        styleItem(R.string.dream_style_minimal).toggle()
+        accentItem(R.string.dream_accent_teal).assertIsNotEnabled()
     }
 
     @Test

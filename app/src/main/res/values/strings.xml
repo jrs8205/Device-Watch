@@ -350,6 +350,17 @@
     <string name="dream_night_style_title">Night style during night dim</string>
     <string name="dream_night_style_description">Between the night dim times the screensaver switches to the Night style, and back afterwards.</string>
     <string name="dream_percent_spaced">%1$d%%</string>
+    <string name="dream_show_seconds">Seconds</string>
+    <string name="dream_show_date">Date</string>
+    <string name="dream_show_alarm">Next alarm</string>
+    <string name="dream_show_battery_details">Battery details</string>
+    <string name="dream_show_estimate">Time to full</string>
+    <string name="dream_accent_title">Accent colour</string>
+    <string name="dream_accent_sky">Sky blue</string>
+    <string name="dream_accent_teal">Teal</string>
+    <string name="dream_accent_violet">Violet</string>
+    <string name="dream_accent_rose">Rose</string>
+    <string name="dream_accent_neutral">Neutral</string>
     <string name="dream_flip_title">Flip upside down</string>
     <string name="dream_flip_description">For a stand that holds the phone upside down: the screensaver turns 180°.</string>
     <string name="dim_screensaver_title">Dim the screensaver</string>
