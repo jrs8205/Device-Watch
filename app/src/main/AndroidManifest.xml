@@ -29,6 +29,9 @@
     <!-- Special permission the user grants in system settings when they switch on the
          floating figure; the app draws only that small card with it. -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <!-- Asked for only when the user switches on the calendar rows of the screensaver's
+         Gauges style: the next events' times and titles are read and drawn, never stored. -->
+    <uses-permission android:name="android.permission.READ_CALENDAR" />
 
     <application
         android:name=".MonitorApp"

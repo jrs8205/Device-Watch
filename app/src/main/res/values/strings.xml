@@ -350,6 +350,13 @@
     <string name="dream_night_style_title">Night style during night dim</string>
     <string name="dream_night_style_description">Between the night dim times the screensaver switches to the Night style, and back afterwards.</string>
     <string name="dream_percent_spaced">%1$d%%</string>
+    <string name="dream_calendar_title">Show calendar</string>
+    <string name="dream_calendar_description">Up to three coming events on the Gauges style. Needs permission to read the calendar.</string>
+    <string name="dream_calendar_titles_title">Show event titles</string>
+    <string name="dream_calendar_titles_description">Titles are visible to anyone who sees the phone on its charger.</string>
+    <string name="dream_calendar_permission_missing">Calendar permission is not granted, so the screensaver shows no events.</string>
+    <string name="dream_calendar_event">Event</string>
+    <string name="dream_calendar_now">NOW</string>
     <string name="dream_show_seconds">Seconds</string>
     <string name="dream_show_date">Date</string>
     <string name="dream_show_alarm">Next alarm</string>

@@ -47,6 +47,8 @@ internal data class DreamUiState(
     /** Grows by one whenever a notification arrives while the screensaver is up. */
     val notificationPulseToken: Int,
     val clockMillis: Long,
+    /** The next calendar events, worded for the screen; empty unless the Gauges style asks. */
+    val calendarRows: List<DreamCalendarRow> = emptyList(),
 )
 
 /** The clock's lines for one moment. */

@@ -58,6 +58,14 @@ internal fun worstCaseDreamUiState(context: Context, chargeState: DreamChargeSta
         },
         notificationPulseToken = 0,
         clockMillis = now.time,
+        // Three events, each with the longest time a row can carry and a title far too
+        // long for any row: the title is the one text that may be cut, with an ellipsis.
+        calendarRows = List(3) { index ->
+            DreamCalendarRow(
+                whenText = days.take(7).map(formats::alarm).maxBy { it.length }.uppercase(locale),
+                title = "Event ${index + 1} with a title that goes on and on, well past the row's end",
+            )
+        },
     )
 }
 
@@ -69,6 +77,7 @@ internal fun plainDreamUiState(
     alarmText: String = "la 08:00",
     fullClockText: String = "20:52",
     notificationGroups: List<NotificationIconGroup> = emptyList(),
+    calendarRows: List<DreamCalendarRow> = emptyList(),
 ): DreamUiState = DreamUiState(
     timeText = "20:10",
     secondsText = "26",
@@ -88,4 +97,5 @@ internal fun plainDreamUiState(
     notificationGroups = notificationGroups,
     notificationPulseToken = 0,
     clockMillis = 0L,
+    calendarRows = calendarRows,
 )

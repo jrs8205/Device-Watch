@@ -71,14 +71,18 @@ The default app language is English. Finnish users get a localized app name and 
 - Active data-SIM carrier shown next to the mobile network name on dual-SIM devices
 - Interactive Android screensaver with a large clock, date, next alarm, charging status, battery percentage, voltage, temperature, and live charging power in watts
 - Screensaver clock follows the device 12/24-hour setting, with a second-aligned tick
-- Battery-level-tinted background gradient and a softly pulsing charge indicator in the screensaver
+- Six screensaver styles to choose from in Settings, each with a thumbnail drawn by the screensaver's own code: Glow (the original look, and the default), Minimal, Ring, Gauges, Night and Edge; every style works upright, on its side and flipped upside down
+- Glow: a battery-level-tinted background gradient and a softly pulsing charge indicator
+- Edge: the battery level as a bright line round the screen's edge, running from red to green with the level, its head pulsing while the battery charges; against burn-in the line changes place once a minute and dims after ten minutes without a change
+- Night: the clock, the next alarm and the battery in dim red on black, and an option to switch to it automatically for the night-dim hours
+- Gauges: monospaced figures on named rows, and optionally the next three calendar events (off by default; the calendar permission is asked for only when you switch the rows on, and the titles can be hidden)
+- Switches for what the screensaver shows (device name, seconds, date, next alarm, notification icons, battery details, time to full) and five accent colours for the seconds
 - Optional screensaver dimming: manual, or automatic on a configurable night schedule (default 22:00–07:00)
 - OLED burn-in protection: the screensaver content glides to a new spot within 15 dp once a minute, or, as a setting, only up and down within 20 dp so it stays centred sideways
 - The phone's name (Android's device name, tidied and shortened, e.g. "Pixel 10 Pro") on a small line above the screensaver clock; can be turned off
 - Optional start as soon as charging begins with the screen off, even with Always On Display on: at once through the dream manager with extended access, otherwise by waking the screen so the lock screen times out into the screensaver; nothing happens while the screen is on, and Android's own screensaver choice and "when to start" are respected
 - Icons of unread notifications under the screensaver clock (one per app, with a count), pulsing when a new one arrives; needs notification access and can be turned off in Settings
-- Remembered screensaver rotation setting for repeated charging sessions; the background gradient mirrors with the 180° layout swap
-- Larger screensaver rotation touch target for easier use
+- *Flip upside down* in Settings for a stand that holds the phone upside down; the choice is remembered, and Glow's gradient and Edge's line turn with it
 - Battery full notification while the screensaver is active
 - English default resources with Finnish localization
 - Runtime permission handling for location, phone state, nearby Wi-Fi devices, and notifications
@@ -200,6 +204,7 @@ The app requests only permissions that are used by the current feature set:
 - `REQUEST_DELETE_PACKAGES` (uninstall from the last-opened list via the system dialog)
 - `WAKE_LOCK` (a normal permission, granted on install; WorkManager declares it for its own jobs, and the app's own code uses it only to wake the screen when charging begins, so the screensaver can start, when *Start as soon as charging begins* is switched on)
 - `USE_BIOMETRIC` (a normal permission, granted on install: only to show on the Device tab whether a strong biometric is enrolled — the app never authenticates anyone)
+- `READ_CALENDAR` (asked for only when you switch on the calendar rows of the screensaver's Gauges style: the next events' times and, unless you hide them, titles are read and drawn on the screensaver — nothing is written to the calendar and nothing is stored)
 - `moe.shizuku.manager.permission.API_V23` (declared by the Shizuku library; it does nothing unless you install Shizuku yourself, switch Shizuku on in Settings and approve Device Watch in Shizuku's own dialog)
 
 Root mode needs no permission: it is off by default, and the app starts `su` only after you switch it on and your root manager grants it. Through root alone, a processor profile you choose on the Kernel page writes each group of cores' top speed limit; nothing else is written.

@@ -68,7 +68,7 @@ class DreamStyleFitTest {
         }
         for (style in DreamStyle.entries) {
             for (chargeState in DreamChargeState.entries) {
-                options = DreamOptions(style = style)
+                options = DreamOptions(style = style, showCalendar = true)
                 state = worstCaseDreamUiState(context, chargeState)
                 compose.waitForIdle()
                 // The icons are decoded off the main thread; the row has its height, and

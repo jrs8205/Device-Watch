@@ -19,6 +19,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalConfiguration
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.jarsi.devicewatch.R
 import org.jarsi.devicewatch.data.DeviceLocalFlags
 import org.jarsi.devicewatch.data.batteryPowerWatts
@@ -29,11 +31,13 @@ import org.jarsi.devicewatch.system.newArrivalKeys
 import org.jarsi.devicewatch.system.screensaverDeviceName
 import org.jarsi.devicewatch.system.visibleNotificationGroups
 import org.jarsi.devicewatch.system.visibleNotificationKeys
+import java.time.ZoneId
 import java.util.Date
 
 /**
  * Collects everything the running screensaver shows into one [DreamUiState]: the battery
- * broadcast, a clock that ticks on the second, the next alarm and the unread notifications.
+ * broadcast, a clock that ticks on the second, the next alarm, the unread notifications
+ * and, when the Gauges style's calendar rows are on, the next calendar events.
  * [onMinute] runs when the minute changes, and once at the start, for the once-a-minute
  * work that belongs to the window rather than to the state (the dim check).
  */
@@ -194,6 +198,39 @@ internal fun rememberDreamUiState(
         }
     }
 
+    // The calendar, for the Gauges style's rows: read only when those rows are switched
+    // on, when the screensaver starts and every ten minutes after, off the main thread.
+    // The events live in this state alone and go when the screensaver does.
+    var calendarEvents by remember { mutableStateOf<List<DreamCalendarEvent>>(emptyList()) }
+    if (options.shows(DreamField.CALENDAR)) {
+        LaunchedEffect(context) {
+            while (true) {
+                calendarEvents = withContext(Dispatchers.IO) {
+                    readDreamCalendarEvents(context, System.currentTimeMillis(), ZoneId.systemDefault())
+                }
+                kotlinx.coroutines.delay(CALENDAR_REFRESH_MS)
+            }
+        }
+    }
+    // Worded again each minute from the last read: "today" and "now" move with the clock.
+    val calendarMinute = clockMillis / 60_000L
+    val calendarRows = remember(calendarEvents, calendarMinute, currentLocale, is24Hour, options.showCalendarTitles) {
+        if (calendarEvents.isEmpty()) {
+            emptyList()
+        } else {
+            calendarRows(
+                events = calendarEvents,
+                nowMs = calendarMinute * 60_000L,
+                zone = ZoneId.systemDefault(),
+                locale = currentLocale,
+                is24Hour = is24Hour,
+                showTitles = options.showCalendarTitles,
+                nowWord = context.getString(R.string.dream_calendar_now),
+                placeholder = context.getString(R.string.dream_calendar_event),
+            )
+        }
+    }
+
     val charging = chargeState == DreamChargeState.CHARGING
     return DreamUiState(
         timeText = clockTexts.time,
@@ -218,5 +255,6 @@ internal fun rememberDreamUiState(
         notificationGroups = notificationGroups,
         notificationPulseToken = notificationPulseToken,
         clockMillis = clockMillis,
+        calendarRows = calendarRows,
     )
 }

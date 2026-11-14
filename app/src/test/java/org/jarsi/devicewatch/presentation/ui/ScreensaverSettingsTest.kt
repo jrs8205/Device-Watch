@@ -1,6 +1,8 @@
 package org.jarsi.devicewatch.presentation.ui
 
+import android.Manifest
 import android.app.Application
+import androidx.activity.ComponentActivity
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.annotation.StringRes
@@ -21,7 +23,8 @@ import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isSelectable
 import androidx.compose.ui.test.isToggleable
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.test.core.app.ApplicationProvider
@@ -33,6 +36,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import kotlin.math.abs
@@ -47,7 +51,7 @@ import kotlin.math.abs
 class ScreensaverSettingsTest {
 
     @get:Rule
-    val compose = createComposeRule()
+    val compose = createAndroidComposeRule<ComponentActivity>()
 
     private val context: Application get() = ApplicationProvider.getApplicationContext()
 
@@ -254,6 +258,91 @@ class ScreensaverSettingsTest {
         accentItem(R.string.dream_accent_teal).assertIsEnabled()
         styleItem(R.string.dream_style_minimal).toggle()
         accentItem(R.string.dream_accent_teal).assertIsNotEnabled()
+    }
+
+    private fun countOf(@StringRes text: Int): Int =
+        compose.onAllNodesWithText(context.getString(text)).fetchSemanticsNodes().size
+
+    @Test
+    fun `the calendar switches appear only for Gauges`() {
+        show()
+        assertThat(countOf(R.string.dream_calendar_title)).isEqualTo(0)
+        assertThat(countOf(R.string.dream_calendar_titles_title)).isEqualTo(0)
+
+        styleItem(R.string.dream_style_gauges).toggle()
+        assertThat(countOf(R.string.dream_calendar_title)).isEqualTo(1)
+        assertThat(countOf(R.string.dream_calendar_titles_title)).isEqualTo(1)
+
+        styleItem(R.string.dream_style_ring).toggle()
+        assertThat(countOf(R.string.dream_calendar_title)).isEqualTo(0)
+    }
+
+    @Test
+    fun `no permission is requested until the calendar switch is turned on`() {
+        prefs.edit().putString("dream_style", "gauges").commit()
+        show()
+        assertThat(shadowOf(compose.activity).lastRequestedPermission).isNull()
+
+        switchBeside(R.string.dream_calendar_title).toggle()
+        compose.waitForIdle()
+
+        assertThat(prefs.getBoolean("show_calendar", false)).isTrue()
+        val request = shadowOf(compose.activity).lastRequestedPermission
+        assertThat(request).isNotNull()
+        assertThat(request.requestedPermissions.toList()).containsExactly(Manifest.permission.READ_CALENDAR)
+    }
+
+    @Test
+    fun `with the permission already granted the calendar switch asks for nothing`() {
+        shadowOf(context).grantPermissions(Manifest.permission.READ_CALENDAR)
+        prefs.edit().putString("dream_style", "gauges").commit()
+        show()
+
+        switchBeside(R.string.dream_calendar_title).toggle()
+        compose.waitForIdle()
+
+        assertThat(prefs.getBoolean("show_calendar", false)).isTrue()
+        assertThat(shadowOf(compose.activity).lastRequestedPermission).isNull()
+        assertThat(countOf(R.string.dream_calendar_permission_missing)).isEqualTo(0)
+    }
+
+    @Test
+    fun `switching the calendar off asks for nothing`() {
+        prefs.edit().putString("dream_style", "gauges").putBoolean("show_calendar", true).commit()
+        show()
+
+        switchBeside(R.string.dream_calendar_title).toggle()
+        compose.waitForIdle()
+
+        assertThat(prefs.getBoolean("show_calendar", true)).isFalse()
+        assertThat(shadowOf(compose.activity).lastRequestedPermission).isNull()
+    }
+
+    @Test
+    fun `the red note shows when the calendar is switched on without the permission`() {
+        // A setting restored from a backup on a new phone: on, but never granted here.
+        prefs.edit().putString("dream_style", "gauges").putBoolean("show_calendar", true).commit()
+
+        show()
+
+        assertThat(countOf(R.string.dream_calendar_permission_missing)).isEqualTo(1)
+        switchBeside(R.string.dream_calendar_title).assertIsOn()
+        // Showing the page asks for nothing by itself.
+        assertThat(shadowOf(compose.activity).lastRequestedPermission).isNull()
+    }
+
+    @Test
+    fun `the event titles switch writes its key and needs the calendar switched on`() {
+        prefs.edit().putString("dream_style", "gauges").commit()
+        show()
+        switchBeside(R.string.dream_calendar_titles_title).assertIsNotEnabled()
+
+        switchBeside(R.string.dream_calendar_title).toggle()
+        switchBeside(R.string.dream_calendar_titles_title).assertIsEnabled()
+        switchBeside(R.string.dream_calendar_titles_title).assertIsOn()
+
+        switchBeside(R.string.dream_calendar_titles_title).toggle()
+        assertThat(prefs.getBoolean("show_calendar_titles", true)).isFalse()
     }
 
     @Test

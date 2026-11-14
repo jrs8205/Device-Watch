@@ -1,7 +1,12 @@
 package org.jarsi.devicewatch.presentation.ui
 
+import android.Manifest
+import android.app.Activity
 import android.content.Context
 import android.content.SharedPreferences
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -44,7 +49,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import org.jarsi.devicewatch.R
+import org.jarsi.devicewatch.data.DeviceLocalFlags
 import org.jarsi.devicewatch.system.DreamPreferences
 import org.jarsi.devicewatch.system.dream.DreamAccent
 import org.jarsi.devicewatch.system.dream.DreamField
@@ -62,8 +70,8 @@ private val GROUP_GAP = 24.dp
 /**
  * The screensaver's settings. They live in the screensaver's own preferences file, which it
  * reads when it starts, so this section keeps its own state rather than going through the
- * dashboard's view model. Groups, top to bottom: the style, shown information, the accent
- * colour, orientation, dimming, movement, start.
+ * dashboard's view model. Groups, top to bottom: the style, the chosen style's own options,
+ * shown information, the accent colour, orientation, dimming, movement, start.
  */
 @Composable
 internal fun ScreensaverSettingsSection(
@@ -88,6 +96,22 @@ internal fun ScreensaverSettingsSection(
     val nightStyleAuto = rememberDreamSwitch(prefs, DreamPreferences.KEY_NIGHT_STYLE_AUTO, false)
     val verticalShiftOnly = rememberDreamSwitch(prefs, DreamPreferences.KEY_VERTICAL_SHIFT_ONLY, false)
     val startOnCharge = rememberDreamSwitch(prefs, DreamPreferences.KEY_START_ON_CHARGE, false)
+    val showCalendar = rememberDreamSwitch(prefs, DreamPreferences.KEY_SHOW_CALENDAR, false)
+    val showCalendarTitles = rememberDreamSwitch(prefs, DreamPreferences.KEY_SHOW_CALENDAR_TITLES, true)
+
+    // The calendar permission is asked for here and nowhere else, and only when the calendar
+    // rows are switched on. It can also be granted or taken away on Android's own page, so
+    // it is read again on every return.
+    var calendarGranted by remember { mutableStateOf(hasCalendarPermission(context)) }
+    val calendarPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) {
+        calendarGranted = hasCalendarPermission(context)
+    }
+    LifecycleResumeEffect(Unit) {
+        calendarGranted = hasCalendarPermission(context)
+        onPauseOrDispose { }
+    }
 
     var nightDimStartMinutes by remember {
         mutableIntStateOf(
@@ -150,6 +174,8 @@ internal fun ScreensaverSettingsSection(
         showBatteryDetails = showBatteryDetails.checked,
         showEstimate = showEstimate.checked,
         accent = accent,
+        showCalendar = showCalendar.checked,
+        showCalendarTitles = showCalendarTitles.checked,
     )
 
     SettingsSectionCard(titleRes = R.string.screensaver_settings_section) {
@@ -163,6 +189,48 @@ internal fun ScreensaverSettingsSection(
                 prefs.edit().putString(DreamPreferences.KEY_STYLE, chosen.id).apply()
             },
         )
+
+        // The chosen style's own options.
+        if (style == DreamStyle.GAUGES) {
+            Spacer(modifier = Modifier.height(GROUP_GAP))
+
+            SettingsToggleRow(
+                titleRes = R.string.dream_calendar_title,
+                descriptionRes = R.string.dream_calendar_description,
+                checked = showCalendar.checked,
+                onCheckedChange = { checked ->
+                    showCalendar.set(checked)
+                    if (checked && !hasCalendarPermission(context)) {
+                        if (calendarPermissionDeniedForGood(context)) {
+                            // Android no longer shows its dialog: only its own page can grant it.
+                            context.openAppDetailsSettings()
+                        } else {
+                            markCalendarPermissionRequested(context)
+                            calendarPermissionLauncher.launch(Manifest.permission.READ_CALENDAR)
+                        }
+                    }
+                },
+            )
+
+            if (showCalendar.checked && !calendarGranted) {
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = stringResource(R.string.dream_calendar_permission_missing),
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
+
+            Spacer(modifier = Modifier.height(ROW_GAP))
+
+            SettingsToggleRow(
+                titleRes = R.string.dream_calendar_titles_title,
+                descriptionRes = R.string.dream_calendar_titles_description,
+                checked = showCalendarTitles.checked,
+                onCheckedChange = showCalendarTitles::set,
+                enabled = showCalendar.checked,
+            )
+        }
 
         Spacer(modifier = Modifier.height(GROUP_GAP))
 
@@ -459,6 +527,28 @@ private fun DreamStylePicker(
             }
         }
     }
+}
+
+/** Whether the calendar permission has been asked for on this phone; not backed up. */
+private const val KEY_CALENDAR_PERMISSION_REQUESTED = "calendar_permission_requested"
+
+private fun hasCalendarPermission(context: Context): Boolean =
+    ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CALENDAR) ==
+        PackageManager.PERMISSION_GRANTED
+
+private fun markCalendarPermissionRequested(context: Context) {
+    DeviceLocalFlags.prefs(context).edit().putBoolean(KEY_CALENDAR_PERMISSION_REQUESTED, true).apply()
+}
+
+/**
+ * True when Android will not show its permission dialog any more: it has been asked for
+ * before and there is no rationale to show. Then only the app's page in Android's settings
+ * can grant it.
+ */
+private fun calendarPermissionDeniedForGood(context: Context): Boolean {
+    val activity = context as? Activity ?: return false
+    val askedBefore = DeviceLocalFlags.prefs(context).getBoolean(KEY_CALENDAR_PERMISSION_REQUESTED, false)
+    return askedBefore && !activity.shouldShowRequestPermissionRationale(Manifest.permission.READ_CALENDAR)
 }
 
 /** Size of one swatch in the accent row: also its touch target. */

@@ -44,6 +44,27 @@ one the notification counter uses; the Settings tab's *Special access* section h
 Only notifications you can still clear are shown (nothing ongoing, no group summaries), one icon
 per app with a count, and the row can be turned off with *Show notification icons* in Settings.
 
+### How do I change how the screensaver looks?
+
+The Settings tab's *Screensaver* section starts with a row of styles: Glow (the original look),
+Minimal, Ring, Gauges, Night and Edge. Each thumbnail is drawn by the screensaver itself, so it
+shows what you will get. Under the styles are switches for what is shown (device name, seconds,
+date, next alarm, notification icons, battery details, time to full) and the colour of the
+seconds. A switch is greyed out when the chosen style has no place for that item.
+
+### Where did the rotate button on the screensaver go?
+
+It moved to Settings as *Flip upside down*, so nothing bright stays in one corner of the
+screen. If you had flipped the screensaver with the old button, it is still flipped.
+
+### Why does the screensaver ask for my calendar?
+
+Only because you switched on *Show calendar* for the Gauges style; it is off by default and
+nothing else in the app uses the calendar. The screensaver then lists up to three events of the
+coming week. It only reads, nothing is stored, and *Show event titles* can be switched off if
+the phone charges where others can see it. If you refuse the permission, the rows simply do
+not appear.
+
 ## Data usage
 
 ### Mobile data shows zero, or far less than my carrier reports

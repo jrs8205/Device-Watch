@@ -37,6 +37,10 @@ internal data class DreamOptions(
     /** When the battery is expected to be full. */
     val showEstimate: Boolean = true,
     val accent: DreamAccent = DreamAccent.SKY,
+    /** The next calendar events on the Gauges style; off until the user switches it on. */
+    val showCalendar: Boolean = false,
+    /** Whether a calendar row shows the event's title or only when it is. */
+    val showCalendarTitles: Boolean = true,
     /** Switch to the Night style for the hours of the night dim. */
     val nightStyleAuto: Boolean = false,
 ) {
@@ -49,7 +53,7 @@ internal data class DreamOptions(
         DreamField.NOTIFICATIONS -> showNotifications
         DreamField.BATTERY_DETAILS -> showBatteryDetails
         DreamField.ESTIMATE -> showEstimate
-        DreamField.CALENDAR -> true
+        DreamField.CALENDAR -> showCalendar
     }
 }
 
@@ -72,6 +76,8 @@ internal fun readDreamOptions(prefs: SharedPreferences): DreamOptions {
         showBatteryDetails = prefs.booleanOr(DreamPreferences.KEY_SHOW_BATTERY_DETAILS, defaults.showBatteryDetails),
         showEstimate = prefs.booleanOr(DreamPreferences.KEY_SHOW_ESTIMATE, defaults.showEstimate),
         accent = dreamAccentOf(prefs.stringOrNull(DreamPreferences.KEY_ACCENT)),
+        showCalendar = prefs.booleanOr(DreamPreferences.KEY_SHOW_CALENDAR, defaults.showCalendar),
+        showCalendarTitles = prefs.booleanOr(DreamPreferences.KEY_SHOW_CALENDAR_TITLES, defaults.showCalendarTitles),
         nightStyleAuto = prefs.booleanOr(DreamPreferences.KEY_NIGHT_STYLE_AUTO, defaults.nightStyleAuto),
     )
 }

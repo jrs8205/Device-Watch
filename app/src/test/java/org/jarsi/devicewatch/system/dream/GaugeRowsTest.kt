@@ -92,6 +92,47 @@ class GaugeRowsTest {
         assertThat(kinds(rows)).contains(GaugeRowKind.ALARM)
     }
 
+    private val twoEvents = listOf(
+        DreamCalendarRow("LA 10:00", "Hammaslääkäri"),
+        DreamCalendarRow("SU", "Isänpäivälounas"),
+    )
+
+    @Test
+    fun `events sit between the alarm and the notifications`() {
+        val rows = gaugeRows(
+            state = plainDreamUiState(notificationGroups = oneApp, calendarRows = twoEvents),
+            options = gauges.copy(showCalendar = true),
+            labels = labels,
+            percent = "64 %",
+        )
+
+        assertThat(kinds(rows)).containsExactly(
+            GaugeRowKind.BATTERY,
+            GaugeRowKind.POWER,
+            GaugeRowKind.TEMPERATURE,
+            GaugeRowKind.FULL,
+            GaugeRowKind.ALARM,
+            GaugeRowKind.EVENT,
+            GaugeRowKind.EVENT,
+            GaugeRowKind.NOTIFICATIONS,
+        ).inOrder()
+        assertThat(rows.filter { it.kind == GaugeRowKind.EVENT }).containsExactly(
+            GaugeRow(GaugeRowKind.EVENT, "LA 10:00", "Hammaslääkäri"),
+            GaugeRow(GaugeRowKind.EVENT, "SU", "Isänpäivälounas"),
+        ).inOrder()
+    }
+
+    @Test
+    fun `a style or switch that does not show the calendar has no event rows`() {
+        val state = plainDreamUiState(calendarRows = twoEvents)
+
+        val switchedOff = gaugeRows(state, gauges, labels, "64 %")
+        val otherStyle = gaugeRows(state, DreamOptions(style = DreamStyle.GLOW, showCalendar = true), labels, "64 %")
+
+        assertThat(kinds(switchedOff)).doesNotContain(GaugeRowKind.EVENT)
+        assertThat(kinds(otherStyle)).doesNotContain(GaugeRowKind.EVENT)
+    }
+
     private val eightRows = listOf(
         GaugeRow(GaugeRowKind.BATTERY, "AKKU", "64 % ⚡"),
         GaugeRow(GaugeRowKind.POWER, "TEHO", "11,0 W"),

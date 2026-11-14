@@ -346,6 +346,13 @@
     <string name="dream_night_style_title">Yö-tyyli yöhimmennyksen aikana</string>
     <string name="dream_night_style_description">Yöhimmennyksen aikana näytönsäästäjä vaihtaa Yö-tyyliin ja sen jälkeen takaisin.</string>
     <string name="dream_percent_spaced">%1$d\u00A0%%</string>
+    <string name="dream_calendar_title">Näytä kalenteri</string>
+    <string name="dream_calendar_description">Enintään kolme tulevaa tapahtumaa Mittaristo-tyylissä. Vaatii luvan lukea kalenteria.</string>
+    <string name="dream_calendar_titles_title">Näytä tapahtumien otsikot</string>
+    <string name="dream_calendar_titles_description">Otsikot näkyvät kaikille, jotka näkevät latauksessa olevan puhelimen.</string>
+    <string name="dream_calendar_permission_missing">Kalenterilupaa ei ole myönnetty, joten näytönsäästäjä ei näytä tapahtumia.</string>
+    <string name="dream_calendar_event">Tapahtuma</string>
+    <string name="dream_calendar_now">NYT</string>
     <string name="dream_show_seconds">Sekunnit</string>
     <string name="dream_show_date">Päivämäärä</string>
     <string name="dream_show_alarm">Seuraava herätys</string>

@@ -29,6 +29,11 @@ object DreamPreferences {
     const val KEY_SHOW_BATTERY_DETAILS = "show_battery_details"
     const val KEY_SHOW_ESTIMATE = "show_estimate"
 
+    // The Gauges style's calendar rows (needs the calendar permission), and whether a row
+    // shows the event's title or only its time.
+    const val KEY_SHOW_CALENDAR = "show_calendar"
+    const val KEY_SHOW_CALENDAR_TITLES = "show_calendar_titles"
+
     // The colour of the clock's seconds (DreamAccent.id); missing or unknown means sky blue.
     const val KEY_ACCENT = "accent_color"
 

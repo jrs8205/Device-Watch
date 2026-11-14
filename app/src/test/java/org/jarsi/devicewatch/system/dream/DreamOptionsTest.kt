@@ -179,8 +179,10 @@ class DreamOptionsTest {
 
     @Test
     fun `every field's switch decides whether it is shown`() {
-        val everything = DreamOptions(style = DreamStyle.GAUGES)
+        val everything = DreamOptions(style = DreamStyle.GAUGES, showCalendar = true)
         assertThat(DreamField.entries.filter { !everything.shows(it) }).isEmpty()
+
+        assertThat(everything.copy(showCalendar = false).shows(DreamField.CALENDAR)).isFalse()
 
         assertThat(everything.copy(showDeviceName = false).shows(DreamField.DEVICE_NAME)).isFalse()
         assertThat(everything.copy(showSeconds = false).shows(DreamField.SECONDS)).isFalse()
@@ -198,5 +200,25 @@ class DreamOptionsTest {
         assertThat(minimal.shows(DreamField.SECONDS)).isFalse()
         assertThat(minimal.shows(DreamField.ALARM)).isFalse()
         assertThat(minimal.shows(DreamField.DATE)).isTrue()
+    }
+
+    @Test
+    fun `the calendar is off until it is switched on, and its titles show unless switched off`() {
+        val defaults = readDreamOptions(prefs)
+        assertThat(defaults.showCalendar).isFalse()
+        assertThat(defaults.showCalendarTitles).isTrue()
+
+        prefs.edit().putBoolean("show_calendar", true).putBoolean("show_calendar_titles", false).commit()
+
+        val chosen = readDreamOptions(prefs)
+        assertThat(chosen.showCalendar).isTrue()
+        assertThat(chosen.showCalendarTitles).isFalse()
+    }
+
+    @Test
+    fun `Glow never shows the calendar even with the switch on`() {
+        assertThat(DreamOptions(style = DreamStyle.GLOW, showCalendar = true).shows(DreamField.CALENDAR)).isFalse()
+        assertThat(DreamOptions(style = DreamStyle.GAUGES, showCalendar = true).shows(DreamField.CALENDAR)).isTrue()
+        assertThat(DreamOptions(style = DreamStyle.GAUGES).shows(DreamField.CALENDAR)).isFalse()
     }
 }

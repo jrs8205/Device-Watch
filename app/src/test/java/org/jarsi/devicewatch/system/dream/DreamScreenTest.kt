@@ -45,8 +45,12 @@ class DreamScreenTest {
     /** What is on the screen; a test may change it after [show]. */
     private var shownOptions by mutableStateOf(DreamOptions())
 
-    private fun show(options: DreamOptions = DreamOptions(), landscape: Boolean, onTap: (() -> Unit)? = null) {
-        val state = sample()
+    private fun show(
+        options: DreamOptions = DreamOptions(),
+        landscape: Boolean,
+        onTap: (() -> Unit)? = null,
+        state: DreamUiState = sample(),
+    ) {
         shownOptions = options
         compose.setContent {
             DreamScreen(state = state, options = shownOptions, landscape = landscape, onTap = onTap, moving = false)
@@ -394,6 +398,29 @@ class DreamScreenTest {
         assertThat(brightness(260, 7)).isGreaterThan(0.6f)      // top, right of centre: lit
         assertThat(brightness(353, 400)).isGreaterThan(0.6f)    // right side: lit
         assertThat(brightness(100, 7)).isLessThan(0.2f)         // top, left of centre: the dark track
+    }
+
+    @Test
+    fun `Gauges lists the calendar's rows only when its switch is on`() {
+        val events = listOf(
+            DreamCalendarRow("SAT 10:00", "Dentist"),
+            DreamCalendarRow("SUN", "Father's Day lunch"),
+        )
+        show(
+            options = DreamOptions(style = DreamStyle.GAUGES, showCalendar = true),
+            landscape = false,
+            state = sample().copy(calendarRows = events),
+        )
+        for (event in events) {
+            compose.onNodeWithText(event.whenText).assertExists()
+            compose.onNodeWithText(event.title).assertExists()
+        }
+
+        shownOptions = DreamOptions(style = DreamStyle.GAUGES)
+        compose.waitForIdle()
+        for (event in events) {
+            assertThat(countOf(event.title)).isEqualTo(0)
+        }
     }
 
     @Test

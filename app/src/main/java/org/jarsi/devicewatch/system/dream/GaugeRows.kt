@@ -51,6 +51,11 @@ internal fun gaugeRows(
     if (options.shows(DreamField.ALARM) && state.alarmText.isNotEmpty()) {
         add(GaugeRow(GaugeRowKind.ALARM, labels.alarm, state.alarmText))
     }
+    if (options.shows(DreamField.CALENDAR)) {
+        for (event in state.calendarRows) {
+            add(GaugeRow(GaugeRowKind.EVENT, event.whenText, event.title))
+        }
+    }
     if (options.shows(DreamField.NOTIFICATIONS) && state.notificationGroups.isNotEmpty()) {
         add(GaugeRow(GaugeRowKind.NOTIFICATIONS, labels.notifications, ""))
     }
