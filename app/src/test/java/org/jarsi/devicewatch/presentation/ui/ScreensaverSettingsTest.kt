@@ -264,6 +264,26 @@ class ScreensaverSettingsTest {
         compose.onAllNodesWithText(context.getString(text)).fetchSemanticsNodes().size
 
     @Test
+    fun `a stored value of the wrong type does not stop the settings page`() {
+        // The settings file travels in Android's backup; a value of another type under one of
+        // the new keys must read as the default here, as it does in the screensaver.
+        prefs.edit()
+            .putString("dream_style", "gauges")
+            .putString("show_seconds", "yes")
+            .putInt("show_calendar", 1)
+            .commit()
+
+        show()
+
+        switchBeside(R.string.dream_show_seconds).assertIsOn()
+        switchBeside(R.string.dream_calendar_title).assertIsOff()
+
+        // Using the switch puts a proper value in its place.
+        switchBeside(R.string.dream_show_seconds).toggle()
+        assertThat(prefs.getBoolean("show_seconds", true)).isFalse()
+    }
+
+    @Test
     fun `the calendar switches appear only for Gauges`() {
         show()
         assertThat(countOf(R.string.dream_calendar_title)).isEqualTo(0)

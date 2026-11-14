@@ -641,6 +641,18 @@ private class DreamSwitch(
     }
 }
 
+/**
+ * The switch for [key]. The settings file travels in Android's backup, so the stored value
+ * may be of another type: it then reads as [default], as it does in the screensaver, and
+ * using the switch writes a proper value over it.
+ */
 @Composable
 private fun rememberDreamSwitch(prefs: SharedPreferences, key: String, default: Boolean): DreamSwitch =
-    remember(prefs, key) { DreamSwitch(prefs, key, prefs.getBoolean(key, default)) }
+    remember(prefs, key) {
+        val stored = try {
+            prefs.getBoolean(key, default)
+        } catch (_: ClassCastException) {
+            default
+        }
+        DreamSwitch(prefs, key, stored)
+    }
