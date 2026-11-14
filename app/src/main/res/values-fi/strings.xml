@@ -336,6 +336,7 @@
     <string name="dream_style_night">Yö</string>
     <string name="dream_style_ring">Rengas</string>
     <string name="dream_style_gauges">Mittaristo</string>
+    <string name="dream_style_edge">Reuna</string>
     <string name="dream_row_battery">AKKU</string>
     <string name="dream_row_power">TEHO</string>
     <string name="dream_row_temperature">LÄMPÖ</string>

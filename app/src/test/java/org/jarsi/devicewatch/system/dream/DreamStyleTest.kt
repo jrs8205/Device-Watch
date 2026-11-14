@@ -57,6 +57,12 @@ class DreamStyleTest {
         assertThat(shownBy(DreamStyle.GAUGES)).containsExactlyElementsIn(DreamField.entries)
     }
 
+    @Test
+    fun `Edge shows everything but the calendar`() {
+        assertThat(shownBy(DreamStyle.EDGE))
+            .containsExactlyElementsIn(DreamField.entries - DreamField.CALENDAR)
+    }
+
     private fun shownBy(style: DreamStyle): List<DreamField> =
         DreamField.entries.filter { style.supports(it) }
 }

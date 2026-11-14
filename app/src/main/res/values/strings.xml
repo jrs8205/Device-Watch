@@ -340,6 +340,7 @@
     <string name="dream_style_night">Night</string>
     <string name="dream_style_ring">Ring</string>
     <string name="dream_style_gauges">Gauges</string>
+    <string name="dream_style_edge">Edge</string>
     <string name="dream_row_battery">BATTERY</string>
     <string name="dream_row_power">POWER</string>
     <string name="dream_row_temperature">TEMP</string>

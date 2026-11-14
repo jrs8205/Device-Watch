@@ -19,6 +19,9 @@ internal enum class DreamStyle(val id: String) {
 
     /** The app's own look: monospaced figures on named rows, calendar events among them. */
     GAUGES("gauges"),
+
+    /** The battery's level as a bright line round the screen's edge. */
+    EDGE("edge"),
 }
 
 internal fun dreamStyleOf(id: String?): DreamStyle =
@@ -38,7 +41,7 @@ internal enum class DreamField {
 
 /** Whether the style has a place for the field at all, whatever its switch says. */
 internal fun DreamStyle.supports(field: DreamField): Boolean = when (this) {
-    DreamStyle.GLOW -> field != DreamField.CALENDAR
+    DreamStyle.GLOW, DreamStyle.EDGE -> field != DreamField.CALENDAR
     DreamStyle.MINIMAL ->
         field == DreamField.DATE || field == DreamField.NOTIFICATIONS || field == DreamField.BATTERY_DETAILS
     DreamStyle.NIGHT -> field == DreamField.ALARM

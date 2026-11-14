@@ -3,6 +3,7 @@ package org.jarsi.devicewatch.system
 import android.content.Context
 import android.content.pm.ActivityInfo
 import android.service.dreams.DreamService
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.ComposeView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
@@ -16,14 +17,16 @@ import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import org.jarsi.devicewatch.system.dream.DreamHost
+import org.jarsi.devicewatch.system.dream.DreamStyle
+import org.jarsi.devicewatch.system.dream.LocalDreamWideGamut
 import org.jarsi.devicewatch.system.dream.currentMinuteOfDay
 import org.jarsi.devicewatch.system.dream.readDreamOptions
 import org.jarsi.devicewatch.system.dream.shouldDimNow
 import org.jarsi.devicewatch.ui.theme.ProvideBoundedDensity
 
 /**
- * The screensaver. This class is only the service: its lifecycle and its window (orientation
- * and dimming). What it draws lives in the dream package. Android's screensaver setting
+ * The screensaver. This class is only the service: its lifecycle and its window (orientation,
+ * dimming and colour mode). What it draws lives in the dream package. Android's screensaver setting
  * stores this class's name, so the name and the package never change.
  */
 class MonitorDreamService : DreamService(), LifecycleOwner, ViewModelStoreOwner, SavedStateRegistryOwner {
@@ -72,6 +75,13 @@ class MonitorDreamService : DreamService(), LifecycleOwner, ViewModelStoreOwner,
         // the app, never while the dream is up.
         val options = readDreamOptions(dreamPrefs)
 
+        // The Edge style's line is as saturated as the screen allows: on a wide-gamut screen
+        // the window is switched to wide colour and the style draws its Display P3 colours.
+        val wideGamut = options.style == DreamStyle.EDGE && resources.configuration.isScreenWideColorGamut
+        if (wideGamut) {
+            window?.colorMode = ActivityInfo.COLOR_MODE_WIDE_COLOR_GAMUT
+        }
+
         val composeView = ComposeView(this).apply {
             setViewTreeLifecycleOwner(this@MonitorDreamService)
             setViewTreeViewModelStoreOwner(this@MonitorDreamService)
@@ -79,7 +89,9 @@ class MonitorDreamService : DreamService(), LifecycleOwner, ViewModelStoreOwner,
 
             setContent {
                 ProvideBoundedDensity {
-                    DreamHost(service = this@MonitorDreamService, prefs = dreamPrefs, options = options)
+                    CompositionLocalProvider(LocalDreamWideGamut provides wideGamut) {
+                        DreamHost(service = this@MonitorDreamService, prefs = dreamPrefs, options = options)
+                    }
                 }
             }
         }

@@ -1,6 +1,9 @@
 package org.jarsi.devicewatch.system.dream
 
 import android.app.Application
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import androidx.compose.ui.platform.ViewRootForTest
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
@@ -179,6 +182,84 @@ class DreamScreenTest {
             compose.onNodeWithText(value).assertExists()
         }
         compose.onNodeWithText(context.getString(R.string.dream_row_notifications)).assertExists()
+    }
+
+    @Test
+    fun `Edge draws the sample's texts and no charge emoji in portrait`() {
+        show(options = DreamOptions(style = DreamStyle.EDGE), landscape = false)
+        assertEdgeSampleIsOnScreen()
+    }
+
+    @Test
+    @Config(qualifiers = "w780dp-h360dp-land-mdpi")
+    fun `Edge draws the sample's texts and no charge emoji in landscape`() {
+        show(options = DreamOptions(style = DreamStyle.EDGE), landscape = true)
+        assertEdgeSampleIsOnScreen()
+    }
+
+    private fun assertEdgeSampleIsOnScreen() {
+        val state = sample()
+        compose.onNodeWithText(state.timeText).assertExists()
+        compose.onNodeWithText(":${state.secondsText}").assertExists()
+        compose.onNodeWithText(state.dateText).assertExists()
+        compose.onNodeWithText("Pixel 8a").assertExists()
+        compose.onNodeWithText(context.getString(R.string.dream_charging)).assertExists()
+        compose.onNodeWithText("64%").assertExists()
+        compose.onNodeWithText("3.82 V  \u00B7  26.3 \u00B0C  \u00B7  11.0 W").assertExists()
+        compose.onNodeWithText(state.fullTimeText).assertExists()
+        // The line round the screen says what the bolt, the plug and the battery said.
+        for (emoji in listOf("\u26A1", "\uD83D\uDD0C", "\uD83D\uDD0B")) {
+            compose.onAllNodesWithText(emoji, substring = true).assertCountEquals(0)
+        }
+    }
+
+    /**
+     * The screen as a picture. The view is drawn straight into a bitmap: what a style draws
+     * into the frame's background lands there, which is where the Edge line lives.
+     */
+    private fun drawScreen(): Bitmap {
+        val view = (compose.onRoot().fetchSemanticsNode().root as ViewRootForTest).view
+        val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
+        compose.runOnUiThread { view.draw(Canvas(bitmap)) }
+        return bitmap
+    }
+
+    private fun brightestChannel(picture: Bitmap, x: Int, y: Int): Float {
+        val pixel = picture.getPixel(x, y)
+        return maxOf(android.graphics.Color.red(pixel), android.graphics.Color.green(pixel), android.graphics.Color.blue(pixel)) / 255f
+    }
+
+    @Test
+    fun `Edge lights the line as far as the battery is full`() {
+        // 360 x 780 px at one pixel a dp. Standing still the line is in the lane 7 dp from
+        // the edge; at 64 % it has left the bottom centre, climbed the left side, crossed
+        // the top and come a little way down the right side.
+        show(options = DreamOptions(style = DreamStyle.EDGE), landscape = false)
+
+        val picture = drawScreen()
+        fun brightness(x: Int, y: Int): Float = brightestChannel(picture, x, y)
+
+        assertThat(brightness(7, 400)).isGreaterThan(0.6f)      // left side: lit
+        assertThat(brightness(100, 7)).isGreaterThan(0.6f)      // top: lit
+        assertThat(brightness(100, 773)).isGreaterThan(0.6f)    // bottom, left of centre: lit
+        assertThat(brightness(353, 600)).isLessThan(0.2f)       // right side, low: the dark track
+        assertThat(brightness(260, 773)).isLessThan(0.2f)       // bottom, right of centre: the dark track
+        assertThat(brightness(353, 600)).isGreaterThan(0.03f)   // ...which is a track, not nothing
+        assertThat(brightness(30, 300)).isLessThan(0.03f)       // inside the line: black
+    }
+
+    @Test
+    fun `Edge starts from the viewer's bottom when the layout is flipped`() {
+        // Flipped, the viewer's bottom is the screen's top: the line leaves the top centre
+        // and, clockwise for the viewer, runs to the right first.
+        show(options = DreamOptions(style = DreamStyle.EDGE, layoutSwapped = true), landscape = false)
+
+        val picture = drawScreen()
+        fun brightness(x: Int, y: Int): Float = brightestChannel(picture, x, y)
+
+        assertThat(brightness(260, 7)).isGreaterThan(0.6f)      // top, right of centre: lit
+        assertThat(brightness(353, 400)).isGreaterThan(0.6f)    // right side: lit
+        assertThat(brightness(100, 7)).isLessThan(0.2f)         // top, left of centre: the dark track
     }
 
     @Test

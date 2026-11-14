@@ -157,6 +157,18 @@ internal fun edgeRest(previous: EdgeRest?, level: Int, state: DreamChargeState, 
 internal fun edgeBrightness(rest: EdgeRest, nowMs: Long): Float =
     if (nowMs - rest.sinceMs < EDGE_REST_MS) 1f else EDGE_REST_ALPHA
 
+/**
+ * The alpha a layer needs so that, drawn over layers of the alphas in [under], everything
+ * together covers [target]. At full brightness the line's core hides the glow under it;
+ * while the line rests they show through each other and would add up to more than the
+ * rest allows, so the core is drawn this much fainter.
+ */
+internal fun edgeTopAlpha(target: Float, vararg under: Float): Float {
+    val through = under.fold(1f) { remaining, alpha -> remaining * (1f - alpha) }
+    if (through <= 0f) return 0f
+    return (1f - (1f - target) / through).coerceIn(0f, 1f)
+}
+
 private class EdgeStop(val level: Int, val srgb: Color, val displayP3: Color)
 
 private fun p3(red: Float, green: Float, blue: Float) = Color(red, green, blue, 1f, ColorSpaces.DisplayP3)
