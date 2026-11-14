@@ -73,7 +73,7 @@ The default app language is English. Finnish users get a localized app name and 
 - Screensaver clock follows the device 12/24-hour setting, with a second-aligned tick
 - Six screensaver styles to choose from in Settings, each with a thumbnail drawn by the screensaver's own code: Glow (the original look, and the default), Minimal, Ring, Gauges, Night and Edge; every style works upright, on its side and flipped upside down
 - Glow: a battery-level-tinted background gradient and a softly pulsing charge indicator
-- Edge: the battery level as a bright line round the screen's edge, running from red to green with the level, its head pulsing while the battery charges; against burn-in the line changes place once a minute and dims after ten minutes without a change
+- Edge: the battery level as a bright line round the screen's edge, running from red to green with the level, its head pulsing while the battery charges; against burn-in the line changes place once a minute and dims after ten minutes without a change; an optional *Full brightness* switch shows it at the screen's full brightness, except while the screensaver is dimmed
 - Night: the clock, the next alarm and the battery in dim red on black, and an option to switch to it automatically for the night-dim hours
 - Gauges: monospaced figures on named rows, and optionally the next three calendar events (off by default; the calendar permission is asked for only when you switch the rows on, and the titles can be hidden)
 - Switches for what the screensaver shows (device name, seconds, date, next alarm, notification icons, battery details, time to full) and five accent colours for the seconds
