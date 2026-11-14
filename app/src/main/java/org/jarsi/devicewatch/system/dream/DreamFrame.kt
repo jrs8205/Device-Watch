@@ -3,6 +3,7 @@ package org.jarsi.devicewatch.system.dream
 import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -20,6 +21,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntOffset
@@ -103,6 +105,12 @@ internal fun DreamFrame(
     }
 }
 
+/** Pure black behind a style that tints nothing. */
+@Composable
+internal fun BoxScope.BlackBackground() {
+    Box(modifier = Modifier.matchParentSize().background(Color.Black))
+}
+
 /**
  * The screensaver's whole picture for one state: the frame and the chosen style inside it.
  * The running screensaver and the settings preview both draw through this.
@@ -123,11 +131,13 @@ internal fun DreamScreen(
         background = {
             when (options.style) {
                 DreamStyle.GLOW -> GlowBackground(level = state.batteryLevel, swapped = options.layoutSwapped)
+                DreamStyle.MINIMAL -> BlackBackground()
             }
         },
         content = {
             when (options.style) {
                 DreamStyle.GLOW -> GlowContent(state = state, options = options, landscape = landscape)
+                DreamStyle.MINIMAL -> MinimalContent(state = state, options = options, landscape = landscape)
             }
         },
     )

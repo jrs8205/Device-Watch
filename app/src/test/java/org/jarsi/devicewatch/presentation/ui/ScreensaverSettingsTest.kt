@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertIsOff
+import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasText
@@ -126,18 +127,23 @@ class ScreensaverSettingsTest {
     fun `choosing a style writes its id`() {
         show()
 
-        styleItem(R.string.dream_style_glow).toggle()
+        styleItem(R.string.dream_style_minimal).toggle()
+        assertThat(prefs.getString("dream_style", null)).isEqualTo("minimal")
+        styleItem(R.string.dream_style_minimal).assertIsSelected()
+        styleItem(R.string.dream_style_glow).assertIsNotSelected()
 
+        styleItem(R.string.dream_style_glow).toggle()
         assertThat(prefs.getString("dream_style", null)).isEqualTo("glow")
     }
 
     @Test
     fun `the stored style is the selected one`() {
-        prefs.edit().putString("dream_style", "glow").commit()
+        prefs.edit().putString("dream_style", "minimal").commit()
 
         show()
 
-        styleItem(R.string.dream_style_glow).assertIsSelected()
+        styleItem(R.string.dream_style_minimal).assertIsSelected()
+        styleItem(R.string.dream_style_glow).assertIsNotSelected()
     }
 
     @Test

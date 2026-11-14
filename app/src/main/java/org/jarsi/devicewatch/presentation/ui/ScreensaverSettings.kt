@@ -362,6 +362,7 @@ private fun DreamStylePicker(
 @StringRes
 private fun dreamStyleNameRes(style: DreamStyle): Int = when (style) {
     DreamStyle.GLOW -> R.string.dream_style_glow
+    DreamStyle.MINIMAL -> R.string.dream_style_minimal
 }
 
 /** One on/off setting of the screensaver: shown from the file and written straight back. */

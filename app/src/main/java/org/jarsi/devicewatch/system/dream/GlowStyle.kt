@@ -97,13 +97,10 @@ internal fun BoxWithConstraintsScope.GlowContent(state: DreamUiState, options: D
         1f
     }
 
-    val horizontalPadding = when {
-        maxWidth < 380.dp -> 20.dp
-        maxWidth < 520.dp -> 28.dp
-        else -> 40.dp
-    }
-    val verticalPadding = if (maxHeight < 560.dp) 24.dp else 40.dp
-    val centerGap = if (maxWidth < 700.dp) 18.dp else 32.dp
+    val insets = dreamInsets(maxWidth, maxHeight)
+    val horizontalPadding = insets.horizontal
+    val verticalPadding = insets.vertical
+    val centerGap = insets.centerGap
 
     // The clock auto-sizes to the largest font that still fits the available width, so the
     // seconds never wrap or overlap on narrow phones (e.g. Pixel 9a portrait). The width

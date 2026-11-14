@@ -336,6 +336,8 @@
     <string name="force_portrait_description">Keep the screensaver upright even when the device is in landscape.</string>
     <string name="dream_style_title">Style</string>
     <string name="dream_style_glow">Glow</string>
+    <string name="dream_style_minimal">Minimal</string>
+    <string name="dream_percent_spaced">%1$d%%</string>
     <string name="dream_flip_title">Flip upside down</string>
     <string name="dream_flip_description">For a stand that holds the phone upside down: the screensaver turns 180°.</string>
     <string name="dim_screensaver_title">Dim the screensaver</string>

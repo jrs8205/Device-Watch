@@ -28,6 +28,15 @@ class DreamStyleTest {
             .containsExactlyElementsIn(DreamField.entries - DreamField.CALENDAR)
     }
 
+    @Test
+    fun `Minimal shows the date, the notification icons and the battery details only`() {
+        assertThat(shownBy(DreamStyle.MINIMAL)).containsExactly(
+            DreamField.DATE,
+            DreamField.NOTIFICATIONS,
+            DreamField.BATTERY_DETAILS,
+        )
+    }
+
     private fun shownBy(style: DreamStyle): List<DreamField> =
         DreamField.entries.filter { style.supports(it) }
 }

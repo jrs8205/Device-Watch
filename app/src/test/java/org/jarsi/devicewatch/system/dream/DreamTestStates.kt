@@ -60,3 +60,32 @@ internal fun worstCaseDreamUiState(context: Context, chargeState: DreamChargeSta
         clockMillis = now.time,
     )
 }
+
+/** A small state for tests of pure logic; every argument has an everyday default. */
+internal fun plainDreamUiState(
+    chargeState: DreamChargeState = DreamChargeState.CHARGING,
+    batteryLevel: Int = 64,
+    wattsText: String? = "11,0 W",
+    alarmText: String = "la 08:00",
+    fullClockText: String = "20:52",
+    notificationGroups: List<NotificationIconGroup> = emptyList(),
+): DreamUiState = DreamUiState(
+    timeText = "20:10",
+    secondsText = "26",
+    amPmText = "",
+    dateText = "Perjantaina 13. marraskuuta",
+    shortDateText = "pe 13. marraskuuta",
+    compactDateText = "pe 13.11.",
+    alarmText = alarmText,
+    deviceName = "Pixel 8a",
+    batteryLevel = batteryLevel,
+    chargeState = chargeState,
+    voltsText = "3,82 V",
+    tempText = "26,3 °C",
+    wattsText = wattsText,
+    fullTimeText = if (chargeState == DreamChargeState.CHARGING) "Täynnä, arviolta noin klo $fullClockText" else "",
+    fullClockText = fullClockText,
+    notificationGroups = notificationGroups,
+    notificationPulseToken = 0,
+    clockMillis = 0L,
+)

@@ -69,6 +69,31 @@ class DreamScreenTest {
     }
 
     @Test
+    fun `Minimal draws the sample in portrait`() {
+        show(options = DreamOptions(style = DreamStyle.MINIMAL), landscape = false)
+        assertMinimalSampleIsOnScreen()
+    }
+
+    @Test
+    @Config(qualifiers = "w780dp-h360dp-land-mdpi")
+    fun `Minimal draws the sample in landscape`() {
+        show(options = DreamOptions(style = DreamStyle.MINIMAL), landscape = true)
+        assertMinimalSampleIsOnScreen()
+    }
+
+    private fun assertMinimalSampleIsOnScreen() {
+        val state = sample()
+        compose.onNodeWithText(state.timeText).assertExists()
+        compose.onNodeWithText(state.shortDateText.uppercase(Locale.US)).assertExists()
+        compose.onNodeWithText("64%  ·  charging  ·  11.0 W").assertExists()
+        // What Minimal never shows: seconds, the device name, the alarm, the estimate.
+        compose.onAllNodesWithText(":${state.secondsText}").assertCountEquals(0)
+        compose.onAllNodesWithText("Pixel 8a").assertCountEquals(0)
+        compose.onAllNodesWithText(state.alarmText, substring = true).assertCountEquals(0)
+        compose.onAllNodesWithText(state.fullTimeText).assertCountEquals(0)
+    }
+
+    @Test
     fun `the flip button is gone`() {
         show(landscape = false)
 

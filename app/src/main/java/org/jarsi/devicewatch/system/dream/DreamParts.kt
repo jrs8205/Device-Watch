@@ -53,6 +53,20 @@ import org.jarsi.devicewatch.system.fitNotificationRow
 // The pieces the screensaver's styles share: the clock block, the notification row, the
 // text fitting and the battery's colours.
 
+/** A style's outer paddings and the gap between its two landscape columns. */
+internal data class DreamInsets(val horizontal: Dp, val vertical: Dp, val centerGap: Dp)
+
+/** The paddings every style uses, chosen by the screen's size. */
+internal fun dreamInsets(width: Dp, height: Dp): DreamInsets = DreamInsets(
+    horizontal = when {
+        width < 380.dp -> 20.dp
+        width < 520.dp -> 28.dp
+        else -> 40.dp
+    },
+    vertical = if (height < 560.dp) 24.dp else 40.dp,
+    centerGap = if (width < 700.dp) 18.dp else 32.dp,
+)
+
 /**
  * Test tag for a text that is meant to end in an ellipsis when it is too long (a calendar
  * event's title). Every other text on the screensaver must fit; the fit test skips these.
@@ -317,6 +331,9 @@ private fun loadNotificationIcon(context: Context, icon: android.graphics.drawab
  * [minClockSp]..[maxClockSp]. This keeps the seconds from wrapping/overlapping on narrow
  * screens regardless of device width. The measurement is cached and only re-runs when the
  * available width, density, or font resolver changes (not on every clock tick).
+ *
+ * A style whose clock has no seconds beside it passes a [secondsRatio] and [secondsMinSp]
+ * of zero and no [gap]; [timeWeight] is the weight the style draws the time in.
  */
 @Composable
 internal fun rememberFittedClockSize(
@@ -326,18 +343,21 @@ internal fun rememberFittedClockSize(
     secondsRatio: Float = 0.25f,
     secondsMinSp: Int = 22,
     gap: Dp = 8.dp,
+    timeWeight: FontWeight = FontWeight.ExtraBold,
 ): Int {
     val measurer = rememberTextMeasurer()
     val density = LocalDensity.current
     val resolver = LocalFontFamilyResolver.current
-    return remember(availableWidth, maxClockSp, minClockSp, density, resolver) {
+    return remember(
+        availableWidth, maxClockSp, minClockSp, secondsRatio, secondsMinSp, gap, timeWeight, density, resolver,
+    ) {
         if (availableWidth <= 0.dp) return@remember minClockSp
         val referenceSp = 100f
         val timeWidthPx = measurer.measure(
             text = "00:00",
             style = TextStyle(
                 fontSize = referenceSp.sp,
-                fontWeight = FontWeight.ExtraBold,
+                fontWeight = timeWeight,
                 fontFeatureSettings = "tnum",
                 letterSpacing = 0.sp,
             ),
