@@ -1,0 +1,11 @@
+<!-- Screensaver, Night style: an alarm clock beside the next alarm's time. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:fillType="evenOdd"
+        android:pathData="M12,4a9,9 0,1 0,0 18a9,9 0,1 0,0 -18zM12,6a7,7 0,1 1,0 14a7,7 0,1 1,0 -14zM11,8.5h2v4.4l3.2,1.9 -1,1.7L11,14zM5.6,2.9L7,4.5 2.9,8 1.5,6.4zM18.4,2.9L22.5,6.4 21.1,8 17,4.5z" />
+</vector>

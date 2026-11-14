@@ -13,6 +13,8 @@ internal data class DreamOptions(
     val verticalShiftOnly: Boolean = false,
     val showDeviceName: Boolean = true,
     val showNotifications: Boolean = true,
+    /** Switch to the Night style for the hours of the night dim. */
+    val nightStyleAuto: Boolean = false,
 ) {
     /** Whether the field is drawn: the style has a place for it and its switch is on. */
     fun shows(field: DreamField): Boolean = style.supports(field) && when (field) {
@@ -35,6 +37,7 @@ internal fun readDreamOptions(prefs: SharedPreferences): DreamOptions {
         verticalShiftOnly = prefs.booleanOr(DreamPreferences.KEY_VERTICAL_SHIFT_ONLY, defaults.verticalShiftOnly),
         showDeviceName = prefs.booleanOr(DreamPreferences.KEY_SHOW_DEVICE_NAME, defaults.showDeviceName),
         showNotifications = prefs.booleanOr(DreamPreferences.KEY_SHOW_NOTIFICATIONS, defaults.showNotifications),
+        nightStyleAuto = prefs.booleanOr(DreamPreferences.KEY_NIGHT_STYLE_AUTO, defaults.nightStyleAuto),
     )
 }
 

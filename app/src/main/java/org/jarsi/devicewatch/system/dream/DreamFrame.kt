@@ -131,13 +131,14 @@ internal fun DreamScreen(
         background = {
             when (options.style) {
                 DreamStyle.GLOW -> GlowBackground(level = state.batteryLevel, swapped = options.layoutSwapped)
-                DreamStyle.MINIMAL -> BlackBackground()
+                DreamStyle.MINIMAL, DreamStyle.NIGHT -> BlackBackground()
             }
         },
         content = {
             when (options.style) {
                 DreamStyle.GLOW -> GlowContent(state = state, options = options, landscape = landscape)
                 DreamStyle.MINIMAL -> MinimalContent(state = state, options = options, landscape = landscape)
+                DreamStyle.NIGHT -> NightContent(state = state, options = options, landscape = landscape)
             }
         },
     )

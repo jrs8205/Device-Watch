@@ -86,4 +86,47 @@ class DreamOptionsTest {
     fun `a field the style cannot show is not shown`() {
         assertThat(DreamOptions().shows(DreamField.CALENDAR)).isFalse()
     }
+
+    @Test
+    fun `the automatic Night style is off until it is switched on`() {
+        assertThat(readDreamOptions(prefs).nightStyleAuto).isFalse()
+
+        prefs.edit().putBoolean("night_style_auto", true).commit()
+
+        assertThat(readDreamOptions(prefs).nightStyleAuto).isTrue()
+    }
+
+    @Test
+    fun `the night window is active only with night dim on`() {
+        val lateEvening = 23 * 60
+        val noon = 12 * 60
+
+        // Night dim is off: no window, and the manual dim switch does not make one.
+        assertThat(nightWindowActive(prefs, lateEvening)).isFalse()
+        prefs.edit().putBoolean("dim_screensaver", true).commit()
+        assertThat(nightWindowActive(prefs, lateEvening)).isFalse()
+
+        // Night dim on, with its default 22:00 to 07:00.
+        prefs.edit().putBoolean("night_dim", true).commit()
+        assertThat(nightWindowActive(prefs, lateEvening)).isTrue()
+        assertThat(nightWindowActive(prefs, noon)).isFalse()
+
+        // The user's own times.
+        prefs.edit().putInt("night_dim_start_minutes", 11 * 60).putInt("night_dim_end_minutes", 13 * 60).commit()
+        assertThat(nightWindowActive(prefs, noon)).isTrue()
+        assertThat(nightWindowActive(prefs, lateEvening)).isFalse()
+    }
+
+    @Test
+    fun `the screensaver dims by the manual switch or inside the night window`() {
+        val noon = 12 * 60
+        assertThat(shouldDimNow(prefs, noon)).isFalse()
+
+        prefs.edit().putBoolean("night_dim", true).commit()
+        assertThat(shouldDimNow(prefs, noon)).isFalse()
+        assertThat(shouldDimNow(prefs, 23 * 60)).isTrue()
+
+        prefs.edit().putBoolean("dim_screensaver", true).commit()
+        assertThat(shouldDimNow(prefs, noon)).isTrue()
+    }
 }

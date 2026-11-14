@@ -333,6 +333,9 @@
     <string name="dream_style_title">Tyyli</string>
     <string name="dream_style_glow">Hehku</string>
     <string name="dream_style_minimal">Pelkistetty</string>
+    <string name="dream_style_night">Yö</string>
+    <string name="dream_night_style_title">Yö-tyyli yöhimmennyksen aikana</string>
+    <string name="dream_night_style_description">Yöhimmennyksen aikana näytönsäästäjä vaihtaa Yö-tyyliin ja sen jälkeen takaisin.</string>
     <string name="dream_percent_spaced">%1$d\u00A0%%</string>
     <string name="dream_flip_title">Käännä ylösalaisin</string>
     <string name="dream_flip_description">Telineelle, jossa puhelin on ylösalaisin: näytönsäästäjä kääntyy 180°.</string>

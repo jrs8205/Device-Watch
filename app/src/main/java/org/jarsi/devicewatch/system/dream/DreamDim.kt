@@ -15,8 +15,11 @@ internal fun currentMinuteOfDay(): Int {
  * Pure apart from the SharedPreferences reads so the window logic itself is unit-testable
  * via [isInNightWindow].
  */
-internal fun shouldDimNow(prefs: SharedPreferences, nowMinutes: Int): Boolean {
-    if (prefs.getBoolean(DreamPreferences.KEY_DIM_SCREENSAVER, false)) return true
+internal fun shouldDimNow(prefs: SharedPreferences, nowMinutes: Int): Boolean =
+    prefs.getBoolean(DreamPreferences.KEY_DIM_SCREENSAVER, false) || nightWindowActive(prefs, nowMinutes)
+
+/** Whether the automatic night dim is switched on and [nowMinutes] falls inside its window. */
+internal fun nightWindowActive(prefs: SharedPreferences, nowMinutes: Int): Boolean {
     if (!prefs.getBoolean(DreamPreferences.KEY_NIGHT_DIM, false)) return false
     return isInNightWindow(
         nowMinutes,
@@ -44,3 +47,13 @@ internal fun isInNightWindow(nowMinutes: Int, startMinutes: Int, endMinutes: Int
         nowMinutes >= startMinutes || nowMinutes < endMinutes
     }
 }
+
+/**
+ * The style to draw right now. With the automatic Night style switched on, the chosen style
+ * gives way to Night for the hours of the night dim and comes back when they end.
+ */
+internal fun effectiveDreamStyle(
+    selected: DreamStyle,
+    nightStyleAuto: Boolean,
+    nightWindowActive: Boolean,
+): DreamStyle = if (nightStyleAuto && nightWindowActive) DreamStyle.NIGHT else selected

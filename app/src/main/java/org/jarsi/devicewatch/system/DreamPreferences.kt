@@ -29,6 +29,8 @@ object DreamPreferences {
     const val KEY_NIGHT_DIM = "night_dim"
     const val KEY_NIGHT_DIM_START_MINUTES = "night_dim_start_minutes"
     const val KEY_NIGHT_DIM_END_MINUTES = "night_dim_end_minutes"
+    // Draw the Night style instead of the chosen one for the hours of the night dim.
+    const val KEY_NIGHT_STYLE_AUTO = "night_style_auto"
     const val DEFAULT_NIGHT_DIM_START_MINUTES = 22 * 60
     const val DEFAULT_NIGHT_DIM_END_MINUTES = 7 * 60
 }

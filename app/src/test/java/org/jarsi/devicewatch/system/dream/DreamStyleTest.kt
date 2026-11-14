@@ -37,6 +37,11 @@ class DreamStyleTest {
         )
     }
 
+    @Test
+    fun `Night shows the alarm only`() {
+        assertThat(shownBy(DreamStyle.NIGHT)).containsExactly(DreamField.ALARM)
+    }
+
     private fun shownBy(style: DreamStyle): List<DreamField> =
         DreamField.entries.filter { style.supports(it) }
 }

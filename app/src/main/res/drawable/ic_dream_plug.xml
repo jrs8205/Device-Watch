@@ -1,0 +1,10 @@
+<!-- Screensaver, Night style: a plug, for a phone on its charger that is not charging. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M8,2h2v5h4V2h2v5h1a1,1 0,0 1,1 1v4a6,6 0,0 1,-5 5.9V22h-2v-4.1A6,6 0,0 1,6 12V8a1,1 0,0 1,1 -1h1z" />
+</vector>

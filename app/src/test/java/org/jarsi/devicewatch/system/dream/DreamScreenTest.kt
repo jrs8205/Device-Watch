@@ -94,6 +94,35 @@ class DreamScreenTest {
     }
 
     @Test
+    fun `Night draws the sample in portrait`() {
+        show(options = DreamOptions(style = DreamStyle.NIGHT), landscape = false)
+        assertNightSampleIsOnScreen()
+    }
+
+    @Test
+    @Config(qualifiers = "w780dp-h360dp-land-mdpi")
+    fun `Night draws the sample in landscape`() {
+        show(options = DreamOptions(style = DreamStyle.NIGHT), landscape = true)
+        assertNightSampleIsOnScreen()
+    }
+
+    private fun assertNightSampleIsOnScreen() {
+        val state = sample()
+        compose.onNodeWithText(state.timeText).assertExists()
+        compose.onNodeWithText(state.alarmText.uppercase(Locale.US)).assertExists()
+        compose.onNodeWithText("64%").assertExists()
+        // What Night never shows: the date, the device name, the figures, and any emoji
+        // (they would be drawn in their own colours, not in red).
+        compose.onAllNodesWithText(state.dateText).assertCountEquals(0)
+        compose.onAllNodesWithText(state.shortDateText.uppercase(Locale.US)).assertCountEquals(0)
+        compose.onAllNodesWithText("Pixel 8a").assertCountEquals(0)
+        compose.onAllNodesWithText("11.0 W", substring = true).assertCountEquals(0)
+        for (emoji in listOf("\u26A1", "\u23F0", "\uD83D\uDD0C", "\uD83D\uDD0B")) {
+            compose.onAllNodesWithText(emoji, substring = true).assertCountEquals(0)
+        }
+    }
+
+    @Test
     fun `the flip button is gone`() {
         show(landscape = false)
 

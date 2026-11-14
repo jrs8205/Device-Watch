@@ -337,6 +337,9 @@
     <string name="dream_style_title">Style</string>
     <string name="dream_style_glow">Glow</string>
     <string name="dream_style_minimal">Minimal</string>
+    <string name="dream_style_night">Night</string>
+    <string name="dream_night_style_title">Night style during night dim</string>
+    <string name="dream_night_style_description">Between the night dim times the screensaver switches to the Night style, and back afterwards.</string>
     <string name="dream_percent_spaced">%1$d%%</string>
     <string name="dream_flip_title">Flip upside down</string>
     <string name="dream_flip_description">For a stand that holds the phone upside down: the screensaver turns 180°.</string>

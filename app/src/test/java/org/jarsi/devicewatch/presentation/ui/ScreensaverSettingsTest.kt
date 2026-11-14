@@ -12,6 +12,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertIsOff
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.assertIsSelected
@@ -152,6 +154,18 @@ class ScreensaverSettingsTest {
 
         styleItem(R.string.dream_style_glow).assertIsSelected()
         assertThat(prefs.contains("dream_style")).isFalse()
+    }
+
+    @Test
+    fun `the automatic Night style can be switched on only with night dim`() {
+        show()
+        switchBeside(R.string.dream_night_style_title).assertIsNotEnabled()
+
+        switchBeside(R.string.night_dim_title).toggle()
+        switchBeside(R.string.dream_night_style_title).assertIsEnabled()
+
+        switchBeside(R.string.dream_night_style_title).toggle()
+        assertThat(prefs.getBoolean("night_style_auto", false)).isTrue()
     }
 
     @Test

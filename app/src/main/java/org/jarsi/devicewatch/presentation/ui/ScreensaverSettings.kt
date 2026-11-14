@@ -68,6 +68,7 @@ internal fun ScreensaverSettingsSection(
     val forcePortrait = rememberDreamSwitch(prefs, DreamPreferences.KEY_FORCE_PORTRAIT, false)
     val dim = rememberDreamSwitch(prefs, DreamPreferences.KEY_DIM_SCREENSAVER, false)
     val nightDim = rememberDreamSwitch(prefs, DreamPreferences.KEY_NIGHT_DIM, false)
+    val nightStyleAuto = rememberDreamSwitch(prefs, DreamPreferences.KEY_NIGHT_STYLE_AUTO, false)
     val verticalShiftOnly = rememberDreamSwitch(prefs, DreamPreferences.KEY_VERTICAL_SHIFT_ONLY, false)
     val startOnCharge = rememberDreamSwitch(prefs, DreamPreferences.KEY_START_ON_CHARGE, false)
 
@@ -241,6 +242,17 @@ internal fun ScreensaverSettingsSection(
             }
         }
 
+        Spacer(modifier = Modifier.height(ROW_GAP))
+
+        // The Night style follows the night dim's hours, so it needs the night dim.
+        SettingsToggleRow(
+            titleRes = R.string.dream_night_style_title,
+            descriptionRes = R.string.dream_night_style_description,
+            checked = nightStyleAuto.checked,
+            onCheckedChange = nightStyleAuto::set,
+            enabled = nightDim.checked,
+        )
+
         Spacer(modifier = Modifier.height(GROUP_GAP))
 
         // Movement
@@ -363,6 +375,7 @@ private fun DreamStylePicker(
 private fun dreamStyleNameRes(style: DreamStyle): Int = when (style) {
     DreamStyle.GLOW -> R.string.dream_style_glow
     DreamStyle.MINIMAL -> R.string.dream_style_minimal
+    DreamStyle.NIGHT -> R.string.dream_style_night
 }
 
 /** One on/off setting of the screensaver: shown from the file and written straight back. */

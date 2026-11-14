@@ -93,4 +93,30 @@ class DreamLogicTest {
         const val STATUS_NOT_CHARGING = android.os.BatteryManager.BATTERY_STATUS_NOT_CHARGING
         const val STATUS_FULL = android.os.BatteryManager.BATTERY_STATUS_FULL
     }
+
+    @Test
+    fun `the Night style takes over inside the night window only`() {
+        fun styleAt(minute: Int) = effectiveDreamStyle(
+            selected = DreamStyle.GLOW,
+            nightStyleAuto = true,
+            nightWindowActive = isInNightWindow(minute, 22 * 60, 7 * 60),
+        )
+
+        assertThat(styleAt(21 * 60 + 59)).isEqualTo(DreamStyle.GLOW)
+        assertThat(styleAt(22 * 60)).isEqualTo(DreamStyle.NIGHT)
+        assertThat(styleAt(6 * 60 + 59)).isEqualTo(DreamStyle.NIGHT)
+        assertThat(styleAt(7 * 60)).isEqualTo(DreamStyle.GLOW)
+    }
+
+    @Test
+    fun `without the switch nothing changes`() {
+        assertThat(effectiveDreamStyle(DreamStyle.MINIMAL, nightStyleAuto = false, nightWindowActive = true))
+            .isEqualTo(DreamStyle.MINIMAL)
+    }
+
+    @Test
+    fun `Night chosen by hand stays Night outside the window`() {
+        assertThat(effectiveDreamStyle(DreamStyle.NIGHT, nightStyleAuto = true, nightWindowActive = false))
+            .isEqualTo(DreamStyle.NIGHT)
+    }
 }
