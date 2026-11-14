@@ -298,6 +298,23 @@ class ScreensaverSettingsTest {
     }
 
     @Test
+    fun `the full brightness switch appears only for Edge and writes its key`() {
+        show()
+        assertThat(countOf(R.string.dream_edge_brightness_title)).isEqualTo(0)
+
+        styleItem(R.string.dream_style_edge).toggle()
+        assertThat(countOf(R.string.dream_edge_brightness_title)).isEqualTo(1)
+        switchBeside(R.string.dream_edge_brightness_title).assertIsOff()
+
+        switchBeside(R.string.dream_edge_brightness_title).toggle()
+        assertThat(prefs.getBoolean("edge_full_brightness", false)).isTrue()
+        switchBeside(R.string.dream_edge_brightness_title).assertIsOn()
+
+        styleItem(R.string.dream_style_ring).toggle()
+        assertThat(countOf(R.string.dream_edge_brightness_title)).isEqualTo(0)
+    }
+
+    @Test
     fun `no permission is requested until the calendar switch is turned on`() {
         prefs.edit().putString("dream_style", "gauges").commit()
         show()

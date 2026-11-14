@@ -45,4 +45,30 @@ class DreamWindowTest {
 
         assertThat(shownAttributes(window).colorMode).isEqualTo(ActivityInfo.COLOR_MODE_WIDE_COLOR_GAMUT)
     }
+
+    @Test
+    fun `a brightness reaches the screen though the window's callback ignores it, and so does taking it back`() {
+        val window = dreamLikeWindow()
+        val none = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+        assertThat(shownAttributes(window).screenBrightness).isEqualTo(none)
+
+        window.setDreamBrightness(1f)
+        assertThat(shownAttributes(window).screenBrightness).isEqualTo(1f)
+
+        window.setDreamBrightness(none)
+        assertThat(shownAttributes(window).screenBrightness).isEqualTo(none)
+    }
+
+    @Test
+    fun `a brightness the window already has is not handed over again`() {
+        // Asked once a minute; the window is laid out again only when the answer changes.
+        val window = dreamLikeWindow()
+        window.setDreamBrightness(1f)
+        val shown = shownAttributes(window)
+        shown.screenBrightness = 0.5f   // a mark a new hand-over would write over
+
+        window.setDreamBrightness(1f)
+
+        assertThat(shownAttributes(window).screenBrightness).isEqualTo(0.5f)
+    }
 }

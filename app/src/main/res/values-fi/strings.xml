@@ -346,6 +346,8 @@
     <string name="dream_night_style_title">Yö-tyyli yöhimmennyksen aikana</string>
     <string name="dream_night_style_description">Yöhimmennyksen aikana näytönsäästäjä vaihtaa Yö-tyyliin ja sen jälkeen takaisin.</string>
     <string name="dream_percent_spaced">%1$d\u00A0%%</string>
+    <string name="dream_edge_brightness_title">Täysi kirkkaus</string>
+    <string name="dream_edge_brightness_description">Reuna-tyyli näytetään näytön täydellä kirkkaudella, ei kuitenkaan himmennyksen aikana.</string>
     <string name="dream_calendar_title">Näytä kalenteri</string>
     <string name="dream_calendar_description">Enintään kolme tulevaa tapahtumaa Mittaristo-tyylissä. Vaatii luvan lukea kalenteria.</string>
     <string name="dream_calendar_titles_title">Näytä tapahtumien otsikot</string>

@@ -43,6 +43,8 @@ internal data class DreamOptions(
     val showCalendarTitles: Boolean = true,
     /** Switch to the Night style for the hours of the night dim. */
     val nightStyleAuto: Boolean = false,
+    /** Show the Edge style at the screen's full brightness. */
+    val edgeFullBrightness: Boolean = false,
 ) {
     /** Whether the field is drawn: the style has a place for it and its switch is on. */
     fun shows(field: DreamField): Boolean = style.supports(field) && when (field) {
@@ -79,6 +81,7 @@ internal fun readDreamOptions(prefs: SharedPreferences): DreamOptions {
         showCalendar = prefs.booleanOr(DreamPreferences.KEY_SHOW_CALENDAR, defaults.showCalendar),
         showCalendarTitles = prefs.booleanOr(DreamPreferences.KEY_SHOW_CALENDAR_TITLES, defaults.showCalendarTitles),
         nightStyleAuto = prefs.booleanOr(DreamPreferences.KEY_NIGHT_STYLE_AUTO, defaults.nightStyleAuto),
+        edgeFullBrightness = prefs.booleanOr(DreamPreferences.KEY_EDGE_FULL_BRIGHTNESS, defaults.edgeFullBrightness),
     )
 }
 

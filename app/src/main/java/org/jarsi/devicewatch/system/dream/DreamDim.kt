@@ -1,6 +1,7 @@
 package org.jarsi.devicewatch.system.dream
 
 import android.content.SharedPreferences
+import android.view.WindowManager
 import org.jarsi.devicewatch.system.DreamPreferences
 import java.util.Calendar
 
@@ -57,3 +58,16 @@ internal fun effectiveDreamStyle(
     nightStyleAuto: Boolean,
     nightWindowActive: Boolean,
 ): DreamStyle = if (nightStyleAuto && nightWindowActive) DreamStyle.NIGHT else selected
+
+/**
+ * The brightness the screensaver's window asks for: the screen's full brightness for the
+ * Edge style when its switch is on, otherwise none of its own, which leaves the phone's
+ * brightness as it is. Never while the screensaver is dimmed: [dimNow] is the manual dim
+ * switch or the night window, and dimming is the stronger wish.
+ */
+internal fun dreamWindowBrightness(options: DreamOptions, dimNow: Boolean): Float =
+    if (options.style == DreamStyle.EDGE && options.edgeFullBrightness && !dimNow) {
+        WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_FULL
+    } else {
+        WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+    }

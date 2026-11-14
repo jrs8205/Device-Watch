@@ -98,6 +98,7 @@ internal fun ScreensaverSettingsSection(
     val startOnCharge = rememberDreamSwitch(prefs, DreamPreferences.KEY_START_ON_CHARGE, false)
     val showCalendar = rememberDreamSwitch(prefs, DreamPreferences.KEY_SHOW_CALENDAR, false)
     val showCalendarTitles = rememberDreamSwitch(prefs, DreamPreferences.KEY_SHOW_CALENDAR_TITLES, true)
+    val edgeFullBrightness = rememberDreamSwitch(prefs, DreamPreferences.KEY_EDGE_FULL_BRIGHTNESS, false)
 
     // The calendar permission is asked for here and nowhere else, and only when the calendar
     // rows are switched on. It can also be granted or taken away on Android's own page, so
@@ -229,6 +230,17 @@ internal fun ScreensaverSettingsSection(
                 checked = showCalendarTitles.checked,
                 onCheckedChange = showCalendarTitles::set,
                 enabled = showCalendar.checked,
+            )
+        }
+
+        if (style == DreamStyle.EDGE) {
+            Spacer(modifier = Modifier.height(GROUP_GAP))
+
+            SettingsToggleRow(
+                titleRes = R.string.dream_edge_brightness_title,
+                descriptionRes = R.string.dream_edge_brightness_description,
+                checked = edgeFullBrightness.checked,
+                onCheckedChange = edgeFullBrightness::set,
             )
         }
 

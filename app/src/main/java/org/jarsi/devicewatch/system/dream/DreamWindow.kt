@@ -14,6 +14,19 @@ internal fun Window.useWideColorGamut() {
     handOverAttributes()
 }
 
+/**
+ * Asks for a screen brightness for as long as the screensaver's window is up: 0..1, or
+ * [android.view.WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE] for the phone's own.
+ * Asked again every minute; the window is laid out again only when the answer changes.
+ */
+internal fun Window.setDreamBrightness(brightness: Float) {
+    val current = attributes
+    if (current.screenBrightness == brightness) return
+    current.screenBrightness = brightness
+    attributes = current
+    handOverAttributes()
+}
+
 private fun Window.handOverAttributes() {
     windowManager.updateViewLayout(decorView, attributes)
 }

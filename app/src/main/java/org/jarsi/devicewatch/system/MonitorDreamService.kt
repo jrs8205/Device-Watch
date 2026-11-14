@@ -20,7 +20,9 @@ import org.jarsi.devicewatch.system.dream.DreamHost
 import org.jarsi.devicewatch.system.dream.DreamStyle
 import org.jarsi.devicewatch.system.dream.LocalDreamWideGamut
 import org.jarsi.devicewatch.system.dream.currentMinuteOfDay
+import org.jarsi.devicewatch.system.dream.dreamWindowBrightness
 import org.jarsi.devicewatch.system.dream.readDreamOptions
+import org.jarsi.devicewatch.system.dream.setDreamBrightness
 import org.jarsi.devicewatch.system.dream.shouldDimNow
 import org.jarsi.devicewatch.system.dream.useWideColorGamut
 import org.jarsi.devicewatch.ui.theme.ProvideBoundedDensity
@@ -70,7 +72,8 @@ class MonitorDreamService : DreamService(), LifecycleOwner, ViewModelStoreOwner,
         // no later than onDreamingStarted(), so onAttachedToWindow() is a valid place. The clock
         // loop re-evaluates this once a minute so a running screensaver dims/brightens live when
         // the night window starts or ends.
-        setScreenBright(!shouldDimNow(dreamPrefs, currentMinuteOfDay()))
+        val dimNow = shouldDimNow(dreamPrefs, currentMinuteOfDay())
+        setScreenBright(!dimNow)
 
         // The style and the other options are read once per dream, here; they are changed in
         // the app, never while the dream is up.
@@ -82,6 +85,10 @@ class MonitorDreamService : DreamService(), LifecycleOwner, ViewModelStoreOwner,
         if (wideGamut) {
             window?.useWideColorGamut()
         }
+        // The Edge style can ask for the screen's full brightness (user setting), though not
+        // while the screensaver is dimmed. The clock loop asks again once a minute, like the
+        // dimming above.
+        window?.setDreamBrightness(dreamWindowBrightness(options, dimNow))
 
         val composeView = ComposeView(this).apply {
             setViewTreeLifecycleOwner(this@MonitorDreamService)

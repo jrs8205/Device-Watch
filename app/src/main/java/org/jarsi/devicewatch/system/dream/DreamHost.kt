@@ -21,7 +21,9 @@ internal fun DreamHost(service: DreamService, prefs: SharedPreferences, options:
     // once a minute, like the dimming itself.
     var nightNow by remember { mutableStateOf(nightWindowActive(prefs, currentMinuteOfDay())) }
     val state = rememberDreamUiState(service, options) { minuteOfDay ->
-        service.setScreenBright(!shouldDimNow(prefs, minuteOfDay))
+        val dimNow = shouldDimNow(prefs, minuteOfDay)
+        service.setScreenBright(!dimNow)
+        service.window?.setDreamBrightness(dreamWindowBrightness(options, dimNow))
         nightNow = nightWindowActive(prefs, minuteOfDay)
     }
     val landscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE

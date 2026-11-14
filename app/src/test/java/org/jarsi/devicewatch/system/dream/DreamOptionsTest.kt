@@ -221,4 +221,29 @@ class DreamOptionsTest {
         assertThat(DreamOptions(style = DreamStyle.GAUGES, showCalendar = true).shows(DreamField.CALENDAR)).isTrue()
         assertThat(DreamOptions(style = DreamStyle.GAUGES).shows(DreamField.CALENDAR)).isFalse()
     }
+
+    @Test
+    fun `Edge's full brightness is off until it is switched on`() {
+        assertThat(readDreamOptions(prefs).edgeFullBrightness).isFalse()
+
+        prefs.edit().putBoolean("edge_full_brightness", true).commit()
+        assertThat(readDreamOptions(prefs).edgeFullBrightness).isTrue()
+
+        // Stored with another type, as a backup from elsewhere might: the default.
+        prefs.edit().putString("edge_full_brightness", "true").commit()
+        assertThat(readDreamOptions(prefs).edgeFullBrightness).isFalse()
+    }
+
+    @Test
+    fun `full brightness is asked for only by Edge, only when switched on, and never while dimmed`() {
+        val none = android.view.WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+        val edge = DreamOptions(style = DreamStyle.EDGE, edgeFullBrightness = true)
+
+        assertThat(dreamWindowBrightness(edge, dimNow = false)).isEqualTo(1f)
+        assertThat(dreamWindowBrightness(edge, dimNow = true)).isEqualTo(none)
+        assertThat(dreamWindowBrightness(edge.copy(edgeFullBrightness = false), dimNow = false)).isEqualTo(none)
+        for (style in DreamStyle.entries - DreamStyle.EDGE) {
+            assertThat(dreamWindowBrightness(edge.copy(style = style), dimNow = false)).isEqualTo(none)
+        }
+    }
 }
