@@ -60,6 +60,20 @@ class DreamWindowTest {
     }
 
     @Test
+    fun `a window that is not on the screen takes the change without a hand-over`() {
+        // Created but never shown, like a screensaver's window once it has been taken down:
+        // the window manager refuses a view it does not know, and a screensaver must not
+        // stop on that.
+        val window = Robolectric.buildActivity(Activity::class.java).create().get().window
+
+        window.setDreamBrightness(1f)
+        window.useWideColorGamut()
+
+        assertThat(window.attributes.screenBrightness).isEqualTo(1f)
+        assertThat(window.attributes.colorMode).isEqualTo(ActivityInfo.COLOR_MODE_WIDE_COLOR_GAMUT)
+    }
+
+    @Test
     fun `a brightness the window already has is not handed over again`() {
         // Asked once a minute; the window is laid out again only when the answer changes.
         val window = dreamLikeWindow()

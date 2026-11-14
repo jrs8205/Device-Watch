@@ -27,6 +27,11 @@ internal fun Window.setDreamBrightness(brightness: Float) {
     handOverAttributes()
 }
 
+/**
+ * A window that is not on the screen keeps the change for itself: the window manager
+ * refuses a view it does not know, and a screensaver must not stop on that.
+ */
 private fun Window.handOverAttributes() {
-    windowManager.updateViewLayout(decorView, attributes)
+    val decor = peekDecorView() ?: return
+    if (decor.isAttachedToWindow) windowManager.updateViewLayout(decor, attributes)
 }
