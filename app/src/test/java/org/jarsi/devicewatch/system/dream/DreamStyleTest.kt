@@ -42,6 +42,16 @@ class DreamStyleTest {
         assertThat(shownBy(DreamStyle.NIGHT)).containsExactly(DreamField.ALARM)
     }
 
+    @Test
+    fun `Ring shows seconds, date, notification icons and battery details`() {
+        assertThat(shownBy(DreamStyle.RING)).containsExactly(
+            DreamField.SECONDS,
+            DreamField.DATE,
+            DreamField.NOTIFICATIONS,
+            DreamField.BATTERY_DETAILS,
+        )
+    }
+
     private fun shownBy(style: DreamStyle): List<DreamField> =
         DreamField.entries.filter { style.supports(it) }
 }

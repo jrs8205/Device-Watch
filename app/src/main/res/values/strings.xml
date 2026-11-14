@@ -338,6 +338,7 @@
     <string name="dream_style_glow">Glow</string>
     <string name="dream_style_minimal">Minimal</string>
     <string name="dream_style_night">Night</string>
+    <string name="dream_style_ring">Ring</string>
     <string name="dream_night_style_title">Night style during night dim</string>
     <string name="dream_night_style_description">Between the night dim times the screensaver switches to the Night style, and back afterwards.</string>
     <string name="dream_percent_spaced">%1$d%%</string>

@@ -132,6 +132,7 @@ internal fun DreamScreen(
             when (options.style) {
                 DreamStyle.GLOW -> GlowBackground(level = state.batteryLevel, swapped = options.layoutSwapped)
                 DreamStyle.MINIMAL, DreamStyle.NIGHT -> BlackBackground()
+                DreamStyle.RING -> RingBackground(level = state.batteryLevel, swapped = options.layoutSwapped)
             }
         },
         content = {
@@ -139,6 +140,7 @@ internal fun DreamScreen(
                 DreamStyle.GLOW -> GlowContent(state = state, options = options, landscape = landscape)
                 DreamStyle.MINIMAL -> MinimalContent(state = state, options = options, landscape = landscape)
                 DreamStyle.NIGHT -> NightContent(state = state, options = options, landscape = landscape)
+                DreamStyle.RING -> RingContent(state = state, options = options, landscape = landscape)
             }
         },
     )

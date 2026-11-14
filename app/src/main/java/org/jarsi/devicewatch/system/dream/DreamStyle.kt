@@ -13,6 +13,9 @@ internal enum class DreamStyle(val id: String) {
 
     /** Dim red on black for a bedroom: the clock, the next alarm and the battery. */
     NIGHT("night"),
+
+    /** The clock inside a ring that fills with the battery. */
+    RING("ring"),
 }
 
 internal fun dreamStyleOf(id: String?): DreamStyle =
@@ -36,4 +39,7 @@ internal fun DreamStyle.supports(field: DreamField): Boolean = when (this) {
     DreamStyle.MINIMAL ->
         field == DreamField.DATE || field == DreamField.NOTIFICATIONS || field == DreamField.BATTERY_DETAILS
     DreamStyle.NIGHT -> field == DreamField.ALARM
+    DreamStyle.RING ->
+        field == DreamField.SECONDS || field == DreamField.DATE ||
+            field == DreamField.NOTIFICATIONS || field == DreamField.BATTERY_DETAILS
 }

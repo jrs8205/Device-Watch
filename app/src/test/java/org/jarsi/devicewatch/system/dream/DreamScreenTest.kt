@@ -123,6 +123,32 @@ class DreamScreenTest {
     }
 
     @Test
+    fun `Ring draws the sample in portrait`() {
+        show(options = DreamOptions(style = DreamStyle.RING), landscape = false)
+        assertRingSampleIsOnScreen()
+    }
+
+    @Test
+    @Config(qualifiers = "w780dp-h360dp-land-mdpi")
+    fun `Ring draws the sample in landscape`() {
+        show(options = DreamOptions(style = DreamStyle.RING), landscape = true)
+        assertRingSampleIsOnScreen()
+    }
+
+    private fun assertRingSampleIsOnScreen() {
+        val state = sample()
+        compose.onNodeWithText(state.timeText).assertExists()
+        compose.onNodeWithText(state.secondsText).assertExists()
+        compose.onNodeWithText(state.shortDateText.uppercase(Locale.US)).assertExists()
+        compose.onNodeWithText("64%").assertExists()
+        compose.onNodeWithText("\u26A1 charging  \u00B7  11.0 W  \u00B7  26.3 \u00B0C").assertExists()
+        // What Ring never shows: the device name, the alarm, the estimate.
+        compose.onAllNodesWithText("Pixel 8a").assertCountEquals(0)
+        compose.onAllNodesWithText(state.alarmText, substring = true).assertCountEquals(0)
+        compose.onAllNodesWithText(state.fullTimeText).assertCountEquals(0)
+    }
+
+    @Test
     fun `the flip button is gone`() {
         show(landscape = false)
 
