@@ -1,5 +1,6 @@
 package org.jarsi.devicewatch.widget
 
+import android.appwidget.AppWidgetManager
 import android.content.Context
 import android.content.Intent
 import android.os.Build
@@ -39,18 +40,18 @@ class DashboardWidgetReceiver : GlanceAppWidgetReceiver() {
             e.printStackTrace()
         }
 
+        // Each of these can arrive with nothing of the app running, so each starts the
+        // monitor: a start of the phone, the app's own update, a widget's update. The charger
+        // and the unlock are not here: Android has not delivered them to a manifest receiver
+        // since Android 8, and the running monitor hears them itself.
         if (action == Intent.ACTION_BOOT_COMPLETED ||
-            action == "android.appwidget.action.APPWIDGET_UPDATE" ||
-            action == Intent.ACTION_USER_PRESENT
+            action == Intent.ACTION_MY_PACKAGE_REPLACED ||
+            action == AppWidgetManager.ACTION_APPWIDGET_UPDATE
         ) {
             startMonitorService(context)
         }
 
-        if (action == Intent.ACTION_POWER_CONNECTED ||
-            action == Intent.ACTION_POWER_DISCONNECTED ||
-            action == Intent.ACTION_USER_PRESENT ||
-            action == "android.appwidget.action.APPWIDGET_UPDATE"
-        ) {
+        if (action == AppWidgetManager.ACTION_APPWIDGET_UPDATE) {
             val pendingResult = goAsync()
             CoroutineScope(Dispatchers.Default).launch {
                 try {
