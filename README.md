@@ -36,6 +36,8 @@ The default app language is English. Finnish users get a localized app name and 
 - Battery power as a ninth figure on the tiles, the single-figure widget, the notification and the floating card: the rate the battery charges or runs down at, in watts, with the direction from the battery's status
 - Live figures in the monitor's notification, off by default: the figures chosen in Settings on two lines among the other notifications, all of them when expanded; a swipe hides it until the screen next comes on, and with none chosen it stays silent at the bottom as before
 - Widget background opacity slider, and a black-background switch for people whose other widgets are black
+- Ways in from Android's own pages, each straight to the matching part of the app's settings: the settings button on Android's screensaver page, a long press on any of the app's Quick Settings tiles, the *Additional settings in the app* link on Android's notification pages for the app and for each of its channels, and (Android 12+) the launcher's settings button on the Dashboard and Compact widgets
+- The monitor starts again by itself after an update of the app, as it does after a start of the phone
 - Tapping the widget anywhere opens the app
 - Data counters per calendar day or per one-month billing cycle with a configurable start day (month lengths handled automatically); the selection applies to the widget and the in-app data rows
 - Tabbed dashboard UI with swipe navigation between tabs: Home (live battery ring, usage counters, data counters and RAM/CPU/storage meters — full widget parity for people who skip the widget), Apps (usage insights), Device (hardware, SIM and Wi-Fi details), and Settings
@@ -185,6 +187,7 @@ Android selects the UI language from resource qualifiers:
 
 - English and every non-Finnish device language use `app/src/main/res/values/strings.xml`
 - Finnish devices use `app/src/main/res/values-fi/strings.xml`
+- From Android 13 the app is on Android's own per-app language page (*Settings → System → Languages → App languages*), where it can be set to English or Finnish whatever the device language; the languages offered are listed in `app/src/main/res/xml/locales_config.xml`
 
 ## Permissions
 
@@ -228,8 +231,8 @@ Release builds are minified with R8 and resource shrinking. The release APK is u
 
 ## Testing
 
-1349 JVM unit tests (JUnit 4 + Truth; Robolectric only for the Glance render, notification, backup-rule,
-settings-store, floating-card window and screensaver screen, settings and calendar tests) cover the logic
+1390 JVM unit tests (JUnit 4 + Truth; Robolectric only for the Glance render, notification, backup-rule,
+settings-store, floating-card window and screensaver screen, settings, calendar and settings-link tests) cover the logic
 behind every screen, service and widget:
 
 ```powershell
@@ -289,6 +292,13 @@ behind every screen, service and widget:
   lanes and rest), `DreamCalendarTest` and `DreamCalendarReaderTest` (which events are listed),
   `DreamWindowTest` (wide colour and brightness reaching the window), `ScreensaverSettingsTest` (each
   control writes its key)
+- **Ways in from Android's own pages** — `SystemSettingsLinksTest` (what the manifest, the screensaver
+  and the widgets declare, and which part of the settings each start asks for),
+  `MainActivitySettingsLinkTest` (the request read from a real start, and kept across a recreation of
+  the screen), `SettingsSectionScrollTest` (the Settings tab bringing a section to the top, and letting
+  go once the user scrolls), `WidgetSettingsLinkActivityTest`, `DashboardWidgetReceiverTest` (the
+  broadcasts that start the monitor) and `AppLanguagesTest` (the language list against the resource
+  folders)
 
 ## Build Outputs
 
