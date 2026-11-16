@@ -1,16 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Static preview of the screensaver shown in the system screensaver picker:
-     dark background, large clock + cyan seconds, date line, and a battery bar. -->
+     dark background, large clock + cyan seconds, date line, and a battery bar.
+     Square, because the picker's card is: a wider picture is shown with the card's
+     own grey above and below it. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="320dp"
-    android:height="200dp"
+    android:height="320dp"
     android:viewportWidth="320"
-    android:viewportHeight="200">
+    android:viewportHeight="320">
 
     <!-- Background -->
     <path
         android:fillColor="#FF000000"
-        android:pathData="M0,0 L320,0 L320,200 L0,200 Z" />
+        android:pathData="M0,0 L320,0 L320,320 L0,320 Z" />
+
+    <group android:translateY="60">
 
     <!-- Clock (HH:mm) -->
     <path
@@ -37,4 +41,6 @@
     <path
         android:fillColor="#FF34D399"
         android:pathData="M70,152 L214,152 L214,168 L70,168 Z" />
+
+    </group>
 </vector>
