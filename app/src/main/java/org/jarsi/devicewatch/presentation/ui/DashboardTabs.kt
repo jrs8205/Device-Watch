@@ -57,6 +57,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
 import org.jarsi.devicewatch.R
 import org.jarsi.devicewatch.presentation.AppsViewModel
+import org.jarsi.devicewatch.SettingsSection
 import org.jarsi.devicewatch.presentation.DashboardViewModel
 import org.jarsi.devicewatch.presentation.KernelViewModel
 import org.jarsi.devicewatch.presentation.PrivacyState
@@ -92,6 +93,9 @@ fun SystemDashboardScreen(
     systemAppsViewModel: SystemAppsViewModel = hiltViewModel(),
     /** Grows each time a tile, the single-figure widget or the notification asks for the Overview. */
     openOverviewRequest: Int = 0,
+    /** The part of the Settings tab one of Android's own pages asked for, until it is on screen. */
+    settingsSectionRequest: SettingsSection? = null,
+    onSettingsSectionShown: (SettingsSection) -> Unit = {},
 ) {
     val context = LocalContext.current
     val view = LocalView.current
@@ -167,6 +171,18 @@ fun SystemDashboardScreen(
             showPrivacy = false
             showSystemApps = false
             pagerState.scrollToPage(DashboardTab.Overview.ordinal)
+        }
+    }
+
+    // Android's own pages lead to one part of the Settings tab; the tab scrolls to it itself.
+    LaunchedEffect(settingsSectionRequest) {
+        if (settingsSectionRequest != null) {
+            showHistory = false
+            showSinceCharge = false
+            showKernel = false
+            showPrivacy = false
+            showSystemApps = false
+            pagerState.scrollToPage(DashboardTab.Settings.ordinal)
         }
     }
 
@@ -413,7 +429,9 @@ fun SystemDashboardScreen(
                             onOverlayShownChange = viewModel::onOverlayShownChange,
                             onOverlayMetricToggle = viewModel::onOverlayMetricToggle,
                             onOverlayPermissionChecked = viewModel::onOverlayPermissionChecked,
-                            onShowIntro = { replayOnboarding = true }
+                            onShowIntro = { replayOnboarding = true },
+                            sectionRequest = settingsSectionRequest,
+                            onSectionShown = onSettingsSectionShown,
                         )
                     }
                 }

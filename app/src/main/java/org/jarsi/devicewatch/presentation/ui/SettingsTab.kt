@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -42,13 +43,19 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.onPlaced
+import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -58,8 +65,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.LifecycleResumeEffect
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.withTimeoutOrNull
 import org.jarsi.devicewatch.BuildConfig
 import org.jarsi.devicewatch.R
+import org.jarsi.devicewatch.SettingsSection
 import org.jarsi.devicewatch.data.CHARGE_LIMIT_MAX
 import org.jarsi.devicewatch.data.CHARGE_LIMIT_MIN
 import org.jarsi.devicewatch.data.DATA_QUOTA_MIN_GB
@@ -100,8 +110,14 @@ internal fun SettingsTab(
     onOverlayMetricToggle: (QuickMetric, Boolean) -> Unit,
     onOverlayPermissionChecked: (Boolean) -> Unit,
     onShowIntro: () -> Unit,
+    /** The section one of Android's own pages asked for; the tab scrolls to it and reports it shown. */
+    sectionRequest: SettingsSection? = null,
+    onSectionShown: (SettingsSection) -> Unit = {},
 ) {
     val context = LocalContext.current
+    val scrollState = rememberScrollState()
+    val sectionTops = remember { mutableStateMapOf<SettingsSection, Int>() }
+    ScrollToRequestedSection(sectionRequest, sectionTops, scrollState, onSectionShown)
     // The overlay permission is granted on a system page; it is read again on every return.
     LifecycleResumeEffect(Unit) {
         onOverlayPermissionChecked(Settings.canDrawOverlays(context))
@@ -171,7 +187,7 @@ internal fun SettingsTab(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState()),
+            .verticalScroll(scrollState),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // Data counter period
@@ -576,6 +592,7 @@ internal fun SettingsTab(
         ScreensaverSettingsSection(
             notificationAccessEnabled = uiState.notificationAccessEnabled,
             onOpenDreamSettings = { openSpecialAccessSettings(Settings.ACTION_DREAM_SETTINGS) },
+            modifier = Modifier.sectionTop(SettingsSection.Screensaver, sectionTops),
         )
 
         // Special access — the dot is green when granted, red when missing
@@ -672,6 +689,42 @@ internal fun SettingsTab(
             fontSize = 11.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
+    }
+}
+
+/**
+ * How long a requested section is followed after it is first scrolled to. A fresh start is
+ * still loading its settings then, and the sections above change height as they arrive.
+ */
+internal const val SECTION_SETTLE_MILLIS = 1_000L
+
+/** Records where a section starts in the scrolled content. Only for the scrolled column's own children. */
+internal fun Modifier.sectionTop(section: SettingsSection, tops: MutableMap<SettingsSection, Int>): Modifier =
+    onPlaced { tops[section] = it.positionInParent().y.roundToInt() }
+
+/**
+ * Brings the [request]ed section to the top of the page and reports it shown. [tops] is a
+ * snapshot map filled by [sectionTop], so the scroll waits for a section that is not laid out yet.
+ */
+@Composable
+internal fun ScrollToRequestedSection(
+    request: SettingsSection?,
+    tops: Map<SettingsSection, Int>,
+    scrollState: ScrollState,
+    onShown: (SettingsSection) -> Unit,
+) {
+    val shown by rememberUpdatedState(onShown)
+    LaunchedEffect(request) {
+        val section = request ?: return@LaunchedEffect
+        try {
+            withTimeoutOrNull(SECTION_SETTLE_MILLIS) {
+                snapshotFlow { tops[section] }.filterNotNull().collect { scrollState.scrollTo(it) }
+            }
+        } finally {
+            // Also when the user's own scroll or a change of tab ends the following early:
+            // a request left standing would drag the page back on the next visit.
+            shown(section)
+        }
     }
 }
 

@@ -55,6 +55,14 @@
             </intent-filter>
         </activity>
 
+        <!-- What the gear beside the screensaver in Android's settings starts: the app, on its
+             own screensaver settings. Android starts it with no action and no extras, so it
+             gets a name of its own for MainActivity to tell the start by. -->
+        <activity-alias
+            android:name=".ScreensaverSettingsActivity"
+            android:exported="true"
+            android:targetActivity=".MainActivity" />
+
         <service
             android:name=".system.SystemMonitorService"
             android:enabled="true"
@@ -74,8 +82,10 @@
                 <action android:name="android.service.dreams.DreamService" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
+            <!-- The name is DreamService.DREAM_META_DATA, in the singular: under any other
+                 name Android reads none of dream_info.xml and says nothing about it. -->
             <meta-data
-                android:name="android.service.dreams"
+                android:name="android.service.dream"
                 android:resource="@xml/dream_info" />
         </service>
 

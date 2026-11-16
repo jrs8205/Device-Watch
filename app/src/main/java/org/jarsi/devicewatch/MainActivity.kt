@@ -10,6 +10,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -30,6 +31,9 @@ class MainActivity : ComponentActivity() {
     /** Grows with each request to show the Overview; the dashboard reacts to every change. */
     private val openOverviewRequest = mutableIntStateOf(0)
 
+    /** The part of the Settings tab one of Android's own pages asked for, until it has been shown. */
+    private val settingsSectionRequest = mutableStateOf<SettingsSection?>(null)
+
     override fun onStart() {
         super.onStart()
         appVisibility.onStart()
@@ -43,19 +47,31 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // Only a fresh launch: a recreated screen already shows what the user moved to since.
-        if (savedInstanceState == null) noteOverviewRequest(intent)
+        if (savedInstanceState == null) {
+            noteOverviewRequest(intent)
+            noteSettingsSectionRequest(intent)
+        }
         setContent {
             // The same activity-scoped ViewModel the dashboard uses, so flipping the
             // look switch in Settings re-themes the whole tree at once.
             val viewModel: DashboardViewModel = hiltViewModel()
             val uiState by viewModel.uiState.collectAsStateWithLifecycle()
             val overviewRequest by openOverviewRequest
+            val settingsSection by settingsSectionRequest
             ModernWidgetTheme(classicLook = uiState.classicLook) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    SystemDashboardScreen(viewModel = viewModel, openOverviewRequest = overviewRequest)
+                    SystemDashboardScreen(
+                        viewModel = viewModel,
+                        openOverviewRequest = overviewRequest,
+                        settingsSectionRequest = settingsSection,
+                        // A newer request may have replaced the one just shown.
+                        onSettingsSectionShown = { shown ->
+                            if (settingsSectionRequest.value == shown) settingsSectionRequest.value = null
+                        },
+                    )
                 }
             }
         }
@@ -65,6 +81,13 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         noteOverviewRequest(intent)
+        noteSettingsSectionRequest(intent)
+    }
+
+    private fun noteSettingsSectionRequest(intent: Intent?) {
+        intent ?: return
+        val fromRecents = intent.flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY != 0
+        requestedSettingsSection(intent.component?.className, fromRecents)?.let { settingsSectionRequest.value = it }
     }
 
     private fun noteOverviewRequest(intent: Intent?) {

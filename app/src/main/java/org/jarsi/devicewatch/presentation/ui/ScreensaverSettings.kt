@@ -84,6 +84,7 @@ private val GROUP_GAP = 24.dp
 internal fun ScreensaverSettingsSection(
     notificationAccessEnabled: Boolean,
     onOpenDreamSettings: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
     val prefs = remember(context) {
@@ -190,7 +191,7 @@ internal fun ScreensaverSettingsSection(
         showCalendarTitles = showCalendarTitles.checked,
     )
 
-    SettingsSectionCard(titleRes = R.string.screensaver_settings_section) {
+    SettingsSectionCard(titleRes = R.string.screensaver_settings_section, modifier = modifier) {
         Spacer(modifier = Modifier.height(4.dp))
 
         DreamStylePicker(
