@@ -1,0 +1,4 @@
+• Androidin omilta sivuilta pääsee nyt sovelluksen asetuksiin: näytönsäästäjäsivun asetuspainike, pikapainikkeen pitkä painallus, ilmoitussivujen linkki sekä ison ja kompaktin widgetin asetuspainike käynnistimessä (Android 12+)
+• Näytönsäästäjän esikatselukuva näkyy Androidin näytönsäästäjäsivulla
+• Sovellus on Androidin sovelluskohtaisten kielten sivulla (suomi, englanti)
+• Monitori käynnistyy itsestään sovelluksen päivityksen jälkeen

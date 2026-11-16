@@ -1,0 +1,4 @@
+• Android's own pages now lead into the app's settings: the settings button on the screensaver page, a long press on a Quick Settings tile, the link on the notification pages, and the launcher's settings button on the large and compact widgets (Android 12+)
+• The screensaver's preview picture shows on Android's screensaver page
+• The app is on Android's per-app language page (English, Finnish)
+• The monitor starts again by itself after an app update
