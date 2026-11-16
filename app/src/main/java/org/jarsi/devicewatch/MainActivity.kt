@@ -1,8 +1,10 @@
 package org.jarsi.devicewatch
 
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.service.quicksettings.TileService
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,6 +14,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
+import androidx.core.content.IntentCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.jarsi.devicewatch.data.AppVisibility
@@ -87,7 +90,14 @@ class MainActivity : ComponentActivity() {
     private fun noteSettingsSectionRequest(intent: Intent?) {
         intent ?: return
         val fromRecents = intent.flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY != 0
-        requestedSettingsSection(intent.component?.className, fromRecents)?.let { settingsSectionRequest.value = it }
+        // Android names the tile a long press was on.
+        val tile = if (intent.action == TileService.ACTION_QS_TILE_PREFERENCES) {
+            IntentCompat.getParcelableExtra(intent, Intent.EXTRA_COMPONENT_NAME, ComponentName::class.java)
+        } else {
+            null
+        }
+        requestedSettingsSection(intent.action, intent.component?.className, tile?.className, fromRecents)
+            ?.let { settingsSectionRequest.value = it }
     }
 
     private fun noteOverviewRequest(intent: Intent?) {

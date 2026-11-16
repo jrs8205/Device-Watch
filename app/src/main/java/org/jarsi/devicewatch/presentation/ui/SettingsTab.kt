@@ -381,7 +381,10 @@ internal fun SettingsTab(
         }
 
         // Quick Settings tiles (GitHub #7)
-        SettingsSectionCard(titleRes = R.string.quick_tiles_section) {
+        SettingsSectionCard(
+            titleRes = R.string.quick_tiles_section,
+            modifier = Modifier.sectionTop(SettingsSection.QuickTiles, sectionTops),
+        ) {
             Text(
                 text = stringResource(R.string.quick_tiles_description),
                 fontSize = 11.sp,
@@ -397,7 +400,10 @@ internal fun SettingsTab(
         }
 
         // The floating card over other apps (GitHub #2)
-        SettingsSectionCard(titleRes = R.string.overlay_section) {
+        SettingsSectionCard(
+            titleRes = R.string.overlay_section,
+            modifier = Modifier.sectionTop(SettingsSection.FloatingFigure, sectionTops),
+        ) {
             Text(
                 text = stringResource(R.string.overlay_description),
                 fontSize = 11.sp,

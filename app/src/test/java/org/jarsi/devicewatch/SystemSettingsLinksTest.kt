@@ -1,6 +1,7 @@
 package org.jarsi.devicewatch
 
 import android.service.dreams.DreamService
+import android.service.quicksettings.TileService
 import com.google.common.truth.Truth.assertThat
 import org.junit.Test
 import org.w3c.dom.Element
@@ -59,23 +60,69 @@ class SystemSettingsLinksTest {
     }
 
     @Test
+    fun `a long press on a tile has a screen of this app to open`() {
+        val answering = application.children("activity").filter { activity ->
+            activity.children("intent-filter").any { TileService.ACTION_QS_TILE_PREFERENCES in it.actions() }
+        }
+
+        assertThat(answering.map { it.android("name") }).containsExactly(".MainActivity")
+        assertThat(answering.single().android("exported")).isEqualTo("true")
+    }
+
+    @Test
+    fun `the floating card's tile is one the manifest declares`() {
+        val tiles = application.children("service")
+            .filter { TileService.ACTION_QS_TILE in it.actions() }
+            .map { APPLICATION_ID + it.android("name") }
+
+        assertThat(tiles).hasSize(10)
+        assertThat(tiles).contains(FLOATING_FIGURE_TILE)
+    }
+
+    private fun section(
+        action: String? = null,
+        componentClass: String? = MAIN_ACTIVITY,
+        tileClass: String? = null,
+        fromRecents: Boolean = false,
+    ) = requestedSettingsSection(action, componentClass, tileClass, fromRecents)
+
+    @Test
     fun `a start through the screensaver's gear asks for the screensaver's settings`() {
-        assertThat(requestedSettingsSection(SCREENSAVER_SETTINGS_ALIAS, fromRecents = false))
-            .isEqualTo(SettingsSection.Screensaver)
+        assertThat(section(componentClass = SCREENSAVER_SETTINGS_ALIAS)).isEqualTo(SettingsSection.Screensaver)
+    }
+
+    @Test
+    fun `a long press on a figure's tile asks for the tiles' settings`() {
+        val longPress = TileService.ACTION_QS_TILE_PREFERENCES
+
+        assertThat(section(longPress, tileClass = "$APPLICATION_ID.quick.BatteryTileService"))
+            .isEqualTo(SettingsSection.QuickTiles)
+        // An Android that does not name the tile still gets the tiles' settings.
+        assertThat(section(longPress, tileClass = null)).isEqualTo(SettingsSection.QuickTiles)
+    }
+
+    @Test
+    fun `a long press on the floating card's tile asks for the floating card's settings`() {
+        assertThat(section(TileService.ACTION_QS_TILE_PREFERENCES, tileClass = FLOATING_FIGURE_TILE))
+            .isEqualTo(SettingsSection.FloatingFigure)
     }
 
     @Test
     fun `an ordinary start asks for no part of the settings`() {
-        assertThat(requestedSettingsSection("$APPLICATION_ID.MainActivity", fromRecents = false)).isNull()
-        assertThat(requestedSettingsSection(null, fromRecents = false)).isNull()
+        assertThat(section("android.intent.action.MAIN")).isNull()
+        assertThat(section(componentClass = null)).isNull()
+        // The tile's name alone is not a long press.
+        assertThat(section("android.intent.action.MAIN", tileClass = FLOATING_FIGURE_TILE)).isNull()
     }
 
     @Test
-    fun `a task brought back from the recents list does not repeat the gear's request`() {
-        assertThat(requestedSettingsSection(SCREENSAVER_SETTINGS_ALIAS, fromRecents = true)).isNull()
+    fun `a task brought back from the recents list repeats no request`() {
+        assertThat(section(componentClass = SCREENSAVER_SETTINGS_ALIAS, fromRecents = true)).isNull()
+        assertThat(section(TileService.ACTION_QS_TILE_PREFERENCES, fromRecents = true)).isNull()
     }
 
     private companion object {
         const val APPLICATION_ID = "org.jarsi.devicewatch"
+        const val MAIN_ACTIVITY = "$APPLICATION_ID.MainActivity"
     }
 }
