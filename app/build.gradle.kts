@@ -49,6 +49,12 @@ android {
             if (keystorePropertiesFile.exists()) {
                 signingConfig = signingConfigs.getByName("release")
             }
+            // Otherwise the APK carries the commit it was built at
+            // (META-INF/version-control-info.textproto), and a release built before its
+            // version bump was committed differs from F-Droid's build of the tag (GitHub #9).
+            vcsInfo {
+                include = false
+            }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
