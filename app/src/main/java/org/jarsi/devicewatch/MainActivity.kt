@@ -37,6 +37,13 @@ class MainActivity : ComponentActivity() {
     /** The part of the Settings tab one of Android's own pages asked for, until it has been shown. */
     private val settingsSectionRequest = mutableStateOf<SettingsSection?>(null)
 
+    internal val pendingSettingsSection: SettingsSection? get() = settingsSectionRequest.value
+
+    /** A newer request may have replaced the one just shown. */
+    internal fun settingsSectionShown(shown: SettingsSection) {
+        if (settingsSectionRequest.value == shown) settingsSectionRequest.value = null
+    }
+
     override fun onStart() {
         super.onStart()
         appVisibility.onStart()
@@ -53,6 +60,12 @@ class MainActivity : ComponentActivity() {
         if (savedInstanceState == null) {
             noteOverviewRequest(intent)
             noteSettingsSectionRequest(intent)
+        } else {
+            // The start itself was answered before the recreation and is not read again; a
+            // request still waiting for the Settings tab (the intro or the first load was
+            // in the way) is carried over.
+            settingsSectionRequest.value =
+                settingsSectionNamed(savedInstanceState.getString(STATE_SETTINGS_SECTION))
         }
         setContent {
             // The same activity-scoped ViewModel the dashboard uses, so flipping the
@@ -70,14 +83,16 @@ class MainActivity : ComponentActivity() {
                         viewModel = viewModel,
                         openOverviewRequest = overviewRequest,
                         settingsSectionRequest = settingsSection,
-                        // A newer request may have replaced the one just shown.
-                        onSettingsSectionShown = { shown ->
-                            if (settingsSectionRequest.value == shown) settingsSectionRequest.value = null
-                        },
+                        onSettingsSectionShown = ::settingsSectionShown,
                     )
                 }
             }
         }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        settingsSectionRequest.value?.let { outState.putString(STATE_SETTINGS_SECTION, it.name) }
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -106,6 +121,7 @@ class MainActivity : ComponentActivity() {
 
     companion object {
         const val EXTRA_OPEN_OVERVIEW = "org.jarsi.devicewatch.extra.OPEN_OVERVIEW"
+        private const val STATE_SETTINGS_SECTION = "settings_section_request"
 
         /** Opens the app on the Overview, where every quick figure is shown in full. */
         fun openOverviewIntent(context: Context): Intent = Intent(context, MainActivity::class.java)

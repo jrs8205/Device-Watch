@@ -5,6 +5,10 @@ import android.service.quicksettings.TileService
 /** The parts of the Settings tab that one of Android's own pages leads straight to. */
 enum class SettingsSection { Screensaver, QuickTiles, FloatingFigure }
 
+/** The section of this name, or null: how a request is written down and read back. */
+internal fun settingsSectionNamed(name: String?): SettingsSection? =
+    SettingsSection.entries.firstOrNull { it.name == name }
+
 /**
  * The name the gear beside the screensaver in Android's settings starts the app by: an alias
  * of [MainActivity] in the manifest. Android starts a screensaver's settings with no action

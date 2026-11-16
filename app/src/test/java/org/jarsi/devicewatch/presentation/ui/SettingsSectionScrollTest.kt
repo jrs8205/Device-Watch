@@ -15,11 +15,15 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.unit.dp
 import com.google.common.truth.Truth.assertThat
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.launch
 import org.jarsi.devicewatch.SettingsSection
 import org.junit.Rule
 import org.junit.Test
@@ -42,6 +46,7 @@ class SettingsSectionScrollTest {
     val compose = createAndroidComposeRule<ComponentActivity>()
 
     private lateinit var scrollState: ScrollState
+    private lateinit var scope: CoroutineScope
     private var request by mutableStateOf<SettingsSection?>(null)
     private var heightAbove by mutableIntStateOf(500)
     private val shown = mutableListOf<SettingsSection>()
@@ -49,6 +54,7 @@ class SettingsSectionScrollTest {
     private fun show() {
         compose.setContent {
             scrollState = rememberScrollState()
+            scope = rememberCoroutineScope()
             val tops = remember { mutableStateMapOf<SettingsSection, Int>() }
             ScrollToRequestedSection(request, tops, scrollState) {
                 shown += it
@@ -102,6 +108,36 @@ class SettingsSectionScrollTest {
         compose.waitForIdle()
 
         assertThat(scrollState.value).isEqualTo(800)
+    }
+
+    @Test
+    fun `once the user has scrolled the page is not pulled back to the section`() {
+        request = SettingsSection.Screensaver
+        show()
+        compose.runOnIdle { scrollState.dispatchRawDelta(150f) }
+        assertThat(scrollState.value).isEqualTo(650)
+
+        heightAbove = 800
+        compose.waitForIdle()
+
+        assertThat(scrollState.value).isEqualTo(650)
+    }
+
+    @Test
+    fun `a page that is being scrolled by something else is not taken over`() {
+        request = SettingsSection.Screensaver
+        show()
+        // A scroll of the same priority as the follower's own, still on its way and not yet
+        // moved: only the follower's own look at the page can tell it to keep off.
+        compose.runOnIdle { scope.launch { scrollState.scroll { awaitCancellation() } } }
+        compose.waitForIdle()
+        assertThat(scrollState.isScrollInProgress).isTrue()
+
+        heightAbove = 800
+        compose.waitForIdle()
+
+        assertThat(scrollState.value).isEqualTo(500)
+        assertThat(scrollState.isScrollInProgress).isTrue()
     }
 
     @Test

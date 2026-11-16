@@ -66,6 +66,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.withTimeoutOrNull
 import org.jarsi.devicewatch.BuildConfig
 import org.jarsi.devicewatch.R
@@ -724,10 +725,21 @@ internal fun ScrollToRequestedSection(
         val section = request ?: return@LaunchedEffect
         try {
             withTimeoutOrNull(SECTION_SETTLE_MILLIS) {
-                snapshotFlow { tops[section] }.filterNotNull().collect { scrollState.scrollTo(it) }
+                // Where this effect last left the page. A page that is anywhere else, or on
+                // the move, has been taken by the user: following on would pull it back out
+                // of their hand. Nothing else ends the following when they scroll, because
+                // a finished scrollTo holds no lock for their scroll to break.
+                var leftAt: Int? = null
+                snapshotFlow { tops[section] }
+                    .filterNotNull()
+                    .takeWhile { leftAt == null || (!scrollState.isScrollInProgress && scrollState.value == leftAt) }
+                    .collect { top ->
+                        scrollState.scrollTo(top)
+                        leftAt = scrollState.value
+                    }
             }
         } finally {
-            // Also when the user's own scroll or a change of tab ends the following early:
+            // Also when the following ends early (the user's scroll, a change of tab):
             // a request left standing would drag the page back on the next visit.
             shown(section)
         }
