@@ -60,6 +60,12 @@
             <intent-filter>
                 <action android:name="android.service.quicksettings.action.QS_TILE_PREFERENCES" />
             </intent-filter>
+            <!-- The "Additional settings in the app" link on Android's notification pages for
+                 the app. Android shows it only for MAIN with this category. -->
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.NOTIFICATION_PREFERENCES" />
+            </intent-filter>
         </activity>
 
         <!-- What the gear beside the screensaver in Android's settings starts: the app, on its
@@ -144,6 +150,18 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/single_metric_widget_info" />
         </receiver>
+
+        <!-- The settings button a launcher shows on the Dashboard and Compact widgets
+             (Android 12+, res/xml-v31): it shows nothing and hands over to the app's
+             widget settings. -->
+        <activity
+            android:name=".widget.WidgetSettingsLinkActivity"
+            android:exported="true"
+            android:theme="@android:style/Theme.NoDisplay">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
+            </intent-filter>
+        </activity>
 
         <!-- Picks the single-figure widget's figure when it is added, and on a long press. -->
         <activity

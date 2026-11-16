@@ -1,5 +1,6 @@
 package org.jarsi.devicewatch
 
+import android.app.Notification
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
@@ -104,15 +105,26 @@ class MainActivity : ComponentActivity() {
 
     private fun noteSettingsSectionRequest(intent: Intent?) {
         intent ?: return
-        val fromRecents = intent.flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY != 0
-        // Android names the tile a long press was on.
-        val tile = if (intent.action == TileService.ACTION_QS_TILE_PREFERENCES) {
-            IntentCompat.getParcelableExtra(intent, Intent.EXTRA_COMPONENT_NAME, ComponentName::class.java)
-        } else {
-            null
-        }
-        requestedSettingsSection(intent.action, intent.component?.className, tile?.className, fromRecents)
-            ?.let { settingsSectionRequest.value = it }
+        requestedSettingsSection(intent.toAppStart())?.let { settingsSectionRequest.value = it }
+    }
+
+    /** Android's extras are read only from the start that is known to carry them. */
+    private fun Intent.toAppStart(): AppStart {
+        val longPress = action == TileService.ACTION_QS_TILE_PREFERENCES
+        val notificationSettings = hasCategory(Notification.INTENT_CATEGORY_NOTIFICATION_PREFERENCES)
+        return AppStart(
+            action = action,
+            componentClass = component?.className,
+            fromRecents = flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY != 0,
+            tileClass = if (longPress) {
+                IntentCompat.getParcelableExtra(this, Intent.EXTRA_COMPONENT_NAME, ComponentName::class.java)?.className
+            } else {
+                null
+            },
+            fromNotificationSettings = notificationSettings,
+            notificationChannel = if (notificationSettings) getStringExtra(Notification.EXTRA_CHANNEL_ID) else null,
+            sectionName = getStringExtra(EXTRA_SETTINGS_SECTION),
+        )
     }
 
     private fun noteOverviewRequest(intent: Intent?) {
@@ -121,11 +133,18 @@ class MainActivity : ComponentActivity() {
 
     companion object {
         const val EXTRA_OPEN_OVERVIEW = "org.jarsi.devicewatch.extra.OPEN_OVERVIEW"
+        const val EXTRA_SETTINGS_SECTION = "org.jarsi.devicewatch.extra.SETTINGS_SECTION"
         private const val STATE_SETTINGS_SECTION = "settings_section_request"
 
         /** Opens the app on the Overview, where every quick figure is shown in full. */
         fun openOverviewIntent(context: Context): Intent = Intent(context, MainActivity::class.java)
             .putExtra(EXTRA_OPEN_OVERVIEW, true)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+
+        /** Opens the app on one section of the Settings tab. */
+        fun openSettingsSectionIntent(context: Context, section: SettingsSection): Intent =
+            Intent(context, MainActivity::class.java)
+                .putExtra(EXTRA_SETTINGS_SECTION, section.name)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
     }
 }

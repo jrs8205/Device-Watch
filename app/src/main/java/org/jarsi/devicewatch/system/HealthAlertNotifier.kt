@@ -22,7 +22,7 @@ import org.jarsi.devicewatch.data.HealthAlert
  * per alert so each replaces only itself.
  */
 object HealthAlertNotifier {
-    private const val CHANNEL_ID = "device_alerts_channel"
+    const val CHANNEL_ID = "device_alerts_channel"
 
     private fun notificationId(alert: HealthAlert): Int = when (alert) {
         HealthAlert.HOT_BATTERY -> 1005

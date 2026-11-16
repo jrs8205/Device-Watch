@@ -23,7 +23,7 @@ import org.jarsi.devicewatch.widget.mobileDataText
  * single notification id, so the "quota reached" alert replaces the 80 % warning.
  */
 object DataQuotaNotifier {
-    private const val CHANNEL_ID = "data_quota_channel"
+    const val CHANNEL_ID = "data_quota_channel"
     private const val NOTIFICATION_ID = 1004
 
     /**

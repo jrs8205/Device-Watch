@@ -192,7 +192,10 @@ internal fun SettingsTab(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // Data counter period
-        SettingsSectionCard(titleRes = R.string.data_counter_section) {
+        SettingsSectionCard(
+            titleRes = R.string.data_counter_section,
+            modifier = Modifier.sectionTop(SettingsSection.DataCounter, sectionTops),
+        ) {
             Spacer(modifier = Modifier.height(4.dp))
 
             SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
@@ -285,7 +288,10 @@ internal fun SettingsTab(
         }
 
         // Charge reminder
-        SettingsSectionCard(titleRes = R.string.battery_section_title) {
+        SettingsSectionCard(
+            titleRes = R.string.battery_section_title,
+            modifier = Modifier.sectionTop(SettingsSection.Battery, sectionTops),
+        ) {
             Spacer(modifier = Modifier.height(4.dp))
 
             SettingsToggleRow(
@@ -319,7 +325,10 @@ internal fun SettingsTab(
         }
 
         // Optional alerts, all off by default
-        SettingsSectionCard(titleRes = R.string.alerts_section) {
+        SettingsSectionCard(
+            titleRes = R.string.alerts_section,
+            modifier = Modifier.sectionTop(SettingsSection.Alerts, sectionTops),
+        ) {
             Text(
                 text = stringResource(R.string.alerts_description),
                 fontSize = 11.sp,
@@ -349,7 +358,10 @@ internal fun SettingsTab(
         }
 
         // Figures in the monitor's notification (GitHub #7), none by default
-        SettingsSectionCard(titleRes = R.string.live_notification_section) {
+        SettingsSectionCard(
+            titleRes = R.string.live_notification_section,
+            modifier = Modifier.sectionTop(SettingsSection.NotificationFigures, sectionTops),
+        ) {
             Text(
                 text = stringResource(R.string.live_notification_description),
                 fontSize = 11.sp,
@@ -463,7 +475,10 @@ internal fun SettingsTab(
         }
 
         // Widget settings
-        SettingsSectionCard(titleRes = R.string.widget_settings_section) {
+        SettingsSectionCard(
+            titleRes = R.string.widget_settings_section,
+            modifier = Modifier.sectionTop(SettingsSection.Widgets, sectionTops),
+        ) {
             Spacer(modifier = Modifier.height(4.dp))
 
             Text(

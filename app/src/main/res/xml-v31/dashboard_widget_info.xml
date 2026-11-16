@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 12 and later: the copy in xml/ plus the launcher's settings button. The widget
+     is added without a stop at it (configuration_optional); before Android 12 that could
+     not be said, so the copy in xml/ names no settings screen at all.
+     The two copies are compared by SystemSettingsLinksTest. -->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="320dp"
+    android:minHeight="360dp"
+    android:targetCellWidth="4"
+    android:targetCellHeight="4"
+    android:minResizeWidth="280dp"
+    android:minResizeHeight="320dp"
+    android:updatePeriodMillis="0"
+    android:initialLayout="@layout/glance_default_layout"
+    android:previewImage="@drawable/widget_preview_dashboard"
+    android:resizeMode="horizontal|vertical"
+    android:widgetCategory="home_screen"
+    android:description="@string/widget_description"
+    android:configure="org.jarsi.devicewatch.widget.WidgetSettingsLinkActivity"
+    android:widgetFeatures="reconfigurable|configuration_optional">
+</appwidget-provider>

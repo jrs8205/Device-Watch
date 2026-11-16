@@ -21,7 +21,8 @@ import org.jarsi.devicewatch.R
  * id, so a full-charge alert never replaces this one.
  */
 object ChargeLimitNotifier {
-    private const val CHANNEL_ID = "battery_full_channel"
+    /** Shared with [BatteryFullNotifier]: one channel for both battery reminders. */
+    const val CHANNEL_ID = "battery_full_channel"
     private const val NOTIFICATION_ID = 1003
 
     /**
