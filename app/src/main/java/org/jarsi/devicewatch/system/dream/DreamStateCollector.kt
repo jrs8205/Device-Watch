@@ -5,6 +5,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.res.Configuration
 import android.os.BatteryManager
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -19,8 +20,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalConfiguration
+import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.jarsi.devicewatch.LatinDigits
 import org.jarsi.devicewatch.R
 import org.jarsi.devicewatch.data.DeviceLocalFlags
 import org.jarsi.devicewatch.data.batteryPowerWatts
@@ -163,7 +166,7 @@ internal fun rememberDreamUiState(
     }
 
     val configuration = LocalConfiguration.current
-    val currentLocale = configuration.locales[0]
+    val currentLocale = remember(configuration) { dreamLocale(configuration) }
     // Honor the device's 12/24-hour clock preference instead of hardcoding 24-hour time,
     // so the screensaver clock reads naturally on every locale/brand.
     val is24Hour = remember(configuration) {
@@ -258,3 +261,11 @@ internal fun rememberDreamUiState(
         calendarRows = calendarRows,
     )
 }
+
+/**
+ * The locale the screensaver formats its clock and figures with. The service is not made
+ * anew when the phone is turned: after a turn the screen is handed the phone's
+ * configuration as it is, without the numbering system the service's own resources name, so
+ * the rule for the digits is applied here again (see [LatinDigits]).
+ */
+internal fun dreamLocale(configuration: Configuration): Locale = LatinDigits.locale(configuration.locales[0])

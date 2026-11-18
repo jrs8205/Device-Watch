@@ -11,6 +11,7 @@ import org.jarsi.devicewatch.overlay.FloatingFigureTileService
 import org.jarsi.devicewatch.quick.BatteryTileService
 import org.jarsi.devicewatch.system.MonitorDreamService
 import org.jarsi.devicewatch.system.SystemMonitorService
+import org.jarsi.devicewatch.system.dream.dreamLocale
 import org.jarsi.devicewatch.widget.SingleMetricConfigActivity
 import org.junit.After
 import org.junit.Test
@@ -159,6 +160,20 @@ class LatinDigitsTest {
         val resources = LatinDigitResources { base }
 
         assertThat(resources.get()).isSameInstanceAs(resources.get())
+    }
+
+    // The screensaver is not made anew when the phone is turned. After the turn its screen is
+    // handed the phone's configuration as it is, and the clock and the battery figures were
+    // formatted with that: Arabic-Indic digits from the first rotation on.
+    @Test
+    fun `the screensaver's locale prints 0 to 9 whatever configuration it is handed`() {
+        val handed = Configuration().apply { setLocale(egypt) }
+
+        val locale = dreamLocale(handed)
+
+        assertThat(locale.language).isEqualTo("ar")
+        assertThat(SimpleDateFormat("HH:mm", locale).format(Date(0)).hasOtherDigits()).isFalse()
+        assertThat(String.format(locale, "%.1f", 4.5).hasOtherDigits()).isFalse()
     }
 
     @Test

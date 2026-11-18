@@ -28,7 +28,7 @@ private val PREVIEW_SCREEN_HEIGHT = 780.dp
 internal fun rememberSampleDreamUiState(): DreamUiState {
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
-    val locale = configuration.locales[0]
+    val locale = remember(configuration) { dreamLocale(configuration) }
     val is24Hour = remember(configuration) { android.text.format.DateFormat.is24HourFormat(context) }
     val minute by produceState(initialValue = System.currentTimeMillis() / 60_000L) {
         while (true) {
