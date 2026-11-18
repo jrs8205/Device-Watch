@@ -4,14 +4,17 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.BoxWithConstraintsScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -149,7 +152,7 @@ internal fun BoxWithConstraintsScope.RingContent(state: DreamUiState, options: D
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                RingDate(state, options, gapBelow = 14.dp)
+                RingHeader(state, options, gapBelow = 14.dp)
                 RingBattery(state, options)
             }
         }
@@ -162,26 +165,69 @@ internal fun BoxWithConstraintsScope.RingContent(state: DreamUiState, options: D
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            RingDate(state, options, gapBelow = 26.dp)
-            RingClock(state, options, diameter)
+            RingHeader(state, options, gapBelow = 26.dp)
+            // The lines above and below take the room they need first. On a short screen
+            // with everything switched on, the ring is what gives way.
+            BoxWithConstraints(
+                modifier = Modifier
+                    .weight(1f, fill = false)
+                    .sizeIn(maxWidth = diameter, maxHeight = diameter)
+                    .aspectRatio(1f),
+                contentAlignment = Alignment.Center
+            ) {
+                RingClock(state, options, min(maxWidth, maxHeight))
+            }
             Spacer(modifier = Modifier.height(28.dp))
             RingBattery(state, options)
         }
     }
 }
 
+/**
+ * The lines over the ring (beside it on a phone on its side): the phone's name, the date and
+ * the next alarm, each as far as it is switched on.
+ */
 @Composable
-private fun RingDate(state: DreamUiState, options: DreamOptions, gapBelow: Dp) {
-    if (!options.shows(DreamField.DATE)) return
+private fun RingHeader(state: DreamUiState, options: DreamOptions, gapBelow: Dp) {
+    val deviceName = state.deviceName.takeIf { options.shows(DreamField.DEVICE_NAME) }
+    val showDate = options.shows(DreamField.DATE)
+    val alarmText = state.alarmText.takeIf { options.shows(DreamField.ALARM) && it.isNotEmpty() }
+    if (deviceName == null && !showDate && alarmText == null) return
     val locale = LocalConfiguration.current.locales[0]
-    Text(
-        text = state.shortDateText.uppercase(locale),
-        autoSize = fitUpTo(16.sp),
-        maxLines = 1,
-        softWrap = false,
-        color = RING_DATE,
-        letterSpacing = 0.22.em
-    )
+    if (deviceName != null) {
+        Text(
+            text = deviceName,
+            autoSize = fitUpTo(13.sp),
+            maxLines = 1,
+            softWrap = false,
+            fontWeight = FontWeight.Medium,
+            color = RING_DIM,
+            letterSpacing = 1.5.sp
+        )
+        if (showDate || alarmText != null) Spacer(modifier = Modifier.height(6.dp))
+    }
+    if (showDate) {
+        Text(
+            text = state.shortDateText.uppercase(locale),
+            autoSize = fitUpTo(16.sp),
+            maxLines = 1,
+            softWrap = false,
+            color = RING_DATE,
+            letterSpacing = 0.22.em
+        )
+        if (alarmText != null) Spacer(modifier = Modifier.height(6.dp))
+    }
+    if (alarmText != null) {
+        Text(
+            text = "⏰ $alarmText",
+            autoSize = fitUpTo(13.sp),
+            maxLines = 1,
+            softWrap = false,
+            fontWeight = FontWeight.Medium,
+            color = RING_DATE,
+            style = TextStyle(fontFeatureSettings = "tnum")
+        )
+    }
     Spacer(modifier = Modifier.height(gapBelow))
 }
 
@@ -305,6 +351,20 @@ private fun RingBattery(state: DreamUiState, options: DreamOptions) {
         color = RING_DIM,
         style = TextStyle(fontFeatureSettings = "tnum")
     )
+    val estimate = state.fullTimeText.takeIf { options.shows(DreamField.ESTIMATE) && it.isNotEmpty() }
+    if (estimate != null) {
+        Spacer(modifier = Modifier.height(6.dp))
+        Text(
+            text = estimate,
+            // With a date in it the sentence is the longest text there is; beside the ring
+            // on a small phone it has to get very small to stay whole.
+            autoSize = fitUpTo(16.sp, floorSp = 6f),
+            maxLines = 1,
+            softWrap = false,
+            color = RING_DIM,
+            style = TextStyle(fontFeatureSettings = "tnum")
+        )
+    }
     if (groups.isNotEmpty()) {
         Spacer(modifier = Modifier.height(22.dp))
         NotificationIconRow(

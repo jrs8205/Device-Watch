@@ -41,12 +41,10 @@ internal enum class DreamField {
 
 /** Whether the style has a place for the field at all, whatever its switch says. */
 internal fun DreamStyle.supports(field: DreamField): Boolean = when (this) {
-    DreamStyle.GLOW, DreamStyle.EDGE -> field != DreamField.CALENDAR
+    // Ring was first drawn without the name, the alarm and the estimate (GitHub #11).
+    DreamStyle.GLOW, DreamStyle.EDGE, DreamStyle.RING -> field != DreamField.CALENDAR
     DreamStyle.MINIMAL ->
         field == DreamField.DATE || field == DreamField.NOTIFICATIONS || field == DreamField.BATTERY_DETAILS
     DreamStyle.NIGHT -> field == DreamField.ALARM
-    DreamStyle.RING ->
-        field == DreamField.SECONDS || field == DreamField.DATE ||
-            field == DreamField.NOTIFICATIONS || field == DreamField.BATTERY_DETAILS
     DreamStyle.GAUGES -> true
 }

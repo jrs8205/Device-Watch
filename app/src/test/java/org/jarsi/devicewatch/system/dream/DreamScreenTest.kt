@@ -156,6 +156,7 @@ class DreamScreenTest {
             mapOf(
                 DreamStyle.GLOW to state.alarmText,
                 DreamStyle.EDGE to state.alarmText,
+                DreamStyle.RING to state.alarmText,
                 DreamStyle.NIGHT to state.alarmText.uppercase(Locale.US),
                 DreamStyle.GAUGES to context.getString(R.string.dream_row_alarm),
             ),
@@ -184,6 +185,7 @@ class DreamScreenTest {
             mapOf(
                 DreamStyle.GLOW to state.fullTimeText,
                 DreamStyle.EDGE to state.fullTimeText,
+                DreamStyle.RING to state.fullTimeText,
                 DreamStyle.GAUGES to context.getString(R.string.dream_row_full),
             ),
         ) { copy(showEstimate = false) }
@@ -195,6 +197,7 @@ class DreamScreenTest {
             mapOf(
                 DreamStyle.GLOW to "Pixel 8a",
                 DreamStyle.EDGE to "Pixel 8a",
+                DreamStyle.RING to "Pixel 8a",
                 DreamStyle.GAUGES to "PIXEL 8A",
             ),
         ) { copy(showDeviceName = false) }
@@ -321,10 +324,10 @@ class DreamScreenTest {
         compose.onNodeWithText(state.shortDateText.uppercase(Locale.US)).assertExists()
         compose.onNodeWithText("64%").assertExists()
         compose.onNodeWithText("\u26A1 charging  \u00B7  11.0 W  \u00B7  26.3 \u00B0C").assertExists()
-        // What Ring never shows: the device name, the alarm, the estimate.
-        compose.onAllNodesWithText("Pixel 8a").assertCountEquals(0)
-        compose.onAllNodesWithText(state.alarmText, substring = true).assertCountEquals(0)
-        compose.onAllNodesWithText(state.fullTimeText).assertCountEquals(0)
+        // What Ring was first drawn without (GitHub #11): the name, the alarm, the estimate.
+        compose.onNodeWithText("Pixel 8a").assertExists()
+        compose.onNodeWithText(state.alarmText, substring = true).assertExists()
+        compose.onNodeWithText(state.fullTimeText).assertExists()
     }
 
     @Test

@@ -43,13 +43,9 @@ class DreamStyleTest {
     }
 
     @Test
-    fun `Ring shows seconds, date, notification icons and battery details`() {
-        assertThat(shownBy(DreamStyle.RING)).containsExactly(
-            DreamField.SECONDS,
-            DreamField.DATE,
-            DreamField.NOTIFICATIONS,
-            DreamField.BATTERY_DETAILS,
-        )
+    fun `Ring shows everything but the calendar`() {
+        assertThat(shownBy(DreamStyle.RING))
+            .containsExactlyElementsIn(DreamField.entries - DreamField.CALENDAR)
     }
 
     @Test
