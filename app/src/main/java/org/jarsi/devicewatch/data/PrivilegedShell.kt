@@ -95,10 +95,26 @@ class SelectedPrivilegedShell @Inject constructor(
 }
 
 /**
- * The DUMP grant is gone: revoked from a computer, or dropped when the app's
- * data was cleared. As with root, the setting goes off where a command finds
- * out, since the monitor runs without a screen; the switch, if one is showing,
- * follows [LocalShell.lost] and names what is missing.
+ * The selected shell for what only the ADB shell user or root may run: `pm`
+ * and anything else that changes the phone. On the adb route, whose shell is
+ * the app's own user, it answers as it does with access off, so a command
+ * Android would only refuse is never sent. Deliberately not a
+ * [PrivilegedShell]: neither can stand in for the other.
+ */
+class ShellUserShell @Inject constructor(
+    private val settings: AppSettingsRepository,
+    private val shell: PrivilegedShell,
+) {
+    /** As [PrivilegedShell.run]: null when neither Shizuku nor root is selected, or the shell did not answer. */
+    fun run(command: String, timeoutMillis: Long = PrivilegedShell.DEFAULT_TIMEOUT_MILLIS): String? =
+        if (settings.privilegedAccess().shellUser) shell.run(command, timeoutMillis) else null
+}
+
+/**
+ * One of the adb route's grants is gone: revoked from a computer. As with
+ * root, the setting goes off where a command finds out, since the monitor runs
+ * without a screen; the switch, if one is showing, follows [LocalShell.lost]
+ * and names what is missing.
  */
 internal fun giveUpAdbIfLost(settings: AppSettingsRepository, local: LocalShell) {
     if (local.lost.value && settings.privilegedAccess() == PrivilegedAccess.ADB) {

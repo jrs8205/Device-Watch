@@ -188,7 +188,7 @@
     <string name="cpu_caps_kept_until_restart">The processor speed limits set with root stay until the phone restarts: root was no longer there to remove them.</string>
     <string name="root_status_no_su">No su command was found. The phone is not rooted, or its root manager (KernelSU, APatch) has not yet been told to allow Device Watch.</string>
     <string name="adb_mode_title">ADB permissions</string>
-    <string name="adb_mode_description">With permissions granted once from a computer, without Shizuku or root: the battery\'s own wear figures, chip temperatures, the battery statistics since the last charge and the privacy log. Android does not give the real processor load this way.</string>
+    <string name="adb_mode_description">With permissions granted once from a computer, without Shizuku or root: the battery\'s own wear figures (Android 14 and later), chip temperatures, the battery statistics since the last charge and the privacy log. Android does not give the real processor load this way.</string>
     <string name="adb_status_on">ADB permissions in use.</string>
     <string name="adb_status_missing">Not granted yet: %1$s. Run these on a computer, then switch this on again:</string>
     <string name="adb_copy_commands">Copy commands</string>
@@ -956,7 +956,7 @@
     <string name="system_apps_open">Open</string>
     <string name="system_apps_open_description">Open the system apps</string>
     <string name="system_apps_band_on">Remove preinstalled apps you do not use, through extended access. The apps the phone depends on are marked or kept out of reach, every removal is asked about first, and a removed app can be brought back from the same page.</string>
-    <string name="system_apps_band_off">With extended access on (Shizuku or root, in Settings) preinstalled apps you do not use can be removed from here. The apps the phone depends on are marked or kept out of reach, every removal is asked about first, and a removed app can be brought back.</string>
+    <string name="system_apps_band_off">With Shizuku or root on (extended access, in Settings) preinstalled apps you do not use can be removed from here. The apps the phone depends on are marked or kept out of reach, every removal is asked about first, and a removed app can be brought back.</string>
     <string name="system_apps_page_note">A removal takes the app away from this user only, with its data: the copy on the system image stays, and Restore brings it back, as does a factory reset. Remove only apps you know. A system app can be one that other apps, or the phone itself, rely on; the ones this build knows of say so.</string>
     <string name="system_apps_search">Search by name or package</string>
     <string name="system_apps_clear_search">Clear the search</string>

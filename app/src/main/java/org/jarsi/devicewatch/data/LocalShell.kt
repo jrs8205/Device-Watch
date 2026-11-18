@@ -13,8 +13,8 @@ import javax.inject.Singleton
  */
 interface LocalShell : PrivilegedBackend {
     /**
-     * True once a command found the [AdbPermission.DUMP] grant gone: revoked from
-     * a computer, or dropped with the app's data. Cleared by [close].
+     * True once a command found one of the [AdbPermission]s no longer granted:
+     * revoked from a computer. The shell has ended by then. Cleared by [close].
      */
     val lost: StateFlow<Boolean>
 }
@@ -62,8 +62,11 @@ class ShLocalShell internal constructor(
             // Switched off since this command was decided on, or while it waited
             // its turn: it must not bring the shell back.
             if (synchronized(stateLock) { generation } != wanted) return null
-            // Before anything is started: without the grant every dump is refused.
-            if (dumpGrantGone()) return null
+            // Before anything is started. The route is on only with all three
+            // granted, so one gone takes it off, whichever it is: without DUMP
+            // every dump is refused, and the other two would leave their pages
+            // empty under a switch that says on.
+            if (grantGone()) return null
             val current = synchronized(stateLock) { session?.takeIf { it.isOpen } } ?: reopen(wanted) ?: return null
             val output = current.exec(command, timeoutMillis)
             if (output == null) {
@@ -72,9 +75,9 @@ class ShLocalShell internal constructor(
                 synchronized(stateLock) { if (session === current) session = null }
                 return null
             }
-            // Refused with the grant still held is some other check of Android's
-            // (usage access denied in Settings): the command ran and gave nothing.
-            if (DumpDenial.isDenied(output)) return if (dumpGrantGone()) null else ""
+            // Refused with the grants still held is some other check of Android's
+            // (usage access switched off in Settings): the command ran and gave nothing.
+            if (DumpDenial.isDenied(output)) return if (grantGone()) null else ""
             return output
         }
     }
@@ -89,9 +92,19 @@ class ShLocalShell internal constructor(
         _lost.value = false
     }
 
-    private fun dumpGrantGone(): Boolean {
-        if (AdbPermission.DUMP !in grants.missing()) return false
+    /**
+     * Whether a grant is gone, and if so the end of the shell: the setting goes
+     * off where the caller sees [lost], possibly with no screen to close
+     * anything, and a route that is off leaves no process running. The
+     * generation stays as it is; moving it on is [close]'s.
+     */
+    private fun grantGone(): Boolean {
+        if (grants.missing().isEmpty()) return false
         _lost.value = true
+        synchronized(stateLock) {
+            session?.close()
+            session = null
+        }
         return true
     }
 

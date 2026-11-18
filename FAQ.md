@@ -98,7 +98,8 @@ No. Everything else in the app works without it. It is an optional switch in Set
 readings Android hides from ordinary apps: Android's own battery statistics (per-app drain,
 drain per hour with the screen on and off, wake locks), the real processor load, the graphics
 load, temperatures by part, and the battery's wear, charge cycles and dates where the phone
-keeps them.
+keeps them. The real processor load and the graphics load take Shizuku or root; the rest also
+comes with ADB permissions (below).
 
 ### How do I use it without root?
 
@@ -126,7 +127,7 @@ adb shell pm grant org.jarsi.devicewatch android.permission.PACKAGE_USAGE_STATS
 
 Then switch **ADB permissions** on in Device Watch's Settings. The switch shows the same commands
 with a copy button, and while a permission is missing it stays off and names it. The grants last
-over restarts and app updates, and nothing runs beside the app. The third command also gives
+over restarts and app updates, and no separate app or service has to run. The third command also gives
 Device Watch usage access, the same thing the switch in Android's own settings gives.
 
 This route gives Android's own battery statistics on the since-charge page, the privacy log, the
@@ -137,7 +138,9 @@ Samsung's own battery figures, the screensaver's immediate start when charging b
 removing preinstalled apps.
 
 To take the permissions back, run the same three lines with `revoke` in place of `grant`. Device
-Watch then switches the route off by itself and names the permission that is missing.
+Watch then switches the route off by itself and names the permission that is missing. If the
+third command was what gave Device Watch usage access, revoking it takes that away as well:
+switch usage access on in Android's settings to keep the Apps tab.
 
 ### What does root mode add?
 

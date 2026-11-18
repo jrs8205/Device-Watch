@@ -184,9 +184,9 @@
     <string name="cpu_caps_kept_until_restart">Rootilla asetetut suorittimen nopeusrajat pysyvät, kunnes puhelin käynnistetään uudelleen: rootia ei enää ollut niiden poistamiseen.</string>
     <string name="root_status_no_su">su-komentoa ei löytynyt. Puhelinta ei ole rootattu, tai sen root-hallinnassa (KernelSU, APatch) ei ole vielä sallittu Device Watchia.</string>
     <string name="adb_mode_title">ADB-luvat</string>
-    <string name="adb_mode_description">Tietokoneelta kerran annetuilla luvilla, ilman Shizukua ja rootia: akun omat kulumislukemat, piirien lämpötilat, akkutilastot latauksesta lähtien ja yksityisyysloki. Suorittimen todellista kuormaa Android ei anna tätä kautta.</string>
+    <string name="adb_mode_description">Tietokoneelta kerran annetuilla luvilla, ilman Shizukua ja rootia: akun omat kulumislukemat (Android 14:stä alkaen), piirien lämpötilat, akkutilastot latauksesta lähtien ja yksityisyysloki. Suorittimen todellista kuormaa Android ei anna tätä kautta.</string>
     <string name="adb_status_on">ADB-luvat käytössä.</string>
-    <string name="adb_status_missing">Lupia puuttuu: %1$s. Aja nämä tietokoneelta ja kytke sitten uudelleen:</string>
+    <string name="adb_status_missing">Lupia puuttuu: %1$s. Aja nämä tietokoneelta ja kytke tämä sitten uudelleen päälle:</string>
     <string name="adb_copy_commands">Kopioi komennot</string>
     <string name="classic_look_title">Alkuperäinen ulkoasu</string>
     <string name="classic_look_description">Versiota 1.6 edeltävät värit ja numerofontti: Android 12:sta alkaen värit tulevat taustakuvasta.</string>
@@ -946,7 +946,7 @@
     <string name="system_apps_open">Avaa</string>
     <string name="system_apps_open_description">Avaa järjestelmäsovellukset</string>
     <string name="system_apps_band_on">Poista valmiiksi asennettuja sovelluksia, joita et käytä, laajennetun käytön kautta. Puhelimelle välttämättömät sovellukset on merkitty tai jätetty poiston ulottumattomiin, jokainen poisto varmistetaan ensin, ja poistetun sovelluksen voi palauttaa samalta sivulta.</string>
-    <string name="system_apps_band_off">Kun laajennettu käyttö on päällä (Shizuku tai root, Asetuksissa), täältä voi poistaa valmiiksi asennettuja sovelluksia, joita et käytä. Puhelimelle välttämättömät sovellukset on merkitty tai jätetty poiston ulottumattomiin, jokainen poisto varmistetaan ensin, ja poistetun sovelluksen voi palauttaa.</string>
+    <string name="system_apps_band_off">Kun Shizuku tai root on päällä (laajennettu käyttö, Asetuksissa), täältä voi poistaa valmiiksi asennettuja sovelluksia, joita et käytä. Puhelimelle välttämättömät sovellukset on merkitty tai jätetty poiston ulottumattomiin, jokainen poisto varmistetaan ensin, ja poistetun sovelluksen voi palauttaa.</string>
     <string name="system_apps_page_note">Poisto vie sovelluksen vain tältä käyttäjältä tietoineen: kopio järjestelmäosiossa säilyy, ja Palauta tuo sen takaisin, samoin tehdasasetusten palautus. Poista vain sovelluksia, jotka tunnet. Järjestelmäsovellus voi olla sellainen, johon muut sovellukset tai puhelin itse nojaavat; tämän version tuntemat kertovat sen.</string>
     <string name="system_apps_search">Hae nimellä tai paketilla</string>
     <string name="system_apps_clear_search">Tyhjennä haku</string>

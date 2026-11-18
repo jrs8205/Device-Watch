@@ -68,12 +68,36 @@ class LocalShellTest {
     }
 
     @Test
-    fun `the other two grants missing do not stop the shell`() {
-        val opener = Opener { "ok" }
-        val shell = ShLocalShell(Grants(missing = setOf(AdbPermission.BATTERY_STATS, AdbPermission.PACKAGE_USAGE_STATS)), opener)
+    fun `any one of the three grants missing stops the shell, as it stops the switch`() {
+        // The route is on only with all three; with one gone it goes off, whichever it is.
+        for (permission in AdbPermission.entries) {
+            val opener = Opener { "never" }
+            val shell = ShLocalShell(Grants(missing = setOf(permission)), opener)
 
-        assertThat(shell.run("dumpsys thermalservice")).isEqualTo("ok")
-        assertThat(shell.lost.value).isFalse()
+            assertThat(shell.run("dumpsys thermalservice")).isNull()
+
+            assertThat(opener.shells).isEmpty()
+            assertThat(shell.lost.value).isTrue()
+        }
+    }
+
+    @Test
+    fun `a grant taken away while the shell is open ends the shell, with no screen there to close it`() {
+        // Only the monitor may be running: nothing else would end the process.
+        val grants = Grants()
+        val opener = Opener { "ok" }
+        val shell = ShLocalShell(grants, opener)
+        shell.run("one")
+        val generation = shell.generation
+
+        grants.missing = setOf(AdbPermission.BATTERY_STATS)
+
+        assertThat(shell.run("two")).isNull()
+        assertThat(shell.lost.value).isTrue()
+        assertThat(opener.shells.single().session.isOpen).isFalse()
+        assertThat(opener.shells.single().commands).containsExactly("one")
+        // The loss is not a close: a command already routed still matches, and finds the grant gone.
+        assertThat(shell.generation).isEqualTo(generation)
     }
 
     @Test
@@ -124,18 +148,19 @@ class LocalShellTest {
     }
 
     @Test
-    fun `a refused dump after the grant was taken away reports it lost`() {
+    fun `a refused dump after a grant was taken away reports it lost and ends the shell`() {
         val grants = Grants()
         val opener = Opener {
             // Revoked between the check and Android's own.
-            grants.missing = setOf(AdbPermission.DUMP)
-            "Permission Denial: can't dump thermalservice without permission android.permission.DUMP"
+            grants.missing = setOf(AdbPermission.PACKAGE_USAGE_STATS)
+            "Permission Denial: can't dump batterystats due to missing android.permission.PACKAGE_USAGE_STATS permission"
         }
         val shell = ShLocalShell(grants, opener)
 
-        assertThat(shell.run("dumpsys thermalservice")).isNull()
+        assertThat(shell.run("dumpsys batterystats --charged")).isNull()
 
         assertThat(shell.lost.value).isTrue()
+        assertThat(opener.shells.single().session.isOpen).isFalse()
     }
 
     @Test

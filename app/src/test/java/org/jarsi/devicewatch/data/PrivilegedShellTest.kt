@@ -147,6 +147,36 @@ class PrivilegedShellTest {
     }
 
     @Test
+    fun `what only a shell user may run is not sent on the adb route`() {
+        // `pm uninstall` as the app's own user would only be refused; it is not asked at all.
+        val root = RecordingRoot()
+        val shizuku = RecordingShizuku()
+        val local = RecordingLocal()
+        val settings = FakeAppSettingsRepository()
+        val shell = ShellUserShell(settings, SelectedPrivilegedShell(settings, root, shizuku, local))
+
+        settings.setPrivilegedAccess(PrivilegedAccess.ADB)
+        assertThat(shell.run("pm uninstall --user 0 com.example")).isNull()
+        assertThat(local.commands).isEmpty()
+
+        settings.setPrivilegedAccess(PrivilegedAccess.SHIZUKU)
+        assertThat(shell.run("id")).isEqualTo("shizuku")
+        settings.setPrivilegedAccess(PrivilegedAccess.ROOT)
+        assertThat(shell.run("id")).isEqualTo("root")
+        settings.setPrivilegedAccess(PrivilegedAccess.OFF)
+        assertThat(shell.run("id")).isNull()
+    }
+
+    @Test
+    fun `the system apps repository reaches a shell only through the shell-user gate`() {
+        // Its removals are `pm` commands: handed the routing shell itself, they would go out on the adb route too.
+        val parameters = SystemAppsRepositoryImpl::class.java.declaredConstructors.flatMap { it.parameterTypes.toList() }
+
+        assertThat(parameters).contains(ShellUserShell::class.java)
+        assertThat(parameters.filter { PrivilegedShell::class.java.isAssignableFrom(it) }).isEmpty()
+    }
+
+    @Test
     fun `the DUMP grant found gone switches the setting off, with no screen there to do it`() {
         val local = RecordingLocal().apply { loseGrantOnNextCommand = true }
         val settings = FakeAppSettingsRepository(access = PrivilegedAccess.ADB)

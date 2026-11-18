@@ -39,12 +39,13 @@ interface SystemAppsRepository {
 /**
  * The list comes from the package manager, which knows a system app removed for
  * the user as one not installed for them; only the two actions go through the
- * shell, Shizuku's or root's, as `pm` commands for this user alone.
+ * shell, Shizuku's or root's, as `pm` commands for this user alone. Never the
+ * adb route's: [ShellUserShell] answers there as it does with access off.
  */
 @Singleton
 class SystemAppsRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val shell: PrivilegedShell,
+    private val shell: ShellUserShell,
     @IoDispatcher private val dispatcher: CoroutineDispatcher,
 ) : SystemAppsRepository {
 

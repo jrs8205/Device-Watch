@@ -27,7 +27,7 @@ interface PrivacyLogSource {
 
 /**
  * Reads `dumpsys appops --history --include-discrete 0` through whichever
- * [PrivilegedShell] is selected, Shizuku or root, on the [ShellBatteryUsageSource]
+ * [PrivilegedShell] is selected (Shizuku, root or the adb route), on the [ShellBatteryUsageSource]
  * pattern: nothing while access is off, nothing new with the screen off, and one
  * dump at most every [MIN_INTERVAL_MILLIS], since a page that refreshes often
  * would otherwise have the system print its whole record each time. Android 11 and

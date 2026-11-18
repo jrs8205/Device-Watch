@@ -1613,6 +1613,57 @@ class DashboardViewModelTest {
         }
 
     @Test
+    fun `given the switch off naming missing permissions, when they are granted and the screen returns, then the names follow`() =
+        runTest(dispatcher) {
+            val settings = FakeAppSettingsRepository()
+            val grants = FakeAdbGrants(missing = setOf(AdbPermission.DUMP, AdbPermission.BATTERY_STATS))
+            val viewModel = buildViewModel(settings = settings, adbGrants = grants)
+            viewModel.onAdbModeChange(true)
+
+            // One of the two commands has been run.
+            grants.missing = setOf(AdbPermission.BATTERY_STATS)
+            viewModel.onAdbGrantsChecked()
+
+            assertThat(viewModel.uiState.value.adbStatus).isEqualTo(AdbStatus.MISSING)
+            assertThat(viewModel.uiState.value.adbMissing).containsExactly(AdbPermission.BATTERY_STATS)
+
+            // Both: nothing is left to name. The switch stays off until it is switched on.
+            grants.missing = emptySet()
+            viewModel.onAdbGrantsChecked()
+
+            assertThat(viewModel.uiState.value.adbStatus).isEqualTo(AdbStatus.OFF)
+            assertThat(viewModel.uiState.value.adbMissing).isEmpty()
+            assertThat(settings.access).isEqualTo(PrivilegedAccess.OFF)
+        }
+
+    @Test
+    fun `given ADB permissions on their way on, when Shizuku is switched on and granted, then the later choice wins`() =
+        runTest(dispatcher) {
+            val settings = FakeAppSettingsRepository(access = PrivilegedAccess.ROOT)
+            val cpuProfiles = holding().apply { restoreGate = CompletableDeferred() }
+            val shizukuShell = FakeShizukuShell(ShizukuAccess.GRANTED)
+            val viewModel = buildViewModel(settings = settings, cpuProfiles = cpuProfiles, shizukuShell = shizukuShell)
+            viewModel.onAdbModeChange(true)
+            advanceUntilIdle()
+            assertThat(viewModel.uiState.value.adbStatus).isEqualTo(AdbStatus.STARTING)
+
+            viewModel.onShizukuModeChange(true)
+            advanceUntilIdle()
+            // The adb switch gives way at once, not when the limits are back.
+            assertThat(viewModel.uiState.value.adbStatus).isEqualTo(AdbStatus.OFF)
+
+            cpuProfiles.restoreGate!!.complete(Unit)
+            advanceUntilIdle()
+
+            assertThat(settings.access).isEqualTo(PrivilegedAccess.SHIZUKU)
+            assertThat(viewModel.uiState.value.shizukuStatus).isEqualTo(ShizukuStatus.ON)
+            assertThat(viewModel.uiState.value.adbStatus).isEqualTo(AdbStatus.OFF)
+            assertThat(viewModel.uiState.value.rootStatus).isEqualTo(RootStatus.OFF)
+            // Shizuku's shell was not closed under it by the adb route arriving late.
+            assertThat(shizukuShell.closedCount).isEqualTo(0)
+        }
+
+    @Test
     fun `given a saved opacity, when loading, then state adopts it`() = runTest(dispatcher) {
         // Given
         val widget = FakeWidgetController(installed = true, savedOpacity = 0.42f)

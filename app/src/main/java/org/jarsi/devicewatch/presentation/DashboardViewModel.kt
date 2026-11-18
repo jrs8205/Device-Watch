@@ -348,6 +348,12 @@ class DashboardViewModel @Inject constructor(
             return
         }
         if (_uiState.value.shizukuStatus == ShizukuStatus.REQUESTING) return
+        // The adb route still waiting for root's limits gives way: this later
+        // choice wins, and its late arrival must not close Shizuku's shell.
+        if (_uiState.value.adbStatus == AdbStatus.STARTING) {
+            adbRequest++
+            _uiState.update { it.copy(adbStatus = AdbStatus.OFF) }
+        }
         _uiState.update { it.copy(shizukuStatus = ShizukuStatus.REQUESTING) }
         val request = ++shizukuRequest
         viewModelScope.launch {
@@ -454,19 +460,27 @@ class DashboardViewModel @Inject constructor(
     }
 
     /**
-     * Read again on every return to the screen: a permission revoked from a
-     * computer while the route was on. Without DUMP a command finds out by
-     * itself ([onAdbGrantLost]); without one of the other two nothing would,
-     * and the pages they open would just stay empty under a switch that says on.
+     * Read again on every return to the screen, since the permissions change
+     * on a computer. With the route on, one revoked meanwhile switches it off
+     * here even before a command has found out ([onAdbGrantLost]). With the
+     * switch off and naming what is missing, the names follow what has been
+     * granted since; all granted, nothing is left to name, and the switch waits
+     * to be switched on.
      */
     fun onAdbGrantsChecked() {
-        if (settings.privilegedAccess() != PrivilegedAccess.ADB) return
         val missing = adbGrants.missing()
-        if (missing.isNotEmpty()) switchAdbOffFor(missing)
+        if (settings.privilegedAccess() == PrivilegedAccess.ADB) {
+            if (missing.isNotEmpty()) switchAdbOffFor(missing)
+            return
+        }
+        _uiState.update { state ->
+            if (state.adbStatus != AdbStatus.MISSING) state
+            else state.copy(adbStatus = if (missing.isEmpty()) AdbStatus.OFF else AdbStatus.MISSING, adbMissing = missing)
+        }
     }
 
     /**
-     * A command found the DUMP grant gone. The setting is switched off where that
+     * A command found a grant gone. The setting is switched off where that
      * was found ([org.jarsi.devicewatch.data.SelectedPrivilegedShell]), and here
      * as well: this may run before that has had its turn.
      */
