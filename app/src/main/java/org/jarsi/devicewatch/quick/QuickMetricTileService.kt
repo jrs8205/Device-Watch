@@ -2,6 +2,7 @@ package org.jarsi.devicewatch.quick
 
 import android.annotation.SuppressLint
 import android.app.PendingIntent
+import android.content.res.Resources
 import android.graphics.drawable.Icon
 import android.os.Build
 import android.service.quicksettings.TileService
@@ -15,6 +16,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.jarsi.devicewatch.LatinDigitResources
 import org.jarsi.devicewatch.MainActivity
 import org.jarsi.devicewatch.data.PrivilegedAccess
 import org.jarsi.devicewatch.data.QuickMetric
@@ -31,6 +33,10 @@ abstract class QuickMetricTileService : TileService() {
     abstract val metric: QuickMetric
 
     private var scope: CoroutineScope? = null
+
+    private val latinDigitResources = LatinDigitResources { baseContext }
+
+    override fun getResources(): Resources = latinDigitResources.get() ?: super.getResources()
 
     override fun onStartListening() {
         super.onStartListening()

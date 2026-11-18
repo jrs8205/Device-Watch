@@ -6,6 +6,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.res.Resources
 import android.net.ConnectivityManager
 import android.os.Build
 import android.os.Handler
@@ -13,6 +14,7 @@ import android.os.IBinder
 import android.os.Looper
 import android.os.PowerManager
 import android.os.SystemClock
+import org.jarsi.devicewatch.LatinDigitResources
 import org.jarsi.devicewatch.R
 import android.os.BatteryManager
 import java.util.Locale
@@ -117,6 +119,11 @@ class SystemMonitorService : Service() {
     private var configurationReceiver: BroadcastReceiver? = null
     private var updateJob: Job? = null
     @Volatile private var isScreenOn = true
+
+    private val latinDigitResources = LatinDigitResources { baseContext }
+
+    /** The notification, the alerts and the floating card take their texts from these. */
+    override fun getResources(): Resources = latinDigitResources.get() ?: super.getResources()
 
     override fun onCreate() {
         super.onCreate()

@@ -2,6 +2,7 @@ package org.jarsi.devicewatch.system
 
 import android.content.Context
 import android.content.pm.ActivityInfo
+import android.content.res.Resources
 import android.service.dreams.DreamService
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.ComposeView
@@ -16,6 +17,7 @@ import androidx.savedstate.SavedStateRegistry
 import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
+import org.jarsi.devicewatch.LatinDigitResources
 import org.jarsi.devicewatch.system.dream.DreamHost
 import org.jarsi.devicewatch.system.dream.DreamStyle
 import org.jarsi.devicewatch.system.dream.LocalDreamWideGamut
@@ -42,6 +44,11 @@ class MonitorDreamService : DreamService(), LifecycleOwner, ViewModelStoreOwner,
     override val lifecycle: Lifecycle = lifecycleRegistry
     override val viewModelStore: ViewModelStore = store
     override val savedStateRegistry: SavedStateRegistry = controller.savedStateRegistry
+
+    private val latinDigitResources = LatinDigitResources { baseContext }
+
+    /** The screensaver's view is made from this service, so its texts and its locale come from these. */
+    override fun getResources(): Resources = latinDigitResources.get() ?: super.getResources()
 
     override fun onCreate() {
         super.onCreate()

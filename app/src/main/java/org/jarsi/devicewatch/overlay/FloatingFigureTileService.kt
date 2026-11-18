@@ -3,6 +3,7 @@ package org.jarsi.devicewatch.overlay
 import android.annotation.SuppressLint
 import android.app.PendingIntent
 import android.content.Intent
+import android.content.res.Resources
 import android.graphics.drawable.Icon
 import android.os.Build
 import android.provider.Settings
@@ -11,6 +12,7 @@ import android.service.quicksettings.TileService
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import dagger.hilt.android.EntryPointAccessors
+import org.jarsi.devicewatch.LatinDigitResources
 import org.jarsi.devicewatch.MainActivity
 import org.jarsi.devicewatch.R
 import org.jarsi.devicewatch.quick.QuickEntryPoint
@@ -23,6 +25,10 @@ import org.jarsi.devicewatch.system.SystemMonitorService
  * tells the monitor, starting it if it is not running.
  */
 class FloatingFigureTileService : TileService() {
+
+    private val latinDigitResources = LatinDigitResources { baseContext }
+
+    override fun getResources(): Resources = latinDigitResources.get() ?: super.getResources()
 
     private val appSettings by lazy {
         EntryPointAccessors.fromApplication(applicationContext, QuickEntryPoint::class.java).appSettings()

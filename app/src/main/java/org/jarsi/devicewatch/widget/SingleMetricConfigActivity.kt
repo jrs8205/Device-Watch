@@ -1,6 +1,7 @@
 package org.jarsi.devicewatch.widget
 
 import android.appwidget.AppWidgetManager
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -40,6 +41,7 @@ import androidx.compose.foundation.selection.selectable
 import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
+import org.jarsi.devicewatch.LatinDigits
 import org.jarsi.devicewatch.R
 import org.jarsi.devicewatch.data.QuickMetric
 import org.jarsi.devicewatch.data.singleMetricOf
@@ -56,6 +58,10 @@ class SingleMetricConfigActivity : ComponentActivity() {
 
     private var current by mutableStateOf<QuickMetric?>(null)
     private var saving = false
+
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(LatinDigits.context(newBase))
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

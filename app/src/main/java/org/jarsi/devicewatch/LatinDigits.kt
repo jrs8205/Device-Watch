@@ -1,0 +1,98 @@
+package org.jarsi.devicewatch
+
+import android.content.Context
+import android.content.res.Configuration
+import android.content.res.Resources
+import android.os.LocaleList
+import java.text.DecimalFormatSymbols
+import java.util.IllformedLocaleException
+import java.util.Locale
+
+/**
+ * Numbers are written with the digits 0 to 9 in every language.
+ *
+ * A number reaches the screen by several routes: a text's own `%d`, `String.format`, a date
+ * format, a string template. Left alone, a phone set to Arabic (Egypt) or Persian prints
+ * the first three with its own digits and the rest with 0 to 9, on the same screen. One
+ * rule for the locale, used wherever texts are formatted, keeps every route the same.
+ */
+object LatinDigits {
+
+    /**
+     * The locale whose numbers print as 0 to 9: [locale] itself when it does so already, or
+     * when it names a numbering system (the user chose one in Android's settings, and that
+     * choice stands); otherwise the same locale with the Latin numbering system added.
+     */
+    fun locale(locale: Locale): Locale {
+        if (locale.getUnicodeLocaleType(NUMBERING_KEY) != null) return locale
+        if (DecimalFormatSymbols.getInstance(locale).zeroDigit == '0') return locale
+        return try {
+            Locale.Builder().setLocale(locale).setUnicodeLocaleKeyword(NUMBERING_KEY, LATIN).build()
+        } catch (_: IllformedLocaleException) {
+            locale // a locale the builder cannot take is used as it is
+        }
+    }
+
+    /** [base] itself when its texts print 0 to 9 already, otherwise a context over it that does. */
+    fun context(base: Context): Context {
+        val override = overrideFor(base.resources.configuration.locales) ?: return base
+        return base.createConfigurationContext(override)
+    }
+
+    /**
+     * The process default, which `String.format` without a locale and the date formats use.
+     * Android sets it again whenever the phone's or the app's language changes.
+     */
+    fun applyToDefault() {
+        val display = locale(Locale.getDefault(Locale.Category.DISPLAY))
+        val format = locale(Locale.getDefault(Locale.Category.FORMAT))
+        val default = Locale.getDefault()
+        val fixed = locale(default)
+        // Setting the default resets both categories to it, so they are put back after it.
+        if (fixed !== default) Locale.setDefault(fixed)
+        if (Locale.getDefault(Locale.Category.DISPLAY) != display) Locale.setDefault(Locale.Category.DISPLAY, display)
+        if (Locale.getDefault(Locale.Category.FORMAT) != format) Locale.setDefault(Locale.Category.FORMAT, format)
+    }
+
+    /**
+     * The change to lay over a configuration with these languages, or null when none is
+     * needed. Only the languages are set: everything else (size, night mode, font scale)
+     * keeps following the context underneath.
+     */
+    internal fun overrideFor(locales: LocaleList): Configuration? {
+        val fixed = Array(locales.size()) { locale(locales[it]) }
+        if (fixed.indices.all { fixed[it] === locales[it] }) return null
+        return Configuration().apply { setLocales(LocaleList(*fixed)) }
+    }
+
+    private const val NUMBERING_KEY = "nu"
+    private const val LATIN = "latn"
+}
+
+/**
+ * Resources that print 0 to 9, for a context that outlives a change of language: the
+ * application and the services. An activity is made anew when the language changes and
+ * takes [LatinDigits.context] once; these are asked every time and follow [base]'s
+ * language as it changes.
+ *
+ * [base] is the context Android attached, never the wrapper asking: the wrapper's own
+ * resources are these.
+ */
+class LatinDigitResources(private val base: () -> Context?) {
+
+    private var builtFor: LocaleList? = null
+    private var built: Resources? = null
+
+    /** Null before Android has attached a context. */
+    @Synchronized
+    fun get(): Resources? {
+        val context = base() ?: return null
+        val plain = context.resources
+        val locales = plain.configuration.locales
+        if (locales != builtFor) {
+            built = LatinDigits.overrideFor(locales)?.let { context.createConfigurationContext(it).resources } ?: plain
+            builtFor = locales
+        }
+        return built
+    }
+}

@@ -45,6 +45,10 @@ class MainActivity : ComponentActivity() {
         if (settingsSectionRequest.value == shown) settingsSectionRequest.value = null
     }
 
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(LatinDigits.context(newBase))
+    }
+
     override fun onStart() {
         super.onStart()
         appVisibility.onStart()
