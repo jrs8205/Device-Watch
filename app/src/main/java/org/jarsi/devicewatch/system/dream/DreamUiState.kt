@@ -71,6 +71,9 @@ internal class DreamClockFormats(
     longDatePattern: String,
     shortDatePattern: String,
     compactDatePattern: String,
+    /** The language's own 12-hour patterns; a 24-hour clock is written the same everywhere. */
+    clockPattern12: String,
+    alarmPattern12: String,
 ) {
     private val time = SimpleDateFormat(if (is24Hour) "HH:mm" else "h:mm", locale)
     private val seconds = SimpleDateFormat("ss", locale)
@@ -78,8 +81,8 @@ internal class DreamClockFormats(
     private val longDate = SimpleDateFormat(longDatePattern, locale)
     private val shortDate = SimpleDateFormat(shortDatePattern, locale)
     private val compactDate = SimpleDateFormat(compactDatePattern, locale)
-    private val alarm = SimpleDateFormat(if (is24Hour) "EEE HH:mm" else "EEE h:mm a", locale)
-    private val clock = SimpleDateFormat(if (is24Hour) "HH:mm" else "h:mm a", locale)
+    private val alarm = SimpleDateFormat(if (is24Hour) "EEE HH:mm" else alarmPattern12, locale)
+    private val clock = SimpleDateFormat(if (is24Hour) "HH:mm" else clockPattern12, locale)
 
     fun texts(now: Date): DreamClockTexts = DreamClockTexts(
         time = time.format(now),
@@ -103,7 +106,20 @@ internal fun dreamClockFormats(context: Context, locale: Locale, is24Hour: Boole
     longDatePattern = context.getString(R.string.dream_date_pattern),
     shortDatePattern = context.getString(R.string.dream_date_pattern_short),
     compactDatePattern = context.getString(R.string.dream_date_pattern_compact),
+    clockPattern12 = twelveHourClockPattern(locale),
+    alarmPattern12 = twelveHourAlarmPattern(locale),
 )
+
+/**
+ * A time of day on a 12-hour clock as the language writes it: AM or PM after the time in
+ * English ("8:10 PM"), before it in Chinese.
+ */
+internal fun twelveHourClockPattern(locale: Locale): String =
+    android.text.format.DateFormat.getBestDateTimePattern(locale, "hmma")
+
+/** The same with the weekday, for the next alarm. */
+internal fun twelveHourAlarmPattern(locale: Locale): String =
+    android.text.format.DateFormat.getBestDateTimePattern(locale, "EEEhmma")
 
 internal fun batteryVoltsText(volts: Double, locale: Locale): String =
     String.format(locale, "%.2f V", volts)

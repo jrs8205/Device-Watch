@@ -1,6 +1,7 @@
 package org.jarsi.devicewatch.presentation
 
 import androidx.annotation.StringRes
+import org.jarsi.devicewatch.Bidi
 import org.jarsi.devicewatch.R
 import org.jarsi.devicewatch.data.CpuPolicyId
 import org.jarsi.devicewatch.data.CpuPolicySnapshot
@@ -19,12 +20,14 @@ fun freqText(kHz: Long, locale: Locale): String =
     }
 
 /** "2,29 / 2,91 GHz": a limit over the maximum, the unit said once when both share it. */
-fun capOverMaxText(capKHz: Long, maxKHz: Long, locale: Locale): String =
+fun capOverMaxText(capKHz: Long, maxKHz: Long, locale: Locale): String = Bidi.ltr(
     if (capKHz >= KHZ_PER_GHZ && maxKHz >= KHZ_PER_GHZ) {
         String.format(locale, "%.2f / %.2f GHz", capKHz.toDouble() / KHZ_PER_GHZ, maxKHz.toDouble() / KHZ_PER_GHZ)
     } else {
         "${freqText(capKHz, locale)} / ${freqText(maxKHz, locale)}"
-    }
+    },
+    locale,
+)
 
 /** A cluster's place among the phone's clusters, by top speed. */
 enum class ClusterRole(@StringRes val labelRes: Int) {

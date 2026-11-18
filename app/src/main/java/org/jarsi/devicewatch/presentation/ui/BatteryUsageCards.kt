@@ -336,7 +336,7 @@ internal fun holdDurationText(context: Context, millis: Long): String {
     val seconds = millis / 1000L
     return when {
         seconds >= 3600L -> durationText(context, millis)
-        seconds >= 60L -> "${seconds / 60L} min ${seconds % 60L} s"
-        else -> "$seconds s"
+        seconds >= 60L -> context.getString(R.string.privacy_duration_minutes, seconds / 60L, seconds % 60L)
+        else -> context.getString(R.string.duration_seconds, seconds)
     }
 }

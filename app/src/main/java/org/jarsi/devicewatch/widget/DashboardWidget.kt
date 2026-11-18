@@ -39,6 +39,7 @@ import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import androidx.glance.action.actionStartActivity
 import androidx.glance.action.clickable
+import org.jarsi.devicewatch.Bidi
 import org.jarsi.devicewatch.MainActivity
 import org.jarsi.devicewatch.R
 import org.jarsi.devicewatch.data.UNAVAILABLE_DOUBLE
@@ -268,7 +269,7 @@ private fun DashboardContent() {
                 MetricTile(
                     title = context.getString(R.string.widget_tile_memory),
                     value = percentText(ramPercent),
-                    subtext = "${gbText(usedRam)} / ${gbText(totalRam)}",
+                    subtext = Bidi.ltr("${gbText(usedRam)} / ${gbText(totalRam)}"),
                     bottomText = context.getString(R.string.widget_free_value, gbText(freeRam)),
                     progressPercent = progressPercentOrNull(ramPercent),
                     standardAccent = colors.ramAccent,
@@ -299,7 +300,7 @@ private fun DashboardContent() {
                 MetricTile(
                     title = context.getString(R.string.widget_tile_storage),
                     value = percentText(storagePercent),
-                    subtext = "${gbText(usedStorage, 0)} / ${gbText(totalStorage, 0)}",
+                    subtext = Bidi.ltr("${gbText(usedStorage, 0)} / ${gbText(totalStorage, 0)}"),
                     bottomText = context.getString(R.string.widget_free_value, gbText(freeStorage, 0)),
                     progressPercent = progressPercentOrNull(storagePercent),
                     standardAccent = colors.storageAccent,
@@ -890,7 +891,7 @@ fun signalQualityText(context: Context, value: Int): String {
 fun mobileDataText(usedGb: Double, totalGb: Double): String {
     return when {
         usedGb < 0.0 -> UNAVAILABLE_TEXT
-        totalGb > 0.0 -> "${dataAmountText(usedGb)} / ${gbText(totalGb, 0)}"
+        totalGb > 0.0 -> Bidi.ltr("${dataAmountText(usedGb)} / ${gbText(totalGb, 0)}")
         else -> dataAmountText(usedGb)
     }
 }

@@ -46,6 +46,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.style.TextOverflow
+import org.jarsi.devicewatch.Bidi
 import org.jarsi.devicewatch.R
 import org.jarsi.devicewatch.data.ChargeSource
 import org.jarsi.devicewatch.data.ChargingState
@@ -464,8 +465,10 @@ internal fun OverviewTab(
             // RAM
             StackedMetricRow(
                 label = stringResource(R.string.ram_title),
-                value = "%.1f / %.1f GB (%d%%)".format(
-                    currentStats.usedRamGb, currentStats.totalRamGb, currentStats.ramPercent
+                value = Bidi.ltr(
+                    "%.1f / %.1f GB (%d%%)".format(
+                        currentStats.usedRamGb, currentStats.totalRamGb, currentStats.ramPercent
+                    )
                 ),
                 valueColor = meterColor()
             )
@@ -576,8 +579,10 @@ internal fun OverviewTab(
             // Storage (same data the widget's storage tile shows)
             StackedMetricRow(
                 label = stringResource(R.string.storage_row),
-                value = "%.0f / %.0f GB (%d%%)".format(
-                    currentStats.usedStorageGb, currentStats.totalStorageGb, currentStats.storagePercent
+                value = Bidi.ltr(
+                    "%.0f / %.0f GB (%d%%)".format(
+                        currentStats.usedStorageGb, currentStats.totalStorageGb, currentStats.storagePercent
+                    )
                 ),
                 valueColor = meterColor()
             )
@@ -798,7 +803,7 @@ private fun ComparisonRow(
                 Text(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    text = stringResource(R.string.comparison_values, previousText, nowText),
+                    text = Bidi.ltr(stringResource(R.string.comparison_values, previousText, nowText)),
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Medium
                 )
@@ -809,7 +814,7 @@ private fun ComparisonRow(
                     // Less is better for all three metrics: growth reads in the error
                     // color, a drop in the primary one, and no baseline stays neutral.
                     text = changePercent?.let {
-                        stringResource(R.string.comparison_change, if (it > 0) "+" else "", it)
+                        Bidi.ltr(stringResource(R.string.comparison_change, if (it > 0) "+" else "", it))
                     } ?: UNAVAILABLE_TEXT,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,

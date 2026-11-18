@@ -18,9 +18,14 @@ import org.jarsi.devicewatch.quick.QuickMetricReading
 import org.jarsi.devicewatch.quick.quickMetricLabels
 import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.CancellationException
-import java.text.SimpleDateFormat
 import java.util.Date
-import java.util.Locale
+
+/**
+ * The time on a widget's "updated at" line, as the phone writes times: its language's
+ * separator and its 12- or 24-hour clock.
+ */
+internal fun widgetClockText(context: Context, now: Date): String =
+    android.text.format.DateFormat.getTimeFormat(context).format(now)
 
 /**
  * Single write path for the Glance widget state. Callers obtain fresh [SystemStats]
@@ -52,7 +57,7 @@ object WidgetStateUpdater {
     /** Writes [stats] to every installed widget (all kinds); returns whether any widget exists. */
     suspend fun updateAll(context: Context, stats: SystemStats): Boolean {
         val manager = GlanceAppWidgetManager(context)
-        val now = currentTime()
+        val now = widgetClockText(context, Date())
 
         val dashboardIds = manager.getGlanceIds(DashboardWidget::class.java)
         for (glanceId in dashboardIds) {
@@ -112,7 +117,7 @@ object WidgetStateUpdater {
 
     /** Writes [stats] to a single full-size widget instance. */
     suspend fun updateOne(context: Context, glanceId: GlanceId, stats: SystemStats) {
-        writeAndUpdate(context, DashboardWidget(), glanceId, stats, currentTime())
+        writeAndUpdate(context, DashboardWidget(), glanceId, stats, widgetClockText(context, Date()))
     }
 
     /**
@@ -194,9 +199,5 @@ object WidgetStateUpdater {
         this[RefreshStatsAction.UPTIME] = stats.uptimeText
         this[RefreshStatsAction.UPTIME_MILLIS] = stats.uptimeMillis
         this[RefreshStatsAction.LAST_UPDATED] = timestamp
-    }
-
-    private fun currentTime(): String {
-        return SimpleDateFormat("HH.mm", Locale.getDefault()).format(Date())
     }
 }

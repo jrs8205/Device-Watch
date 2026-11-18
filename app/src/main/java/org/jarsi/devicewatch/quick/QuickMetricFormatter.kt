@@ -1,5 +1,6 @@
 package org.jarsi.devicewatch.quick
 
+import org.jarsi.devicewatch.Bidi
 import org.jarsi.devicewatch.data.ChargeSource
 import org.jarsi.devicewatch.data.DataToday
 import org.jarsi.devicewatch.data.QuickMetric
@@ -88,10 +89,10 @@ object QuickMetricFormatter {
                 if (stats.cpuLoadPercent < 0) missing() else shown(percentText(stats.cpuLoadPercent))
             QuickMetric.MEMORY ->
                 if (stats.usedRamGb < 0.0 || stats.totalRamGb <= 0.0) missing()
-                else shown(String.format(Locale.getDefault(), "%.1f / %.1f GB", stats.usedRamGb, stats.totalRamGb))
+                else shown(Bidi.ltr(String.format(Locale.getDefault(), "%.1f / %.1f GB", stats.usedRamGb, stats.totalRamGb)))
             QuickMetric.STORAGE ->
                 if (stats.usedStorageGb < 0.0 || stats.totalStorageGb <= 0.0) missing()
-                else shown(String.format(Locale.getDefault(), "%.0f / %.0f GB", stats.usedStorageGb, stats.totalStorageGb))
+                else shown(Bidi.ltr(String.format(Locale.getDefault(), "%.0f / %.0f GB", stats.usedStorageGb, stats.totalStorageGb)))
             // Charging or discharging comes from the battery status: the sign of the current differs by maker.
             QuickMetric.BATTERY_POWER -> batteryPowerWattsOf(stats)?.let { watts ->
                 val word = when {

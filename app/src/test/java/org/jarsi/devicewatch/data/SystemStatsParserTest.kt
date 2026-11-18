@@ -5,6 +5,7 @@ import org.jarsi.devicewatch.data.SystemStatsParser.CoreFreq
 import org.jarsi.devicewatch.data.SystemStatsParser.CpuSnapshot
 import com.google.common.truth.Truth.assertThat
 import org.junit.Test
+import java.util.Locale
 
 /**
  * Pure-JVM tests for the parsing/maths behind the repository. No Robolectric needed:
@@ -169,7 +170,9 @@ class SystemStatsParserTest {
 
     @Test
     fun `wifiBandLabel maps frequency ranges`() {
-        assertThat(SystemStatsParser.wifiBandLabel(2_412)).isEqualTo("2,4 GHz")
+        assertThat(SystemStatsParser.wifiBandLabel(2_412, Locale.US)).isEqualTo("2.4 GHz")
+        assertThat(SystemStatsParser.wifiBandLabel(2_412, Locale.forLanguageTag("fi-FI"))).isEqualTo("2,4 GHz")
+        assertThat(SystemStatsParser.wifiBandLabel(2_412, Locale.forLanguageTag("ar-EG-u-nu-latn"))).isEqualTo("2.4 GHz")
         assertThat(SystemStatsParser.wifiBandLabel(5_180)).isEqualTo("5 GHz")
         assertThat(SystemStatsParser.wifiBandLabel(6_000)).isEqualTo("6 GHz")
         assertThat(SystemStatsParser.wifiBandLabel(0)).isEqualTo(UNAVAILABLE_TEXT)

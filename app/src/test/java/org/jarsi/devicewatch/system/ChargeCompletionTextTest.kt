@@ -48,6 +48,13 @@ class ChargeCompletionTextTest {
     }
 
     @Test
+    fun `on a 12-hour clock the half of the day goes where the language puts it`() {
+        val now = "2026-09-28T21:25+03:00[Europe/Helsinki]"
+        val full = "2026-09-29T09:28+03:00[Europe/Helsinki]"
+        assertThat(text(now, full, "zh-CN", false)).contains("上午9:28")
+    }
+
+    @Test
     fun `the same estimate stops saying tomorrow once midnight passes`() {
         val full = "2026-09-29T09:28+03:00[Europe/Helsinki]"
         assertThat(text("2026-09-29T00:01+03:00[Europe/Helsinki]", full))

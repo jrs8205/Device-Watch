@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import org.jarsi.devicewatch.Bidi
 import org.jarsi.devicewatch.R
 import org.jarsi.devicewatch.data.ApplyOutcome
 import org.jarsi.devicewatch.data.CpuPolicyId
@@ -357,7 +358,7 @@ private fun ProcessorSection(snapshot: KernelSnapshot, state: KernelPageState) {
                 policy.cpuinfoMinKHz?.let { min ->
                     KernelRow(
                         R.string.kernel_speed_range,
-                        stringResource(R.string.kernel_range_value, freqText(min, locale), freqText(max, locale)),
+                        Bidi.ltr(stringResource(R.string.kernel_range_value, freqText(min, locale), freqText(max, locale)), locale),
                         numeric = true,
                     )
                 }
@@ -435,7 +436,7 @@ private fun GpuSection(gpu: GpuSnapshot) {
         if (min != null && max != null) {
             KernelRow(
                 R.string.kernel_speed_range,
-                stringResource(R.string.kernel_range_value, freqText(min, locale), freqText(max, locale)),
+                Bidi.ltr(stringResource(R.string.kernel_range_value, freqText(min, locale), freqText(max, locale)), locale),
                 numeric = true,
             )
         }

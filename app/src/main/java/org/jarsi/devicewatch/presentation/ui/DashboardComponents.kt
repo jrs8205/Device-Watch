@@ -406,7 +406,7 @@ internal fun durationText(context: Context, millis: Long): String {
     val totalMinutes = millis / 60_000L
     val hours = totalMinutes / 60L
     val minutes = totalMinutes % 60L
-    return if (hours > 0L) context.getString(R.string.uptime_short, hours, minutes) else "$minutes min"
+    return if (hours > 0L) context.getString(R.string.uptime_short, hours, minutes) else context.getString(R.string.duration_minutes, minutes)
 }
 
 /** Whole days since the last use, or null when never used. */

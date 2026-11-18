@@ -2,6 +2,7 @@ package org.jarsi.devicewatch.data
 
 import android.net.wifi.ScanResult
 import android.telephony.TelephonyManager
+import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
@@ -261,9 +262,9 @@ internal object SystemStatsParser {
     }
 
     /** Human label for a Wi-Fi channel frequency in MHz. */
-    fun wifiBandLabel(frequencyMhz: Int): String {
+    fun wifiBandLabel(frequencyMhz: Int, locale: Locale = Locale.getDefault()): String {
         return when (frequencyMhz) {
-            in 2400..2500 -> "2,4 GHz"
+            in 2400..2500 -> String.format(locale, "%.1f GHz", 2.4)
             in 4900..5900 -> "5 GHz"
             in 5925..7125 -> "6 GHz"
             else -> UNAVAILABLE_TEXT

@@ -21,6 +21,8 @@ class DreamUiStateTest {
         longDatePattern = if (locale == finnish) "EEEE d. MMMM" else "EEEE, MMMM d",
         shortDatePattern = if (locale == finnish) "EEE d. MMMM" else "EEE, MMMM d",
         compactDatePattern = if (locale == finnish) "EEE d.M." else "EEE MMM d",
+        clockPattern12 = "h:mm a",
+        alarmPattern12 = "EEE h:mm a",
     )
 
     private fun state(watts: String?) = DreamUiState(
