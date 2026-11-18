@@ -233,7 +233,7 @@ Release builds are minified with R8 and resource shrinking. The release APK is u
 
 ## Testing
 
-1431 JVM unit tests (JUnit 4 + Truth; Robolectric only for the Glance render, notification, backup-rule,
+1435 JVM unit tests (JUnit 4 + Truth; Robolectric only for the Glance render, notification, backup-rule,
 settings-store, floating-card window and screensaver screen, settings, calendar and settings-link tests) cover the logic
 behind every screen, service and widget:
 
@@ -248,7 +248,7 @@ behind every screen, service and widget:
 - **Extended access (Shizuku, root and ADB permissions)** — `ShellSessionTest` (the shell conversation, driven
   through a real `sh`; on Windows through Git's), `PrivilegedShellTest`, `LocalShellTest` (the app's own
   shell on the adb route: nothing started without the grant, a grant found gone), `AdbGrantsTest`,
-  `ExtendedAccessGateTest` (which pages each route opens), `AdbAccessRowTest`,
+  `ExtendedAccessGateTest` (which pages each route opens), `AdbAccessRowTest`, `UsageAccessTest` (usage access by the switch or by the permission),
   `BatteryStatsDumpParserTest`, `PrivilegedDumpParsersTest` (parsers written against dumps from
   real phones), `AppOpsHistoryParserTest` (Android's privacy record in both the table Android 17
   prints and the tree of Android 12–16, against a Pixel 8a and API 34 and 36 emulators),
