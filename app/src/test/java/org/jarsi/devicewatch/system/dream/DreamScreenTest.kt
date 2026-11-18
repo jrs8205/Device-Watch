@@ -10,6 +10,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import android.graphics.Canvas
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.ViewRootForTest
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -17,6 +18,7 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.test.core.app.ApplicationProvider
 import com.google.common.truth.Truth.assertThat
 import com.google.common.truth.Truth.assertWithMessage
@@ -54,11 +56,43 @@ class DreamScreenTest {
         landscape: Boolean,
         onTap: (() -> Unit)? = null,
         state: DreamUiState = sample(),
+        direction: LayoutDirection = LayoutDirection.Ltr,
     ) {
         shownOptions = options
         compose.setContent {
-            DreamScreen(state = state, options = shownOptions, landscape = landscape, onTap = onTap, moving = false)
+            CompositionLocalProvider(LocalLayoutDirection provides direction) {
+                DreamScreen(state = state, options = shownOptions, landscape = landscape, onTap = onTap, moving = false)
+            }
         }
+    }
+
+    private fun leftOf(text: String): Float = compose.onNodeWithText(text).fetchSemanticsNode().boundsInRoot.left
+
+    // A row runs from the right in a language written from the right. A clock does not:
+    // the time is followed by its seconds, and they by AM or PM.
+    @Test
+    fun `right to left the seconds still follow the time`() {
+        val state = sample()
+        show(landscape = false, direction = LayoutDirection.Rtl)
+        for (style in listOf(DreamStyle.GLOW, DreamStyle.EDGE, DreamStyle.GAUGES)) {
+            shownOptions = DreamOptions(style = style)
+            compose.waitForIdle()
+
+            assertWithMessage("$style").that(leftOf(state.timeText)).isLessThan(leftOf(":${state.secondsText}"))
+        }
+    }
+
+    @Test
+    fun `right to left Ring keeps AM or PM after the seconds`() {
+        val state = sampleDreamUiState(context, nowMs = SAMPLE_NOW_MS, locale = Locale.US, is24Hour = false)
+        show(
+            options = DreamOptions(style = DreamStyle.RING),
+            landscape = false,
+            state = state,
+            direction = LayoutDirection.Rtl,
+        )
+
+        assertThat(leftOf(state.secondsText)).isLessThan(leftOf(state.amPmText))
     }
 
     /** How many texts on the screen are, or contain, [text]. */

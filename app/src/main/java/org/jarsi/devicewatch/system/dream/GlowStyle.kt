@@ -31,9 +31,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -227,6 +229,13 @@ internal fun BoxWithConstraintsScope.GlowContent(state: DreamUiState, options: D
  */
 private const val NARROW_ESTIMATE_FLOOR_SP = 8f
 
+/**
+ * The bar's colours in the order they are painted from the left. The bar fills from the side
+ * where reading starts, so in a language written from the right they turn round with it.
+ */
+internal fun batteryBarColors(colors: List<Color>, direction: LayoutDirection): List<Color> =
+    if (direction == LayoutDirection.Rtl) colors.reversed() else colors
+
 @Composable
 internal fun BatteryBlockLandscape(
     modifier: Modifier = Modifier,
@@ -292,7 +301,7 @@ internal fun BatteryBlockLandscape(
                     .clip(RoundedCornerShape(5.5.dp))
                     .background(
                         Brush.horizontalGradient(
-                            colors = batteryGradientColors
+                            colors = batteryBarColors(batteryGradientColors, LocalLayoutDirection.current)
                         )
                     )
             )
@@ -392,7 +401,7 @@ internal fun BatteryBlockPortrait(
                     .clip(RoundedCornerShape(5.dp))
                     .background(
                         Brush.horizontalGradient(
-                            colors = batteryGradientColors
+                            colors = batteryBarColors(batteryGradientColors, LocalLayoutDirection.current)
                         )
                     )
             )

@@ -221,7 +221,7 @@ internal fun LabelValueRow(
         if (valueMeasurable == null) {
             val labelPlaceable = labelMeasurable.measure(childConstraints(availableWidth))
             val width = if (constraints.hasBoundedWidth) availableWidth else labelPlaceable.width
-            return@Layout layout(width, labelPlaceable.height) { labelPlaceable.place(0, 0) }
+            return@Layout layout(width, labelPlaceable.height) { labelPlaceable.placeRelative(0, 0) }
         }
 
         val sideBySide = !constraints.hasBoundedWidth || labelAndValueFitOnOneLine(
@@ -241,16 +241,16 @@ internal fun LabelValueRow(
                 labelPlaceable.width + gap + valuePlaceable.width
             }
             layout(width, maxOf(labelPlaceable.height, valuePlaceable.height)) {
-                labelPlaceable.place(0, 0)
-                valuePlaceable.place(width - valuePlaceable.width, 0)
+                labelPlaceable.placeRelative(0, 0)
+                valuePlaceable.placeRelative(width - valuePlaceable.width, 0)
             }
         } else {
             val labelPlaceable = labelMeasurable.measure(childConstraints(availableWidth))
             val valuePlaceable = valueMeasurable.measure(childConstraints(availableWidth))
             val stackGap = verticalGap.roundToPx()
             layout(availableWidth, labelPlaceable.height + stackGap + valuePlaceable.height) {
-                labelPlaceable.place(0, 0)
-                valuePlaceable.place(
+                labelPlaceable.placeRelative(0, 0)
+                valuePlaceable.placeRelative(
                     availableWidth - valuePlaceable.width,
                     labelPlaceable.height + stackGap
                 )

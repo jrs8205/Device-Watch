@@ -181,6 +181,11 @@ private fun rememberGaugesClockSize(state: DreamUiState, options: DreamOptions, 
 /** The time with its seconds on the same baseline; AM/PM, when there is one, above them. */
 @Composable
 private fun GaugesClock(state: DreamUiState, options: DreamOptions, clockSize: Int) {
+    LeftToRight { GaugesClockRow(state, options, clockSize) }
+}
+
+@Composable
+private fun GaugesClockRow(state: DreamUiState, options: DreamOptions, clockSize: Int) {
     val showSeconds = options.shows(DreamField.SECONDS)
     Row {
         Text(

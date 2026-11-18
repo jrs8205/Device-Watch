@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -23,9 +24,11 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.style.TextOverflow
@@ -56,6 +59,19 @@ internal fun BatteryChart(
     samples: List<BatterySample>,
     range: BatteryChartRange,
     modifier: Modifier = Modifier,
+) {
+    // Time runs from left to right on a chart in every language, and the scale stays beside
+    // the newest reading.
+    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+        BatteryChartContent(samples, range, modifier)
+    }
+}
+
+@Composable
+private fun BatteryChartContent(
+    samples: List<BatterySample>,
+    range: BatteryChartRange,
+    modifier: Modifier,
 ) {
     // "Now" is sampled per data set, not per recomposition: the x axis then stays
     // pinned to the poll that produced these samples instead of creeping.

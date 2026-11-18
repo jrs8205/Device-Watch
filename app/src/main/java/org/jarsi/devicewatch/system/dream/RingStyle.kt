@@ -25,6 +25,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
@@ -32,6 +33,7 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.min
@@ -65,6 +67,19 @@ internal fun ringTint(level: Int): Color = when {
 }
 
 /**
+ * Where the glow's middle is, as shares of the screen's width and height. Upright the ring
+ * sits a little above the middle. On its side it sits in the half where reading starts: the
+ * left one, or the right one in a language written from the right. A flipped layout mirrors
+ * both.
+ */
+internal fun ringGlowCenter(landscape: Boolean, swapped: Boolean, rtl: Boolean): Offset =
+    if (landscape) {
+        Offset(if (swapped != rtl) 0.73f else 0.27f, 0.5f)
+    } else {
+        Offset(0.5f, if (swapped) 0.54f else 0.46f)
+    }
+
+/**
  * The parts of the line under the level: the charger's state with its icon, then the
  * charging power and the temperature when the battery details are switched on.
  */
@@ -81,23 +96,20 @@ internal fun ringStatusParts(
 
 /**
  * A radial glow behind the ring. The background does not turn with the 180° flip and does
- * not know the layout, so it finds the ring itself: upright the ring sits a little above
- * the middle, on its side it sits in the left half, and a flipped layout mirrors both.
+ * not know the layout, so it finds the ring itself (see [ringGlowCenter]).
  */
 @Composable
 internal fun BoxScope.RingBackground(level: Int, swapped: Boolean) {
     val tint = ringTint(level)
+    val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     Box(
         modifier = Modifier
             .matchParentSize()
             .drawBehind {
                 drawRect(Color.Black)
                 val landscape = size.width > size.height
-                val center = if (landscape) {
-                    Offset(size.width * (if (swapped) 0.73f else 0.27f), size.height * 0.5f)
-                } else {
-                    Offset(size.width * 0.5f, size.height * (if (swapped) 0.54f else 0.46f))
-                }
+                val share = ringGlowCenter(landscape, swapped, rtl)
+                val center = Offset(size.width * share.x, size.height * share.y)
                 val farthestCorner = hypot(
                     max(center.x, size.width - center.x),
                     max(center.y, size.height - center.y),
@@ -226,28 +238,30 @@ private fun RingClock(state: DreamUiState, options: DreamOptions, diameter: Dp) 
             )
             val showSeconds = options.shows(DreamField.SECONDS)
             if (showSeconds || state.amPmText.isNotEmpty()) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    if (showSeconds) {
-                        Text(
-                            text = state.secondsText,
-                            fontSize = (clockSize * 0.26f).sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = options.accent.color,
-                            maxLines = 1,
-                            softWrap = false,
-                            style = TextStyle(fontFeatureSettings = "tnum")
-                        )
-                    }
-                    if (state.amPmText.isNotEmpty()) {
-                        if (showSeconds) Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = state.amPmText,
-                            fontSize = (clockSize * 0.2f).sp,
-                            fontWeight = FontWeight.Medium,
-                            color = RING_DIM,
-                            maxLines = 1,
-                            softWrap = false
-                        )
+                LeftToRight {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (showSeconds) {
+                            Text(
+                                text = state.secondsText,
+                                fontSize = (clockSize * 0.26f).sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = options.accent.color,
+                                maxLines = 1,
+                                softWrap = false,
+                                style = TextStyle(fontFeatureSettings = "tnum")
+                            )
+                        }
+                        if (state.amPmText.isNotEmpty()) {
+                            if (showSeconds) Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = state.amPmText,
+                                fontSize = (clockSize * 0.2f).sp,
+                                fontWeight = FontWeight.Medium,
+                                color = RING_DIM,
+                                maxLines = 1,
+                                softWrap = false
+                            )
+                        }
                     }
                 }
             }

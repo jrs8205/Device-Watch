@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -32,6 +33,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFontFamilyResolver
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -40,6 +42,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -108,40 +111,42 @@ internal fun ClockBlock(
                 letterSpacing = 1.5.sp,
             )
         }
-        Row(verticalAlignment = Alignment.Bottom) {
-            Text(
-                text = timeText,
-                fontSize = clockSize.sp,
-                fontWeight = FontWeight.ExtraBold,
-                color = Color(0xFFEDEDED),
-                style = TextStyle(fontFeatureSettings = "tnum"),
-                letterSpacing = 0.sp
-            )
-            // The column beside the time holds the seconds and, on a 12-hour clock, AM/PM.
-            // With the seconds switched off on a 24-hour clock there is nothing to hold.
-            if (showSeconds || amPmText.isNotEmpty()) {
-                Spacer(modifier = Modifier.width(8.dp))
-                Column(modifier = Modifier.padding(bottom = 16.dp)) {
-                    if (showSeconds) {
-                        Text(
-                            text = ":$secondsText",
-                            autoSize = fitUpTo(secondsSize.sp),
-                            maxLines = 1,
-                            softWrap = false,
-                            fontWeight = FontWeight.Bold,
-                            color = accent,
-                            style = TextStyle(fontFeatureSettings = "tnum")
-                        )
-                    }
-                    if (amPmText.isNotEmpty()) {
-                        Text(
-                            text = amPmText,
-                            autoSize = fitUpTo((secondsSize * 0.6f).sp),
-                            maxLines = 1,
-                            softWrap = false,
-                            fontWeight = FontWeight.Medium,
-                            color = Color(0xFF8B929C)
-                        )
+        LeftToRight {
+            Row(verticalAlignment = Alignment.Bottom) {
+                Text(
+                    text = timeText,
+                    fontSize = clockSize.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = Color(0xFFEDEDED),
+                    style = TextStyle(fontFeatureSettings = "tnum"),
+                    letterSpacing = 0.sp
+                )
+                // The column beside the time holds the seconds and, on a 12-hour clock, AM/PM.
+                // With the seconds switched off on a 24-hour clock there is nothing to hold.
+                if (showSeconds || amPmText.isNotEmpty()) {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Column(modifier = Modifier.padding(bottom = 16.dp)) {
+                        if (showSeconds) {
+                            Text(
+                                text = ":$secondsText",
+                                autoSize = fitUpTo(secondsSize.sp),
+                                maxLines = 1,
+                                softWrap = false,
+                                fontWeight = FontWeight.Bold,
+                                color = accent,
+                                style = TextStyle(fontFeatureSettings = "tnum")
+                            )
+                        }
+                        if (amPmText.isNotEmpty()) {
+                            Text(
+                                text = amPmText,
+                                autoSize = fitUpTo((secondsSize * 0.6f).sp),
+                                maxLines = 1,
+                                softWrap = false,
+                                fontWeight = FontWeight.Medium,
+                                color = Color(0xFF8B929C)
+                            )
+                        }
                     }
                 }
             }
@@ -441,6 +446,15 @@ internal fun fittedClockSp(
  */
 internal fun fitUpTo(max: TextUnit, floorSp: Float = 12f): TextAutoSize =
     TextAutoSize.StepBased(minFontSize = minOf(floorSp, max.value).sp, maxFontSize = max, stepSize = 1.sp)
+
+/**
+ * A clock reads from left to right in every language: the time, then its seconds, then AM
+ * or PM. In a language written from the right a plain row would put the seconds first.
+ */
+@Composable
+internal fun LeftToRight(content: @Composable () -> Unit) {
+    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr, content = content)
+}
 
 internal fun getBatteryGradientColors(level: Int): List<Color> {
     return when {

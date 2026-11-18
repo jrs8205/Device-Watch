@@ -9,6 +9,7 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.YearMonth
 import java.time.ZoneOffset
+import java.util.Locale
 
 class HtmlReportBuilderTest {
 
@@ -20,7 +21,9 @@ class HtmlReportBuilderTest {
         battery: List<BatterySample> = emptyList(),
         log: List<NotificationLogEntry> = emptyList(),
         deviceName: String = "Pixel 8a",
+        locale: Locale = Locale.US,
     ) = HtmlReportData(
+        locale = locale,
         deviceName = deviceName,
         generatedAt = LocalDateTime.of(2026, 8, 14, 18, 30),
         days = days,
@@ -469,6 +472,43 @@ class HtmlReportBuilderTest {
         assertThat(html).contains("Summary")
         assertThat(Regex("No data yet").findAll(html).count()).isAtLeast(3)
         assertThat(html).doesNotContain("<svg")
+    }
+
+    @Test
+    fun `an Arabic report is laid out from the right`() {
+        val html = HtmlReportBuilder.build(data(locale = Locale.forLanguageTag("ar-EG-u-nu-latn")), labels)
+
+        assertThat(html).contains("<html lang=\"ar\" dir=\"rtl\">")
+    }
+
+    @Test
+    fun `an English report names no direction`() {
+        val html = HtmlReportBuilder.build(data(), labels)
+
+        assertThat(html).contains("<html lang=\"en\">")
+    }
+
+    @Test
+    fun `the battery chart runs from left to right in every language`() {
+        val start = 1_786_700_000_000L
+        val html = HtmlReportBuilder.build(
+            data(
+                battery = listOf(BatterySample(start, 80, false), BatterySample(start + 3_600_000L, 75, false)),
+                locale = Locale.forLanguageTag("ar-EG-u-nu-latn"),
+            ),
+            labels,
+        )
+
+        assertThat(html).contains("<div class=\"plot\" dir=\"ltr\">")
+        assertThat(html).contains("<div class=\"range\" dir=\"ltr\">")
+    }
+
+    @Test
+    fun `table columns are aligned by reading direction, not by side`() {
+        val html = HtmlReportBuilder.build(data(), labels)
+
+        assertThat(html).doesNotContain("text-align: left")
+        assertThat(html).doesNotContain("text-align: right")
     }
 
     @Test

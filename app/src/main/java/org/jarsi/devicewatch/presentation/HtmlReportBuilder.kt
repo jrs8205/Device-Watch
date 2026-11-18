@@ -1,5 +1,6 @@
 package org.jarsi.devicewatch.presentation
 
+import org.jarsi.devicewatch.Bidi
 import org.jarsi.devicewatch.data.BatterySample
 import org.jarsi.devicewatch.data.MonthlyDataUsage
 import org.jarsi.devicewatch.data.NotificationLogEntry
@@ -168,7 +169,10 @@ object HtmlReportBuilder {
 
     fun build(data: HtmlReportData, labels: HtmlReportLabels): String = buildString {
         append("<!DOCTYPE html>\n")
-        append("<html lang=\"").append(escape(data.locale.language.ifEmpty { "en" })).append("\">\n")
+        append("<html lang=\"").append(escape(data.locale.language.ifEmpty { "en" })).append('"')
+        // A language written from the right lays the whole page out from the right.
+        if (Bidi.isRtl(data.locale)) append(" dir=\"rtl\"")
+        append(">\n")
         append("<head>\n")
         append("<meta charset=\"utf-8\">\n")
         append("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n")
@@ -278,7 +282,8 @@ object HtmlReportBuilder {
             CHART_BOTTOM - (level.coerceIn(0, 100) / 100.0) * (CHART_BOTTOM - CHART_TOP)
 
         append("<div class=\"chart\">\n")
-        append("<div class=\"plot\">\n")
+        // Time runs from left to right on the chart in every language.
+        append("<div class=\"plot\" dir=\"ltr\">\n")
         append("<svg viewBox=\"0 0 $CHART_WIDTH $CHART_HEIGHT\" ")
         append("preserveAspectRatio=\"none\" role=\"img\" aria-label=\"")
         append(escape(labels.batterySection)).append("\">\n")
@@ -355,7 +360,7 @@ object HtmlReportBuilder {
         append("<span class=\"ax mid\">50 %</span>")
         append("<span class=\"ax bot\">0 %</span>\n")
         append("</div>\n")
-        append("<div class=\"range\"><span>")
+        append("<div class=\"range\" dir=\"ltr\"><span>")
         append(escape(chartStamp(samples.first().timeMillis, data.zone)))
         append("</span><span>")
         append(escape(chartStamp(samples.last().timeMillis, data.zone)))
@@ -794,11 +799,11 @@ object HtmlReportBuilder {
         tr[hidden] { display: none; }
         .scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
         table { border-collapse: collapse; width: 100%; font-size: 0.95rem; }
-        th, td { text-align: right; padding: 9px 10px; white-space: nowrap; }
-        th:first-child, td:first-child { text-align: left; }
+        th, td { text-align: end; padding: 9px 10px; white-space: nowrap; }
+        th:first-child, td:first-child { text-align: start; }
         /* Daily table: the duration column reads as text, the tallies as numbers. */
-        table.days th:nth-child(2), table.days td:nth-child(2) { text-align: left; }
-        table.text th, table.text td { text-align: left; }
+        table.days th:nth-child(2), table.days td:nth-child(2) { text-align: start; }
+        table.text th, table.text td { text-align: start; }
         table.text td:last-child { white-space: normal; max-width: 40ch; }
         thead th {
           font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em;

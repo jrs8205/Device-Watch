@@ -1,5 +1,6 @@
 package org.jarsi.devicewatch.system.dream
 
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import com.google.common.truth.Truth.assertThat
 import org.junit.Test
@@ -28,6 +29,21 @@ class RingStyleTest {
         assertThat(ringTint(60)).isEqualTo(amber)
         assertThat(ringTint(61)).isEqualTo(green)
         assertThat(ringTint(100)).isEqualTo(green)
+    }
+
+    @Test
+    fun `upright the glow sits behind the ring whatever the reading direction`() {
+        assertThat(ringGlowCenter(landscape = false, swapped = false, rtl = false)).isEqualTo(Offset(0.5f, 0.46f))
+        assertThat(ringGlowCenter(landscape = false, swapped = false, rtl = true)).isEqualTo(Offset(0.5f, 0.46f))
+        assertThat(ringGlowCenter(landscape = false, swapped = true, rtl = true)).isEqualTo(Offset(0.5f, 0.54f))
+    }
+
+    @Test
+    fun `on its side the glow follows the ring to the side where reading starts`() {
+        assertThat(ringGlowCenter(landscape = true, swapped = false, rtl = false)).isEqualTo(Offset(0.27f, 0.5f))
+        assertThat(ringGlowCenter(landscape = true, swapped = false, rtl = true)).isEqualTo(Offset(0.73f, 0.5f))
+        assertThat(ringGlowCenter(landscape = true, swapped = true, rtl = false)).isEqualTo(Offset(0.73f, 0.5f))
+        assertThat(ringGlowCenter(landscape = true, swapped = true, rtl = true)).isEqualTo(Offset(0.27f, 0.5f))
     }
 
     @Test
