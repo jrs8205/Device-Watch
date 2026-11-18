@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -63,14 +64,23 @@ internal fun MetricValue(
         fontSize = fontSize,
         fontWeight = fontWeight,
         color = color,
-        // A value reads in the direction of its own first letter: "25.0 °C" from the left
-        // in every language, a value with an Arabic unit from the right. Laid out from the
-        // right like the texts around it, a Latin unit would land before its number. Either
-        // way the value sits at the side where reading starts.
-        textAlign = if (LocalLayoutDirection.current == LayoutDirection.Rtl) TextAlign.Right else TextAlign.Left,
-        style = LocalTextStyle.current.copy(textDirection = TextDirection.Content),
+        textAlign = valueTextAlign(),
+        style = valueTextStyle(),
     )
 }
+
+/**
+ * How a value is laid out: in the direction of its own first letter. "25.0 °C" and
+ * "16 (API 36)" read from the left in every language, a value in Arabic from the right. Laid
+ * out from the right like the texts around it, a Latin unit would land before its number.
+ */
+@Composable
+internal fun valueTextStyle(): TextStyle = LocalTextStyle.current.copy(textDirection = TextDirection.Content)
+
+/** Whichever way a value reads, it sits at the side where reading starts. */
+@Composable
+internal fun valueTextAlign(): TextAlign =
+    if (LocalLayoutDirection.current == LayoutDirection.Rtl) TextAlign.Right else TextAlign.Left
 
 /** The muted caption above a value. */
 @Composable

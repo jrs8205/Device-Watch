@@ -335,7 +335,9 @@ internal fun DeviceFact(label: String, value: String) {
             Text(
                 text = value,
                 fontSize = 15.sp,
-                color = MaterialTheme.colorScheme.onSurface
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = valueTextAlign(),
+                style = valueTextStyle()
             )
         }
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)

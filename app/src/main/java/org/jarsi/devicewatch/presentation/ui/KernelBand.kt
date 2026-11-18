@@ -75,7 +75,13 @@ internal fun KernelRow(
             if (numeric) {
                 MetricValue(value, fontSize = 15.sp, color = color)
             } else {
-                Text(text = value, fontSize = 15.sp, color = color)
+                Text(
+                    text = value,
+                    fontSize = 15.sp,
+                    color = color,
+                    textAlign = valueTextAlign(),
+                    style = valueTextStyle(),
+                )
             }
         },
     )

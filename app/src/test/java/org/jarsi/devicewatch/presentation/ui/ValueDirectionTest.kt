@@ -11,6 +11,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.style.ResolvedTextDirection
+import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.LayoutDirection
 import com.google.common.truth.Truth.assertThat
 import com.google.common.truth.Truth.assertWithMessage
@@ -51,6 +52,10 @@ class ValueDirectionTest {
     val compose = createComposeRule()
 
     private val arabic: Locale = Locale.forLanguageTag("ar-EG-u-nu-latn")
+
+    private companion object {
+        const val ARABIC_PHONE = "ar-rEG-w360dp-h780dp-port-mdpi"
+    }
     private val defaultBefore: Locale = Locale.getDefault()
 
     @After
@@ -129,17 +134,25 @@ class ValueDirectionTest {
 
     // On the screen a value's own first letter decides: a Latin unit reads from the left, an
     // Arabic one from the right. Either way it sits at the side where reading starts.
+    //
+    // What a phone does with a text left alone cannot be seen here: on an Arabic phone it is
+    // laid out from the right whatever it holds, while this test's text engine goes by the
+    // first letter by itself. So the tests hold the code to what it asks for (a direction by
+    // content) and to where the value sits, and the phone's result was checked on a device.
     @Test
+    @Config(qualifiers = ARABIC_PHONE)
     fun `right to left a value with a Latin unit reads from the left and sits at the right`() {
         showValue("25.0 °C", LayoutDirection.Rtl)
 
         val layout = layoutOf("25.0 °C")
+        assertThat(layout.layoutInput.style.textDirection).isEqualTo(TextDirection.Content)
         assertThat(layout.getParagraphDirection(0)).isEqualTo(ResolvedTextDirection.Ltr)
         assertThat(layout.getLineRight(0)).isWithin(1f).of(layout.size.width.toFloat())
         assertThat(layout.getLineLeft(0)).isGreaterThan(0f)
     }
 
     @Test
+    @Config(qualifiers = ARABIC_PHONE)
     fun `right to left a value with an Arabic unit reads from the right`() {
         val minutes = "55 " + Char(0x062F)
         showValue(minutes, LayoutDirection.Rtl)
@@ -147,6 +160,30 @@ class ValueDirectionTest {
         val layout = layoutOf(minutes)
         assertThat(layout.getParagraphDirection(0)).isEqualTo(ResolvedTextDirection.Rtl)
         assertThat(layout.getLineRight(0)).isWithin(1f).of(layout.size.width.toFloat())
+    }
+
+    @Test
+    @Config(qualifiers = ARABIC_PHONE)
+    fun `right to left a fact about the device reads by its own first letter too`() {
+        compose.setContent {
+            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+                DeviceFact(label = "Android", value = "16 (API 36)")
+            }
+        }
+
+        assertThat(layoutOf("16 (API 36)").layoutInput.style.textDirection).isEqualTo(TextDirection.Content)
+    }
+
+    @Test
+    @Config(qualifiers = ARABIC_PHONE)
+    fun `right to left a kernel row's plain value reads by its own first letter too`() {
+        compose.setContent {
+            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+                KernelRow(label = "Governor", value = "schedutil (walt)")
+            }
+        }
+
+        assertThat(layoutOf("schedutil (walt)").layoutInput.style.textDirection).isEqualTo(TextDirection.Content)
     }
 
     @Test

@@ -1,5 +1,6 @@
 package org.jarsi.devicewatch
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.res.Configuration
 import android.content.res.Resources
@@ -59,6 +60,9 @@ object LatinDigits {
      * needed. Only the languages are set: everything else (size, night mode, font scale)
      * keeps following the context underneath.
      */
+    // The language stays the one Android chose; only its numbering system is named. The
+    // check is about app bundles that leave languages out, and the app ships as one APK.
+    @SuppressLint("AppBundleLocaleChanges")
     internal fun overrideFor(locales: LocaleList): Configuration? {
         val fixed = Array(locales.size()) { locale(locales[it]) }
         if (fixed.indices.all { fixed[it] === locales[it] }) return null
