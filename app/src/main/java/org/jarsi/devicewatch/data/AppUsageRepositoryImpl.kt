@@ -1,6 +1,5 @@
 package org.jarsi.devicewatch.data
 
-import android.app.AppOpsManager
 import android.app.usage.NetworkStats
 import android.app.usage.NetworkStatsManager
 import android.app.usage.StorageStatsManager
@@ -30,20 +29,7 @@ class AppUsageRepositoryImpl @Inject constructor(
     @DefaultDispatcher private val dispatcher: CoroutineDispatcher,
 ) : AppUsageRepository {
 
-    override fun hasUsageAccess(): Boolean {
-        val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as? AppOpsManager ?: return false
-        val mode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            appOps.unsafeCheckOpNoThrow(
-                AppOpsManager.OPSTR_GET_USAGE_STATS, Process.myUid(), context.packageName
-            )
-        } else {
-            @Suppress("DEPRECATION")
-            appOps.checkOpNoThrow(
-                AppOpsManager.OPSTR_GET_USAGE_STATS, Process.myUid(), context.packageName
-            )
-        }
-        return mode == AppOpsManager.MODE_ALLOWED
-    }
+    override fun hasUsageAccess(): Boolean = context.hasUsageAccess()
 
     override suspend fun screenTimeToday(): List<AppScreenTime> =
         screenTimeSince(startOfTodayMillis())

@@ -4,7 +4,6 @@ import android.Manifest
 import android.annotation.TargetApi
 import android.app.ActivityManager
 import android.app.KeyguardManager
-import android.app.AppOpsManager
 import android.app.usage.NetworkStats
 import android.app.usage.NetworkStatsManager
 import android.os.storage.StorageManager
@@ -41,7 +40,6 @@ import android.os.BatteryManager
 import android.os.Build
 import android.os.PowerManager
 import android.os.Environment
-import android.os.Process
 import android.os.StatFs
 import android.os.SystemClock
 import android.provider.Settings
@@ -2433,17 +2431,7 @@ class SystemStatsRepositoryImpl @Inject constructor(
         return ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
     }
 
-    @Suppress("DEPRECATION") // unsafeCheckOpNoThrow / checkOpNoThrow remain the supported op-check path
-    private fun hasUsageStatsAccess(): Boolean {
-        val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as? AppOpsManager ?: return false
-        val mode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            appOps.unsafeCheckOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS, Process.myUid(), context.packageName)
-        } else {
-            @Suppress("DEPRECATION")
-            appOps.checkOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS, Process.myUid(), context.packageName)
-        }
-        return mode == AppOpsManager.MODE_ALLOWED
-    }
+    private fun hasUsageStatsAccess(): Boolean = context.hasUsageAccess()
 
     private fun readIntFromFiles(vararg paths: String): Int? {
         return readLongFromFiles(*paths)?.toInt()
