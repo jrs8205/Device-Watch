@@ -24,9 +24,10 @@ class AppLanguagesTest {
         val offered = SourceXml.parse("res/xml/locales_config.xml").children("locale").map { it.android("name") }
 
         // English is the unqualified `values`; every translation is a `values-xx` with its own strings.
+        // A folder names a region as "zh-rCN" where the list says "zh-CN".
         val translated = SourceXml.source("res").listFiles().orEmpty()
             .filter { it.isDirectory && it.name.startsWith("values-") && File(it, "strings.xml").exists() }
-            .map { it.name.removePrefix("values-") }
+            .map { it.name.removePrefix("values-").replace("-r", "-") }
         assertThat(translated).isNotEmpty()
         assertThat(offered).containsExactlyElementsIn(translated + "en")
     }
