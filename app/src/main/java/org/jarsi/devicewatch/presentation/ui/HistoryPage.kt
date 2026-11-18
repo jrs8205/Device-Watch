@@ -55,6 +55,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import org.jarsi.devicewatch.Bidi
 import org.jarsi.devicewatch.R
 import org.jarsi.devicewatch.data.ChargeSession
 import org.jarsi.devicewatch.data.MonthlyDataUsage
@@ -604,7 +605,8 @@ private fun ChargeSessionRow(charge: ChargeSession) {
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = stringResource(R.string.history_charge_levels, charge.startLevel, charge.endLevel),
+                // "45 % → 80 %" keeps its order in a language written from the right.
+                text = Bidi.ltr(stringResource(R.string.history_charge_levels, charge.startLevel, charge.endLevel)),
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
                 maxLines = 1
