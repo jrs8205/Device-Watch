@@ -137,8 +137,8 @@ app's own user whatever permission it holds, so they stay with Shizuku and root.
 Samsung's own battery figures, the screensaver's immediate start when charging begins, and
 removing preinstalled apps.
 
-To take the permissions back, run the same three lines with `revoke` in place of `grant`. Device
-Watch then switches the route off by itself and names the permission that is missing. If the
+To take the permissions back, run the same three lines with `revoke` in place of `grant`.
+Device-Watch then switches the route off by itself and names the permission that is missing. If the
 third command was what gave Device-Watch usage access, revoking it takes that away as well:
 switch usage access on in Android's settings to keep the Apps tab.
 
@@ -190,8 +190,8 @@ the system image, with a search. **Remove** takes an app away from this user onl
 brings it back (`pm install-existing`), as does a factory reset. Every removal is asked about
 first. The apps the phone depends on, Google Play services or the keyboard say so, and the
 question then waits until you have acknowledged what breaks; the ones the phone cannot do
-without (Android's core, the home screen, keyboard, phone app and web view in use, and Device
-Watch itself) cannot be removed from here at all. The list of those is a fixed table plus what
+without (Android's core, the home screen, keyboard, phone app and web view in use, and
+Device-Watch itself) cannot be removed from here at all. The list of those is a fixed table plus what
 the phone says it is using now, not a judgement on every package: an app the page shows as
 plain is still a system app, so remove only the ones you know. Apps a private space or a work
 profile keeps for itself, which this user never had, are left off the removed list.
@@ -289,8 +289,8 @@ reaching full on the charger, or the charger being unplugged. It fills in from t
 
 The floating figure is a small card drawn over whatever app is in front — a game, a video, a
 browser — with one to three figures you choose in Settings. Android lets an app draw over other
-apps only with the *Display over other apps* permission, which you grant on a system page; Device
-Watch asks for it only when you switch the card on, and uses it for nothing but that card. If you
+apps only with the *Display over other apps* permission, which you grant on a system page;
+Device-Watch asks for it only when you switch the card on, and uses it for nothing but that card. If you
 take the permission away while the card is up, the card goes and the switch turns itself off; the
 monitor keeps running.
 
@@ -347,7 +347,7 @@ that is not one of the four.
 Numbers are written with the digits 0 to 9 in every language, so that every figure on a screen looks
 the same whichever part of Android formatted it. If you have chosen a numbering system for your
 language in Android's own settings (*Languages → Regional preferences*, where Android offers it),
-the app uses that one.
+the app leaves that choice alone: the numbers Android formats then follow it.
 
 ## Installation and updates
 

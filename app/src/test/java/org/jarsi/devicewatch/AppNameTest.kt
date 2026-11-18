@@ -38,11 +38,13 @@ class AppNameTest {
             File(repoRoot, "PRIVACY.md"),
         ) + storeTexts
 
+        // Across line ends too: a page joins "…, and Device" and "Watch itself" into the old name.
         for (file in texts) {
-            val lines = file.readLines().withIndex()
-                .filter { OLD_NAME in it.value }
-                .map { "${it.index + 1}: ${it.value.trim().take(80)}" }
-            assertWithMessage("\"$OLD_NAME\" in ${file.name}").that(lines).isEmpty()
+            val found = OLD_NAME_ANYHOW.findAll(file.readText())
+                .map { file.readText().substring(0, it.range.first).count { c -> c == '\n' } + 1 }
+                .map { "line $it" }
+                .toList()
+            assertWithMessage("\"$OLD_NAME\" in ${file.name}").that(found).isEmpty()
         }
     }
 
@@ -51,6 +53,7 @@ class AppNameTest {
 
     private companion object {
         const val OLD_NAME = "Device Watch"
+        val OLD_NAME_ANYHOW = Regex("""Device\s+Watch""")
 
         /** Unit tests run in the module directory under Gradle, in the root under some IDEs. */
         val repoRoot: File = listOf(File(".."), File(".")).first { File(it, "fastlane").isDirectory }
