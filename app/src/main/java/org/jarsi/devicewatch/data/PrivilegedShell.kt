@@ -12,9 +12,19 @@ import kotlin.concurrent.thread
 
 /**
  * Which shell reads what Android denies an ordinary app: none, the ADB shell user
- * through Shizuku, or root. Opt-in, and set only after that route granted access.
+ * through Shizuku, root, or the app's own with the permissions granted over adb.
+ * Opt-in, and set only after that route granted access.
  */
-enum class PrivilegedAccess { OFF, SHIZUKU, ROOT }
+enum class PrivilegedAccess {
+    OFF, SHIZUKU, ROOT, ADB;
+
+    /**
+     * Whether commands run as the ADB shell user or root. On [ADB] they run as the
+     * app itself: the dumps its grants open answer, while the files and services
+     * an app is refused, and everything that changes the phone, stay refused.
+     */
+    val shellUser: Boolean get() = this == SHIZUKU || this == ROOT
+}
 
 /** Commands run above an ordinary app's rights. */
 interface PrivilegedShell {
@@ -59,6 +69,7 @@ class SelectedPrivilegedShell @Inject constructor(
     private val settings: AppSettingsRepository,
     private val root: RootShell,
     private val shizuku: ShizukuShell,
+    private val local: LocalShell,
 ) : PrivilegedShell {
 
     override fun run(command: String, timeoutMillis: Long): String? {
@@ -67,16 +78,31 @@ class SelectedPrivilegedShell @Inject constructor(
         // carries a generation that close has moved past.
         val rootWanted = root.generation
         val shizukuWanted = shizuku.generation
+        val localWanted = local.generation
         return when (settings.privilegedAccess()) {
             PrivilegedAccess.OFF -> null
             PrivilegedAccess.SHIZUKU -> shizuku.run(command, timeoutMillis, shizukuWanted)
             PrivilegedAccess.ROOT -> root.run(command, timeoutMillis, rootWanted).also { giveUpRootIfLost(settings, root) }
+            PrivilegedAccess.ADB -> local.run(command, timeoutMillis, localWanted).also { giveUpAdbIfLost(settings, local) }
         }
     }
 
     override fun close() {
         root.close()
         shizuku.close()
+        local.close()
+    }
+}
+
+/**
+ * The DUMP grant is gone: revoked from a computer, or dropped when the app's
+ * data was cleared. As with root, the setting goes off where a command finds
+ * out, since the monitor runs without a screen; the switch, if one is showing,
+ * follows [LocalShell.lost] and names what is missing.
+ */
+internal fun giveUpAdbIfLost(settings: AppSettingsRepository, local: LocalShell) {
+    if (local.lost.value && settings.privilegedAccess() == PrivilegedAccess.ADB) {
+        settings.setPrivilegedAccess(PrivilegedAccess.OFF)
     }
 }
 

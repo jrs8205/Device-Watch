@@ -53,6 +53,29 @@ class PrivilegedShellTest {
         }
     }
 
+    private class RecordingLocal : LocalShell {
+        val commands = mutableListOf<String>()
+        var closed = 0
+        /** Set to have the next command find the DUMP grant gone. */
+        var loseGrantOnNextCommand = false
+        override var generation = 0
+        override val lost = MutableStateFlow(false)
+        override fun run(command: String, timeoutMillis: Long): String? = run(command, timeoutMillis, generation)
+        override fun run(command: String, timeoutMillis: Long, wanted: Int): String? {
+            if (wanted != generation) return null
+            commands += command
+            if (loseGrantOnNextCommand) {
+                lost.value = true
+                return null
+            }
+            return "local"
+        }
+        override fun close() {
+            closed++
+            generation++
+        }
+    }
+
     /**
      * Settings the user switches off at the very moment the poll reads them: OFF
      * is persisted and the shell closed, as the ViewModel does it, before the
@@ -84,19 +107,22 @@ class PrivilegedShellTest {
     fun `while access is off no backend is ever asked`() {
         val root = RecordingRoot()
         val shizuku = RecordingShizuku()
-        val shell = SelectedPrivilegedShell(FakeAppSettingsRepository(), root, shizuku)
+        val local = RecordingLocal()
+        val shell = SelectedPrivilegedShell(FakeAppSettingsRepository(), root, shizuku, local)
 
         assertThat(shell.run("id")).isNull()
         assertThat(root.commands).isEmpty()
         assertThat(shizuku.commands).isEmpty()
+        assertThat(local.commands).isEmpty()
     }
 
     @Test
     fun `a command goes to the backend the setting names`() {
         val root = RecordingRoot()
         val shizuku = RecordingShizuku()
+        val local = RecordingLocal()
         val settings = FakeAppSettingsRepository()
-        val shell = SelectedPrivilegedShell(settings, root, shizuku)
+        val shell = SelectedPrivilegedShell(settings, root, shizuku, local)
 
         settings.setPrivilegedAccess(PrivilegedAccess.SHIZUKU)
         assertThat(shell.run("id")).isEqualTo("shizuku")
@@ -104,8 +130,41 @@ class PrivilegedShellTest {
         settings.setPrivilegedAccess(PrivilegedAccess.ROOT)
         assertThat(shell.run("id")).isEqualTo("root")
 
+        settings.setPrivilegedAccess(PrivilegedAccess.ADB)
+        assertThat(shell.run("id")).isEqualTo("local")
+
         assertThat(shizuku.commands).containsExactly("id")
         assertThat(root.commands).containsExactly("id")
+        assertThat(local.commands).containsExactly("id")
+    }
+
+    @Test
+    fun `only Shizuku and root run commands as a shell user`() {
+        // The adb route runs them as the app itself: files and services an app
+        // is refused stay refused, whatever was granted.
+        assertThat(PrivilegedAccess.entries.filter { it.shellUser })
+            .containsExactly(PrivilegedAccess.SHIZUKU, PrivilegedAccess.ROOT)
+    }
+
+    @Test
+    fun `the DUMP grant found gone switches the setting off, with no screen there to do it`() {
+        val local = RecordingLocal().apply { loseGrantOnNextCommand = true }
+        val settings = FakeAppSettingsRepository(access = PrivilegedAccess.ADB)
+        val shell = SelectedPrivilegedShell(settings, RecordingRoot(), RecordingShizuku(), local)
+
+        assertThat(shell.run("dumpsys thermalservice")).isNull()
+
+        assertThat(settings.access).isEqualTo(PrivilegedAccess.OFF)
+    }
+
+    @Test
+    fun `a grant lost earlier leaves a setting that has moved on to Shizuku alone`() {
+        val local = RecordingLocal().apply { lost.value = true }
+        val settings = FakeAppSettingsRepository(access = PrivilegedAccess.SHIZUKU)
+
+        assertThat(SelectedPrivilegedShell(settings, RecordingRoot(), RecordingShizuku(), local).run("id")).isEqualTo("shizuku")
+
+        assertThat(settings.access).isEqualTo(PrivilegedAccess.SHIZUKU)
     }
 
     @Test
@@ -113,17 +172,23 @@ class PrivilegedShellTest {
         // The backend's own guard cannot tell: a command that arrives after the
         // close sees the new generation, and would open the shell anew for a
         // setting that is already off.
-        for (access in listOf(PrivilegedAccess.ROOT, PrivilegedAccess.SHIZUKU)) {
+        for (access in listOf(PrivilegedAccess.ROOT, PrivilegedAccess.SHIZUKU, PrivilegedAccess.ADB)) {
             val root = RecordingRoot()
             val shizuku = RecordingShizuku()
+            val local = RecordingLocal()
             val settings = FakeAppSettingsRepository(access = access)
-            val backend: PrivilegedShell = if (access == PrivilegedAccess.ROOT) root else shizuku
-            val shell = SelectedPrivilegedShell(SwitchedOffWhenRead(settings, backend), root, shizuku)
+            val backend: PrivilegedShell = when (access) {
+                PrivilegedAccess.ROOT -> root
+                PrivilegedAccess.SHIZUKU -> shizuku
+                else -> local
+            }
+            val shell = SelectedPrivilegedShell(SwitchedOffWhenRead(settings, backend), root, shizuku, local)
 
             assertThat(shell.run("id")).isNull()
 
             assertThat(root.commands).isEmpty()
             assertThat(shizuku.commands).isEmpty()
+            assertThat(local.commands).isEmpty()
             assertThat(settings.access).isEqualTo(PrivilegedAccess.OFF)
         }
     }
@@ -134,7 +199,7 @@ class PrivilegedShellTest {
         // ROOT for the next process start to begin asking the root manager anew.
         val root = RecordingRoot().apply { loseRootOnNextCommand = true }
         val settings = FakeAppSettingsRepository(access = PrivilegedAccess.ROOT)
-        val shell = SelectedPrivilegedShell(settings, root, RecordingShizuku())
+        val shell = SelectedPrivilegedShell(settings, root, RecordingShizuku(), RecordingLocal())
 
         assertThat(shell.run("id")).isNull()
 
@@ -147,20 +212,22 @@ class PrivilegedShellTest {
         val shizuku = RecordingShizuku()
         val settings = FakeAppSettingsRepository(access = PrivilegedAccess.SHIZUKU)
 
-        assertThat(SelectedPrivilegedShell(settings, root, shizuku).run("id")).isEqualTo("shizuku")
+        assertThat(SelectedPrivilegedShell(settings, root, shizuku, RecordingLocal()).run("id")).isEqualTo("shizuku")
 
         assertThat(settings.access).isEqualTo(PrivilegedAccess.SHIZUKU)
     }
 
     @Test
-    fun `closing ends both backends`() {
+    fun `closing ends every backend`() {
         val root = RecordingRoot()
         val shizuku = RecordingShizuku()
+        val local = RecordingLocal()
 
-        SelectedPrivilegedShell(FakeAppSettingsRepository(), root, shizuku).close()
+        SelectedPrivilegedShell(FakeAppSettingsRepository(), root, shizuku, local).close()
 
         assertThat(root.closed).isEqualTo(1)
         assertThat(shizuku.closed).isEqualTo(1)
+        assertThat(local.closed).isEqualTo(1)
     }
 
     @Test

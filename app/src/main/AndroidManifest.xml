@@ -17,6 +17,16 @@
     <uses-permission
         android:name="android.permission.PACKAGE_USAGE_STATS"
         tools:ignore="ProtectedPermissions" />
+    <!-- Development permissions: no dialog grants them, only `adb shell pm grant` from a
+         computer. Without that they do nothing. Granted, they let the extended access
+         switch "ADB permissions" read Android's own dumps and the battery's health figures
+         as the app itself, without Shizuku or root. -->
+    <uses-permission
+        android:name="android.permission.DUMP"
+        tools:ignore="ProtectedPermissions" />
+    <uses-permission
+        android:name="android.permission.BATTERY_STATS"
+        tools:ignore="ProtectedPermissions" />
     <!-- Needed to resolve names/icons for arbitrary UIDs reported by NetworkStats and to
          list launchable apps. The app is distributed outside Google Play. -->
     <uses-permission

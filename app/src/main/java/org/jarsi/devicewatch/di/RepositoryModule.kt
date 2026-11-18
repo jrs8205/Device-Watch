@@ -16,7 +16,11 @@ import org.jarsi.devicewatch.data.NotificationStats
 import org.jarsi.devicewatch.data.NotificationStatsImpl
 import org.jarsi.devicewatch.data.BatteryUsageSource
 import org.jarsi.devicewatch.data.PrivacyLogSource
+import org.jarsi.devicewatch.data.AdbGrants
+import org.jarsi.devicewatch.data.LocalShell
+import org.jarsi.devicewatch.data.PackageAdbGrants
 import org.jarsi.devicewatch.data.PrivilegedShell
+import org.jarsi.devicewatch.data.ShLocalShell
 import org.jarsi.devicewatch.data.ShellBatteryUsageSource
 import org.jarsi.devicewatch.data.ShellPrivacyLogSource
 import org.jarsi.devicewatch.data.CpuProfileController
@@ -103,6 +107,13 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindShizukuShell(impl: ShizukuUserShell): ShizukuShell
+
+    @Binds
+    abstract fun bindAdbGrants(impl: PackageAdbGrants): AdbGrants
+
+    @Binds
+    @Singleton
+    abstract fun bindLocalShell(impl: ShLocalShell): LocalShell
 
     @Binds
     @Singleton
