@@ -31,6 +31,11 @@ class BidiTest {
 
     private fun isolated(text: String): String = Char(0x2066) + text + Char(0x2069)
 
+    /** The text without the marks: what the eye sees. */
+    private fun visible(text: String): String = text.filterNot { it.code in 0x2066..0x2069 }
+
+    private fun isOnePiece(text: String): Boolean = text.first().code == 0x2066 && text.last().code == 0x2069
+
     @Test
     fun `the languages written from the right are told from the others`() {
         for (tag in listOf("ar", "ar-EG", "ar-EG-u-nu-latn", "he", "fa-IR", "ur")) {
@@ -67,6 +72,18 @@ class BidiTest {
     }
 
     @Test
+    fun `a value put into a left-to-right figure keeps its own direction`() {
+        val minutes = "55 " + Char(0x062F)
+
+        val kept = Bidi.isolate(minutes, arabic)
+
+        assertThat(kept.first().code).isEqualTo(0x2068)
+        assertThat(kept.last().code).isEqualTo(0x2069)
+        assertThat(kept.substring(1, kept.length - 1)).isEqualTo(minutes)
+        assertThat(Bidi.isolate(minutes, Locale.US)).isEqualTo(minutes)
+    }
+
+    @Test
     fun `memory and storage on a tile stay left to right in Arabic`() {
         Locale.setDefault(arabic)
         val stats = quickStats(usedRamGb = 5.1, totalRamGb = 7.6, usedStorageGb = 84.2, totalStorageGb = 128.0)
@@ -81,13 +98,18 @@ class BidiTest {
     fun `mobile data used of the plan stays left to right in Arabic`() {
         Locale.setDefault(arabic)
 
-        assertThat(mobileDataText(1.5, 10.0)).isEqualTo(isolated("1.50 GB / 10 GB"))
+        val text = mobileDataText(1.5, 10.0)
+
+        assertThat(isOnePiece(text)).isTrue()
+        assertThat(visible(text)).isEqualTo("1.50 GB / 10 GB")
     }
 
     @Test
     fun `a limit over the maximum stays left to right in Arabic`() {
         assertThat(capOverMaxText(2_294_000L, 2_914_000L, arabic)).isEqualTo(isolated("2.29 / 2.91 GHz"))
-        assertThat(capOverMaxText(820_000L, 2_914_000L, arabic)).isEqualTo(isolated("820 MHz / 2.91 GHz"))
+        val mixed = capOverMaxText(820_000L, 2_914_000L, arabic)
+        assertThat(isOnePiece(mixed)).isTrue()
+        assertThat(visible(mixed)).isEqualTo("820 MHz / 2.91 GHz")
     }
 
     private val labels = QuickMetricLabels(

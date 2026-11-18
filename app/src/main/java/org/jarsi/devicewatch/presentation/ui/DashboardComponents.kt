@@ -53,6 +53,7 @@ import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.core.graphics.drawable.toBitmap
+import org.jarsi.devicewatch.Bidi
 import org.jarsi.devicewatch.R
 import org.jarsi.devicewatch.data.DataCounterMode
 import org.jarsi.devicewatch.data.LastUsedTier
@@ -381,10 +382,10 @@ internal fun simDataLabelRes(mode: DataCounterMode): Int =
     if (mode == DataCounterMode.DAY) R.string.sim_data else R.string.sim_data_period
 
 internal fun dbmText(value: Int): String =
-    if (value == UNAVAILABLE_INT) UNAVAILABLE_TEXT else "$value dBm"
+    if (value == UNAVAILABLE_INT) UNAVAILABLE_TEXT else Bidi.ltr("$value dBm")
 
 internal fun mbpsText(value: Int): String =
-    if (value == UNAVAILABLE_INT) UNAVAILABLE_TEXT else "$value Mbps"
+    if (value == UNAVAILABLE_INT) UNAVAILABLE_TEXT else Bidi.ltr("$value Mbps")
 
 internal fun countText(value: Int): String =
     if (value <= 0) UNAVAILABLE_TEXT else value.toString()

@@ -45,6 +45,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import org.jarsi.devicewatch.Bidi
 import org.jarsi.devicewatch.MainActivity
 import org.jarsi.devicewatch.R
 import org.jarsi.devicewatch.data.DataSpan
@@ -305,8 +306,8 @@ fun compactDataAmountText(gbValue: Double): String {
     if (gbValue < 0.0) return UNAVAILABLE_TEXT
     return when {
         gbValue * 1024.0 < 999.5 -> dataAmountText(gbValue)
-        gbValue < 9.95 -> String.format(Locale.getDefault(), "%.1f GB", gbValue)
-        else -> String.format(Locale.getDefault(), "%.0f GB", gbValue)
+        gbValue < 9.95 -> Bidi.ltr(String.format(Locale.getDefault(), "%.1f GB", gbValue))
+        else -> Bidi.ltr(String.format(Locale.getDefault(), "%.0f GB", gbValue))
     }
 }
 

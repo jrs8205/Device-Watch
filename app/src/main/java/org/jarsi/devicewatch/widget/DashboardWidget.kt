@@ -827,19 +827,21 @@ fun percentText(value: Int): String {
 
 fun formatDouble(value: Double, decimals: Int, suffix: String = ""): String {
     if (value < 0.0) return UNAVAILABLE_TEXT
-    return String.format(Locale.getDefault(), "%.${decimals}f%s", value, suffix)
+    val text = String.format(Locale.getDefault(), "%.${decimals}f%s", value, suffix)
+    // With a unit after it the value is one left-to-right piece (see [Bidi]).
+    return if (suffix.isEmpty()) text else Bidi.ltr(text)
 }
 
 fun gbText(value: Double, decimals: Int = 1): String {
     return if (value >= 0.0) {
-        String.format(Locale.getDefault(), "%.${decimals}f GB", value)
+        Bidi.ltr(String.format(Locale.getDefault(), "%.${decimals}f GB", value))
     } else {
         UNAVAILABLE_TEXT
     }
 }
 
 fun speedText(value: Int): String {
-    return if (value >= 0) "$value Mb/s" else UNAVAILABLE_TEXT
+    return if (value >= 0) Bidi.ltr("$value Mb/s") else UNAVAILABLE_TEXT
 }
 
 fun coreText(context: Context, value: Int): String {
@@ -906,8 +908,8 @@ fun dataAmountText(gbValue: Double): String {
     if (gbValue >= 1.0) return gbText(gbValue, decimals = 2)
     val mb = gbValue * 1024.0
     return when {
-        mb >= 10.0 -> String.format(Locale.getDefault(), "%.0f MB", mb)
-        mb >= 0.05 -> String.format(Locale.getDefault(), "%.1f MB", mb)
-        else -> "0 MB"
+        mb >= 10.0 -> Bidi.ltr(String.format(Locale.getDefault(), "%.0f MB", mb))
+        mb >= 0.05 -> Bidi.ltr(String.format(Locale.getDefault(), "%.1f MB", mb))
+        else -> Bidi.ltr("0 MB")
     }
 }

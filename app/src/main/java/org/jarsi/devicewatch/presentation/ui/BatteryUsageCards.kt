@@ -22,6 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import org.jarsi.devicewatch.Bidi
 import org.jarsi.devicewatch.R
 import org.jarsi.devicewatch.data.AppWork
 import org.jarsi.devicewatch.data.BatteryUsage
@@ -315,21 +316,26 @@ private fun DetailText(text: String, color: androidx.compose.ui.graphics.Color =
 private const val TECHNICAL_NAMES_SHOWN = 2
 
 /** Whole mAh from a hundred up, a decimal below, two below one. */
-internal fun mahText(mah: Double, locale: Locale): String = when {
-    mah >= 100.0 -> String.format(locale, "%.0f mAh", mah)
-    mah >= 1.0 -> String.format(locale, "%.1f mAh", mah)
-    else -> String.format(locale, "%.2f mAh", mah)
-}
+internal fun mahText(mah: Double, locale: Locale): String = Bidi.ltr(
+    when {
+        mah >= 100.0 -> String.format(locale, "%.0f mAh", mah)
+        mah >= 1.0 -> String.format(locale, "%.1f mAh", mah)
+        else -> String.format(locale, "%.2f mAh", mah)
+    },
+    locale,
+)
 
 internal fun percentText(percent: Double, locale: Locale, decimals: Int = 1): String =
-    String.format(locale, "%.${decimals}f %%", percent)
+    Bidi.ltr(String.format(locale, "%.${decimals}f %%", percent), locale)
 
 /** Whole degrees: a part's temperature moves faster than a decimal can be read. */
-internal fun celsiusText(celsius: Double): String = "${Math.round(celsius)} °C"
+internal fun celsiusText(celsius: Double): String = Bidi.ltr("${Math.round(celsius)} °C")
 
 /** "13 h" from ten hours up, "7.5 h" below. */
-internal fun hoursText(hours: Double, locale: Locale): String =
-    if (hours >= 10.0) String.format(locale, "%.0f h", hours) else String.format(locale, "%.1f h", hours)
+internal fun hoursText(hours: Double, locale: Locale): String = Bidi.ltr(
+    if (hours >= 10.0) String.format(locale, "%.0f h", hours) else String.format(locale, "%.1f h", hours),
+    locale,
+)
 
 /** "1h 2m", "1 min 27 s" or "6 s". */
 internal fun holdDurationText(context: Context, millis: Long): String {

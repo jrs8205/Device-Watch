@@ -5,6 +5,7 @@ import android.os.SystemClock
 import java.util.Locale
 import javax.inject.Inject
 import kotlin.math.roundToLong
+import org.jarsi.devicewatch.Bidi
 
 /** Device-wide byte counters since boot, read at [elapsedMillis]. */
 data class TrafficCounters(val elapsedMillis: Long, val rxBytes: Long, val txBytes: Long)
@@ -40,13 +41,16 @@ object TrafficMeter {
     /** "85 kb/s" or "1,2 Mb/s", in bits like a connection's advertised speed. */
     fun rateText(bytesPerSecond: Long, locale: Locale = Locale.getDefault()): String {
         val bits = bytesPerSecond.coerceAtLeast(0L) * 8
-        if (bits < 1_000_000L) return "${(bits / 1000.0).roundToLong()} kb/s"
+        if (bits < 1_000_000L) return Bidi.ltr("${(bits / 1000.0).roundToLong()} kb/s", locale)
         val megabits = bits / 1_000_000.0
-        return if (megabits < 10.0) {
-            String.format(locale, "%.1f Mb/s", megabits)
-        } else {
-            String.format(locale, "%.0f Mb/s", megabits)
-        }
+        return Bidi.ltr(
+            if (megabits < 10.0) {
+                String.format(locale, "%.1f Mb/s", megabits)
+            } else {
+                String.format(locale, "%.0f Mb/s", megabits)
+            },
+            locale,
+        )
     }
 }
 

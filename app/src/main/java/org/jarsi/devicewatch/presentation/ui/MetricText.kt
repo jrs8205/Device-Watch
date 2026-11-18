@@ -2,13 +2,18 @@ package org.jarsi.devicewatch.presentation.ui
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDirection
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -58,6 +63,12 @@ internal fun MetricValue(
         fontSize = fontSize,
         fontWeight = fontWeight,
         color = color,
+        // A value reads in the direction of its own first letter: "25.0 °C" from the left
+        // in every language, a value with an Arabic unit from the right. Laid out from the
+        // right like the texts around it, a Latin unit would land before its number. Either
+        // way the value sits at the side where reading starts.
+        textAlign = if (LocalLayoutDirection.current == LayoutDirection.Rtl) TextAlign.Right else TextAlign.Left,
+        style = LocalTextStyle.current.copy(textDirection = TextDirection.Content),
     )
 }
 

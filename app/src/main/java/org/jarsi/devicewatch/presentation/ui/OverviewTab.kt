@@ -803,7 +803,9 @@ private fun ComparisonRow(
                 Text(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    text = Bidi.ltr(stringResource(R.string.comparison_values, previousText, nowText)),
+                    text = Bidi.ltr(
+                        stringResource(R.string.comparison_values, Bidi.isolate(previousText), Bidi.isolate(nowText))
+                    ),
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Medium
                 )

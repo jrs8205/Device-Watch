@@ -12,12 +12,14 @@ import org.jarsi.devicewatch.data.KernelSnapshot.Companion.isCpuCooling
 import java.util.Locale
 
 /** A speed in kHz as people read it: gigahertz from one up, megahertz below. */
-fun freqText(kHz: Long, locale: Locale): String =
+fun freqText(kHz: Long, locale: Locale): String = Bidi.ltr(
     if (kHz >= KHZ_PER_GHZ) {
         String.format(locale, "%.2f GHz", kHz.toDouble() / KHZ_PER_GHZ)
     } else {
         String.format(locale, "%d MHz", kHz / KHZ_PER_MHZ)
-    }
+    },
+    locale,
+)
 
 /** "2,29 / 2,91 GHz": a limit over the maximum, the unit said once when both share it. */
 fun capOverMaxText(capKHz: Long, maxKHz: Long, locale: Locale): String = Bidi.ltr(

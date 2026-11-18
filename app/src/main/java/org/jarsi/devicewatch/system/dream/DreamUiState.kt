@@ -2,6 +2,7 @@ package org.jarsi.devicewatch.system.dream
 
 import android.content.Context
 import android.graphics.drawable.Icon
+import org.jarsi.devicewatch.Bidi
 import org.jarsi.devicewatch.R
 import org.jarsi.devicewatch.system.NotificationIconGroup
 import org.jarsi.devicewatch.system.chargeCompletionText
@@ -122,14 +123,18 @@ internal fun twelveHourAlarmPattern(locale: Locale): String =
     android.text.format.DateFormat.getBestDateTimePattern(locale, "EEEhmma")
 
 internal fun batteryVoltsText(volts: Double, locale: Locale): String =
-    String.format(locale, "%.2f V", volts)
+    Bidi.ltr(String.format(locale, "%.2f V", volts), locale)
 
 internal fun batteryTempText(celsius: Double, locale: Locale): String =
-    String.format(locale, "%.1f °C", celsius)
+    Bidi.ltr(String.format(locale, "%.1f °C", celsius), locale)
 
 /** Charging power; shown only while the battery is filling and the reading is plausible. */
 internal fun batteryWattsText(watts: Double?, state: DreamChargeState, locale: Locale): String? =
-    if (state == DreamChargeState.CHARGING && watts != null) String.format(locale, "%.1f W", watts) else null
+    if (state == DreamChargeState.CHARGING && watts != null) {
+        Bidi.ltr(String.format(locale, "%.1f W", watts), locale)
+    } else {
+        null
+    }
 
 /** The Glow style's battery details line: volts and temperature, plus watts while charging. */
 internal fun glowDetailsText(state: DreamUiState): String =

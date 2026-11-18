@@ -28,7 +28,16 @@ object Bidi {
     fun ltr(text: String, locale: Locale = Locale.getDefault()): String =
         if (isRtl(locale)) "$LEFT_TO_RIGHT_ISOLATE$text$POP_ISOLATE" else text
 
+    /**
+     * [text] kept in its own direction, whatever stands beside it, when [locale] is written
+     * from the right. For a value put into a left-to-right figure: an Arabic unit inside
+     * "55 min → 60 min" would otherwise pull the arrow and the next number to its side.
+     */
+    fun isolate(text: String, locale: Locale = Locale.getDefault()): String =
+        if (isRtl(locale)) "$FIRST_STRONG_ISOLATE$text$POP_ISOLATE" else text
+
     // Written as numbers: the marks themselves cannot be seen in the source.
     private val LEFT_TO_RIGHT_ISOLATE = Char(0x2066)
+    private val FIRST_STRONG_ISOLATE = Char(0x2068)
     private val POP_ISOLATE = Char(0x2069)
 }
