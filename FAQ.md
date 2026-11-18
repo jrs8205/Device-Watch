@@ -333,6 +333,22 @@ differs per metric, and the History page states "collected since" for each one:
 - Screen time and unlocks are backfilled from the roughly 7 days Android remembers.
 - Notification and charging tallies accumulate from installation onward.
 
+## Language
+
+### How do I change the app's language?
+
+Device-Watch is written in English, Finnish, Simplified Chinese and Arabic, and follows the phone's
+language. From Android 13 it can have a language of its own: *Settings → System → Languages → App
+languages → Device-Watch*. On older Android the app is in the phone's language, or in English when
+that is not one of the four.
+
+### Why are the numbers written 0–9 in Arabic?
+
+Numbers are written with the digits 0 to 9 in every language, so that every figure on a screen looks
+the same whichever part of Android formatted it. If you have chosen a numbering system for your
+language in Android's own settings (*Languages → Regional preferences*, where Android offers it),
+the app uses that one.
+
 ## Installation and updates
 
 ### F-Droid, Aptoide or the GitHub APK?

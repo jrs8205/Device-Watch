@@ -9,7 +9,7 @@
 
 Device-Watch is an Android device monitoring app with Jetpack Glance home screen widgets, per-app usage insights (screen time, data, notifications and more), and an interactive screensaver for charging or docked use.
 
-The default app language is English. Finnish users get a localized app name and UI through Android's `values-fi` resources.
+The app is written in English, Finnish, Simplified Chinese and Arabic. English is the default; in Finnish the app is called Laitevahti. The Simplified Chinese translation is by WOchovy233 (pull request #8).
 
 ## Screenshots
 
@@ -31,7 +31,7 @@ The default app language is English. Finnish users get a localized app name and 
 - Home screen widget for battery, memory, CPU, storage, Wi-Fi, mobile network, data usage, uptime, today's screen time, and last update time
 - Compact 2×2 widget for battery, uptime and mobile/Wi-Fi data, with the counting period shown above each data amount
 - Single figure 1×1 widget: one figure of your choice (battery, battery or processor temperature, data today, uptime, processor load, memory, storage or battery power), picked when the widget is added and changed with a long press
-- Quick Settings tiles, one per figure, added from the panel's edit mode: a wide tile shows the figure's name and value like Android's own tiles, and a small tile, which shows only its icon, draws the figure in its place (switchable in Settings). Android lets no app put widgets in the panel, only tiles
+- Quick Settings tiles, one per figure, added from the panel's edit mode: a wide tile shows the figure's name and value like Android's own tiles, and a small tile, which shows only its icon, draws the figure in its place (switchable in Settings). The tiles show figures and are not switches, so they are drawn in the grey of a tile that is off; a second switch gives a tile that has a reading the colour of a switched-on tile. Android lets no app put widgets in the panel, only tiles
 - Floating figure, off by default: a small dark card with one to three figures of your choice over other apps, including full-screen games and video, where the tiles, widgets and notification are out of sight. Brought up and taken down with the Floating figure tile in Quick Settings; dragged anywhere, its place remembered for portrait and landscape; a tap shows a hide and an open button, a long press hides it. It needs the *Display over other apps* permission, asked for only when you switch it on
 - Battery power as a ninth figure on the tiles, the single-figure widget, the notification and the floating card: the rate the battery charges or runs down at, in watts, with the direction from the battery's status
 - Live figures in the monitor's notification, off by default: the figures chosen in Settings on two lines among the other notifications, all of them when expanded; a swipe hides it until the screen next comes on, and with none chosen it stays silent at the bottom as before
@@ -88,7 +88,7 @@ The default app language is English. Finnish users get a localized app name and 
 - *Own brightness* in Settings: a slider sets the screensaver's brightness for every style instead of following the phone's, and the settings page shows the level while the slider moves; it is not in force while the screensaver is dimmed
 - *Flip upside down* in Settings for a stand that holds the phone upside down; the choice is remembered, and Glow's gradient and Edge's line turn with it
 - Battery full notification while the screensaver is active
-- English default resources with Finnish localization
+- English default resources with Finnish, Simplified Chinese and Arabic translations. Numbers are written with the digits 0–9 in every language, and in Arabic the app is laid out from the right, with charts, the screensaver's clock and figures such as `5.1 / 7.6 GB` kept left to right
 - Runtime permission handling for location, phone state, nearby Wi-Fi devices, and notifications
 - Usage Access shortcut for network and app-usage statistics
 - Release build configured with R8 minification and resource shrinking
@@ -186,9 +186,11 @@ di/             Hilt modules and entry points
 
 Android selects the UI language from resource qualifiers:
 
-- English and every non-Finnish device language use `app/src/main/res/values/strings.xml`
-- Finnish devices use `app/src/main/res/values-fi/strings.xml`
-- From Android 13 the app is on Android's own per-app language page (*Settings → System → Languages → App languages*), where it can be set to English or Finnish whatever the device language; the languages offered are listed in `app/src/main/res/xml/locales_config.xml`
+- English and every device language without a translation use `app/src/main/res/values/strings.xml`
+- Finnish devices use `values-fi`, Simplified Chinese ones `values-zh-rCN` and Arabic ones `values-ar`
+- From Android 13 the app is on Android's own per-app language page (*Settings → System → Languages → App languages*), where it can be set to any of its four languages whatever the device language; the languages offered are listed in `app/src/main/res/xml/locales_config.xml`
+- Numbers are written with the digits 0–9 whatever the language (`LatinDigits.kt`), unless a numbering system has been chosen for the language in Android's own settings. A phone set to Arabic (Egypt) or Persian would otherwise print some figures with its own digits and others with 0–9 on the same screen
+- A translation must have the shape of the English texts: the same keys, the same format arguments, and the plural forms its language needs (six in Arabic). `TranslationsTest` checks every `values-*` folder
 
 ## Permissions
 
@@ -233,7 +235,7 @@ Release builds are minified with R8 and resource shrinking. The release APK is u
 
 ## Testing
 
-1444 JVM unit tests (JUnit 4 + Truth; Robolectric only for the Glance render, notification, backup-rule,
+1521 JVM unit tests (JUnit 4 + Truth; Robolectric only for the Glance render, notification, backup-rule,
 settings-store, floating-card window and screensaver screen, settings, calendar and settings-link tests) cover the logic
 behind every screen, service and widget:
 
@@ -303,6 +305,13 @@ behind every screen, service and widget:
   go once the user scrolls), `WidgetSettingsLinkActivityTest`, `DashboardWidgetReceiverTest` (the
   broadcasts that start the monitor) and `AppLanguagesTest` (the language list against the resource
   folders)
+- **Languages** — `TranslationsTest` (every translation against the English texts: keys, format
+  arguments, plural forms, no Arabic-Indic digits), `AppNameTest` (the name's spelling in the texts,
+  the documents and the store listing), `LatinDigitsTest` (the digits 0–9 from the application, the
+  two screens, every service that shows text and the screensaver after a rotation), `BidiTest` and
+  `ValueDirectionTest` (figures and values kept whole in a language written from the right),
+  `LabelValueRowRtlTest`, `MirroredIconsTest`, `DurationTextTest`, `WidgetClockTextTest`,
+  `DreamClockPatternsTest` (12-hour times as the language writes them) and `GlowStyleTest`
 
 ## Build Outputs
 
@@ -317,6 +326,8 @@ APK and signing files are intentionally ignored by Git.
 
 ```text
 app/src/main/java/org/jarsi/devicewatch/
+  Bidi.kt       (figures kept left to right in a language written from the right)
+  LatinDigits.kt (the digits 0–9 in every language)
   MainActivity.kt
   MonitorApp.kt
   data/
