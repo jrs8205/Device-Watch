@@ -625,9 +625,10 @@ private fun ChargeSessionRow(charge: ChargeSession) {
 private const val CHARGES_SHOWN_FIRST = 5
 
 /** "+1,20 GB", "−350 MB" or "±0" beside a day's used storage. */
-private fun storageChangeText(changeBytes: Long): String = when {
-    changeBytes > 0L -> "+" + bytesText(changeBytes)
-    changeBytes < 0L -> "\u2212" + bytesText(-changeBytes)
+internal fun storageChangeText(changeBytes: Long): String = when {
+    // The sign belongs to the amount: one left-to-right piece with it (see [Bidi]).
+    changeBytes > 0L -> Bidi.ltr("+" + bytesText(changeBytes))
+    changeBytes < 0L -> Bidi.ltr("\u2212" + bytesText(-changeBytes))
     else -> "\u00b10"
 }
 

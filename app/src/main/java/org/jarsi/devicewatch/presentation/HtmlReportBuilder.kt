@@ -597,8 +597,9 @@ object HtmlReportBuilder {
     private fun gbOrDash(value: Double, locale: Locale): String =
         if (value < 0.0) DASH else gbText(value, locale)
 
+    // One left-to-right piece: on a page laid out from the right the unit would lead.
     private fun gbText(value: Double, locale: Locale): String =
-        String.format(locale, "%.2f GB", value)
+        Bidi.ltr(String.format(locale, "%.2f GB", value), locale)
 
     /** Two decimals keep the SVG readable; more only inflates the file. */
     private fun coord(value: Double): String = String.format(Locale.US, "%.2f", value)

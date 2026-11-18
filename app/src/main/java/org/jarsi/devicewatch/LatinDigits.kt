@@ -76,6 +76,13 @@ object LatinDigits {
 }
 
 /**
+ * The language to show as the device's own. Android's own resources are never given the
+ * numbering system the app adds to the process default, so the tag is the one the user
+ * knows ("ar-EG"), not "ar-EG-u-nu-latn".
+ */
+fun deviceLanguageTag(): String = Resources.getSystem().configuration.locales[0].toLanguageTag()
+
+/**
  * The phone's own language, which is not the app's when the user has chosen another for the
  * app on Android's per-app language page (Android 13 and later). The system draws the
  * app's tiles and notifications in the direction of this one (see [Bidi.forHost]).
@@ -99,19 +106,28 @@ fun phoneLocale(context: Context): Locale {
  */
 class LatinDigitResources(private val base: () -> Context?) {
 
-    private var builtFor: LocaleList? = null
-    private var built: Resources? = null
+    private class Built(val locales: LocaleList, val resources: Resources)
 
-    /** Null before Android has attached a context. */
-    @Synchronized
+    @Volatile
+    private var built: Built? = null
+
+    /**
+     * Null before Android has attached a context.
+     *
+     * No lock is held here. When the language changes, Android asks the application for its
+     * resources while holding its own resources lock, the one making resources needs on
+     * Android 8 to 11: a lock of ours around the call into Android could leave the main
+     * thread and a background reader waiting for each other. Two readers that both find
+     * the language changed each make the resources, and either result will do.
+     */
     fun get(): Resources? {
         val context = base() ?: return null
         val plain = context.resources
         val locales = plain.configuration.locales
-        if (locales != builtFor) {
-            built = LatinDigits.overrideFor(locales)?.let { context.createConfigurationContext(it).resources } ?: plain
-            builtFor = locales
-        }
-        return built
+        built?.let { if (it.locales == locales) return it.resources }
+        val resources =
+            LatinDigits.overrideFor(locales)?.let { context.createConfigurationContext(it).resources } ?: plain
+        built = Built(locales, resources)
+        return resources
     }
 }

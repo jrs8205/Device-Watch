@@ -98,6 +98,22 @@ class ValueDirectionTest {
         }
     }
 
+    // "−350 MB" with its sign outside the piece came out as "350 MB−".
+    @Test
+    fun `a change in used storage keeps its sign in front in Arabic`() {
+        Locale.setDefault(arabic)
+        val megabytes = 350L * 1024 * 1024
+
+        for ((text, plain) in mapOf(
+            storageChangeText(-megabytes) to Char(0x2212) + "350 MB",
+            storageChangeText(megabytes) to "+350 MB",
+        )) {
+            assertThat(text.first().code).isEqualTo(0x2066)
+            assertThat(text.last().code).isEqualTo(0x2069)
+            assertThat(text.filterNot { it.code in 0x2066..0x2069 }).isEqualTo(plain)
+        }
+    }
+
     @Test
     fun `a bare number, a per cent without a space and a dash need no wrapping`() {
         Locale.setDefault(arabic)

@@ -7,6 +7,9 @@ import android.content.res.Configuration
 import androidx.test.core.app.ApplicationProvider
 import com.google.common.truth.Truth.assertThat
 import com.google.common.truth.Truth.assertWithMessage
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import kotlin.concurrent.thread
 import org.jarsi.devicewatch.overlay.FloatingFigureTileService
 import org.jarsi.devicewatch.quick.BatteryTileService
 import org.jarsi.devicewatch.system.MonitorDreamService
@@ -174,6 +177,42 @@ class LatinDigitsTest {
         assertThat(locale.language).isEqualTo("ar")
         assertThat(SimpleDateFormat("HH:mm", locale).format(Date(0)).hasOtherDigits()).isFalse()
         assertThat(String.format(locale, "%.1f", 4.5).hasOtherDigits()).isFalse()
+    }
+
+    // When the language changes, Android asks the application for its resources while it
+    // holds its own resources lock (on Android 8 to 11 the very lock that making resources
+    // needs). A lock of ours held across the call into Android could then never be given
+    // back: a thread waiting inside for Android's lock, the main thread waiting for ours.
+    @Test
+    fun `making the resources holds no lock of its own`() {
+        val inside = CountDownLatch(2)
+        val goOn = CountDownLatch(1)
+        val slow = object : ContextWrapper(contextIn(egypt)) {
+            override fun createConfigurationContext(overrideConfiguration: Configuration): Context {
+                inside.countDown()
+                goOn.await(10, TimeUnit.SECONDS)
+                return super.createConfigurationContext(overrideConfiguration)
+            }
+        }
+        val resources = LatinDigitResources { slow }
+
+        val callers = List(2) { thread { resources.get() } }
+        val bothGotIn = inside.await(3, TimeUnit.SECONDS)
+        goOn.countDown()
+        callers.forEach { it.join(10_000) }
+
+        assertThat(bothGotIn).isTrue()
+        assertThat(resources.get()!!.getString(R.string.dream_percent_spaced, 45)).isEqualTo("45%")
+    }
+
+    // The Device tab names the phone's language. It read the process default, which now
+    // carries the numbering system the app adds: "ar-EG-u-nu-latn", a setting nobody chose.
+    @Test
+    @Config(qualifiers = "ar-rEG")
+    fun `the language shown for the device is the one Android gave, without the app's addition`() {
+        assertThat(Locale.getDefault().toLanguageTag()).isEqualTo("ar-EG-u-nu-latn")
+
+        assertThat(deviceLanguageTag()).isEqualTo("ar-EG")
     }
 
     @Test

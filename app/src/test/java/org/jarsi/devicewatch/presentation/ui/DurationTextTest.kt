@@ -40,7 +40,7 @@ class DurationTextTest {
     @Test
     fun `a hold of minutes and seconds is the language's text`() {
         assertThat(holdDurationText(arabic, 87_000L))
-            .isEqualTo(arabic.getString(R.string.privacy_duration_minutes, 1, 27))
+            .isEqualTo(arabic.getString(R.string.duration_minutes_seconds, 1, 27))
         assertThat(holdDurationText(app, 87_000L)).isEqualTo("1 min 27 s")
     }
 

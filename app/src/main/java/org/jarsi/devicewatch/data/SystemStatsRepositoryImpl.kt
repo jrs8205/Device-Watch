@@ -64,6 +64,7 @@ import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
 import org.jarsi.devicewatch.Bidi
 import org.jarsi.devicewatch.R
+import org.jarsi.devicewatch.deviceLanguageTag
 import org.jarsi.devicewatch.di.DefaultDispatcher
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineDispatcher
@@ -965,7 +966,7 @@ class SystemStatsRepositoryImpl @Inject constructor(
         val camera = readCameraSummary()
         val (sensorCount, sensors) = readSensorSummary()
 
-        val locale = Locale.getDefault().toLanguageTag()
+        val locale = deviceLanguageTag()
         val timezone = TimeZone.getDefault().id
         val webViewVersion = readWebViewVersion()
         val playServicesVersion = readPackageVersion("com.google.android.gms")

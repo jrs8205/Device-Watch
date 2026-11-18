@@ -503,6 +503,21 @@ class HtmlReportBuilderTest {
         assertThat(html).contains("<div class=\"range\" dir=\"ltr\">")
     }
 
+    // On a page laid out from the right "1.25 GB" in a cell comes out as "GB 1.25".
+    @Test
+    fun `in an Arabic report an amount stays one left-to-right piece with its unit`() {
+        val html = HtmlReportBuilder.build(
+            data(
+                monthly = listOf(MonthlyDataUsage(YearMonth.of(2026, 7), mobileGb = 1.25, wifiGb = 0.5)),
+                locale = Locale.forLanguageTag("ar-EG-u-nu-latn"),
+            ),
+            labels,
+        )
+
+        assertThat(html).contains(Char(0x2066) + "1.25 GB" + Char(0x2069))
+        assertThat(html).contains(Char(0x2066) + "0.50 GB" + Char(0x2069))
+    }
+
     @Test
     fun `table columns are aligned by reading direction, not by side`() {
         val html = HtmlReportBuilder.build(data(), labels)

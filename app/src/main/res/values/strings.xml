@@ -563,6 +563,7 @@
     <string name="duration_seconds">%1$d s</string>
     <string name="duration_minutes">%1$d min</string>
     <string name="duration_hours">%1$d h</string>
+    <string name="duration_minutes_seconds">%1$d min %2$d s</string>
     <string name="sim_signal_details">Signal quality</string>
     <string name="wifi_security">Security</string>
     <string name="network_internet">Internet connection</string>
