@@ -61,10 +61,11 @@ The default app language is English. Finnish users get a localized app name and 
 - Optional alerts, all off by default: a hot battery (45 °C), low storage (under 10 % free) and a fast-draining battery (20 % an hour or more); each comes once and again only after things have returned to normal
 - Monthly data usage history on the History page: metered mobile and Wi-Fi totals per calendar month, served straight from Android's own statistics for up to 12 months back (no local storage needed)
 - Since-charge page (opened from the battery card): the period since the battery was last charged full — or since the charger was unplugged, when charging stopped short of full — with elapsed time, battery drop and average drain, unlocks, notifications, Wi-Fi/mobile data, and a per-app screen-time donut over that window (Android does not expose real per-app battery percentages to third-party apps, so without extended access the page shows honest usage numbers instead)
-- Optional extended access through [Shizuku](https://shizuku.rikka.app/) (no root needed) or root, both off by default, for what Android hides from ordinary apps: Android's own battery statistics on the since-charge page (drain per hour with the screen on and off and how long a full battery would last at that pace, each app's share, and what kept the phone awake, explained in plain words), the real processor load, graphics load, processor/graphics/surface temperatures, and the battery's wear, charge cycles and dates where the phone keeps them
+- Optional extended access through [Shizuku](https://shizuku.rikka.app/) (no root needed) or root, off by default, for what Android hides from ordinary apps: Android's own battery statistics on the since-charge page (drain per hour with the screen on and off and how long a full battery would last at that pace, each app's share, and what kept the phone awake, explained in plain words), the real processor load, graphics load, processor/graphics/surface temperatures, and the battery's wear, charge cycles and dates where the phone keeps them
+- *ADB permissions*, a third extended access switch for a phone with neither Shizuku nor root, off by default: with three permissions granted once from a computer (`adb shell pm grant`; the switch shows the commands and names any still missing) the app itself reads Android's battery statistics, the privacy log, the processor/graphics/surface temperatures and, from Android 14, the battery's health and its manufacture and first-use dates. The grants last over restarts and updates and nothing runs beside the app. Android gives an app's own user neither the real processor load nor the graphics load whatever it is granted, so those stay with Shizuku and root
 - Kernel page on rooted phones, opened from the Device tab's KERNEL band: each group of processor cores with its speed now, its limit and range, heat throttling in plain words, the graphics processor's speeds, compressed memory (zRAM), the kernel version, SELinux and the storage queue, and every named temperature sensor, all from what this phone's kernel reports, with no phone model assumed
 - Processor profiles on rooted phones: *Power saving* (the faster cores at most about 60 % of their top speed), *Balanced* (about 80 %), *Stock*, or *Custom* per group of cores. Only speeds the kernel lists, never above what the phone allows; the phone's own limits are saved first and written back on Stock or when root is switched off (if root no longer answers then, they last until the next restart), and a restart returns them by itself unless *Apply after restart too* is on. When Android's power management raises a limit the monitor sets it again and counts it, and it never lifts a lower limit that heat or Android hold
-- Privacy log with extended access (Shizuku or root), on the Apps tab's PRIVACY band and its page: Android's own record of which apps used the camera, the microphone and the location, when, for how long, from the background or not, and (on Android 17, which keeps them) which were refused, app by app and moment by moment; the same record the system's Privacy dashboard draws on, shown and never stored. Without extended access the band offers Android's own Privacy dashboard instead
+- Privacy log with extended access (Shizuku, root or ADB permissions), on the Apps tab's PRIVACY band and its page: Android's own record of which apps used the camera, the microphone and the location, when, for how long, from the background or not, and (on Android 17, which keeps them) which were refused, app by app and moment by moment; the same record the system's Privacy dashboard draws on, shown and never stored. Without extended access the band offers Android's own Privacy dashboard instead
 - System apps page with extended access (Shizuku or root), opened from the Apps tab's SYSTEM APPS band: every app on the system image, with a search, and *Remove* for the preinstalled ones you do not use. A removal takes the app away from this user only (`pm uninstall --user`), the system image's copy stays, and *Restore* brings it back; every removal is asked about first, the apps the phone depends on say what breaks and want that acknowledged, and the ones it cannot do without (Android's core, the home screen, keyboard, phone app and web view in use, Device Watch itself) cannot be removed from here at all
 - Sleep section on the Kernel page (root): the kernel's own count of sleep attempts and failures with what stopped the last one, the wakeup sources that woke the phone most often, those that held it awake longest, and those holding it right now, in plain words with the kernel's names underneath
 - Today's screen time also appears in the widget footer, refreshed at most once a minute so the 5-second widget loop stays untouched
@@ -82,7 +83,7 @@ The default app language is English. Finnish users get a localized app name and 
 - Optional screensaver dimming: manual, or automatic on a configurable night schedule (default 22:00–07:00)
 - OLED burn-in protection: the screensaver content glides to a new spot within 15 dp once a minute, or, as a setting, only up and down within 20 dp so it stays centred sideways
 - The phone's name (Android's device name, tidied and shortened, e.g. "Pixel 10 Pro") on a small line above the screensaver clock; can be turned off
-- Optional start as soon as charging begins with the screen off, even with Always On Display on: at once through the dream manager with extended access, otherwise by waking the screen so the lock screen times out into the screensaver; nothing happens while the screen is on, and Android's own screensaver choice and "when to start" are respected
+- Optional start as soon as charging begins with the screen off, even with Always On Display on: at once through the dream manager with Shizuku or root, otherwise by waking the screen so the lock screen times out into the screensaver; nothing happens while the screen is on, and Android's own screensaver choice and "when to start" are respected
 - Icons of unread notifications under the screensaver clock (one per app, with a count), pulsing when a new one arrives; needs notification access and can be turned off in Settings
 - *Own brightness* in Settings: a slider sets the screensaver's brightness for every style instead of following the phone's, and the settings page shows the level while the slider moves; it is not in force while the screensaver is dimmed
 - *Flip upside down* in Settings for a stand that holds the phone upside down; the choice is remembered, and Glow's gradient and Edge's line turn with it
@@ -204,6 +205,7 @@ The app requests only permissions that are used by the current feature set:
 - `NEARBY_WIFI_DEVICES`
 - `READ_PHONE_STATE`
 - `PACKAGE_USAGE_STATS`
+- `DUMP` and `BATTERY_STATS` (development permissions: no dialog on the phone grants them, only `adb shell pm grant` from a computer, and without that they do nothing. Granted, along with `PACKAGE_USAGE_STATS` granted the same way, they are what the *ADB permissions* switch reads with)
 - `QUERY_ALL_PACKAGES` (resolve names/icons for the per-app data list; the app is distributed outside Google Play)
 - `REQUEST_DELETE_PACKAGES` (uninstall from the last-opened list via the system dialog)
 - `WAKE_LOCK` (a normal permission, granted on install; WorkManager declares it for its own jobs, and the app's own code uses it only to wake the screen when charging begins, so the screensaver can start, when *Start as soon as charging begins* is switched on)
@@ -231,7 +233,7 @@ Release builds are minified with R8 and resource shrinking. The release APK is u
 
 ## Testing
 
-1390 JVM unit tests (JUnit 4 + Truth; Robolectric only for the Glance render, notification, backup-rule,
+1431 JVM unit tests (JUnit 4 + Truth; Robolectric only for the Glance render, notification, backup-rule,
 settings-store, floating-card window and screensaver screen, settings, calendar and settings-link tests) cover the logic
 behind every screen, service and widget:
 
@@ -243,8 +245,10 @@ behind every screen, service and widget:
   `UsageEventAggregatorTest`, `ExtraStatsLogicTest`, `AppPackageLogicTest`, `CameraLogicTest`,
   `AudioLogicTest`, `TrafficMeterTest`, `DefaultDensityTest` (when Android's default density can
   be trusted)
-- **Extended access (Shizuku and root)** — `ShellSessionTest` (the shell conversation, driven
-  through a real `sh`; on Windows through Git's), `PrivilegedShellTest`,
+- **Extended access (Shizuku, root and ADB permissions)** — `ShellSessionTest` (the shell conversation, driven
+  through a real `sh`; on Windows through Git's), `PrivilegedShellTest`, `LocalShellTest` (the app's own
+  shell on the adb route: nothing started without the grant, a grant found gone), `AdbGrantsTest`,
+  `ExtendedAccessGateTest` (which pages each route opens), `AdbAccessRowTest`,
   `BatteryStatsDumpParserTest`, `PrivilegedDumpParsersTest` (parsers written against dumps from
   real phones), `AppOpsHistoryParserTest` (Android's privacy record in both the table Android 17
   prints and the tree of Android 12–16, against a Pixel 8a and API 34 and 36 emulators),
@@ -316,6 +320,7 @@ app/src/main/java/org/jarsi/devicewatch/
   MainActivity.kt
   MonitorApp.kt
   data/
+    AdbGrants.kt
     AlertLogic.kt
     AppOpsHistory.kt
     AppOpsHistoryParser.kt
@@ -350,6 +355,7 @@ app/src/main/java/org/jarsi/devicewatch/
     KernelSnapshot.kt
     KernelSnapshotSource.kt
     KernelSysfsParser.kt
+    LocalShell.kt
     LocationGatedReads.kt
     NotificationCounting.kt
     NotificationLog.kt

@@ -19,7 +19,7 @@ out by itself**. Two things routinely trip people up:
   the screensaver waits until someone wakes the screen. Switch on *Start as soon as charging
   begins* in the app's Settings: Device Watch then wakes the screen when charging begins with the
   screen off, and the lock screen times out into the screensaver in about 10–15 seconds. With
-  extended access (Shizuku or root) on, it asks Android to start the screensaver at once instead.
+  Shizuku or root on (extended access, below), it asks Android to start the screensaver at once instead.
 
 ### It still doesn't start on my Samsung
 
@@ -86,11 +86,11 @@ Android does not expose per-app battery consumption to third-party apps (it requ
 system permission). Rather than invent percentages, the since-charge page shows real usage over
 the period: per-app screen time, data, unlocks and notifications.
 
-With extended access switched on (Shizuku or root, see below), the same page also shows Android's
+With extended access switched on (Shizuku, root or ADB permissions, see below), the same page also shows Android's
 own battery statistics: each app's share, the drain with the screen on and off, and what kept the
 phone awake.
 
-## Extended access (Shizuku and root)
+## Extended access (Shizuku, root and ADB permissions)
 
 ### What is it, and do I need it?
 
@@ -112,6 +112,32 @@ and allow Device Watch in the dialog Shizuku shows. Shizuku gives the app the sa
 Without root, Shizuku stops whenever the phone restarts and has to be started again from the
 Shizuku app. The switch in Device Watch stays on and says it is waiting; the readings return once
 Shizuku runs. The permission you gave is remembered.
+
+### Can I use it with neither Shizuku nor root?
+
+Partly. Android keeps three permissions for development that no dialog on the phone can grant,
+only a computer. Connect the phone with USB or wireless debugging and run:
+
+```
+adb shell pm grant org.jarsi.devicewatch android.permission.DUMP
+adb shell pm grant org.jarsi.devicewatch android.permission.BATTERY_STATS
+adb shell pm grant org.jarsi.devicewatch android.permission.PACKAGE_USAGE_STATS
+```
+
+Then switch **ADB permissions** on in Device Watch's Settings. The switch shows the same commands
+with a copy button, and while a permission is missing it stays off and names it. The grants last
+over restarts and app updates, and nothing runs beside the app. The third command also gives
+Device Watch usage access, the same thing the switch in Android's own settings gives.
+
+This route gives Android's own battery statistics on the since-charge page, the privacy log, the
+temperatures by part and, from Android 14, the battery's health and its manufacture and first-use
+dates. It does not give the real processor load or the graphics load: Android closes those to an
+app's own user whatever permission it holds, so they stay with Shizuku and root. So do a
+Samsung's own battery figures, the screensaver's immediate start when charging begins, and
+removing preinstalled apps.
+
+To take the permissions back, run the same three lines with `revoke` in place of `grant`. Device
+Watch then switches the route off by itself and names the permission that is missing.
 
 ### What does root mode add?
 
@@ -155,7 +181,7 @@ Without extended access the band offers Android's own Privacy dashboard instead.
 
 ### Can I remove preinstalled apps?
 
-With extended access on, the Apps tab has a **SYSTEM APPS** band; **Open** lists every app on
+With Shizuku or root on, the Apps tab has a **SYSTEM APPS** band; **Open** lists every app on
 the system image, with a search. **Remove** takes an app away from this user only, through
 `pm uninstall --user`: the copy on the system image stays, and **Restore** on the same page
 brings it back (`pm install-existing`), as does a factory reset. Every removal is asked about
