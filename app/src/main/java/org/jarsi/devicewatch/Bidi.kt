@@ -36,8 +36,23 @@ object Bidi {
     fun isolate(text: String, locale: Locale = Locale.getDefault()): String =
         if (isRtl(locale)) "$FIRST_STRONG_ISOLATE$text$POP_ISOLATE" else text
 
+    /**
+     * [text] kept in the direction of the app's language where the system draws it. A tile's
+     * lines and a notification's are laid out in the direction of the phone's language
+     * ([hostLocale]); with the app in Arabic on an English phone, or the other way round, a
+     * line of numbers and units came out with its parts swapped. Unchanged when both
+     * languages read the same way, which is nearly always.
+     */
+    fun forHost(text: String, hostLocale: Locale, locale: Locale = Locale.getDefault()): String {
+        val own = isRtl(locale)
+        if (own == isRtl(hostLocale)) return text
+        val open = if (own) RIGHT_TO_LEFT_ISOLATE else LEFT_TO_RIGHT_ISOLATE
+        return "$open$text$POP_ISOLATE"
+    }
+
     // Written as numbers: the marks themselves cannot be seen in the source.
     private val LEFT_TO_RIGHT_ISOLATE = Char(0x2066)
+    private val RIGHT_TO_LEFT_ISOLATE = Char(0x2067)
     private val FIRST_STRONG_ISOLATE = Char(0x2068)
     private val POP_ISOLATE = Char(0x2069)
 }

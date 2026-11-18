@@ -12,8 +12,10 @@ import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
+import org.jarsi.devicewatch.Bidi
 import org.jarsi.devicewatch.MainActivity
 import org.jarsi.devicewatch.R
+import org.jarsi.devicewatch.phoneLocale
 
 /**
  * The monitor's foreground-service notification in its two forms: silent at the
@@ -83,14 +85,16 @@ class MonitorNotifications(private val context: Context) {
         } else {
             // A title is one line in both views and cuts off a long first line, so the
             // expanded view swaps it for a short heading and wraps every figure under
-            // it, each once.
+            // it, each once. The shade draws the lines in the direction of the phone's language.
+            val phone = phoneLocale(context)
             builder
-                .setContentTitle(text.title)
-                .setContentText(text.text)
+                .setContentTitle(Bidi.forHost(text.title, phone))
+                .setContentText(text.text?.let { Bidi.forHost(it, phone) })
                 .setStyle(
                     NotificationCompat.BigTextStyle()
                         .setBigContentTitle(context.getString(R.string.monitor_live_channel_name))
-                        .bigText(text.content)
+                        // Each line by itself: a mark's reach ends where its line does.
+                        .bigText(text.content.lines().joinToString("\n") { Bidi.forHost(it, phone) })
                 )
         }
         return builder.build()

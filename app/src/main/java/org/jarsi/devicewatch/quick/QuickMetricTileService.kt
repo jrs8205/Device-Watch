@@ -16,11 +16,13 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.jarsi.devicewatch.Bidi
 import org.jarsi.devicewatch.LatinDigitResources
 import org.jarsi.devicewatch.MainActivity
 import org.jarsi.devicewatch.data.PrivilegedAccess
 import org.jarsi.devicewatch.data.QuickMetric
 import org.jarsi.devicewatch.data.UNAVAILABLE_TEXT
+import org.jarsi.devicewatch.phoneLocale
 
 /**
  * A Quick Settings tile showing one figure (GitHub #7: Android lets apps into the
@@ -96,8 +98,12 @@ abstract class QuickMetricTileService : TileService() {
             Triple(QuickMetricReading(metric, UNAVAILABLE_TEXT, null, labels.notAvailable), null, false)
         }
         val look = quickTileAppearance(reading, labels.names.getValue(metric), Build.VERSION.SDK_INT, highlighted)
-        tile.label = look.label
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) tile.subtitle = look.subtitle
+        // The panel draws the two lines in the direction of the phone's language.
+        val phone = phoneLocale(this)
+        tile.label = Bidi.forHost(look.label, phone)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            tile.subtitle = look.subtitle?.let { Bidi.forHost(it, phone) }
+        }
         tile.state = look.state
         tile.icon = iconText?.let(::quickTileValueIcon) ?: Icon.createWithResource(this, quickMetricIconRes(metric))
         tile.contentDescription = listOfNotNull(look.label, look.subtitle).joinToString(", ")

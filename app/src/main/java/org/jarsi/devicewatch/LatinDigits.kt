@@ -1,9 +1,11 @@
 package org.jarsi.devicewatch
 
 import android.annotation.SuppressLint
+import android.app.LocaleManager
 import android.content.Context
 import android.content.res.Configuration
 import android.content.res.Resources
+import android.os.Build
 import android.os.LocaleList
 import java.text.DecimalFormatSymbols
 import java.util.IllformedLocaleException
@@ -71,6 +73,19 @@ object LatinDigits {
 
     private const val NUMBERING_KEY = "nu"
     private const val LATIN = "latn"
+}
+
+/**
+ * The phone's own language, which is not the app's when the user has chosen another for the
+ * app on Android's per-app language page (Android 13 and later). The system draws the
+ * app's tiles and notifications in the direction of this one (see [Bidi.forHost]).
+ */
+fun phoneLocale(context: Context): Locale {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        val system = context.getSystemService(LocaleManager::class.java)?.systemLocales
+        if (system != null && !system.isEmpty) return system[0]
+    }
+    return Locale.getDefault()
 }
 
 /**

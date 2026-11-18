@@ -83,6 +83,29 @@ class BidiTest {
         assertThat(Bidi.isolate(minutes, Locale.US)).isEqualTo(minutes)
     }
 
+    // A tile's lines and a notification's are drawn by the system, in the direction of the
+    // phone's language. With the app in Arabic on an English phone, "1 h 43 min" in Arabic
+    // came out with its two parts swapped.
+    @Test
+    fun `a line the system draws keeps the app's direction on a phone of the other direction`() {
+        val uptime = "1 " + Char(0x0633) + " 43 " + Char(0x062F)
+
+        val onEnglishPhone = Bidi.forHost(uptime, hostLocale = Locale.US, locale = arabic)
+        assertThat(onEnglishPhone.first().code).isEqualTo(0x2067)
+        assertThat(onEnglishPhone.last().code).isEqualTo(0x2069)
+        assertThat(visible(onEnglishPhone)).isEqualTo(uptime)
+
+        val englishOnArabicPhone = Bidi.forHost("1.5 / 2.4 GB", hostLocale = arabic, locale = Locale.US)
+        assertThat(englishOnArabicPhone).isEqualTo(isolated("1.5 / 2.4 GB"))
+    }
+
+    @Test
+    fun `a line the system draws is left alone when the phone reads the same way`() {
+        assertThat(Bidi.forHost("1.5 / 2.4 GB", hostLocale = Locale.US, locale = Locale.forLanguageTag("fi-FI")))
+            .isEqualTo("1.5 / 2.4 GB")
+        assertThat(Bidi.forHost("x", hostLocale = Locale.forLanguageTag("he"), locale = arabic)).isEqualTo("x")
+    }
+
     @Test
     fun `memory and storage on a tile stay left to right in Arabic`() {
         Locale.setDefault(arabic)
