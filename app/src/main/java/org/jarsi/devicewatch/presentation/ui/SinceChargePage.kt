@@ -198,7 +198,7 @@ private fun SinceChargeSummaryCard(uiState: SinceChargeUiState) {
         )
         StackedMetricRow(
             label = stringResource(R.string.since_charge_battery_now),
-            value = uiState.currentLevel?.let { "$it %" } ?: UNAVAILABLE_TEXT
+            value = uiState.currentLevel?.let { spacedPercentText(it) } ?: UNAVAILABLE_TEXT
         )
         if (uiState.isCharging) {
             Spacer(modifier = Modifier.height(4.dp))
@@ -214,7 +214,7 @@ private fun SinceChargeSummaryCard(uiState: SinceChargeUiState) {
             if (drop != null && drop >= 0) {
                 StackedMetricRow(
                     label = stringResource(R.string.since_charge_used),
-                    value = "$drop %"
+                    value = spacedPercentText(drop)
                 )
                 val hours = elapsedMillis / 3_600_000.0
                 if (drop >= 1 && hours >= 0.5) {

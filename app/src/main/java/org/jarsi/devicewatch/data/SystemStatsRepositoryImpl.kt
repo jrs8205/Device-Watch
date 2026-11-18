@@ -62,6 +62,7 @@ import android.telephony.CellSignalStrengthNr
 import android.telephony.TelephonyManager
 import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
+import org.jarsi.devicewatch.Bidi
 import org.jarsi.devicewatch.R
 import org.jarsi.devicewatch.di.DefaultDispatcher
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -638,7 +639,7 @@ class SystemStatsRepositoryImpl @Inject constructor(
         val dateFormat = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
             .withLocale(context.resources.configuration.locales[0])
         BatteryWear(
-            health = readBatteryHealthPercent()?.let { "$it %" } ?: UNAVAILABLE_TEXT,
+            health = readBatteryHealthPercent()?.let { Bidi.ltr("$it %") } ?: UNAVAILABLE_TEXT,
             // Zero is what a phone says when it does not count them.
             cycles = readBatteryCycleCount(batteryIntent)?.takeIf { it > 0 }?.toString() ?: UNAVAILABLE_TEXT,
             firstUse = firstUse?.format(dateFormat) ?: UNAVAILABLE_TEXT,

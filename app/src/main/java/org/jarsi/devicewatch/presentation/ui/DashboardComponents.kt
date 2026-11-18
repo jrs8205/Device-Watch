@@ -386,6 +386,9 @@ internal fun simDataLabelRes(mode: DataCounterMode): Int =
 internal fun dbmText(value: Int): String =
     if (value == UNAVAILABLE_INT) UNAVAILABLE_TEXT else Bidi.ltr("$value dBm")
 
+/** "100 %", the per cent sign a space away from its number: one left-to-right piece (see [Bidi]). */
+internal fun spacedPercentText(value: Int): String = Bidi.ltr("$value %")
+
 internal fun mbpsText(value: Int): String =
     if (value == UNAVAILABLE_INT) UNAVAILABLE_TEXT else Bidi.ltr("$value Mbps")
 

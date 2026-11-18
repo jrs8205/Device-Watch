@@ -523,7 +523,7 @@ internal fun OverviewTab(
                 Spacer(modifier = Modifier.height(12.dp))
                 StackedMetricRow(
                     label = stringResource(R.string.gpu_load_row),
-                    value = "${currentStats.gpuLoadPercent} %",
+                    value = spacedPercentText(currentStats.gpuLoadPercent),
                     valueSize = SECONDARY_VALUE_SP,
                 )
             }
