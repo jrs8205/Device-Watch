@@ -1,8 +1,8 @@
 <resources>
-    <string name="app_name">Device Watch</string>
-    <string name="dream_service_name">Device Watch</string>
+    <string name="app_name">Device-Watch</string>
+    <string name="dream_service_name">Device-Watch</string>
     <string name="widget_description">Smart battery and system monitor on your home screen.</string>
-    <string name="compact_widget_label">Device Watch (compact)</string>
+    <string name="compact_widget_label">Device-Watch (compact)</string>
     <string name="compact_widget_description">Compact battery and data usage widget.</string>
     <string name="fgs_special_use_subtype" translatable="false">System resources and battery status monitoring widget update</string>
 
@@ -86,7 +86,7 @@
     <string name="export_usage_csv">Export usage history (CSV)</string>
     <string name="export_log_csv">Export notification log (CSV)</string>
     <string name="export_report_html">Share report (HTML)</string>
-    <string name="report_title">Device Watch report</string>
+    <string name="report_title">Device-Watch report</string>
     <string name="report_generated_at">Created %1$s</string>
     <string name="report_summary_section">Summary</string>
     <string name="report_summary_screen_time">Screen time / day</string>
@@ -153,18 +153,18 @@
     <string name="onboarding_next">Next</string>
     <string name="onboarding_back">Back</string>
     <string name="onboarding_start">Start</string>
-    <string name="onboarding_welcome_title">Welcome to Device Watch</string>
+    <string name="onboarding_welcome_title">Welcome to Device-Watch</string>
     <string name="onboarding_welcome_body">Battery, usage counters and network stats on a home-screen widget, in the app and on a charging screensaver — all read straight from your device, nothing leaves it.</string>
     <string name="onboarding_permissions_title">Permissions</string>
-    <string name="onboarding_permissions_body">Device Watch only reads what these permissions unlock. Everything keeps working without them — the affected rows just show a dash.</string>
+    <string name="onboarding_permissions_body">Device-Watch only reads what these permissions unlock. Everything keeps working without them — the affected rows just show a dash.</string>
     <string name="onboarding_runtime_permissions_label">Basic permissions</string>
     <string name="onboarding_runtime_permissions_desc">Location and Nearby devices reveal the Wi-Fi network name, Phone shows mobile network details, and Notifications lets the battery-full alert through.</string>
     <string name="onboarding_grant_permissions">Grant permissions</string>
     <string name="onboarding_open_settings">Open settings</string>
     <string name="onboarding_widget_title">Home-screen widget</string>
-    <string name="onboarding_widget_body">Add the Device Watch widget to your home screen for a live view of battery, memory, CPU, storage and today\'s data usage.</string>
+    <string name="onboarding_widget_body">Add the Device-Watch widget to your home screen for a live view of battery, memory, CPU, storage and today\'s data usage.</string>
     <string name="onboarding_screensaver_title">Charging screensaver</string>
-    <string name="onboarding_screensaver_body">While charging, Device Watch can work as a screensaver: a big clock, charging power in watts, the next alarm and an automatic night dim. Turn it on in the system screensaver settings.</string>
+    <string name="onboarding_screensaver_body">While charging, Device-Watch can work as a screensaver: a big clock, charging power in watts, the next alarm and an automatic night dim. Turn it on in the system screensaver settings.</string>
     <string name="onboarding_history_title">Counters and history</string>
     <string name="onboarding_history_body">Screen time, unlocks, notifications and data usage are counted per day or per billing cycle, with daily history for the last two months and monthly data totals as far back as Android keeps them.</string>
     <string name="onboarding_done_title">All set!</string>
@@ -177,16 +177,16 @@
     <string name="shizuku_status_requesting">Waiting for Shizuku\'s permission…</string>
     <string name="shizuku_status_on">Shizuku access in use.</string>
     <string name="shizuku_status_waiting">Shizuku is not running. The readings return once you start it.</string>
-    <string name="shizuku_status_denied">Shizuku refused the permission. Allow Device Watch in the Shizuku app and try again.</string>
+    <string name="shizuku_status_denied">Shizuku refused the permission. Allow Device-Watch in the Shizuku app and try again.</string>
     <string name="shizuku_status_not_running">Shizuku is not running. Install Shizuku, start it and try again.</string>
     <string name="root_mode_title">Root mode</string>
     <string name="root_mode_description">On a rooted phone, reads what Android hides from ordinary apps: the real processor load, chip temperatures and the battery\'s own wear figures. It also opens the Kernel page on the Device tab, with processor profiles. Your root manager asks for permission.</string>
     <string name="root_status_requesting">Waiting for your root manager\'s permission…</string>
     <string name="root_status_on">Root access in use.</string>
-    <string name="root_status_denied">Root access was refused. Allow Device Watch in your root manager and try again.</string>
+    <string name="root_status_denied">Root access was refused. Allow Device-Watch in your root manager and try again.</string>
     <string name="root_status_restoring">Returning the phone\'s own processor speed limits before root goes off…</string>
     <string name="cpu_caps_kept_until_restart">The processor speed limits set with root stay until the phone restarts: root was no longer there to remove them.</string>
-    <string name="root_status_no_su">No su command was found. The phone is not rooted, or its root manager (KernelSU, APatch) has not yet been told to allow Device Watch.</string>
+    <string name="root_status_no_su">No su command was found. The phone is not rooted, or its root manager (KernelSU, APatch) has not yet been told to allow Device-Watch.</string>
     <string name="adb_mode_title">ADB permissions</string>
     <string name="adb_mode_description">With permissions granted once from a computer, without Shizuku or root: the battery\'s own wear figures (Android 14 and later), chip temperatures, the battery statistics since the last charge and the privacy log. Android does not give the real processor load this way.</string>
     <string name="adb_status_on">ADB permissions in use.</string>
@@ -389,7 +389,7 @@
     <string name="dream_vertical_shift_description">The screensaver shifts a little once a minute so nothing burns into the screen. With this on it moves only up and down and stays centred sideways.</string>
     <string name="dream_device_name_title">Show the device name</string>
     <string name="dream_start_on_charge_title">Start as soon as charging begins</string>
-    <string name="dream_start_on_charge_description">When charging begins with the screen off, the screensaver comes up even with Always On Display on: at once with Shizuku or root, otherwise Device Watch wakes the screen and the screensaver follows in about 10–15 seconds. Nothing happens while the screen is on.</string>
+    <string name="dream_start_on_charge_description">When charging begins with the screen off, the screensaver comes up even with Always On Display on: at once with Shizuku or root, otherwise Device-Watch wakes the screen and the screensaver follows in about 10–15 seconds. Nothing happens while the screen is on.</string>
     <string name="dream_device_name_description">Show the phone\'s name above the clock, as set under About phone in Android\'s settings.</string>
     <plurals name="dream_unread_notifications">
         <item quantity="one">%d unread notification</item>
@@ -602,7 +602,7 @@
     <string name="audio_kind_line">Line connection</string>
     <string name="power_save_mode">Battery saver on</string>
     <string name="power_device_idle">Deep idle (Doze) now</string>
-    <string name="power_battery_optimization_exempt">Device Watch skips battery optimisation</string>
+    <string name="power_battery_optimization_exempt">Device-Watch skips battery optimisation</string>
     <string name="power_other_exempt_apps">Other apps skipping it</string>
     <string name="exempt_none">None</string>
     <string name="exempt_user_and_system">%1$s + %2$s</string>
@@ -686,7 +686,7 @@
 
     <string name="monitor_channel_name">System monitoring</string>
     <string name="monitor_channel_description">Updates live system and battery information to the widget.</string>
-    <string name="monitor_notification_title">Device Watch is running</string>
+    <string name="monitor_notification_title">Device-Watch is running</string>
     <string name="monitor_notification_text">Monitoring device status and updating the widget.</string>
     <string name="battery_full_channel_name">Battery alerts</string>
     <string name="battery_full_channel_description">Notifications for charging and battery status.</string>
@@ -861,7 +861,7 @@
         <item quantity="other">%d apps</item>
     </plurals>
     <string name="privacy_last">last %1$s</string>
-    <string name="privacy_page_note">Android keeps this record itself, for its Privacy dashboard: which app used the camera, the microphone or the location, when, for how long, and whether it was refused. Device Watch reads it through extended access and shows it; nothing here is stored, exported or backed up.</string>
+    <string name="privacy_page_note">Android keeps this record itself, for its Privacy dashboard: which app used the camera, the microphone or the location, when, for how long, and whether it was refused. Device-Watch reads it through extended access and shows it; nothing here is stored, exported or backed up.</string>
     <string name="privacy_no_refusals_note">This Android writes no refused attempts down: the record holds only the uses that went ahead.</string>
     <string name="privacy_minute_note">This Android keeps the record to the minute: uses within one minute count as one, and a length is whole minutes.</string>
     <string name="privacy_span">On record since %1$s. How far back it reaches is Android\'s choice, usually a few days.</string>
@@ -985,7 +985,7 @@
     <string name="system_apps_unchanged">the package manager called it done, but the app is as it was; a restriction on this user may be the reason</string>
     <string name="system_apps_dismiss_notice">Dismiss</string>
     <string name="system_app_role_core">part of Android\'s core; the phone does not start or work without it.</string>
-    <string name="system_app_role_self">Device Watch itself.</string>
+    <string name="system_app_role_self">Device-Watch itself.</string>
     <string name="system_app_role_home_in_use">the home screen in use; without it the phone has no launcher. Set another as default first.</string>
     <string name="system_app_role_home">a home screen. If it is the only one, the phone is left without a launcher.</string>
     <string name="system_app_role_keyboard_in_use">the keyboard in use; without it nothing can be typed. Switch to another keyboard first.</string>
@@ -1046,23 +1046,23 @@
     <string name="live_notification_description">The figures you choose are shown in the monitor\'s notification on two lines among your other notifications; expand it to see them all. With none chosen the notification stays silent and folded at the bottom.</string>
     <string name="quick_cpu_temp_setting_description">Most phones give it only with extended access.</string>
     <string name="quick_data_today_setting_description">Needs usage access.</string>
-    <string name="live_notification_blocked">Notifications are off for Device Watch, so the figures are not shown.</string>
+    <string name="live_notification_blocked">Notifications are off for Device-Watch, so the figures are not shown.</string>
     <string name="live_notification_allow">Allow notifications</string>
     <string name="monitor_live_channel_name">Live figures</string>
     <string name="single_widget_label">Single figure</string>
     <string name="quick_tiles_section">QUICK SETTINGS TILES</string>
-    <string name="quick_tiles_description">Add Device Watch\'s tiles from the Quick Settings edit mode (the pencil). A wide tile shows the figure\'s name and value.</string>
+    <string name="quick_tiles_description">Add Device-Watch\'s tiles from the Quick Settings edit mode (the pencil). A wide tile shows the figure\'s name and value.</string>
     <string name="tile_value_icons_title">Figure as the icon</string>
     <string name="tile_value_icons_description">A small tile shows only its icon, so the figure is drawn in its place.</string>
     <string name="overlay_card_description">Floating figure</string>
     <string name="overlay_close">Hide</string>
-    <string name="overlay_open_app">Open Device Watch</string>
+    <string name="overlay_open_app">Open Device-Watch</string>
     <string name="overlay_tile_label">Floating figure</string>
     <string name="overlay_tile_needs_permission">needs permission</string>
     <string name="overlay_section">FLOATING FIGURE</string>
     <string name="overlay_description">A small card over other apps, also over full-screen games and video. Bring it up and take it down with the Floating figure tile in Quick Settings; a tap on the card shows a hide button, a long press hides it.</string>
     <string name="overlay_shown_title">Show the floating figure</string>
-    <string name="overlay_permission_explained">Android calls this permission \"Display over other apps\". Device Watch uses it only to draw this card.</string>
+    <string name="overlay_permission_explained">Android calls this permission \"Display over other apps\". Device-Watch uses it only to draw this card.</string>
     <string name="overlay_grant">Allow</string>
     <string name="overlay_max_figures">Up to three figures</string>
     <string name="overlay_tile_hint">Add the Floating figure tile from the Quick Settings edit mode.</string>

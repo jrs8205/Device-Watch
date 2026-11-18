@@ -1,6 +1,6 @@
 # Frequently Asked Questions
 
-Troubleshooting and background for questions that come up when using Device Watch. For features,
+Troubleshooting and background for questions that come up when using Device-Watch. For features,
 permissions and building, see the [README](README.md).
 
 ## Screensaver
@@ -12,12 +12,12 @@ out by itself**. Two things routinely trip people up:
 
 - **Pressing the power button never starts the screensaver** — that just puts the screen to
   sleep. Plug the charger in, leave the device alone and let the screen timeout expire.
-- Device Watch must be selected as the system screensaver and "start while charging" enabled.
+- Device-Watch must be selected as the system screensaver and "start while charging" enabled.
   The app's Settings tab has an *Open screensaver settings* shortcut that takes you straight
   there; the exact system path varies by manufacturer.
 - **With Always On Display on, plugging in does not wake the phone**, so there is no timeout and
   the screensaver waits until someone wakes the screen. Switch on *Start as soon as charging
-  begins* in the app's Settings: Device Watch then wakes the screen when charging begins with the
+  begins* in the app's Settings: Device-Watch then wakes the screen when charging begins with the
   screen off, and the lock screen times out into the screensaver in about 10–15 seconds. With
   Shizuku or root on (extended access, below), it asks Android to start the screensaver at once instead.
 
@@ -71,7 +71,7 @@ not appear.
 
 Android's public statistics API only reports **metered** mobile traffic. If your SIM or plan is
 flagged unmetered — common with unlimited data plans — its traffic is invisible to every
-third-party app. Device Watch shows exactly what Android reports rather than guessing.
+third-party app. Device-Watch shows exactly what Android reports rather than guessing.
 
 ### The Wi-Fi network name shows a dash
 
@@ -104,14 +104,14 @@ comes with ADB permissions (below).
 ### How do I use it without root?
 
 Install [Shizuku](https://shizuku.rikka.app/), start it as its own instructions say (through
-wireless debugging on Android 11 and newer), then switch **Shizuku** on in Device Watch's Settings
-and allow Device Watch in the dialog Shizuku shows. Shizuku gives the app the same rights the
+wireless debugging on Android 11 and newer), then switch **Shizuku** on in Device-Watch's Settings
+and allow Device-Watch in the dialog Shizuku shows. Shizuku gives the app the same rights the
 `adb shell` command has; nothing on the phone is modified.
 
 ### The extended readings disappeared after a restart
 
 Without root, Shizuku stops whenever the phone restarts and has to be started again from the
-Shizuku app. The switch in Device Watch stays on and says it is waiting; the readings return once
+Shizuku app. The switch in Device-Watch stays on and says it is waiting; the readings return once
 Shizuku runs. The permission you gave is remembered.
 
 ### Can I use it with neither Shizuku nor root?
@@ -125,10 +125,10 @@ adb shell pm grant org.jarsi.devicewatch android.permission.BATTERY_STATS
 adb shell pm grant org.jarsi.devicewatch android.permission.PACKAGE_USAGE_STATS
 ```
 
-Then switch **ADB permissions** on in Device Watch's Settings. The switch shows the same commands
+Then switch **ADB permissions** on in Device-Watch's Settings. The switch shows the same commands
 with a copy button, and while a permission is missing it stays off and names it. The grants last
 over restarts and app updates, and no separate app or service has to run. The third command also gives
-Device Watch usage access, the same thing the switch in Android's own settings gives.
+Device-Watch usage access, the same thing the switch in Android's own settings gives.
 
 This route gives Android's own battery statistics on the since-charge page, the privacy log, the
 temperatures by part and, from Android 14, the battery's health and its manufacture and first-use
@@ -139,7 +139,7 @@ removing preinstalled apps.
 
 To take the permissions back, run the same three lines with `revoke` in place of `grant`. Device
 Watch then switches the route off by itself and names the permission that is missing. If the
-third command was what gave Device Watch usage access, revoking it takes that away as well:
+third command was what gave Device-Watch usage access, revoking it takes that away as well:
 switch usage access on in Android's settings to keep the Apps tab.
 
 ### What does root mode add?
@@ -154,10 +154,10 @@ manager is not flooded with requests.
 
 Magisk remembers a refusal: pressing Back on its prompt, letting it time out or tapping Deny
 stores a lasting Deny for the app, and later attempts are refused without a prompt. Open
-Magisk's Superuser list, allow Device Watch there, then switch Root mode on again. KernelSU and
-APatch never prompt at all: allow Device Watch in their manager first.
+Magisk's Superuser list, allow Device-Watch there, then switch Root mode on again. KernelSU and
+APatch never prompt at all: allow Device-Watch in their manager first.
 
-If a grant is revoked later, Device Watch tries a few more times over about ten minutes, then
+If a grant is revoked later, Device-Watch tries a few more times over about ten minutes, then
 switches Root mode off and says so, rather than keep asking.
 
 ### Why do some rows not appear on my phone?
@@ -171,7 +171,7 @@ the opposite. A row is shown only when the phone gives a real value.
 With extended access on, the Apps tab starts with a **PRIVACY** band; **Open** leads to the
 log. It is Android's own record of which app used the camera, the microphone or the location,
 when, for how long and whether from the background, the same record the system's Privacy
-dashboard draws on, read through the shell as `dumpsys appops`. Device Watch shows it and
+dashboard draws on, read through the shell as `dumpsys appops`. Device-Watch shows it and
 stores nothing from it. Under **Other** are the rest of the things Android counts as private:
 an accessibility service in use, device identifiers read, and the like. What the record holds
 depends on the Android: Android 17 keeps every use to the second and every refused ask, and
@@ -196,17 +196,17 @@ the phone says it is using now, not a judgement on every package: an app the pag
 plain is still a system app, so remove only the ones you know. Apps a private space or a work
 profile keeps for itself, which this user never had, are left off the removed list.
 
-### Why did Device Watch itself appear in the privacy log?
+### Why did Device-Watch itself appear in the privacy log?
 
 In 1.8.0 and earlier the monitor read the network's details every few seconds, and some of
 those reads (the mobile network's registration state, the list of nearby cells and the Wi-Fi
 connection's details) count as location reads in Android's eyes. The location permission is
 granted only while the app is on screen, so from the monitor's service each read was refused,
-and every refusal went into the record under Device Watch's name. From 1.9.0 those reads wait
+and every refusal went into the record under Device-Watch's name. From 1.9.0 those reads wait
 until the app is on screen on Android 12 and newer (where the record exists), or, on Android 13
 and newer, ask for the network state without its location, so nothing new of the kind is
 written. While the app is on screen the reads go
-ahead, so Device Watch still appears in the record as an allowed location user, as any app
+ahead, so Device-Watch still appears in the record as an allowed location user, as any app
 with the permission does. The old refusals age out with the rest of the record.
 
 ### What is the Kernel page?
@@ -228,7 +228,7 @@ one and at which step, which wakeup sources woke the phone most often, which hel
 longest, and which are holding it at the moment. The since-charge page tells the same story
 from Android's battery statistics for the current charge; this one comes straight from the
 kernel's `/sys/class/wakeup` and `/sys/power/suspend_stats`, which only root may read. Each
-source has a plain name where Device Watch knows one (Wi-Fi, scheduled wake-ups, the charger,
+source has a plain name where Device-Watch knows one (Wi-Fi, scheduled wake-ups, the charger,
 a process waiting on a timer) and the kernel's own name underneath.
 
 ### What do the processor profiles do?
@@ -309,7 +309,7 @@ and landscape.
   other system screens. The card comes back when you leave them.
 - **Xiaomi, Redmi and POCO (MIUI, HyperOS)**: besides *Display over other apps*, these phones have
   a second switch, *Display pop-up windows while running in the background*, under the app's
-  permissions in system settings. Without it the card may show only while Device Watch itself is
+  permissions in system settings. Without it the card may show only while Device-Watch itself is
   in front.
 - **Battery optimisation**: the card is drawn by the monitor service that also feeds the widgets.
   If your phone stops that service in the background, the card goes with it; the widgets will have
@@ -350,7 +350,7 @@ fresh.
 
 ### The monitoring notification icon won't go away
 
-The foreground monitoring service must show a notification — an Android requirement. Device Watch
+The foreground monitoring service must show a notification — an Android requirement. Device-Watch
 posts it silent and at minimum importance, but some devices (notably One UI) still keep a
 status-bar icon. To hide it completely, long-press the notification and minimize it, or turn its
 channel off in the system notification settings; monitoring keeps running either way.

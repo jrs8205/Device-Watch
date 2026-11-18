@@ -1,4 +1,4 @@
-# Device Watch
+# Device-Watch
 
 [![Latest release](https://img.shields.io/github/v/release/jrs8205/Device-Watch?sort=semver)](https://github.com/jrs8205/Device-Watch/releases/latest)
 [![F-Droid](https://img.shields.io/f-droid/v/org.jarsi.devicewatch)](https://f-droid.org/packages/org.jarsi.devicewatch)
@@ -7,7 +7,7 @@
 [![Built with Jetpack Compose](https://img.shields.io/badge/Built%20with-Jetpack%20Compose-4285F4)](https://developer.android.com/jetpack/compose)
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](LICENSE)
 
-Device Watch is an Android device monitoring app with Jetpack Glance home screen widgets, per-app usage insights (screen time, data, notifications and more), and an interactive screensaver for charging or docked use.
+Device-Watch is an Android device monitoring app with Jetpack Glance home screen widgets, per-app usage insights (screen time, data, notifications and more), and an interactive screensaver for charging or docked use.
 
 The default app language is English. Finnish users get a localized app name and UI through Android's `values-fi` resources.
 
@@ -66,7 +66,7 @@ The default app language is English. Finnish users get a localized app name and 
 - Kernel page on rooted phones, opened from the Device tab's KERNEL band: each group of processor cores with its speed now, its limit and range, heat throttling in plain words, the graphics processor's speeds, compressed memory (zRAM), the kernel version, SELinux and the storage queue, and every named temperature sensor, all from what this phone's kernel reports, with no phone model assumed
 - Processor profiles on rooted phones: *Power saving* (the faster cores at most about 60 % of their top speed), *Balanced* (about 80 %), *Stock*, or *Custom* per group of cores. Only speeds the kernel lists, never above what the phone allows; the phone's own limits are saved first and written back on Stock or when root is switched off (if root no longer answers then, they last until the next restart), and a restart returns them by itself unless *Apply after restart too* is on. When Android's power management raises a limit the monitor sets it again and counts it, and it never lifts a lower limit that heat or Android hold
 - Privacy log with extended access (Shizuku, root or ADB permissions), on the Apps tab's PRIVACY band and its page: Android's own record of which apps used the camera, the microphone and the location, when, for how long, from the background or not, and (on Android 17, which keeps them) which were refused, app by app and moment by moment; the same record the system's Privacy dashboard draws on, shown and never stored. Without extended access the band offers Android's own Privacy dashboard instead
-- System apps page with extended access (Shizuku or root), opened from the Apps tab's SYSTEM APPS band: every app on the system image, with a search, and *Remove* for the preinstalled ones you do not use. A removal takes the app away from this user only (`pm uninstall --user`), the system image's copy stays, and *Restore* brings it back; every removal is asked about first, the apps the phone depends on say what breaks and want that acknowledged, and the ones it cannot do without (Android's core, the home screen, keyboard, phone app and web view in use, Device Watch itself) cannot be removed from here at all
+- System apps page with extended access (Shizuku or root), opened from the Apps tab's SYSTEM APPS band: every app on the system image, with a search, and *Remove* for the preinstalled ones you do not use. A removal takes the app away from this user only (`pm uninstall --user`), the system image's copy stays, and *Restore* brings it back; every removal is asked about first, the apps the phone depends on say what breaks and want that acknowledged, and the ones it cannot do without (Android's core, the home screen, keyboard, phone app and web view in use, Device-Watch itself) cannot be removed from here at all
 - Sleep section on the Kernel page (root): the kernel's own count of sleep attempts and failures with what stopped the last one, the wakeup sources that woke the phone most often, those that held it awake longest, and those holding it right now, in plain words with the kernel's names underneath
 - Today's screen time also appears in the widget footer, refreshed at most once a minute so the 5-second widget loop stays untouched
 - Most-opened-today list on the Apps tab, and last-opened rows show the clock time for apps used today (following the system 12/24-hour setting) with two-tier staleness colors: amber after 1 month unused, red after 3 months (Google's app-hibernation threshold) or never used
@@ -103,7 +103,7 @@ Android backup and phone transfer carry user settings only. History, notificatio
 [<img src="assets/get-it-on-aptoide.svg" alt="Download from Aptoide" height="80">](https://aptoide-mmp.aptoide.com/api/v1/download?package_name=org.jarsi.devicewatch&oemid=584d342f9e68b0c33244b78f3cc21a24&redirect_url=https%3A%2F%2Fws.catappult.io%2Fapi%2FdirectToConsumer%2Forg.jarsi.devicewatch%2Fdownload)
 [<img src="assets/get-it-on-obtainium.png" alt="Get it on Obtainium" height="80">](https://apps.obtainium.imranr.dev/redirect?r=obtainium://app/%7B%22id%22%3A%22org.jarsi.devicewatch%22%2C%22url%22%3A%22https%3A%2F%2Fgithub.com%2Fjrs8205%2FDevice-Watch%22%2C%22author%22%3A%22jrs8205%22%2C%22name%22%3A%22Device-Watch%22%7D)
 
-Device Watch is available on
+Device-Watch is available on
 [**F-Droid**](https://f-droid.org/packages/org.jarsi.devicewatch), which also delivers updates
 automatically, and on [**Aptoide**](https://device-watch.en.aptoide.com/app), which also offers a
 [direct APK download](https://aptoide-mmp.aptoide.com/api/v1/download?package_name=org.jarsi.devicewatch&oemid=584d342f9e68b0c33244b78f3cc21a24&redirect_url=https%3A%2F%2Fws.catappult.io%2Fapi%2FdirectToConsumer%2Forg.jarsi.devicewatch%2Fdownload).
@@ -211,7 +211,7 @@ The app requests only permissions that are used by the current feature set:
 - `WAKE_LOCK` (a normal permission, granted on install; WorkManager declares it for its own jobs, and the app's own code uses it only to wake the screen when charging begins, so the screensaver can start, when *Start as soon as charging begins* is switched on)
 - `USE_BIOMETRIC` (a normal permission, granted on install: only to show on the Device tab whether a strong biometric is enrolled — the app never authenticates anyone)
 - `READ_CALENDAR` (asked for only when you switch on the calendar rows of the screensaver's Gauges style: the next events' times and, unless you hide them, titles are read and drawn on the screensaver — nothing is written to the calendar and nothing is stored)
-- `moe.shizuku.manager.permission.API_V23` (declared by the Shizuku library; it does nothing unless you install Shizuku yourself, switch Shizuku on in Settings and approve Device Watch in Shizuku's own dialog)
+- `moe.shizuku.manager.permission.API_V23` (declared by the Shizuku library; it does nothing unless you install Shizuku yourself, switch Shizuku on in Settings and approve Device-Watch in Shizuku's own dialog)
 
 Root mode needs no permission: it is off by default, and the app starts `su` only after you switch it on and your root manager grants it. Through root alone, a processor profile you choose on the Kernel page writes each group of cores' top speed limit; nothing else is written.
 
@@ -558,13 +558,13 @@ app/src/test/java/org/jarsi/devicewatch/
 
 ## Support development
 
-If Device Watch is useful to you, you can support its development:
+If Device-Watch is useful to you, you can support its development:
 
 - [GitHub Sponsors](https://github.com/sponsors/jrs8205) — monthly or one-time
 - [Buy Me a Coffee](https://buymeacoffee.com/jrs8205) — no sign-up needed
 
 ## License
 
-Device Watch is free software, licensed under the GNU General Public License,
+Device-Watch is free software, licensed under the GNU General Public License,
 version 3 of the License, or (at your option) any later version
 (SPDX: `GPL-3.0-or-later`). See [LICENSE](LICENSE) for the full text.

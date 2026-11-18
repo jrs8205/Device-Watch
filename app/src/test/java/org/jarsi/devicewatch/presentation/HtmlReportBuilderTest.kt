@@ -81,7 +81,7 @@ class HtmlReportBuilderTest {
 
         assertThat(html).startsWith("<!DOCTYPE html>")
         assertThat(html).contains("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">")
-        assertThat(html).contains("<title>Device Watch report</title>")
+        assertThat(html).contains("<title>Device-Watch report</title>")
         assertThat(html).contains("prefers-color-scheme: dark")
         assertThat(html).endsWith("</html>")
     }

@@ -554,7 +554,7 @@ internal class FakeUsageHistory : UsageHistory {
 
 /** Report headings shared by the report tests; English so assertions read plainly. */
 internal val TEST_REPORT_LABELS = HtmlReportLabels(
-    title = "Device Watch report",
+    title = "Device-Watch report",
     generatedAt = "Created %1\$s",
     summarySection = "Summary",
     summaryScreenTime = "Screen time / day",
