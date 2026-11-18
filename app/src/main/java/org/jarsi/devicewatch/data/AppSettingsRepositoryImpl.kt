@@ -179,6 +179,18 @@ class AppSettingsRepositoryImpl @Inject constructor(
         }
     }
 
+    // The look and the write under the lock every write takes: between the two
+    // no other route can be stored, so a route given up never lands on top of
+    // one switched on. apply() updates the in-memory map at once, so the read
+    // inside the lock always sees the last write.
+    override fun replacePrivilegedAccess(expected: PrivilegedAccess, replacement: PrivilegedAccess): Boolean =
+        synchronized(accessLock) {
+            if (privilegedAccess() != expected) return false
+            DeviceLocalFlags.prefs(context).edit().putString(KEY_PRIVILEGED_ACCESS, replacement.name).apply()
+            access.value = replacement
+            true
+        }
+
     override fun alertEnabled(alert: HealthAlert): Boolean =
         prefs.getBoolean(alertKey(KEY_ALERT_ENABLED_PREFIX, alert), false)
 

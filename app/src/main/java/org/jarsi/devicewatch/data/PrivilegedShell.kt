@@ -114,12 +114,11 @@ class ShellUserShell @Inject constructor(
  * One of the adb route's grants is gone: revoked from a computer. As with
  * root, the setting goes off where a command finds out, since the monitor runs
  * without a screen; the switch, if one is showing, follows [LocalShell.lost]
- * and names what is missing.
+ * and names what is missing. Off only from ADB, and in one step: the user may
+ * be switching Shizuku or root on in the same moment, and that switch stands.
  */
 internal fun giveUpAdbIfLost(settings: AppSettingsRepository, local: LocalShell) {
-    if (local.lost.value && settings.privilegedAccess() == PrivilegedAccess.ADB) {
-        settings.setPrivilegedAccess(PrivilegedAccess.OFF)
-    }
+    if (local.lost.value) settings.replacePrivilegedAccess(PrivilegedAccess.ADB, PrivilegedAccess.OFF)
 }
 
 /**
@@ -128,12 +127,11 @@ internal fun giveUpAdbIfLost(settings: AppSettingsRepository, local: LocalShell)
  * on ROOT would have the next process start, after a reboot or a kill, begin
  * asking the root manager all over again, three refusals at a time, with no one
  * having asked for root. The switch on screen, if there is one, follows
- * [RootShell.lost] and says why it went off.
+ * [RootShell.lost] and says why it went off. Off only from ROOT, and in one
+ * step, so that a route switched on in the same moment is not undone.
  */
 internal fun giveUpRootIfLost(settings: AppSettingsRepository, root: RootShell) {
-    if (root.lost.value && settings.privilegedAccess() == PrivilegedAccess.ROOT) {
-        settings.setPrivilegedAccess(PrivilegedAccess.OFF)
-    }
+    if (root.lost.value) settings.replacePrivilegedAccess(PrivilegedAccess.ROOT, PrivilegedAccess.OFF)
 }
 
 /**

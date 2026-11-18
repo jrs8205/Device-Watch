@@ -86,6 +86,14 @@ interface AppSettingsRepository {
     fun setPrivilegedAccess(access: PrivilegedAccess)
 
     /**
+     * Moves the access from [expected] to [replacement] in one step, and only if
+     * it still is [expected]; says whether it moved. For a route the monitor
+     * finds gone: read and write as two steps would let the write land after a
+     * switch the user made in between, and undo it.
+     */
+    fun replacePrivilegedAccess(expected: PrivilegedAccess, replacement: PrivilegedAccess): Boolean
+
+    /**
      * [privilegedAccess] as it changes, from whichever side changes it: a screen
      * opened anew follows a switch a restore or the monitor finished without it.
      */

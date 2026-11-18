@@ -331,7 +331,7 @@ class DashboardViewModel @Inject constructor(
     }
 
     private fun switchRootOff() {
-        if (settings.privilegedAccess() == PrivilegedAccess.ROOT) settings.setPrivilegedAccess(PrivilegedAccess.OFF)
+        settings.replacePrivilegedAccess(PrivilegedAccess.ROOT, PrivilegedAccess.OFF)
         rootShell.close()
         _uiState.update { it.copy(rootStatus = RootStatus.OFF) }
     }
@@ -342,7 +342,7 @@ class DashboardViewModel @Inject constructor(
      */
     fun onShizukuModeChange(enabled: Boolean) {
         if (!enabled) {
-            if (settings.privilegedAccess() == PrivilegedAccess.SHIZUKU) settings.setPrivilegedAccess(PrivilegedAccess.OFF)
+            settings.replacePrivilegedAccess(PrivilegedAccess.SHIZUKU, PrivilegedAccess.OFF)
             shizukuShell.close()
             _uiState.update { it.copy(shizukuStatus = ShizukuStatus.OFF) }
             return
@@ -412,7 +412,7 @@ class DashboardViewModel @Inject constructor(
         if (!enabled) {
             // Also ends a switch-on still waiting for root's limits.
             adbRequest++
-            if (settings.privilegedAccess() == PrivilegedAccess.ADB) settings.setPrivilegedAccess(PrivilegedAccess.OFF)
+            settings.replacePrivilegedAccess(PrivilegedAccess.ADB, PrivilegedAccess.OFF)
             localShell.close()
             _uiState.update { it.copy(adbStatus = AdbStatus.OFF, adbMissing = emptySet()) }
             return
@@ -496,7 +496,7 @@ class DashboardViewModel @Inject constructor(
 
     private fun switchAdbOffFor(missing: Set<AdbPermission>) {
         adbRequest++
-        if (settings.privilegedAccess() == PrivilegedAccess.ADB) settings.setPrivilegedAccess(PrivilegedAccess.OFF)
+        settings.replacePrivilegedAccess(PrivilegedAccess.ADB, PrivilegedAccess.OFF)
         localShell.close()
         _uiState.update { it.copy(adbStatus = AdbStatus.MISSING, adbMissing = missing) }
     }

@@ -93,6 +93,32 @@ class PrivilegedShellTest {
         }
     }
 
+    /**
+     * Settings another route takes over at the very moment a lost route is being
+     * handled, as when the monitor finds a grant gone while the user switches
+     * Shizuku or root on: the takeover lands right after the access was read, or
+     * right before a one-step replacement looks.
+     */
+    private class TakenOverAsTheLossIsHandled(
+        private val delegate: AppSettingsRepository,
+        private val takenOverBy: PrivilegedAccess,
+    ) : AppSettingsRepository by delegate {
+        private var landed = false
+
+        private fun land() {
+            if (landed) return
+            landed = true
+            delegate.setPrivilegedAccess(takenOverBy)
+        }
+
+        override fun privilegedAccess(): PrivilegedAccess = delegate.privilegedAccess().also { land() }
+
+        override fun replacePrivilegedAccess(expected: PrivilegedAccess, replacement: PrivilegedAccess): Boolean {
+            land()
+            return delegate.replacePrivilegedAccess(expected, replacement)
+        }
+    }
+
     /** Answers until told to fail, and counts what it was asked. */
     private class ScriptedShell(var answer: String?) : PrivilegedShell {
         var asked = 0
@@ -185,6 +211,32 @@ class PrivilegedShellTest {
         assertThat(shell.run("dumpsys thermalservice")).isNull()
 
         assertThat(settings.access).isEqualTo(PrivilegedAccess.OFF)
+    }
+
+    @Test
+    fun `a grant found gone as the user switches another route on does not undo that switch`() {
+        // The monitor's thread reads ADB, the screen stores the new route, and
+        // the monitor's OFF must not land on top of it.
+        for (chosen in listOf(PrivilegedAccess.SHIZUKU, PrivilegedAccess.ROOT)) {
+            val stored = FakeAppSettingsRepository(access = PrivilegedAccess.ADB)
+            val local = RecordingLocal().apply { lost.value = true }
+
+            giveUpAdbIfLost(TakenOverAsTheLossIsHandled(stored, takenOverBy = chosen), local)
+
+            assertThat(stored.access).isEqualTo(chosen)
+        }
+    }
+
+    @Test
+    fun `root found gone as the user switches another route on does not undo that switch`() {
+        for (chosen in listOf(PrivilegedAccess.SHIZUKU, PrivilegedAccess.ADB)) {
+            val stored = FakeAppSettingsRepository(access = PrivilegedAccess.ROOT)
+            val root = RecordingRoot().apply { lost.value = true }
+
+            giveUpRootIfLost(TakenOverAsTheLossIsHandled(stored, takenOverBy = chosen), root)
+
+            assertThat(stored.access).isEqualTo(chosen)
+        }
     }
 
     @Test

@@ -302,6 +302,12 @@ internal class FakeAppSettingsRepository(
         this.access = access
     }
 
+    override fun replacePrivilegedAccess(expected: PrivilegedAccess, replacement: PrivilegedAccess): Boolean {
+        if (access != expected) return false
+        access = replacement
+        return true
+    }
+
     val alertsOn = mutableSetOf<HealthAlert>()
     val alertsLatched = mutableSetOf<HealthAlert>()
 

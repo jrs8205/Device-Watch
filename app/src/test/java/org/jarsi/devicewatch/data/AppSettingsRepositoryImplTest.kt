@@ -3,6 +3,7 @@ package org.jarsi.devicewatch.data
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
+import com.google.common.truth.Truth.assertWithMessage
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -68,6 +69,52 @@ class AppSettingsRepositoryImplTest {
         // start asking that phone for Shizuku or root.
         val backedUp = context.getSharedPreferences(AppSettingsRepositoryImpl.PREFS_NAME, android.content.Context.MODE_PRIVATE)
         assertThat(backedUp.all.keys).doesNotContain(AppSettingsRepositoryImpl.KEY_PRIVILEGED_ACCESS)
+    }
+
+    @Test
+    fun `the access is replaced only from the value expected, and the answer says which`() {
+        settings.setPrivilegedAccess(PrivilegedAccess.ADB)
+
+        assertThat(settings.replacePrivilegedAccess(PrivilegedAccess.ADB, PrivilegedAccess.OFF)).isTrue()
+        assertThat(settings.privilegedAccess()).isEqualTo(PrivilegedAccess.OFF)
+        assertThat(settings.privilegedAccessFlow.value).isEqualTo(PrivilegedAccess.OFF)
+
+        // Moved on meanwhile: left alone.
+        settings.setPrivilegedAccess(PrivilegedAccess.SHIZUKU)
+
+        assertThat(settings.replacePrivilegedAccess(PrivilegedAccess.ADB, PrivilegedAccess.OFF)).isFalse()
+        assertThat(settings.privilegedAccess()).isEqualTo(PrivilegedAccess.SHIZUKU)
+        assertThat(settings.privilegedAccessFlow.value).isEqualTo(PrivilegedAccess.SHIZUKU)
+    }
+
+    @Test
+    fun `a route given up on one thread never undoes a route switched on by another`() {
+        // The monitor gives the adb route up while the screen stores Shizuku.
+        // Whichever goes first, Shizuku is what stays: a give-up that read ADB
+        // and wrote OFF after the switch would leave OFF.
+        val pool = java.util.concurrent.Executors.newFixedThreadPool(2)
+        try {
+            repeat(3_000) { round ->
+                settings.setPrivilegedAccess(PrivilegedAccess.ADB)
+                val start = java.util.concurrent.CyclicBarrier(2)
+                val giveUp = pool.submit {
+                    start.await()
+                    settings.replacePrivilegedAccess(PrivilegedAccess.ADB, PrivilegedAccess.OFF)
+                }
+                val switchOn = pool.submit {
+                    start.await()
+                    settings.setPrivilegedAccess(PrivilegedAccess.SHIZUKU)
+                }
+                giveUp.get()
+                switchOn.get()
+
+                assertWithMessage("round $round").that(settings.privilegedAccess()).isEqualTo(PrivilegedAccess.SHIZUKU)
+                assertWithMessage("round $round, flow").that(settings.privilegedAccessFlow.value)
+                    .isEqualTo(PrivilegedAccess.SHIZUKU)
+            }
+        } finally {
+            pool.shutdownNow()
+        }
     }
 
     @Test
