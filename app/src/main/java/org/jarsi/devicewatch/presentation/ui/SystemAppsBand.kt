@@ -5,14 +5,15 @@ import androidx.compose.ui.res.stringResource
 import org.jarsi.devicewatch.R
 
 /**
- * The Apps tab's way into the system-apps page. With extended access on it opens
- * the page; without, it says what the page would do and what it takes.
+ * The Apps tab's way into the system-apps page. With Shizuku or root on it opens
+ * the page; without, the adb route included, it says what the page would do and
+ * what it takes.
  */
 @Composable
-internal fun SystemAppsBand(extendedAccessOn: Boolean, onOpen: () -> Unit) {
+internal fun SystemAppsBand(shellAccessOn: Boolean, onOpen: () -> Unit) {
     SettingsSectionCard(
         titleRes = R.string.system_apps_section,
-        trailing = if (extendedAccessOn) {
+        trailing = if (shellAccessOn) {
             {
                 SectionLink(
                     text = stringResource(R.string.system_apps_open),
@@ -24,6 +25,6 @@ internal fun SystemAppsBand(extendedAccessOn: Boolean, onOpen: () -> Unit) {
             null
         },
     ) {
-        KernelNote(stringResource(if (extendedAccessOn) R.string.system_apps_band_on else R.string.system_apps_band_off))
+        KernelNote(stringResource(if (shellAccessOn) R.string.system_apps_band_on else R.string.system_apps_band_off))
     }
 }

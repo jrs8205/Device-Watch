@@ -5,7 +5,10 @@ import androidx.lifecycle.viewModelScope
 import org.jarsi.devicewatch.data.HealthAlert
 import org.jarsi.devicewatch.data.QuickMetric
 import org.jarsi.devicewatch.data.storageUsedBytes
+import org.jarsi.devicewatch.data.AdbGrants
+import org.jarsi.devicewatch.data.AdbPermission
 import org.jarsi.devicewatch.data.AppSettingsRepository
+import org.jarsi.devicewatch.data.LocalShell
 import org.jarsi.devicewatch.data.AppUsageRepository
 import org.jarsi.devicewatch.data.CHARGE_LIMIT_MAX
 import org.jarsi.devicewatch.data.CHARGE_LIMIT_MIN
@@ -100,6 +103,9 @@ data class DashboardUiState(
     val classicLook: Boolean = false,
     val rootStatus: RootStatus = RootStatus.OFF,
     val shizukuStatus: ShizukuStatus = ShizukuStatus.OFF,
+    val adbStatus: AdbStatus = AdbStatus.OFF,
+    /** The permissions not yet granted from a computer, for [AdbStatus.MISSING] to name. */
+    val adbMissing: Set<AdbPermission> = emptySet(),
     /** Root went off with processor limits still in the kernel: they last until a restart. */
     val cpuCapsKeptUntilRestart: Boolean = false,
     /** The optional alerts the user has switched on. */
@@ -134,6 +140,21 @@ enum class RootStatus { OFF, REQUESTING, ON, DENIED, NO_SU, RESTORING }
  */
 enum class ShizukuStatus { OFF, REQUESTING, ON, WAITING, DENIED, NOT_RUNNING }
 
+/**
+ * Where the ADB permissions switch stands. MISSING is off with the permissions
+ * still to grant named; STARTING is on its way on, while root's processor limits
+ * go back first.
+ */
+enum class AdbStatus { OFF, STARTING, ON, MISSING }
+
+/** Shizuku or root is on: what takes the shell user is within reach, the system apps page among it. */
+val DashboardUiState.shellAccessOn: Boolean
+    get() = rootStatus == RootStatus.ON || shizukuStatus == ShizukuStatus.ON
+
+/** Any route is on: the pages that only read Android's own records open. */
+val DashboardUiState.extendedAccessOn: Boolean
+    get() = shellAccessOn || adbStatus == AdbStatus.ON
+
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
     private val repository: SystemStatsRepository,
@@ -147,6 +168,8 @@ class DashboardViewModel @Inject constructor(
     private val rootShell: RootShell,
     private val shizukuShell: ShizukuShell,
     private val cpuProfiles: CpuProfiles,
+    private val localShell: LocalShell,
+    private val adbGrants: AdbGrants,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DashboardUiState())
@@ -162,6 +185,7 @@ class DashboardViewModel @Inject constructor(
                 classicLook = settings.classicLook(),
                 rootStatus = if (access == PrivilegedAccess.ROOT) RootStatus.ON else RootStatus.OFF,
                 shizukuStatus = if (access == PrivilegedAccess.SHIZUKU) ShizukuStatus.ON else ShizukuStatus.OFF,
+                adbStatus = if (access == PrivilegedAccess.ADB) AdbStatus.ON else AdbStatus.OFF,
                 enabledAlerts = HealthAlert.entries.filter(settings::alertEnabled).toSet(),
                 notificationMetrics = settings.notificationMetrics(),
                 tileValueIcons = settings.tileValueIcons(),
@@ -178,6 +202,9 @@ class DashboardViewModel @Inject constructor(
         }
         viewModelScope.launch {
             rootShell.lost.collect { lost -> if (lost) onRootLost() }
+        }
+        viewModelScope.launch {
+            localShell.lost.collect { lost -> if (lost) onAdbGrantLost() }
         }
         viewModelScope.launch {
             settings.privilegedAccessFlow.collect(::onPrivilegedAccess)
@@ -275,10 +302,13 @@ class DashboardViewModel @Inject constructor(
                 _uiState.update { it.copy(rootStatus = status) }
                 return@launch
             }
-            // One shell at a time: root reads everything Shizuku does.
+            // One shell at a time: root reads everything the others do.
             settings.setPrivilegedAccess(PrivilegedAccess.ROOT)
             shizukuShell.close()
-            _uiState.update { it.copy(rootStatus = RootStatus.ON, shizukuStatus = ShizukuStatus.OFF) }
+            localShell.close()
+            _uiState.update {
+                it.copy(rootStatus = RootStatus.ON, shizukuStatus = ShizukuStatus.OFF, adbStatus = AdbStatus.OFF, adbMissing = emptySet())
+            }
         }
     }
 
@@ -350,9 +380,111 @@ class DashboardViewModel @Inject constructor(
                 }
                 settings.setPrivilegedAccess(PrivilegedAccess.SHIZUKU)
                 rootShell.close()
-                _uiState.update { it.copy(shizukuStatus = ShizukuStatus.ON, rootStatus = RootStatus.OFF) }
+                localShell.close()
+                _uiState.update {
+                    it.copy(
+                        shizukuStatus = ShizukuStatus.ON,
+                        rootStatus = RootStatus.OFF,
+                        adbStatus = AdbStatus.OFF,
+                        adbMissing = emptySet(),
+                    )
+                }
             }
         }
+    }
+
+    /** Numbers the switch-ons that wait for root's limits to go back; see [rootRequest]. */
+    private var adbRequest = 0
+
+    /**
+     * The adb route has nothing to ask on the phone: the permissions were granted
+     * from a computer or they were not. All three there, it takes over from
+     * whichever route was on, root's processor limits going back first as when
+     * Shizuku takes over; any missing, the switch stays off and names them.
+     */
+    fun onAdbModeChange(enabled: Boolean) {
+        if (!enabled) {
+            // Also ends a switch-on still waiting for root's limits.
+            adbRequest++
+            if (settings.privilegedAccess() == PrivilegedAccess.ADB) settings.setPrivilegedAccess(PrivilegedAccess.OFF)
+            localShell.close()
+            _uiState.update { it.copy(adbStatus = AdbStatus.OFF, adbMissing = emptySet()) }
+            return
+        }
+        if (_uiState.value.adbStatus == AdbStatus.STARTING) return
+        val missing = adbGrants.missing()
+        if (missing.isNotEmpty()) {
+            _uiState.update { it.copy(adbStatus = AdbStatus.MISSING, adbMissing = missing) }
+            return
+        }
+        val request = ++adbRequest
+        if (settings.privilegedAccess() != PrivilegedAccess.ROOT || !profileNeedsRoot()) {
+            takeOverWithAdb()
+            return
+        }
+        // Root is on its way out: the Kernel page closes and the switch says why, as when root is switched off.
+        _uiState.update { it.copy(adbStatus = AdbStatus.STARTING, adbMissing = emptySet(), rootStatus = RootStatus.RESTORING) }
+        viewModelScope.launch {
+            withContext(NonCancellable) {
+                restoreStockQuietly()
+                // Switched off while the limits were going back: that later word wins,
+                // and root shows as it stands now.
+                if (request != adbRequest) {
+                    _uiState.update { it.copy(rootStatus = rootStatusNow()) }
+                    return@withContext
+                }
+                takeOverWithAdb()
+            }
+        }
+    }
+
+    /** One shell at a time: the others close, and a request either was still waiting on finds its switch off. */
+    private fun takeOverWithAdb() {
+        settings.setPrivilegedAccess(PrivilegedAccess.ADB)
+        rootShell.close()
+        shizukuShell.close()
+        _uiState.update {
+            it.copy(
+                adbStatus = AdbStatus.ON,
+                adbMissing = emptySet(),
+                rootStatus = RootStatus.OFF,
+                shizukuStatus = ShizukuStatus.OFF,
+            )
+        }
+    }
+
+    /**
+     * Read again on every return to the screen: a permission revoked from a
+     * computer while the route was on. Without DUMP a command finds out by
+     * itself ([onAdbGrantLost]); without one of the other two nothing would,
+     * and the pages they open would just stay empty under a switch that says on.
+     */
+    fun onAdbGrantsChecked() {
+        if (settings.privilegedAccess() != PrivilegedAccess.ADB) return
+        val missing = adbGrants.missing()
+        if (missing.isNotEmpty()) switchAdbOffFor(missing)
+    }
+
+    /**
+     * A command found the DUMP grant gone. The setting is switched off where that
+     * was found ([org.jarsi.devicewatch.data.SelectedPrivilegedShell]), and here
+     * as well: this may run before that has had its turn.
+     */
+    private fun onAdbGrantLost() {
+        val missing = adbGrants.missing()
+        if (missing.isEmpty()) {
+            // Granted again already: nothing to name. The loss is cleared for the next command.
+            localShell.close()
+            return
+        }
+        switchAdbOffFor(missing)
+    }
+
+    private fun switchAdbOffFor(missing: Set<AdbPermission>) {
+        adbRequest++
+        if (settings.privilegedAccess() == PrivilegedAccess.ADB) settings.setPrivilegedAccess(PrivilegedAccess.OFF)
+        localShell.close()
+        _uiState.update { it.copy(adbStatus = AdbStatus.MISSING, adbMissing = missing) }
     }
 
     /**
@@ -375,6 +507,11 @@ class DashboardViewModel @Inject constructor(
                         if (state.shizukuStatus == ShizukuStatus.WAITING) ShizukuStatus.WAITING else ShizukuStatus.ON
                     state.shizukuStatus == ShizukuStatus.ON || state.shizukuStatus == ShizukuStatus.WAITING -> ShizukuStatus.OFF
                     else -> state.shizukuStatus
+                },
+                adbStatus = when {
+                    access == PrivilegedAccess.ADB -> AdbStatus.ON
+                    state.adbStatus == AdbStatus.ON -> AdbStatus.OFF
+                    else -> state.adbStatus
                 },
             )
         }

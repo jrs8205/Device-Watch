@@ -9,6 +9,9 @@ import org.jarsi.devicewatch.data.CpuProfile
 import org.jarsi.devicewatch.data.CpuProfileNotice
 import org.jarsi.devicewatch.data.CpuProfileStatus
 import org.jarsi.devicewatch.data.CpuProfiles
+import org.jarsi.devicewatch.data.AdbGrants
+import org.jarsi.devicewatch.data.AdbPermission
+import org.jarsi.devicewatch.data.LocalShell
 import org.jarsi.devicewatch.data.PrivilegedAccess
 import org.jarsi.devicewatch.data.RootAccess
 import org.jarsi.devicewatch.data.RootShell
@@ -155,6 +158,28 @@ internal class FakeShizukuShell(
         closedCount++
         generation++
     }
+}
+
+internal class FakeLocalShell : LocalShell {
+    var closedCount = 0
+
+    override var generation = 0
+
+    override val lost = MutableStateFlow(false)
+
+    override fun run(command: String, timeoutMillis: Long): String? = null
+
+    override fun run(command: String, timeoutMillis: Long, wanted: Int): String? = null
+
+    override fun close() {
+        closedCount++
+        generation++
+        lost.value = false
+    }
+}
+
+internal class FakeAdbGrants(var missing: Set<AdbPermission> = emptySet()) : AdbGrants {
+    override fun missing(): Set<AdbPermission> = missing
 }
 
 internal class FakeMonitorServiceRelay : MonitorServiceRelay {

@@ -9,6 +9,7 @@ import kotlinx.coroutines.CompletableDeferred
 import org.jarsi.devicewatch.data.PrivilegedAccess
 import org.jarsi.devicewatch.data.RootAccess
 import org.jarsi.devicewatch.data.ShizukuAccess
+import org.jarsi.devicewatch.data.AdbPermission
 import org.jarsi.devicewatch.data.AppSettingsRepository
 import org.jarsi.devicewatch.data.AppUsageRepository
 import org.jarsi.devicewatch.data.DATA_QUOTA_MAX_GB
@@ -68,9 +69,11 @@ class DashboardViewModelTest {
         rootShell: FakeRootShell = FakeRootShell(),
         shizukuShell: FakeShizukuShell = FakeShizukuShell(),
         cpuProfiles: FakeCpuProfiles = FakeCpuProfiles(),
+        localShell: FakeLocalShell = FakeLocalShell(),
+        adbGrants: FakeAdbGrants = FakeAdbGrants(),
     ) = DashboardViewModel(
         repository, widget, settings, appUsage, notifications, history, relay, alertNotifications, rootShell,
-        shizukuShell, cpuProfiles,
+        shizukuShell, cpuProfiles, localShell, adbGrants,
     )
 
     @Test
@@ -1400,6 +1403,213 @@ class DashboardViewModelTest {
             assertThat(settings.access).isEqualTo(PrivilegedAccess.OFF)
             assertThat(shizukuShell.closedCount).isEqualTo(1)
             assertThat(viewModel.uiState.value.shizukuStatus).isEqualTo(ShizukuStatus.OFF)
+        }
+
+    @Test
+    fun `given the three permissions granted, when ADB permissions are switched on, then the route is persisted`() =
+        runTest(dispatcher) {
+            val settings = FakeAppSettingsRepository()
+            val viewModel = buildViewModel(settings = settings, adbGrants = FakeAdbGrants())
+
+            viewModel.onAdbModeChange(true)
+            advanceUntilIdle()
+
+            assertThat(settings.access).isEqualTo(PrivilegedAccess.ADB)
+            assertThat(viewModel.uiState.value.adbStatus).isEqualTo(AdbStatus.ON)
+            assertThat(viewModel.uiState.value.adbMissing).isEmpty()
+        }
+
+    @Test
+    fun `given a permission not yet granted, when ADB permissions are switched on, then the switch stays off and names it`() =
+        runTest(dispatcher) {
+            val settings = FakeAppSettingsRepository()
+            val grants = FakeAdbGrants(missing = setOf(AdbPermission.BATTERY_STATS, AdbPermission.PACKAGE_USAGE_STATS))
+            val viewModel = buildViewModel(settings = settings, adbGrants = grants)
+
+            viewModel.onAdbModeChange(true)
+            advanceUntilIdle()
+
+            assertThat(settings.access).isEqualTo(PrivilegedAccess.OFF)
+            assertThat(viewModel.uiState.value.adbStatus).isEqualTo(AdbStatus.MISSING)
+            assertThat(viewModel.uiState.value.adbMissing)
+                .containsExactly(AdbPermission.BATTERY_STATS, AdbPermission.PACKAGE_USAGE_STATS)
+
+            // Granted from the computer meanwhile: the next try goes through.
+            grants.missing = emptySet()
+            viewModel.onAdbModeChange(true)
+            advanceUntilIdle()
+
+            assertThat(settings.access).isEqualTo(PrivilegedAccess.ADB)
+            assertThat(viewModel.uiState.value.adbStatus).isEqualTo(AdbStatus.ON)
+            assertThat(viewModel.uiState.value.adbMissing).isEmpty()
+        }
+
+    @Test
+    fun `given the adb route selected, when the screen opens, then its switch shows on`() =
+        runTest(dispatcher) {
+            val viewModel = buildViewModel(settings = FakeAppSettingsRepository(access = PrivilegedAccess.ADB))
+
+            assertThat(viewModel.uiState.value.adbStatus).isEqualTo(AdbStatus.ON)
+            assertThat(viewModel.uiState.value.shizukuStatus).isEqualTo(ShizukuStatus.OFF)
+            assertThat(viewModel.uiState.value.rootStatus).isEqualTo(RootStatus.OFF)
+        }
+
+    @Test
+    fun `given Shizuku on, when ADB permissions take over, then Shizuku's shell is closed`() =
+        runTest(dispatcher) {
+            val settings = FakeAppSettingsRepository(access = PrivilegedAccess.SHIZUKU)
+            val shizukuShell = FakeShizukuShell()
+            val viewModel = buildViewModel(settings = settings, shizukuShell = shizukuShell)
+
+            viewModel.onAdbModeChange(true)
+            advanceUntilIdle()
+
+            assertThat(settings.access).isEqualTo(PrivilegedAccess.ADB)
+            assertThat(shizukuShell.closedCount).isEqualTo(1)
+            assertThat(viewModel.uiState.value.shizukuStatus).isEqualTo(ShizukuStatus.OFF)
+            assertThat(viewModel.uiState.value.adbStatus).isEqualTo(AdbStatus.ON)
+        }
+
+    @Test
+    fun `given limits held, when ADB permissions take over from root, then stock comes back first`() =
+        runTest(dispatcher) {
+            val settings = FakeAppSettingsRepository(access = PrivilegedAccess.ROOT)
+            val rootShell = FakeRootShell()
+            val cpuProfiles = holding().apply { this.settings = settings }
+            val viewModel = buildViewModel(settings = settings, rootShell = rootShell, cpuProfiles = cpuProfiles)
+
+            viewModel.onAdbModeChange(true)
+            advanceUntilIdle()
+
+            assertThat(cpuProfiles.calls).containsExactly("restore")
+            assertThat(cpuProfiles.accessAtRestore).isEqualTo(PrivilegedAccess.ROOT)
+            assertThat(settings.access).isEqualTo(PrivilegedAccess.ADB)
+            assertThat(rootShell.closedCount).isEqualTo(1)
+            assertThat(viewModel.uiState.value.rootStatus).isEqualTo(RootStatus.OFF)
+            assertThat(viewModel.uiState.value.adbStatus).isEqualTo(AdbStatus.ON)
+        }
+
+    @Test
+    fun `given limits held, when ADB permissions are switched off while stock is coming back, then they stay off`() =
+        runTest(dispatcher) {
+            val settings = FakeAppSettingsRepository(access = PrivilegedAccess.ROOT)
+            val cpuProfiles = holding().apply { restoreGate = CompletableDeferred() }
+            val viewModel = buildViewModel(settings = settings, cpuProfiles = cpuProfiles)
+
+            viewModel.onAdbModeChange(true)
+            advanceUntilIdle()
+            // On its way on: the switch shows it, and root says its limits are going back.
+            assertThat(viewModel.uiState.value.adbStatus).isEqualTo(AdbStatus.STARTING)
+            assertThat(viewModel.uiState.value.rootStatus).isEqualTo(RootStatus.RESTORING)
+
+            viewModel.onAdbModeChange(false)
+            cpuProfiles.restoreGate!!.complete(Unit)
+            advanceUntilIdle()
+
+            assertThat(settings.access).isEqualTo(PrivilegedAccess.ROOT)
+            assertThat(viewModel.uiState.value.adbStatus).isEqualTo(AdbStatus.OFF)
+            assertThat(viewModel.uiState.value.rootStatus).isEqualTo(RootStatus.ON)
+        }
+
+    @Test
+    fun `given ADB permissions on, when Shizuku is granted, then it takes over and the app's own shell is closed`() =
+        runTest(dispatcher) {
+            val settings = FakeAppSettingsRepository(access = PrivilegedAccess.ADB)
+            val localShell = FakeLocalShell()
+            val viewModel = buildViewModel(settings = settings, localShell = localShell)
+
+            viewModel.onShizukuModeChange(true)
+            advanceUntilIdle()
+
+            assertThat(settings.access).isEqualTo(PrivilegedAccess.SHIZUKU)
+            assertThat(localShell.closedCount).isEqualTo(1)
+            assertThat(viewModel.uiState.value.adbStatus).isEqualTo(AdbStatus.OFF)
+            assertThat(viewModel.uiState.value.shizukuStatus).isEqualTo(ShizukuStatus.ON)
+        }
+
+    @Test
+    fun `given ADB permissions on, when root is granted, then it takes over and the app's own shell is closed`() =
+        runTest(dispatcher) {
+            val settings = FakeAppSettingsRepository(access = PrivilegedAccess.ADB)
+            val localShell = FakeLocalShell()
+            val viewModel = buildViewModel(settings = settings, localShell = localShell)
+
+            viewModel.onRootModeChange(true)
+            advanceUntilIdle()
+
+            assertThat(settings.access).isEqualTo(PrivilegedAccess.ROOT)
+            assertThat(localShell.closedCount).isEqualTo(1)
+            assertThat(viewModel.uiState.value.adbStatus).isEqualTo(AdbStatus.OFF)
+            assertThat(viewModel.uiState.value.rootStatus).isEqualTo(RootStatus.ON)
+        }
+
+    @Test
+    fun `given ADB permissions on, when they are switched off, then the shell is closed`() =
+        runTest(dispatcher) {
+            val settings = FakeAppSettingsRepository(access = PrivilegedAccess.ADB)
+            val localShell = FakeLocalShell()
+            val viewModel = buildViewModel(settings = settings, localShell = localShell)
+
+            viewModel.onAdbModeChange(false)
+
+            assertThat(settings.access).isEqualTo(PrivilegedAccess.OFF)
+            assertThat(localShell.closedCount).isEqualTo(1)
+            assertThat(viewModel.uiState.value.adbStatus).isEqualTo(AdbStatus.OFF)
+        }
+
+    @Test
+    fun `given ADB permissions on, when a command finds the DUMP grant gone, then the switch goes off and names it`() =
+        runTest(dispatcher) {
+            val settings = FakeAppSettingsRepository(access = PrivilegedAccess.ADB)
+            val localShell = FakeLocalShell()
+            val grants = FakeAdbGrants()
+            val viewModel = buildViewModel(settings = settings, localShell = localShell, adbGrants = grants)
+            advanceUntilIdle()
+
+            // The poll's command ran into it; the setting may not have gone off yet.
+            grants.missing = setOf(AdbPermission.DUMP)
+            localShell.lost.value = true
+            advanceUntilIdle()
+
+            assertThat(settings.access).isEqualTo(PrivilegedAccess.OFF)
+            assertThat(viewModel.uiState.value.adbStatus).isEqualTo(AdbStatus.MISSING)
+            assertThat(viewModel.uiState.value.adbMissing).containsExactly(AdbPermission.DUMP)
+            // Ready for the next try: the shell no longer reports the old loss.
+            assertThat(localShell.lost.value).isFalse()
+        }
+
+    @Test
+    fun `given ADB permissions on, when a grant is gone on return to the screen, then the switch goes off and names it`() =
+        runTest(dispatcher) {
+            // BATTERY_STATS revoked: no command would notice, the battery figures just go blank.
+            val settings = FakeAppSettingsRepository(access = PrivilegedAccess.ADB)
+            val localShell = FakeLocalShell()
+            val grants = FakeAdbGrants()
+            val viewModel = buildViewModel(settings = settings, localShell = localShell, adbGrants = grants)
+
+            viewModel.onAdbGrantsChecked()
+            assertThat(viewModel.uiState.value.adbStatus).isEqualTo(AdbStatus.ON)
+
+            grants.missing = setOf(AdbPermission.BATTERY_STATS)
+            viewModel.onAdbGrantsChecked()
+
+            assertThat(settings.access).isEqualTo(PrivilegedAccess.OFF)
+            assertThat(localShell.closedCount).isEqualTo(1)
+            assertThat(viewModel.uiState.value.adbStatus).isEqualTo(AdbStatus.MISSING)
+            assertThat(viewModel.uiState.value.adbMissing).containsExactly(AdbPermission.BATTERY_STATS)
+        }
+
+    @Test
+    fun `given another route on, when the grants are checked on return to the screen, then nothing changes`() =
+        runTest(dispatcher) {
+            val settings = FakeAppSettingsRepository(access = PrivilegedAccess.SHIZUKU)
+            val grants = FakeAdbGrants(missing = AdbPermission.entries.toSet())
+            val viewModel = buildViewModel(settings = settings, adbGrants = grants)
+
+            viewModel.onAdbGrantsChecked()
+
+            assertThat(settings.access).isEqualTo(PrivilegedAccess.SHIZUKU)
+            assertThat(viewModel.uiState.value.adbStatus).isEqualTo(AdbStatus.OFF)
         }
 
     @Test

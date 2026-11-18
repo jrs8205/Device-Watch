@@ -62,6 +62,8 @@ internal fun AppsTab(
     viewModel: AppsViewModel = hiltViewModel(),
     privacy: PrivacyState = PrivacyState(),
     extendedAccessOn: Boolean = false,
+    /** Shizuku or root, which removing a system app takes; the adb route is not enough. */
+    shellAccessOn: Boolean = false,
     onOpenPrivacy: () -> Unit = {},
     onOpenSystemApps: () -> Unit = {},
 ) {
@@ -154,7 +156,7 @@ internal fun AppsTab(
         }
 
         item(key = "system_apps") {
-            SystemAppsBand(extendedAccessOn = extendedAccessOn, onOpen = onOpenSystemApps)
+            SystemAppsBand(shellAccessOn = shellAccessOn, onOpen = onOpenSystemApps)
         }
 
         item(key = "screen_time") {

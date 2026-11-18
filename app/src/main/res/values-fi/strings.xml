@@ -183,6 +183,11 @@
     <string name="root_status_restoring">Palautetaan puhelimen omat suorittimen nopeusrajat ennen kuin root kytkeytyy pois…</string>
     <string name="cpu_caps_kept_until_restart">Rootilla asetetut suorittimen nopeusrajat pysyvät, kunnes puhelin käynnistetään uudelleen: rootia ei enää ollut niiden poistamiseen.</string>
     <string name="root_status_no_su">su-komentoa ei löytynyt. Puhelinta ei ole rootattu, tai sen root-hallinnassa (KernelSU, APatch) ei ole vielä sallittu Device Watchia.</string>
+    <string name="adb_mode_title">ADB-luvat</string>
+    <string name="adb_mode_description">Tietokoneelta kerran annetuilla luvilla, ilman Shizukua ja rootia: akun omat kulumislukemat, piirien lämpötilat, akkutilastot latauksesta lähtien ja yksityisyysloki. Suorittimen todellista kuormaa Android ei anna tätä kautta.</string>
+    <string name="adb_status_on">ADB-luvat käytössä.</string>
+    <string name="adb_status_missing">Lupia puuttuu: %1$s. Aja nämä tietokoneelta ja kytke sitten uudelleen:</string>
+    <string name="adb_copy_commands">Kopioi komennot</string>
     <string name="classic_look_title">Alkuperäinen ulkoasu</string>
     <string name="classic_look_description">Versiota 1.6 edeltävät värit ja numerofontti: Android 12:sta alkaen värit tulevat taustakuvasta.</string>
     <string name="alert_channel_name">Laitehälytykset</string>
@@ -380,7 +385,7 @@
     <string name="dream_vertical_shift_description">Näytönsäästäjä siirtyy minuutin välein hieman, ettei näyttöön pala kuvaa. Tämän ollessa päällä se siirtyy vain ylös ja alas ja pysyy vaakasuunnassa keskellä.</string>
     <string name="dream_device_name_title">Näytä laitteen nimi</string>
     <string name="dream_start_on_charge_title">Käynnistä heti kun lataus alkaa</string>
-    <string name="dream_start_on_charge_description">Kun lataus alkaa näytön ollessa pois päältä, näytönsäästäjä käynnistyy myös Always On Displayn ollessa päällä: laajennetulla käytöllä heti, muuten Device Watch herättää näytön ja näytönsäästäjä seuraa noin 10–15 sekunnissa. Mitään ei tapahdu, kun näyttö on päällä.</string>
+    <string name="dream_start_on_charge_description">Kun lataus alkaa näytön ollessa pois päältä, näytönsäästäjä käynnistyy myös Always On Displayn ollessa päällä: Shizukulla tai rootilla heti, muuten Device Watch herättää näytön ja näytönsäästäjä seuraa noin 10–15 sekunnissa. Mitään ei tapahdu, kun näyttö on päällä.</string>
     <string name="dream_device_name_description">Näyttää puhelimen nimen kellon yläpuolella, sellaisena kuin se on Androidin asetuksissa kohdassa Tietoja puhelimesta.</string>
     <plurals name="dream_unread_notifications">
         <item quantity="one">%d kuittaamaton ilmoitus</item>
@@ -835,7 +840,7 @@
     <string name="privacy_title">Yksityisyysloki</string>
     <string name="privacy_open">Avaa</string>
     <string name="privacy_open_description">Avaa yksityisyysloki</string>
-    <string name="privacy_band_off">Kun laajennettu käyttö on päällä (Shizuku tai root, Asetuksissa), tämä kaista näyttää Androidin omasta lokista, mikä sovellus käytti kameraa, mikrofonia ja sijaintia ja milloin. Ilman sitä Androidin oma näkymä samaan lokiin on napautuksen päässä.</string>
+    <string name="privacy_band_off">Kun laajennettu käyttö on päällä (Shizuku, root tai ADB-luvat, Asetuksissa), tämä kaista näyttää Androidin omasta lokista, mikä sovellus käytti kameraa, mikrofonia ja sijaintia ja milloin. Ilman sitä Androidin oma näkymä samaan lokiin on napautuksen päässä.</string>
     <string name="privacy_reading">Luetaan Androidin lokia…</string>
     <string name="privacy_read_failed">Komentotulkki ei vastannut. Yritetään kohta uudelleen.</string>
     <string name="privacy_read_failed_stale">Komentotulkki ei vastannut viimeisimpään lukuun, joten näytetään edellinen.</string>

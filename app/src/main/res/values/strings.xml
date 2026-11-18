@@ -187,6 +187,11 @@
     <string name="root_status_restoring">Returning the phone\'s own processor speed limits before root goes off…</string>
     <string name="cpu_caps_kept_until_restart">The processor speed limits set with root stay until the phone restarts: root was no longer there to remove them.</string>
     <string name="root_status_no_su">No su command was found. The phone is not rooted, or its root manager (KernelSU, APatch) has not yet been told to allow Device Watch.</string>
+    <string name="adb_mode_title">ADB permissions</string>
+    <string name="adb_mode_description">With permissions granted once from a computer, without Shizuku or root: the battery\'s own wear figures, chip temperatures, the battery statistics since the last charge and the privacy log. Android does not give the real processor load this way.</string>
+    <string name="adb_status_on">ADB permissions in use.</string>
+    <string name="adb_status_missing">Not granted yet: %1$s. Run these on a computer, then switch this on again:</string>
+    <string name="adb_copy_commands">Copy commands</string>
     <string name="classic_look_title">Original look</string>
     <string name="classic_look_description">The colours and number font from before version 1.6: on Android 12 and newer the colours follow your wallpaper.</string>
     <string name="alert_channel_name">Device alerts</string>
@@ -384,7 +389,7 @@
     <string name="dream_vertical_shift_description">The screensaver shifts a little once a minute so nothing burns into the screen. With this on it moves only up and down and stays centred sideways.</string>
     <string name="dream_device_name_title">Show the device name</string>
     <string name="dream_start_on_charge_title">Start as soon as charging begins</string>
-    <string name="dream_start_on_charge_description">When charging begins with the screen off, the screensaver comes up even with Always On Display on: at once with extended access, otherwise Device Watch wakes the screen and the screensaver follows in about 10–15 seconds. Nothing happens while the screen is on.</string>
+    <string name="dream_start_on_charge_description">When charging begins with the screen off, the screensaver comes up even with Always On Display on: at once with Shizuku or root, otherwise Device Watch wakes the screen and the screensaver follows in about 10–15 seconds. Nothing happens while the screen is on.</string>
     <string name="dream_device_name_description">Show the phone\'s name above the clock, as set under About phone in Android\'s settings.</string>
     <plurals name="dream_unread_notifications">
         <item quantity="one">%d unread notification</item>
@@ -845,7 +850,7 @@
     <string name="privacy_title">Privacy log</string>
     <string name="privacy_open">Open</string>
     <string name="privacy_open_description">Open the privacy log</string>
-    <string name="privacy_band_off">With extended access on (Shizuku or root, in Settings) this band shows which apps used the camera, the microphone and the location, and when, from Android\'s own record. Without it, Android\'s own view of the same record is a tap away.</string>
+    <string name="privacy_band_off">With extended access on (Shizuku, root or ADB permissions, in Settings) this band shows which apps used the camera, the microphone and the location, and when, from Android\'s own record. Without it, Android\'s own view of the same record is a tap away.</string>
     <string name="privacy_reading">Reading Android\'s record…</string>
     <string name="privacy_read_failed">The shell did not answer. Trying again in a moment.</string>
     <string name="privacy_read_failed_stale">The shell did not answer the last read, so the one before is shown.</string>

@@ -64,8 +64,9 @@ import org.jarsi.devicewatch.presentation.PrivacyState
 import org.jarsi.devicewatch.presentation.PrivacyViewModel
 import org.jarsi.devicewatch.presentation.KernelBandState
 import org.jarsi.devicewatch.presentation.RootStatus
-import org.jarsi.devicewatch.presentation.ShizukuStatus
 import org.jarsi.devicewatch.presentation.SystemAppsViewModel
+import org.jarsi.devicewatch.presentation.extendedAccessOn
+import org.jarsi.devicewatch.presentation.shellAccessOn
 import org.jarsi.devicewatch.system.SystemMonitorService
 
 /** Doubles the selection pill so colour is never the only cue. */
@@ -147,7 +148,7 @@ fun SystemDashboardScreen(
 
     // Privacy log page, reached from the Apps tab's PRIVACY band. It reads through
     // the shell, so it closes the moment extended access goes off.
-    val extendedAccessOn = uiState.rootStatus == RootStatus.ON || uiState.shizukuStatus == ShizukuStatus.ON
+    val extendedAccessOn = uiState.extendedAccessOn
     var showPrivacy by rememberSaveable { mutableStateOf(false) }
     BackHandler(enabled = showPrivacy) { showPrivacy = false }
     LaunchedEffect(extendedAccessOn) {
@@ -155,11 +156,13 @@ fun SystemDashboardScreen(
     }
 
     // System apps page, reached from the Apps tab's SYSTEM APPS band. Its removals
-    // go through the shell, so it too closes the moment extended access goes off.
+    // take the shell user, so it is there with Shizuku or root alone, not on the
+    // adb route, and closes the moment that access goes off.
+    val shellAccessOn = uiState.shellAccessOn
     var showSystemApps by rememberSaveable { mutableStateOf(false) }
     BackHandler(enabled = showSystemApps) { showSystemApps = false }
-    LaunchedEffect(extendedAccessOn) {
-        if (!extendedAccessOn) showSystemApps = false
+    LaunchedEffect(shellAccessOn) {
+        if (!shellAccessOn) showSystemApps = false
     }
 
     // Every figure a tile, the widget or the notification shows is on the Overview.
@@ -255,7 +258,7 @@ fun SystemDashboardScreen(
         return
     }
 
-    if (showSystemApps && extendedAccessOn) {
+    if (showSystemApps && shellAccessOn) {
         SystemAppsPage(onBack = { showSystemApps = false }, viewModel = systemAppsViewModel)
         return
     }
@@ -389,6 +392,7 @@ fun SystemDashboardScreen(
                                 viewModel = appsViewModel,
                                 privacy = privacy,
                                 extendedAccessOn = extendedAccessOn,
+                                shellAccessOn = shellAccessOn,
                                 onOpenPrivacy = { showPrivacy = true },
                                 onOpenSystemApps = { showSystemApps = true },
                             )
@@ -423,6 +427,8 @@ fun SystemDashboardScreen(
                             onClassicLookChange = viewModel::onClassicLookChange,
                             onRootModeChange = viewModel::onRootModeChange,
                             onShizukuModeChange = viewModel::onShizukuModeChange,
+                            onAdbModeChange = viewModel::onAdbModeChange,
+                            onAdbGrantsChecked = viewModel::onAdbGrantsChecked,
                             onAlertToggle = viewModel::onAlertToggle,
                             onNotificationMetricToggle = viewModel::onNotificationMetricToggle,
                             onTileValueIconsChange = viewModel::onTileValueIconsChange,

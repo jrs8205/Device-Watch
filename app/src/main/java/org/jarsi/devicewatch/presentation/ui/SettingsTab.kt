@@ -104,6 +104,8 @@ internal fun SettingsTab(
     onClassicLookChange: (Boolean) -> Unit,
     onRootModeChange: (Boolean) -> Unit,
     onShizukuModeChange: (Boolean) -> Unit,
+    onAdbModeChange: (Boolean) -> Unit,
+    onAdbGrantsChecked: () -> Unit,
     onAlertToggle: (HealthAlert, Boolean) -> Unit,
     onNotificationMetricToggle: (QuickMetric, Boolean) -> Unit,
     onTileValueIconsChange: (Boolean) -> Unit,
@@ -120,8 +122,10 @@ internal fun SettingsTab(
     val sectionTops = remember { mutableStateMapOf<SettingsSection, Int>() }
     ScrollToRequestedSection(sectionRequest, sectionTops, scrollState, onSectionShown)
     // The overlay permission is granted on a system page; it is read again on every return.
+    // So are the adb route's permissions, which a computer may have revoked meanwhile.
     LifecycleResumeEffect(Unit) {
         onOverlayPermissionChecked(Settings.canDrawOverlays(context))
+        onAdbGrantsChecked()
         onPauseOrDispose { }
     }
 
@@ -542,7 +546,7 @@ internal fun SettingsTab(
             )
         }
 
-        // Privileged access: Shizuku or root
+        // Privileged access: Shizuku, root or the permissions granted over adb
         SettingsSectionCard(titleRes = R.string.privileged_section) {
             Spacer(modifier = Modifier.height(4.dp))
             SettingsToggleRow(
@@ -608,6 +612,13 @@ internal fun SettingsTab(
                     color = MaterialTheme.colorScheme.error
                 )
             }
+            Spacer(modifier = Modifier.height(10.dp))
+            AdbAccessRow(
+                status = uiState.adbStatus,
+                missing = uiState.adbMissing,
+                packageName = context.packageName,
+                onCheckedChange = onAdbModeChange,
+            )
         }
 
         // Screensaver settings
