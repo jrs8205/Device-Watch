@@ -143,6 +143,53 @@ class PrivilegedDumpParsersTest {
     }
 
     @Test
+    fun `Android's own battery health is a percentage and two dates in seconds since 1970`() {
+        val health = PrivilegedReadings.androidBatteryHealth(sdkInt = 37) { property ->
+            when (property) {
+                10 -> 94L
+                7 -> 1_709_164_800L
+                8 -> 1_717_804_800L
+                else -> error("unexpected property $property")
+            }
+        }
+
+        assertThat(health).isEqualTo(
+            AndroidBatteryHealth(
+                healthPercent = 94,
+                firstUse = LocalDate.of(2024, 6, 8),
+                manufactured = LocalDate.of(2024, 2, 29),
+            )
+        )
+    }
+
+    @Test
+    fun `a phone that keeps no health figure gives none, not zero percent or the year 1970`() {
+        for (missing in listOf(0L, -1L, Int.MIN_VALUE.toLong(), Long.MIN_VALUE)) {
+            assertThat(PrivilegedReadings.androidBatteryHealth(sdkInt = 34) { missing })
+                .isEqualTo(AndroidBatteryHealth(healthPercent = null, firstUse = null, manufactured = null))
+        }
+        assertThat(PrivilegedReadings.androidBatteryHealth(sdkInt = 34) { 101L }?.healthPercent).isNull()
+    }
+
+    @Test
+    fun `before Android 14 the health figures do not exist and are not asked for`() {
+        var asked = 0
+
+        assertThat(PrivilegedReadings.androidBatteryHealth(sdkInt = 33) { asked++; 94L }).isNull()
+
+        assertThat(asked).isEqualTo(0)
+    }
+
+    @Test
+    fun `Android refusing the health figures, as it does without BATTERY_STATS, gives none`() {
+        val health = PrivilegedReadings.androidBatteryHealth(sdkInt = 37) {
+            throw SecurityException("uid 10221 does not have android.permission.BATTERY_STATS.")
+        }
+
+        assertThat(health).isNull()
+    }
+
+    @Test
     fun `a settings flag from the shell is 1 or 0, and anything else, null included, is unknown`() {
         assertThat(PrivilegedReadings.settingsFlag("1")).isTrue()
         assertThat(PrivilegedReadings.settingsFlag(" 1\r\n")).isTrue()

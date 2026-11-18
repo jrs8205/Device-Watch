@@ -111,6 +111,8 @@ class SystemStatsRepositoryImpl @Inject constructor(
     private var accessSeen = PrivilegedAccess.OFF
     private var samsungBattery: SamsungBattery? = null
     private var samsungBatteryReadAtMillis = 0L
+    private var androidBatteryHealth: AndroidBatteryHealth? = null
+    private var androidBatteryHealthReadAtMillis = 0L
 
     /**
      * The cell list, kept for a minute: every read of it goes into Android's privacy
@@ -595,7 +597,8 @@ class SystemStatsRepositoryImpl @Inject constructor(
      * Android lets an app read them, and from Android 17, which hands apps "off" for
      * both, through the privileged shell (`settings get global`, which the ADB shell
      * user and root may read), under the stats mutex in a shell pass of its own.
-     * Without extended access the rows say Android keeps the value from apps.
+     * Without such a shell, the adb route included, the rows say Android keeps the
+     * value from apps.
      */
     private suspend fun readDeveloperFlags(): DeveloperFlags {
         if (ExtraStatsLogic.developerFlagsReadable(Build.VERSION.SDK_INT)) {
@@ -607,7 +610,8 @@ class SystemStatsRepositoryImpl @Inject constructor(
         val hidden = context.getString(R.string.hidden_by_android)
         val lines = statsMutex.withLock {
             beginShellPass()
-            shellPass.run(DEVELOPER_FLAGS_COMMAND)
+            // `settings` answers the shell user and root, not the app's own user.
+            if (accessSeen.shellUser) shellPass.run(DEVELOPER_FLAGS_COMMAND) else null
         }?.lines().orEmpty()
         fun flag(index: Int): String = PrivilegedReadings.settingsFlag(lines.getOrNull(index))?.let(::boolText) ?: hidden
         return DeveloperFlags(developerOptions = flag(0), usbDebugging = flag(1))
@@ -625,13 +629,14 @@ class SystemStatsRepositoryImpl @Inject constructor(
         beginShellPass()
         val batteryIntent = context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
         val samsung = readSamsungBattery()
-        // A Pixel keeps the dates in the kernel, as seconds since 1970.
-        val firstUse = samsung?.firstUse ?: PrivilegedReadings.epochSecondsDate(
-            readFileTextOnce("/sys/class/power_supply/battery/first_usage_date")
-        )
-        val manufactured = samsung?.manufactured ?: PrivilegedReadings.epochSecondsDate(
-            readFileTextOnce("/sys/class/power_supply/battery/manufacturing_date")
-        )
+        // A Pixel keeps the dates in the kernel, as seconds since 1970; on the adb
+        // route, where the app cannot read those files, Android's own copy stands in.
+        val firstUse = samsung?.firstUse
+            ?: PrivilegedReadings.epochSecondsDate(readFileTextOnce("/sys/class/power_supply/battery/first_usage_date"))
+            ?: readAndroidBatteryHealth()?.firstUse
+        val manufactured = samsung?.manufactured
+            ?: PrivilegedReadings.epochSecondsDate(readFileTextOnce("/sys/class/power_supply/battery/manufacturing_date"))
+            ?: readAndroidBatteryHealth()?.manufactured
         val dateFormat = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
             .withLocale(context.resources.configuration.locales[0])
         BatteryWear(
@@ -656,9 +661,34 @@ class SystemStatsRepositoryImpl @Inject constructor(
         return reported?.takeIf { it > 0 } ?: readSamsungBattery()?.cycles ?: reported
     }
 
-    /** Full capacity as a share of the design capacity, by the kernel's gauge or Samsung's own figure. */
+    /**
+     * Full capacity as a share of the design capacity, by the kernel's gauge or
+     * Samsung's own figure; on the adb route, which reaches neither, the health
+     * figure Android itself keeps.
+     */
     private fun readBatteryHealthPercent(): Int? =
-        readBatteryCapacityPercent().takeIf { it >= 0 } ?: readSamsungBattery()?.healthPercent
+        readBatteryCapacityPercent().takeIf { it >= 0 }
+            ?: readSamsungBattery()?.healthPercent
+            ?: readAndroidBatteryHealth()?.healthPercent
+
+    /**
+     * Android's own health figure and dates, asked for on the adb route alone:
+     * that is where BATTERY_STATS has been granted, and no other route should have
+     * Android refuse a call every poll. They move over weeks, so one answer, a
+     * refusal included, serves for a while.
+     */
+    private fun readAndroidBatteryHealth(): AndroidBatteryHealth? {
+        syncPrivilegedAccess()
+        if (accessSeen != PrivilegedAccess.ADB) return null
+        val now = SystemClock.elapsedRealtime()
+        if (androidBatteryHealthReadAtMillis != 0L && now - androidBatteryHealthReadAtMillis < ANDROID_BATTERY_HEALTH_MAX_AGE_MILLIS) {
+            return androidBatteryHealth
+        }
+        val batteryManager = context.getSystemService(BatteryManager::class.java) ?: return null
+        androidBatteryHealth = PrivilegedReadings.androidBatteryHealth(Build.VERSION.SDK_INT, batteryManager::getLongProperty)
+        androidBatteryHealthReadAtMillis = now
+        return androidBatteryHealth
+    }
 
     private fun readFullCapacityEstimate(): String {
         val batteryManager = context.getSystemService(BatteryManager::class.java) ?: return UNAVAILABLE_TEXT
@@ -1878,8 +1908,8 @@ class SystemStatsRepositoryImpl @Inject constructor(
         val direct = readCpuTemperatureDirect()
         if (direct != UNAVAILABLE_DOUBLE || accessSeen == PrivilegedAccess.OFF) return direct
         // One command for every zone: phones have dozens, and most zones an app
-        // may list it may not read.
-        val zones = shellPass.run("cat /sys/class/thermal/thermal_zone*/temp")
+        // may list it may not read. Not on the adb route, whose shell is the app's own user.
+        val zones = if (accessSeen.shellUser) shellPass.run("cat /sys/class/thermal/thermal_zone*/temp") else null
         return zones?.let { SystemStatsParser.hottestThermalZone(it.lineSequence()) }
             // A Pixel denies the zones to the shell as well; its thermal service answers.
             ?: ThermalServiceParser.hottest(halTemperatures, ThermalServiceParser.TYPE_CPU)
@@ -1914,7 +1944,8 @@ class SystemStatsRepositoryImpl @Inject constructor(
      */
     private fun readSamsungBattery(): SamsungBattery? {
         syncPrivilegedAccess()
-        if (accessSeen == PrivilegedAccess.OFF || !Build.MANUFACTURER.equals("samsung", ignoreCase = true)) {
+        // Android hides the battery service from an app's own user, the adb route's included.
+        if (!accessSeen.shellUser || !Build.MANUFACTURER.equals("samsung", ignoreCase = true)) {
             return null
         }
         val now = SystemClock.elapsedRealtime()
@@ -2441,7 +2472,9 @@ class SystemStatsRepositoryImpl @Inject constructor(
                 // Denied to the app; the privileged shell may still read it below.
             }
         }
-        if (accessSeen == PrivilegedAccess.OFF) {
+        // The adb route's shell is the app's own user: what the app was just
+        // refused, it would be refused there as well.
+        if (!accessSeen.shellUser) {
             unavailableFilePaths.add(path)
             return null
         }
@@ -2482,6 +2515,8 @@ class SystemStatsRepositoryImpl @Inject constructor(
         skipThermalRead = false
         samsungBattery = null
         samsungBatteryReadAtMillis = 0L
+        androidBatteryHealth = null
+        androidBatteryHealthReadAtMillis = 0L
     }
 
     private companion object {
@@ -2489,6 +2524,7 @@ class SystemStatsRepositoryImpl @Inject constructor(
         private const val KB_PER_GB = 1024.0 * 1024.0
         private val WIDEVINE_UUID = java.util.UUID.fromString("edef8ba9-79d6-4ace-a3c8-27dcd51d21ed")
         private const val SAMSUNG_BATTERY_MAX_AGE_MILLIS = 10 * 60_000L
+        private const val ANDROID_BATTERY_HEALTH_MAX_AGE_MILLIS = 10 * 60_000L
 
         /** The two switches, one per line, in the order [DeveloperFlags] takes them. */
         private const val DEVELOPER_FLAGS_COMMAND = "settings get global development_settings_enabled; settings get global adb_enabled"

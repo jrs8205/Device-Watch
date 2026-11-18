@@ -8,7 +8,6 @@ import android.provider.Settings
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import org.jarsi.devicewatch.data.AppSettingsRepository
-import org.jarsi.devicewatch.data.PrivilegedAccess
 import org.jarsi.devicewatch.data.PrivilegedShell
 
 /**
@@ -34,7 +33,9 @@ class ChargeStartScreensaver @Inject constructor(
         // Before the shell is touched at all: a busy shell can take seconds to answer.
         if (busy()) return
 
-        val shellSelection = if (appSettings.privilegedAccess() != PrivilegedAccess.OFF) {
+        // Starting a screensaver takes the shell user or root: on the adb route the
+        // app's own user would be refused, so that route goes the ordinary way.
+        val shellSelection = if (appSettings.privilegedAccess().shellUser) {
             shell.run(READ_SELECTION)?.lines()?.let { lines ->
                 chargeDreamSelection(lines.getOrNull(0), lines.getOrNull(1), lines.getOrNull(2), ourDream)
             }
