@@ -239,6 +239,12 @@ class AppSettingsRepositoryImpl @Inject constructor(
         prefs.edit().putBoolean(KEY_TILE_VALUE_ICONS, enabled).apply()
     }
 
+    override fun tileHighlight(): Boolean = prefs.getBoolean(KEY_TILE_HIGHLIGHT, false)
+
+    override fun setTileHighlight(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_TILE_HIGHLIGHT, enabled).apply()
+    }
+
     // The card's settings live in app_settings too, so a restored phone brings the card back
     // the same; the monitor turns it off again if the restored phone lacks the permission.
     override fun overlayShown(): Boolean = prefs.getBoolean(KEY_OVERLAY_SHOWN, false)
@@ -293,6 +299,7 @@ class AppSettingsRepositoryImpl @Inject constructor(
         const val KEY_ALERT_GENERATION_PREFIX = "alert_generation"
         const val KEY_NOTIFICATION_METRICS = "notification_metrics"
         const val KEY_TILE_VALUE_ICONS = "tile_value_icons"
+        const val KEY_TILE_HIGHLIGHT = "tile_highlight"
         const val KEY_OVERLAY_SHOWN = "overlay_shown"
         const val KEY_OVERLAY_METRICS = "overlay_metrics"
         const val KEY_OVERLAY_POSITION_PORTRAIT = "overlay_position_portrait"

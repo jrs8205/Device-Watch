@@ -785,6 +785,19 @@ class DashboardViewModelTest {
         }
 
     @Test
+    fun `switching the tiles' colour stores it and shows it`() =
+        runTest(dispatcher) {
+            val settings = FakeAppSettingsRepository()
+            val viewModel = buildViewModel(settings = settings)
+            assertThat(viewModel.uiState.value.tileHighlight).isFalse()
+
+            viewModel.onTileHighlightChange(true)
+
+            assertThat(settings.tileHighlight()).isTrue()
+            assertThat(viewModel.uiState.value.tileHighlight).isTrue()
+        }
+
+    @Test
     fun `turning the card on with nothing chosen stores the default figures and tells the monitor`() =
         runTest(dispatcher) {
             val settings = FakeAppSettingsRepository()

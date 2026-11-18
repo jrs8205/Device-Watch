@@ -351,6 +351,14 @@ internal class FakeAppSettingsRepository(
         valueIcons = enabled
     }
 
+    private var highlight = false
+
+    override fun tileHighlight(): Boolean = highlight
+
+    override fun setTileHighlight(enabled: Boolean) {
+        highlight = enabled
+    }
+
     override val overlayShownFlow = MutableStateFlow(false)
     private var overlayFigures: Set<QuickMetric> = emptySet()
     private val overlayPositions = mutableMapOf<Boolean, OverlayPosition>()

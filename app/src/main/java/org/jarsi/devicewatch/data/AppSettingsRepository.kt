@@ -129,6 +129,14 @@ interface AppSettingsRepository {
 
     fun setTileValueIcons(enabled: Boolean)
 
+    /**
+     * Whether a tile with a reading takes the colour of a switched-on tile; off by default,
+     * as the tiles are not switches (GitHub #11).
+     */
+    fun tileHighlight(): Boolean
+
+    fun setTileHighlight(enabled: Boolean)
+
     /** Whether the floating card is up; off by default, and turned off when its permission goes. */
     fun overlayShown(): Boolean
 

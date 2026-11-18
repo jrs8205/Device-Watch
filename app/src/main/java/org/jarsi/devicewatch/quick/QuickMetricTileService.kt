@@ -71,28 +71,31 @@ abstract class QuickMetricTileService : TileService() {
     private suspend fun refresh() {
         val tile = qsTile ?: return
         val labels = quickMetricLabels(this)
-        val (reading, iconText) = try {
+        val (reading, iconText, highlighted) = try {
             withContext(Dispatchers.Default) {
                 val entry = EntryPointAccessors.fromApplication(applicationContext, QuickEntryPoint::class.java)
                 val source = entry.quickStatsSource()
                 val stats = source.stats()
                 val dataToday = if (metric == QuickMetric.DATA_TODAY) source.dataToday() else null
                 val extendedAccess = entry.appSettings().privilegedAccess() != PrivilegedAccess.OFF
-                QuickMetricFormatter.read(metric, stats, dataToday, extendedAccess, labels) to
+                Triple(
+                    QuickMetricFormatter.read(metric, stats, dataToday, extendedAccess, labels),
                     // A small tile shows nothing but its icon, so by default the figure is the icon.
                     if (entry.appSettings().tileValueIcons()) {
                         QuickMetricFormatter.iconText(metric, stats, dataToday, labels)
                     } else {
                         null
-                    }
+                    },
+                    entry.appSettings().tileHighlight(),
+                )
             }
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
             e.printStackTrace()
-            QuickMetricReading(metric, UNAVAILABLE_TEXT, null, labels.notAvailable) to null
+            Triple(QuickMetricReading(metric, UNAVAILABLE_TEXT, null, labels.notAvailable), null, false)
         }
-        val look = quickTileAppearance(reading, labels.names.getValue(metric), Build.VERSION.SDK_INT)
+        val look = quickTileAppearance(reading, labels.names.getValue(metric), Build.VERSION.SDK_INT, highlighted)
         tile.label = look.label
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) tile.subtitle = look.subtitle
         tile.state = look.state

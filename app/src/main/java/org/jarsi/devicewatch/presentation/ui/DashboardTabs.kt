@@ -432,6 +432,7 @@ fun SystemDashboardScreen(
                             onAlertToggle = viewModel::onAlertToggle,
                             onNotificationMetricToggle = viewModel::onNotificationMetricToggle,
                             onTileValueIconsChange = viewModel::onTileValueIconsChange,
+                            onTileHighlightChange = viewModel::onTileHighlightChange,
                             onOverlayShownChange = viewModel::onOverlayShownChange,
                             onOverlayMetricToggle = viewModel::onOverlayMetricToggle,
                             onOverlayPermissionChecked = viewModel::onOverlayPermissionChecked,

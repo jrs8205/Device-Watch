@@ -109,6 +109,7 @@ internal fun SettingsTab(
     onAlertToggle: (HealthAlert, Boolean) -> Unit,
     onNotificationMetricToggle: (QuickMetric, Boolean) -> Unit,
     onTileValueIconsChange: (Boolean) -> Unit,
+    onTileHighlightChange: (Boolean) -> Unit,
     onOverlayShownChange: (enabled: Boolean, permission: Boolean) -> Unit,
     onOverlayMetricToggle: (QuickMetric, Boolean) -> Unit,
     onOverlayPermissionChecked: (Boolean) -> Unit,
@@ -413,6 +414,12 @@ internal fun SettingsTab(
                 descriptionRes = R.string.tile_value_icons_description,
                 checked = uiState.tileValueIcons,
                 onCheckedChange = onTileValueIconsChange,
+            )
+            SettingsToggleRow(
+                titleRes = R.string.tile_highlight_title,
+                descriptionRes = R.string.tile_highlight_description,
+                checked = uiState.tileHighlight,
+                onCheckedChange = onTileHighlightChange,
             )
         }
 

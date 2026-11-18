@@ -114,6 +114,8 @@ data class DashboardUiState(
     val notificationMetrics: Set<QuickMetric> = emptySet(),
     /** Quick Settings tiles draw their figure in place of their icon. */
     val tileValueIcons: Boolean = true,
+    /** Quick Settings tiles with a reading take the colour of a switched-on tile. */
+    val tileHighlight: Boolean = false,
     /** The floating card is switched on. */
     val overlayShown: Boolean = false,
     /** The figures on the floating card, at most three; none means the default pair. */
@@ -189,6 +191,7 @@ class DashboardViewModel @Inject constructor(
                 enabledAlerts = HealthAlert.entries.filter(settings::alertEnabled).toSet(),
                 notificationMetrics = settings.notificationMetrics(),
                 tileValueIcons = settings.tileValueIcons(),
+                tileHighlight = settings.tileHighlight(),
                 overlayShown = settings.overlayShown(),
                 // The rows show what the card shows: the default pair until something is stored.
                 overlayMetrics = overlayMetricsOrDefault(settings.overlayMetrics()),
@@ -596,6 +599,11 @@ class DashboardViewModel @Inject constructor(
     fun onTileValueIconsChange(enabled: Boolean) {
         settings.setTileValueIcons(enabled)
         _uiState.update { it.copy(tileValueIcons = enabled) }
+    }
+
+    fun onTileHighlightChange(enabled: Boolean) {
+        settings.setTileHighlight(enabled)
+        _uiState.update { it.copy(tileHighlight = enabled) }
     }
 
     /** The switch was flipped on without the permission; the screen opens the permission page meanwhile. */

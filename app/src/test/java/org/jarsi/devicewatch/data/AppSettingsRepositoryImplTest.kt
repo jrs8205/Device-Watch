@@ -23,6 +23,15 @@ class AppSettingsRepositoryImplTest {
     }
 
     @Test
+    fun `tiles are grey until their colour is switched on`() {
+        assertThat(settings.tileHighlight()).isFalse()
+
+        settings.setTileHighlight(true)
+
+        assertThat(AppSettingsRepositoryImpl(ApplicationProvider.getApplicationContext()).tileHighlight()).isTrue()
+    }
+
+    @Test
     fun `no notification figures are chosen by default`() {
         assertThat(settings.notificationMetrics()).isEmpty()
     }

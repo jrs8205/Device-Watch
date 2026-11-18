@@ -1044,6 +1044,8 @@
     <string name="quick_tiles_description">Lisää Laitevahdin painikkeet pika-asetusten muokkaustilasta (kynäkuvake). Leveässä painikkeessa näkyy luvun nimi ja arvo.</string>
     <string name="tile_value_icons_title">Luku kuvakkeena</string>
     <string name="tile_value_icons_description">Pieni painike näyttää vain kuvakkeensa, joten luku piirretään sen paikalle.</string>
+    <string name="tile_highlight_title">Värilliset painikkeet</string>
+    <string name="tile_highlight_description">Painike, jolla on lukema, saa päälle kytketyn painikkeen värin. Napautus avaa edelleen sovelluksen.</string>
     <string name="overlay_card_description">Kelluva luku</string>
     <string name="overlay_close">Piilota</string>
     <string name="overlay_open_app">Avaa Laitevahti</string>

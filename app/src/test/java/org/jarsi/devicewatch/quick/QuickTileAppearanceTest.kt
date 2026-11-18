@@ -34,6 +34,22 @@ class QuickTileAppearanceTest {
         assertThat(a).isEqualTo(QuickTileAppearance("CPU:n lämpö —", null, Tile.STATE_UNAVAILABLE))
     }
 
+    // GitHub #11: an information tile looks switched off beside the phone's own tiles.
+    @Test
+    fun `a tile with a reading takes the colour of a switched-on tile when that is chosen`() {
+        val a = quickTileAppearance(
+            reading(QuickMetric.MEMORY, "5,1 / 7,6 GB"), names("Muisti"), sdkInt = 35, highlighted = true,
+        )
+        assertThat(a).isEqualTo(QuickTileAppearance("Muisti", "5,1 / 7,6 GB", Tile.STATE_ACTIVE))
+    }
+
+    @Test
+    fun `a missing figure stays greyed out whatever was chosen`() {
+        val missing = QuickMetricReading(QuickMetric.CPU_TEMP, UNAVAILABLE_TEXT, null, "vaatii laajennetun käytön")
+        val a = quickTileAppearance(missing, names("CPU:n lämpö"), sdkInt = 35, highlighted = true)
+        assertThat(a.state).isEqualTo(Tile.STATE_UNAVAILABLE)
+    }
+
     private fun reading(metric: QuickMetric, value: String) = QuickMetricReading(metric, value, null, null)
 
     private fun names(tile: String) = QuickMetricNames(title = tile, tileLabel = tile, shortName = tile)

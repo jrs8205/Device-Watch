@@ -1054,6 +1054,8 @@
     <string name="quick_tiles_description">Add Device-Watch\'s tiles from the Quick Settings edit mode (the pencil). A wide tile shows the figure\'s name and value.</string>
     <string name="tile_value_icons_title">Figure as the icon</string>
     <string name="tile_value_icons_description">A small tile shows only its icon, so the figure is drawn in its place.</string>
+    <string name="tile_highlight_title">Coloured tiles</string>
+    <string name="tile_highlight_description">A tile that has a reading takes the colour of a tile that is switched on. Tapping it still opens the app.</string>
     <string name="overlay_card_description">Floating figure</string>
     <string name="overlay_close">Hide</string>
     <string name="overlay_open_app">Open Device-Watch</string>
