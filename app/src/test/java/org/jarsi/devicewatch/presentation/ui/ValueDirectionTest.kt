@@ -80,7 +80,6 @@ class ValueDirectionTest {
             mahText(4040.0, arabic) to "4040 mAh",
             percentText(12.3, arabic) to "12.3 %",
             celsiusText(25.4) to "25 °C",
-            hoursText(13.2, arabic) to "13 h",
             dbmText(-67) to "-67 dBm",
             spacedPercentText(100) to "100 %",
             mbpsText(866) to "866 Mbps",

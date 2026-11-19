@@ -213,6 +213,7 @@
     <string name="since_charge_battery_now">当前电量</string>
     <string name="since_charge_used">已用电量</string>
     <string name="since_charge_avg_drain">平均耗电</string>
+    <string name="since_charge_avg_drain_value">%1$s %%/小时</string>
     <string name="since_charge_charging_now">正在充电——拔下充电器后将显示耗电量。</string>
     <string name="since_charge_empty">尚无统计时段。下次电池充满或拔下充电器时开始统计。</string>
     <string name="since_charge_stale_note">此时段已超过一周——Android 只保留约一周的详细使用事件，因此应用列表可能不完整。</string>
@@ -555,6 +556,7 @@
     <string name="duration_seconds">%1$d 秒</string>
     <string name="duration_minutes">%1$d 分钟</string>
     <string name="duration_hours">%1$d 小时</string>
+    <string name="duration_hours_decimal">%1$s 小时</string>
     <string name="duration_minutes_seconds">%1$d 分 %2$d 秒</string>
     <string name="sim_signal_details">信号质量</string>
     <string name="wifi_security">安全性</string>

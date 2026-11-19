@@ -219,6 +219,7 @@
     <string name="since_charge_battery_now">Battery now</string>
     <string name="since_charge_used">Battery used</string>
     <string name="since_charge_avg_drain">Average drain</string>
+    <string name="since_charge_avg_drain_value">%1$s %%/h</string>
     <string name="since_charge_charging_now">Charging right now — consumption is shown after unplugging.</string>
     <string name="since_charge_empty">No period yet. It starts the next time the battery is charged full or the charger is unplugged.</string>
     <string name="since_charge_stale_note">This period is over a week old — Android keeps detailed usage events for about a week, so the app list may be incomplete.</string>
@@ -563,6 +564,7 @@
     <string name="duration_seconds">%1$d s</string>
     <string name="duration_minutes">%1$d min</string>
     <string name="duration_hours">%1$d h</string>
+    <string name="duration_hours_decimal">%1$s h</string>
     <string name="duration_minutes_seconds">%1$d min %2$d s</string>
     <string name="sim_signal_details">Signal quality</string>
     <string name="wifi_security">Security</string>

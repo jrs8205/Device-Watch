@@ -127,7 +127,7 @@ private fun DrainRow(
                 percentPerHour == null -> stringResource(R.string.battery_usage_too_short, duration)
                 fullBatteryHours == null -> stringResource(R.string.battery_usage_rate_from, amount, duration)
                 else -> stringResource(
-                    R.string.battery_usage_rate_detail, amount, duration, hoursText(fullBatteryHours, locale)
+                    R.string.battery_usage_rate_detail, amount, duration, hoursText(context, fullBatteryHours, locale)
                 )
             }
         )
@@ -331,9 +331,21 @@ internal fun percentText(percent: Double, locale: Locale, decimals: Int = 1): St
 /** Whole degrees: a part's temperature moves faster than a decimal can be read. */
 internal fun celsiusText(celsius: Double): String = Bidi.ltr("${Math.round(celsius)} °C")
 
-/** "13 h" from ten hours up, "7.5 h" below. */
-internal fun hoursText(hours: Double, locale: Locale): String = Bidi.ltr(
-    if (hours >= 10.0) String.format(locale, "%.0f h", hours) else String.format(locale, "%.1f h", hours),
+/**
+ * "13 h" from ten hours up, "7.5 h" below, the unit in the language's own text. Kept in its
+ * own direction where it is put into a sentence of a language written from the right.
+ */
+internal fun hoursText(context: Context, hours: Double, locale: Locale): String = Bidi.isolate(
+    context.getString(
+        R.string.duration_hours_decimal,
+        String.format(locale, if (hours >= 10.0) "%.0f" else "%.1f", hours),
+    ),
+    locale,
+)
+
+/** "2.5 %/h": how fast the battery has gone down, the hour in the language's own text. */
+internal fun percentPerHourText(context: Context, percentPerHour: Double, locale: Locale): String = Bidi.isolate(
+    context.getString(R.string.since_charge_avg_drain_value, String.format(locale, "%.1f", percentPerHour)),
     locale,
 )
 

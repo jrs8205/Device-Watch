@@ -220,9 +220,7 @@ private fun SinceChargeSummaryCard(uiState: SinceChargeUiState) {
                 if (drop >= 1 && hours >= 0.5) {
                     StackedMetricRow(
                         label = stringResource(R.string.since_charge_avg_drain),
-                        value = String.format(
-                            LocalLocale.current.platformLocale, "%.1f %%/h", drop / hours
-                        )
+                        value = percentPerHourText(context, drop / hours, LocalLocale.current.platformLocale)
                     )
                 }
             }

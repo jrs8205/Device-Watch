@@ -215,6 +215,7 @@
     <string name="since_charge_battery_now">Akku nyt</string>
     <string name="since_charge_used">Akkua kulunut</string>
     <string name="since_charge_avg_drain">Keskikulutus</string>
+    <string name="since_charge_avg_drain_value">%1$s %%/h</string>
     <string name="since_charge_charging_now">Latautuu parhaillaan — kulutus näytetään kun laturi irrotetaan.</string>
     <string name="since_charge_empty">Jaksoa ei ole vielä. Se alkaa kun akku on seuraavan kerran ladattu täyteen tai laturi irrotetaan.</string>
     <string name="since_charge_stale_note">Jakso on yli viikon vanha — Android säilyttää tarkkoja käyttötapahtumia noin viikon, joten sovelluslista voi olla vajaa.</string>
@@ -558,6 +559,7 @@
     <string name="duration_seconds">%1$d s</string>
     <string name="duration_minutes">%1$d min</string>
     <string name="duration_hours">%1$d t</string>
+    <string name="duration_hours_decimal">%1$s h</string>
     <string name="duration_minutes_seconds">%1$d min %2$d s</string>
     <string name="sim_signal_details">Signaalin laatu</string>
     <string name="wifi_security">Suojaus</string>

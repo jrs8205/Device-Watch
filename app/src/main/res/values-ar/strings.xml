@@ -223,6 +223,7 @@
     <string name="since_charge_battery_now">البطارية الآن</string>
     <string name="since_charge_used">المستهلك من البطارية</string>
     <string name="since_charge_avg_drain">متوسط الاستنزاف</string>
+    <string name="since_charge_avg_drain_value">%1$s%%/س</string>
     <string name="since_charge_charging_now">جار الشحن الآن — يظهر الاستهلاك بعد فصل الشاحن.</string>
     <string name="since_charge_empty">لا توجد فترة بعد. ستبدأ في المرة القادمة التي يكتمل فيها شحن البطارية أو يفصل فيها الشاحن.</string>
     <string name="since_charge_stale_note">مضى على هذه الفترة أكثر من أسبوع — يحتفظ Android بأحداث الاستخدام المفصلة لنحو أسبوع فقط، لذا قد تكون قائمة التطبيقات ناقصة.</string>
@@ -575,6 +576,7 @@
     <string name="duration_seconds">%1$d ث</string>
     <string name="duration_minutes">%1$d د</string>
     <string name="duration_hours">%1$d س</string>
+    <string name="duration_hours_decimal">%1$s س</string>
     <string name="duration_minutes_seconds">%1$d د %2$d ث</string>
     <string name="sim_signal_details">جودة الإشارة</string>
     <string name="wifi_security">الأمان</string>
