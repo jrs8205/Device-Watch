@@ -1,5 +1,6 @@
 package org.jarsi.devicewatch.presentation.ui
 
+import android.content.Context
 import android.content.Intent
 import android.provider.Settings
 import androidx.compose.foundation.clickable
@@ -588,9 +589,7 @@ private fun ChargeSessionRow(charge: ChargeSession) {
         if (charge.ongoing) add(stringResource(R.string.history_charge_ongoing))
         add(durationText(context, charge.durationMillis))
         charge.percentPerHour?.let { add(stringResource(R.string.history_charge_rate, it)) }
-        charge.peakTemperatureDeciC?.let {
-            add(stringResource(R.string.history_charge_peak, "%.1f °C".format(it / 10.0)))
-        }
+        charge.peakTemperatureDeciC?.let { add(chargePeakText(context, it)) }
     }.joinToString(" · ")
 
     Column(modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp)) {
@@ -623,6 +622,10 @@ private fun ChargeSessionRow(charge: ChargeSession) {
 }
 
 private const val CHARGES_SHOWN_FIRST = 5
+
+/** "peak 41.5 °C": the warmest the battery was during a charge. */
+internal fun chargePeakText(context: Context, peakDeciC: Int): String =
+    context.getString(R.string.history_charge_peak, Bidi.ltr("%.1f °C".format(peakDeciC / 10.0)))
 
 /** "+1,20 GB", "−350 MB" or "±0" beside a day's used storage. */
 internal fun storageChangeText(changeBytes: Long): String = when {

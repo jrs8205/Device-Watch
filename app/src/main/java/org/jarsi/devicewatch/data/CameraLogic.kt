@@ -1,5 +1,6 @@
 package org.jarsi.devicewatch.data
 
+import org.jarsi.devicewatch.Bidi
 import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -64,7 +65,10 @@ object CameraLogic {
         }
     }
 
-    /** "50 MP · f/1,9 · 25 mm · OIS", leaving out what is unknown; null when nothing is known. */
+    /**
+     * "50 MP · f/1,9 · 25 mm · OIS", leaving out what is unknown; null when nothing is known.
+     * One left-to-right piece: after a lens's Arabic name the 50 would leave its MP.
+     */
     fun lensText(lens: CameraLens, locale: Locale): String? {
         val parts = buildList {
             lens.megapixels?.let { add("$it MP") }
@@ -72,7 +76,7 @@ object CameraLogic {
             lens.equivalentFocalMm?.let { add("$it mm") }
         }
         if (parts.isEmpty()) return null
-        return (if (lens.ois) parts + "OIS" else parts).joinToString(" · ")
+        return Bidi.ltr((if (lens.ois) parts + "OIS" else parts).joinToString(" · "), locale)
     }
 
     /** "0,7–8×"; null when the camera cannot zoom at all. */

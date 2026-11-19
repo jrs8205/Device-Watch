@@ -209,7 +209,7 @@
     <string name="alerts_section">التنبيهات</string>
     <string name="alerts_description">تبقى متوقفة ما لم تقم بتفعيلها. يصل كل تنبيه مرة واحدة، ولا يتكرر إلا بعد أن يعود الوضع إلى طبيعته أولا.</string>
     <string name="alert_hot_setting">ارتفاع حرارة البطارية</string>
-    <string name="alert_hot_setting_description">عندما تبلغ حرارة البطارية 45 °C.</string>
+    <string name="alert_hot_setting_description">عندما تبلغ حرارة البطارية \u206645 °C\u2069.</string>
     <string name="alert_storage_setting">انخفاض مساحة التخزين</string>
     <string name="alert_storage_setting_description" formatted="false">عندما تقل المساحة المتاحة عن 10% من مساحة التخزين.</string>
     <string name="alert_drain_setting">استنزاف سريع للبطارية</string>
@@ -491,7 +491,7 @@
     <string name="temperature_cpu">المعالج %1$s</string>
     <string name="temperature_gpu">معالج الرسومات %1$s</string>
     <string name="temperature_skin">سطح الهاتف %1$s</string>
-    <string name="battery_full_capacity_value">حوالي %1$d mAh</string>
+    <string name="battery_full_capacity_value">حوالي \u2066%1$d mAh\u2069</string>
     <string name="hidden_by_android">يخفي Android هذه المعلومة عن التطبيقات</string>
     <string name="device_info_boot_count">إجمالي مرات إعادة التشغيل</string>
 
@@ -524,7 +524,7 @@
     <string name="system_info_section">النظام</string>
     <string name="device_info_ram_advertised">الذاكرة (RAM) المعلنة</string>
     <!-- The phone does not state its memory size; this is the nearest size memory is sold in. -->
-    <string name="device_info_ram_estimate">حوالي %1$d GB</string>
+    <string name="device_info_ram_estimate">حوالي \u2066%1$d GB\u2069</string>
     <string name="screen_on_label">مدة تشغيل الشاشة</string>
     <string name="report_summary_screen_on">مدة تشغيل الشاشة يوميا</string>
     <string name="report_column_screen_on">مدة تشغيل الشاشة</string>
@@ -589,7 +589,7 @@
     <string name="wifi_mlo">الروابط المتعددة (Wi-Fi 7)</string>
     <string name="wifi_mlo_none">غير مستخدمة</string>
     <string name="wifi_capabilities">ما تدعمه الرقاقة</string>
-    <string name="wifi_capabilities_basic">لا نطاق 6 GHz ولا WPA3 ولا Wi-Fi 7</string>
+    <string name="wifi_capabilities_basic">لا نطاق \u20666 GHz\u2069 ولا WPA3 ولا Wi-Fi 7</string>
     <string name="sim_signal_bars">أشرطة الإشارة</string>
     <string name="sim_band">نطاق التردد والقناة</string>
     <string name="external_volumes">بطاقات الذاكرة ووحدات تخزين USB</string>
@@ -845,7 +845,7 @@
     <string name="kernel_zram_note">يضغط Android الذاكرة التي لا تستخدمها التطبيقات حاليا بدلا من إغلاقها.</string>
     <string name="kernel_zram_size">الحجم</string>
     <string name="kernel_zram_stored">البيانات المخزنة</string>
-    <string name="kernel_zram_stored_value">%1$s مضغوطة في %2$s (%3$s×)</string>
+    <string name="kernel_zram_stored_value">%1$s مضغوطة في %2$s (\u2066%3$s×\u2069)</string>
     <string name="kernel_zram_algorithm">خوارزمية الضغط</string>
     <string name="kernel_system_section">النظام</string>
     <string name="kernel_release">إصدار نواة النظام</string>

@@ -875,7 +875,8 @@ fun cpuBottomText(cpuTemp: Double, cpuLoadLabel: String): String {
 
 fun signalDbmText(context: Context, value: Int): String {
     return if (value != UNAVAILABLE_INT) {
-        "$value dBm"
+        // One left-to-right piece: it goes into the signal line's translated text.
+        Bidi.ltr("$value dBm")
     } else {
         context.getString(R.string.signal_unavailable, UNAVAILABLE_TEXT)
     }

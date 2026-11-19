@@ -248,11 +248,7 @@ class SystemStatsRepositoryImpl @Inject constructor(
                 ?.let { boolText(it.isIgnoringBatteryOptimizations(context.packageName)) }
                 ?: UNAVAILABLE_TEXT,
             swap = ExtraStatsLogic.swapFromMeminfo(readSysFile("/proc/meminfo"))?.let { swap ->
-                context.getString(
-                    R.string.swap_used_of,
-                    "%.1f GB".format((swap.totalKb - swap.freeKb) / KB_PER_GB),
-                    "%.1f GB".format(swap.totalKb / KB_PER_GB),
-                )
+                swapText(context, (swap.totalKb - swap.freeKb) / KB_PER_GB, swap.totalKb / KB_PER_GB)
             } ?: UNAVAILABLE_TEXT,
             brightness = readBrightness(),
             screenTimeout = readScreenTimeout(),
@@ -848,11 +844,8 @@ class SystemStatsRepositoryImpl @Inject constructor(
         return ExtraStatsLogic.removableVolumes(infos).map { volume ->
             volume.description to when {
                 !volume.mounted -> context.getString(R.string.volume_not_mounted)
-                volume.totalBytes > 0L -> context.getString(
-                    R.string.volume_free_of,
-                    "%.1f GB".format(volume.freeBytes / GB_BYTES),
-                    "%.1f GB".format(volume.totalBytes / GB_BYTES),
-                )
+                volume.totalBytes > 0L ->
+                    volumeFreeText(context, volume.freeBytes / GB_BYTES, volume.totalBytes / GB_BYTES)
                 else -> context.getString(R.string.volume_mounted)
             }
         }

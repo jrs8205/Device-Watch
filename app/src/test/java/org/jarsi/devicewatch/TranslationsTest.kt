@@ -6,6 +6,7 @@ import org.jarsi.devicewatch.SourceXml.children
 import org.junit.Test
 import org.w3c.dom.Element
 import java.io.File
+import java.util.Locale
 import javax.xml.parsers.DocumentBuilderFactory
 
 /**
@@ -157,10 +158,55 @@ class TranslationsTest {
         assertNoProblems(problems)
     }
 
+    /**
+     * In a sentence written from the right a number and the Latin unit after it come apart on
+     * the line ("mAh 10000") unless the two are kept as one left-to-right piece: the marks
+     * U+2066 and U+2069 around them, written out as escapes so that they can be seen.
+     */
+    @Test
+    fun `in a text written from the right a number keeps its Latin unit beside it`() {
+        val problems = translations.filterKeys { Bidi.isRtl(Locale.forLanguageTag(language(it))) }
+            .flatMap { (qualifier, texts) ->
+                val all = texts.strings.map { it.key to it.value.textContent } +
+                    texts.plurals.flatMap { (name, items) -> items.map { "$name (${it.key})" to it.value } }
+                all.flatMap { (name, raw) ->
+                    asShown(raw).lines().flatMap { line ->
+                        val seen = VisualOrder.rightToLeft(line)
+                        val plain = line.filterNot { it.code in 0x2066..0x2069 }
+                        FIGURE.findAll(plain).map { it.value }.filterNot { it in seen }
+                            .map { "$qualifier: $name draws \"$it\" apart: $seen" }.toList()
+                    }
+                }
+            }
+        assertNoProblems(problems)
+    }
+
+    /** A text as the app shows it: its escapes read, a sample number in place of each argument. */
+    private fun asShown(raw: String): String {
+        val isolatedSample = Char(0x2066) + "x" + Char(0x2069)
+        return ARGUMENT.replace(raw) { match ->
+            when (match.value.last()) {
+                'd' -> "12"
+                'f' -> "1.5"
+                '%' -> "%"
+                else -> isolatedSample
+            }
+        }
+            .replace(ESCAPED_CHARACTER) { it.groupValues[1].toInt(16).toChar().toString() }
+            .replace("\\n", "\n")
+            .replace("\\'", "'")
+    }
+
     private class Forms(val required: Set<String>, val allowed: Set<String> = emptySet())
 
     private companion object {
         val ARGUMENT = Regex("""%(?:\d+\$)?[-#+0,(]*\d*(?:\.\d+)?[a-zA-Z%]""")
+
+        /** An escape as a text's source writes a character that cannot be seen. */
+        val ESCAPED_CHARACTER = Regex("""\\u([0-9a-fA-F]{4})""")
+
+        /** A number and a Latin unit after a space: "45 °C", "6 GHz", "12 mAh". */
+        val FIGURE = Regex("""\d[\d.,]*\s(?:°[CF]|[A-Za-z]+)""")
 
         /** The plural forms a language tells apart; any language not listed has English's two. */
         val FORMS = mapOf(

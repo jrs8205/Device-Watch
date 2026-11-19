@@ -17,7 +17,6 @@ import android.os.SystemClock
 import org.jarsi.devicewatch.LatinDigitResources
 import org.jarsi.devicewatch.R
 import android.os.BatteryManager
-import java.util.Locale
 import org.jarsi.devicewatch.data.HealthAlert
 import org.jarsi.devicewatch.data.AlertStep
 import org.jarsi.devicewatch.data.AlertLogic
@@ -673,11 +672,10 @@ class SystemMonitorService : Service() {
     private fun evaluateBatteryAlerts(sample: BatterySample) {
         try {
             applyAlertStep(HealthAlert.HOT_BATTERY, { latched -> AlertLogic.hotBattery(sample.temperatureDeciC, latched) }) {
-                val temperature = String.format(Locale.getDefault(), "%.1f °C", (sample.temperatureDeciC ?: 0) / 10.0)
                 HealthAlertNotifier.show(
                     applicationContext,
                     HealthAlert.HOT_BATTERY,
-                    getString(R.string.alert_hot_title, temperature),
+                    hotBatteryTitle(this, sample.temperatureDeciC ?: 0),
                     getString(R.string.alert_hot_text),
                 )
             }
@@ -708,10 +706,7 @@ class SystemMonitorService : Service() {
                 applicationContext,
                 HealthAlert.LOW_STORAGE,
                 getString(R.string.alert_storage_title, free ?: 0),
-                getString(
-                    R.string.alert_storage_text,
-                    String.format(Locale.getDefault(), "%.1f GB", stats.totalStorageGb - stats.usedStorageGb),
-                ),
+                lowStorageText(this, stats.totalStorageGb - stats.usedStorageGb),
             )
         }
     }

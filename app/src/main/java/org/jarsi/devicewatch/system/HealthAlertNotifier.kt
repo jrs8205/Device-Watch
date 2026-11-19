@@ -12,9 +12,23 @@ import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
+import org.jarsi.devicewatch.Bidi
 import org.jarsi.devicewatch.MainActivity
 import org.jarsi.devicewatch.R
 import org.jarsi.devicewatch.data.HealthAlert
+import java.util.Locale
+
+/** "The battery is hot: 45.3 °C" */
+internal fun hotBatteryTitle(context: Context, temperatureDeciC: Int): String = context.getString(
+    R.string.alert_hot_title,
+    Bidi.ltr(String.format(Locale.getDefault(), "%.1f °C", temperatureDeciC / 10.0)),
+)
+
+/** "3.3 GB free. The Apps tab lists the largest apps." */
+internal fun lowStorageText(context: Context, freeGb: Double): String = context.getString(
+    R.string.alert_storage_text,
+    Bidi.ltr(String.format(Locale.getDefault(), "%.1f GB", freeGb)),
+)
 
 /**
  * The optional alerts: a hot battery, low storage and a fast drain. One channel

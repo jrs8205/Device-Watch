@@ -389,6 +389,20 @@ internal fun dbmText(value: Int): String =
 /** "100 %", the per cent sign a space away from its number: one left-to-right piece (see [Bidi]). */
 internal fun spacedPercentText(value: Int): String = Bidi.ltr("$value %")
 
+/** "5 % · 1.8 GHz": the processor's load and, where the phone tells it, its speed. */
+internal fun cpuLoadText(loadPercent: Int, freqGhz: Double): String {
+    val text = buildString {
+        append(if (loadPercent >= 0) "$loadPercent %" else UNAVAILABLE_TEXT)
+        if (freqGhz >= 0.0) append(" · ${"%.1f".format(freqGhz)} GHz")
+    }
+    // One left-to-right piece: "5 %" by itself has no letter to read its direction from.
+    return if (loadPercent >= 0 || freqGhz >= 0.0) Bidi.ltr(text) else text
+}
+
+/** "4 GB free" under the storage bar. */
+internal fun freeSpaceText(context: Context, freeGb: Double): String =
+    context.getString(R.string.widget_free_value, Bidi.ltr("%.0f GB".format(freeGb)))
+
 internal fun mbpsText(value: Int): String =
     if (value == UNAVAILABLE_INT) UNAVAILABLE_TEXT else Bidi.ltr("$value Mbps")
 

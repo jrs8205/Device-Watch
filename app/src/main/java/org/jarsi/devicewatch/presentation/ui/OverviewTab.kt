@@ -492,16 +492,7 @@ internal fun OverviewTab(
             // CPU load (same data the widget's CPU tile shows)
             StackedMetricRow(
                 label = stringResource(R.string.cpu_load_row),
-                value = buildString {
-                    if (currentStats.cpuLoadPercent >= 0) {
-                        append("${currentStats.cpuLoadPercent} %")
-                    } else {
-                        append(UNAVAILABLE_TEXT)
-                    }
-                    if (currentStats.cpuFreqGhz >= 0.0) {
-                        append(" · ${"%.1f".format(currentStats.cpuFreqGhz)} GHz")
-                    }
-                },
+                value = cpuLoadText(currentStats.cpuLoadPercent, currentStats.cpuFreqGhz),
                 valueColor = meterColor()
             )
 
@@ -605,7 +596,7 @@ internal fun OverviewTab(
             Text(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                text = stringResource(R.string.widget_free_value, "%.0f GB".format(freeStorage)),
+                text = freeSpaceText(LocalContext.current, freeStorage),
                 fontSize = 11.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.fillMaxWidth()
