@@ -364,7 +364,7 @@
     <string name="dream_show_date">日期</string>
     <string name="dream_show_alarm">下一个闹钟</string>
     <string name="dream_show_battery_details">电池详情</string>
-    <string name="dream_show_estimate">充满所需时间</string>
+    <string name="dream_show_estimate">预计充满时间</string>
     <string name="dream_accent_title">强调色</string>
     <string name="dream_accent_sky">天蓝色</string>
     <string name="dream_accent_teal">青色</string>

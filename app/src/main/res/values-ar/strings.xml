@@ -379,7 +379,7 @@
     <string name="dream_show_date">التاريخ</string>
     <string name="dream_show_alarm">المنبه التالي</string>
     <string name="dream_show_battery_details">تفاصيل البطارية</string>
-    <string name="dream_show_estimate">الوقت حتى اكتمال الشحن</string>
+    <string name="dream_show_estimate">موعد اكتمال الشحن المتوقع</string>
     <string name="dream_accent_title">لون التمييز</string>
     <string name="dream_accent_sky">أزرق سماوي</string>
     <string name="dream_accent_teal">أزرق مخضر</string>
@@ -678,7 +678,7 @@
     <string name="charge_source_dock">قاعدة إرساء</string>
     <string name="battery_health_good">جيدة</string>
     <string name="battery_health_overheat">ساخنة</string>
-    <string name="battery_health_dead">متآكلة</string>
+    <string name="battery_health_dead">مستهلكة</string>
     <string name="battery_health_over_voltage">جهد زائد</string>
     <string name="battery_health_cold">باردة</string>
     <string name="battery_time_until_full_hours">%1$d س %2$d د حتى اكتمال الشحن</string>

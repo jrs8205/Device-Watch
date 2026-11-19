@@ -200,6 +200,25 @@ class TranslationsTest {
         assertNoProblems(problems)
     }
 
+    // Two wordings the review ruled on. The switch shows the time of day at which the charge
+    // is expected to be complete, not how long it takes; and a battery that Android reports as
+    // worn out is not a corroded one.
+    @Test
+    fun `the estimate's switch names a time of day and a worn battery is not a corroded one`() {
+        val problems = translations.flatMap { (qualifier, texts) ->
+            listOfNotNull(
+                "$qualifier: dream_show_estimate speaks of a length of time".takeIf {
+                    val name = texts.strings["dream_show_estimate"]?.textContent.orEmpty()
+                    "所需时间" in name || "الوقت حتى" in name
+                },
+                "$qualifier: battery_health_dead says corroded".takeIf {
+                    "متآكل" in texts.strings["battery_health_dead"]?.textContent.orEmpty()
+                },
+            )
+        }
+        assertNoProblems(problems)
+    }
+
     /**
      * A text as the app shows it: its escapes read, a sample number in place of each number
      * argument and [textArgument] in place of each text argument.
