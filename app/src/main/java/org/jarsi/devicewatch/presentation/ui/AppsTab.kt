@@ -244,7 +244,7 @@ internal fun AppsTab(
                             Text(
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
-                                text = "${entry.launchCount}×",
+                                text = launchCountText(entry.launchCount),
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold
                             )

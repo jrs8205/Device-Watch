@@ -784,7 +784,7 @@ class SystemStatsRepositoryImpl @Inject constructor(
             )
             else -> null
         }
-        val bars = serving?.let { "${it.level} / 4" }
+        val bars = serving?.let { signalBarsText(it.level) }
         val band = readRegisteredBands(telephony)
         return Triple(details ?: UNAVAILABLE_TEXT, bars ?: UNAVAILABLE_TEXT, band ?: UNAVAILABLE_TEXT)
     }

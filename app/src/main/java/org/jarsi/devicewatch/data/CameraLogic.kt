@@ -79,13 +79,16 @@ object CameraLogic {
         return Bidi.ltr((if (lens.ois) parts + "OIS" else parts).joinToString(" · "), locale)
     }
 
-    /** "0,7–8×"; null when the camera cannot zoom at all. */
+    /**
+     * "0,7–8×"; null when the camera cannot zoom at all. One left-to-right piece: read from
+     * the right the range turned round and the sign led ("×8–0,7").
+     */
     fun zoomText(min: Float, max: Float, locale: Locale): String? {
         if (max <= min) return null
         fun ratio(value: Float): String =
             if (abs(value - value.roundToInt()) < 0.05f) value.roundToInt().toString()
             else String.format(locale, "%.1f", value)
-        return "${ratio(min)}–${ratio(max)}×"
+        return Bidi.ltr("${ratio(min)}–${ratio(max)}×", locale)
     }
 
     /** INFO_SUPPORTED_HARDWARE_LEVEL by its API name, which camera apps also use. */

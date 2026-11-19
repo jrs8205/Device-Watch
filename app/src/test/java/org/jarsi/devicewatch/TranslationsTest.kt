@@ -170,12 +170,17 @@ class TranslationsTest {
                 val all = texts.strings.map { it.key to it.value.textContent } +
                     texts.plurals.flatMap { (name, items) -> items.map { "$name (${it.key})" to it.value } }
                 all.flatMap { (name, raw) ->
-                    asShown(raw).lines().flatMap { line ->
-                        val seen = VisualOrder.rightToLeft(line)
-                        val plain = line.filterNot { it.code in 0x2066..0x2069 }
-                        FIGURE.findAll(plain).map { it.value }.filterNot { it in seen }
-                            .map { "$qualifier: $name draws \"$it\" apart: $seen" }.toList()
-                    }
+                    // An argument may be a name or a number: both are tried.
+                    listOf(asShown(raw, textArgument = Char(0x2066) + "x" + Char(0x2069)), asShown(raw, textArgument = "12"))
+                        .distinct()
+                        .flatMap { it.lines() }
+                        .flatMap { line ->
+                            val seen = VisualOrder.rightToLeft(line)
+                            val plain = line.filterNot { it.code in 0x2066..0x2069 }
+                            FIGURE.findAll(plain).map { it.value }.filterNot { it in seen }
+                                .map { "$qualifier: $name draws \"$it\" apart: $seen" }.toList()
+                        }
+                        .distinct()
                 }
             }
         assertNoProblems(problems)
@@ -195,15 +200,17 @@ class TranslationsTest {
         assertNoProblems(problems)
     }
 
-    /** A text as the app shows it: its escapes read, a sample number in place of each argument. */
-    private fun asShown(raw: String): String {
-        val isolatedSample = Char(0x2066) + "x" + Char(0x2069)
+    /**
+     * A text as the app shows it: its escapes read, a sample number in place of each number
+     * argument and [textArgument] in place of each text argument.
+     */
+    private fun asShown(raw: String, textArgument: String): String {
         return ARGUMENT.replace(raw) { match ->
             when (match.value.last()) {
                 'd' -> "12"
                 'f' -> "1.5"
                 '%' -> "%"
-                else -> isolatedSample
+                else -> textArgument
             }
         }
             .replace(ESCAPED_CHARACTER) { it.groupValues[1].toInt(16).toChar().toString() }
@@ -219,8 +226,17 @@ class TranslationsTest {
         /** An escape as a text's source writes a character that cannot be seen. */
         val ESCAPED_CHARACTER = Regex("""\\u([0-9a-fA-F]{4})""")
 
-        /** A number and a Latin unit after a space: "45 °C", "6 GHz", "12 mAh". */
-        val FIGURE = Regex("""\d[\d.,]*\s(?:°[CF]|[A-Za-z]+)""")
+        /**
+         * What has to stand on the line as it is written: a number and a Latin unit after a
+         * space ("45 °C", "6 GHz", "12 mAh"), a date as a search takes it ("2026-08-14",
+         * "2026-08"), numbers joined by a sign ("3 / 4", "10–15", "12 → 15"), a factor ("2.5×").
+         */
+        val FIGURE = Regex(
+            """\d[\d.,]*""" + """\s(?:°[CF]|[A-Za-z]+)""" +
+                """|\d{4}-\d{2}(?:-\d{2})?""" +
+                """|\d[\d.,]*(?:\s?[–/×→]\s?\d[\d.,]*)+×?""" +
+                """|\d[\d.,]*×"""
+        )
 
         /** The plural forms a language tells apart; any language not listed has English's two. */
         val FORMS = mapOf(

@@ -9,11 +9,15 @@ import org.jarsi.devicewatch.data.CameraFacing
 import org.jarsi.devicewatch.data.CameraLens
 import org.jarsi.devicewatch.data.CameraLogic
 import org.jarsi.devicewatch.data.UNAVAILABLE_TEXT
+import org.jarsi.devicewatch.data.signalBarsText
 import org.jarsi.devicewatch.data.swapText
 import org.jarsi.devicewatch.data.volumeFreeText
+import org.jarsi.devicewatch.presentation.ClusterRole
+import org.jarsi.devicewatch.presentation.cpuRangeText
 import org.jarsi.devicewatch.presentation.ui.chargePeakText
 import org.jarsi.devicewatch.presentation.ui.cpuLoadText
 import org.jarsi.devicewatch.presentation.ui.freeSpaceText
+import org.jarsi.devicewatch.presentation.ui.launchCountText
 import org.jarsi.devicewatch.system.hotBatteryTitle
 import org.jarsi.devicewatch.system.lowStorageText
 import org.jarsi.devicewatch.widget.signalDbmText
@@ -158,6 +162,51 @@ class FigureInSentenceTest {
         assertThat(cpuLoadText(loadPercent = 5, freqGhz = 1.8)).isEqualTo("5 % · 1.8 GHz")
         assertThat(cpuLoadText(loadPercent = 5, freqGhz = -1.0)).isEqualTo("5 %")
         assertThat(cpuLoadText(loadPercent = -1, freqGhz = -1.0)).isEqualTo(UNAVAILABLE_TEXT)
+    }
+
+    // A figure with no letter in it ("3 / 4", "1–10×", "12×") has no direction of its own: a
+    // line read from the right turned it round. It is one left-to-right piece where it is made.
+    @Test
+    fun `signal bars, a zoom range and a launch count keep their written order`() {
+        assertThat(VisualOrder.byContent("3 / 4")).isEqualTo("4 / 3")
+        assertThat(VisualOrder.byContent("1–10×")).isEqualTo("×10–1")
+
+        Locale.setDefault(arabicLocale)
+        assertThat(VisualOrder.rightToLeft(signalBarsText(3))).isEqualTo("3 / 4")
+        assertThat(VisualOrder.rightToLeft(CameraLogic.zoomText(1f, 10f, arabicLocale)!!)).isEqualTo("1–10×")
+        assertThat(VisualOrder.rightToLeft(launchCountText(12))).isEqualTo("12×")
+
+        Locale.setDefault(Locale.US)
+        assertThat(signalBarsText(3)).isEqualTo("3 / 4")
+        assertThat(CameraLogic.zoomText(1f, 10f, Locale.US)).isEqualTo("1–10×")
+        assertThat(launchCountText(12)).isEqualTo("12×")
+    }
+
+    // "4–7" names cores four to seven; turned round it named none.
+    @Test
+    fun `the cores of a group in the Kernel page's title`() {
+        val group = arabic.getString(ClusterRole.ONLY.labelRes)
+
+        assertWhole(arabic.getString(R.string.kernel_cluster_title, group, cpuRangeText(listOf(4, 5, 6, 7))), "4–7")
+        assertWhole(arabic.getString(R.string.kernel_cluster_title, group, cpuRangeText(listOf(0, 2, 4))), "0, 2, 4")
+    }
+
+    @Test
+    fun `the data quota in the settings`() {
+        assertWhole(arabic.getString(R.string.data_quota_value, "20"), "20 GB")
+    }
+
+    // The report's search looks for what is typed, letter for letter, in rows that carry
+    // 2026-08-14: the hint has to show a date in that order.
+    @Test
+    fun `the report's search hints show a date as it has to be typed`() {
+        val days = VisualOrder.rightToLeft(arabic.getString(R.string.report_search_hint_days))
+        assertThat(days).contains("2026-08-14")
+        assertThat(days.split("2026-08").size - 1).isEqualTo(2)
+        assertThat(days).doesNotContain("08-2026")
+
+        val log = VisualOrder.rightToLeft(arabic.getString(R.string.report_search_hint_log))
+        assertThat(log).contains("2026-08-14")
     }
 
     // Texts whose unit stands in the translation itself.

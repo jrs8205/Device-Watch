@@ -37,7 +37,7 @@
     <string name="data_counter_description">احتسب استخدام البيانات لكل يوم تقويمي، أو لكل دورة فوترة مدتها شهر تبدأ في اليوم الذي تختاره. يراعي التطبيق اختلاف عدد أيام الأشهر تلقائيا.</string>
     <string name="data_quota_title">حصة البيانات</string>
     <string name="data_quota_description" formatted="false">حدد كمية البيانات التي تتيحها باقتك في كل فترة احتساب؛ يعرض العداد والتطبيق المصغر الاستخدام مقارنة بها، وتتلقى تحذيرا عند 80% وعند بلوغ الحد.</string>
-    <string name="data_quota_value">%1$s GB</string>
+    <string name="data_quota_value">\u2066%1$s GB\u2069</string>
     <string name="data_quota_off">بدون حصة</string>
     <string name="battery_section_title">البطارية</string>
     <string name="charge_limit_title">تذكير الشحن</string>
@@ -122,8 +122,8 @@
     <string name="report_minute_unit">د</string>
     <string name="report_search_days">البحث عن يوم</string>
     <string name="report_search_log">البحث في الإشعارات</string>
-    <string name="report_search_hint_days">يشمل البحث جميع الأعمدة. اكتب تاريخا مثل 2026-08-14 ليوم واحد، أو 2026-08 لشهر كامل، أو قيمة مثل 12 لتجد الأيام التي بلغت فيها مرات فتح القفل 12. ولتحديد فترة، استخدم حقلي التاريخ.</string>
-    <string name="report_search_hint_log">يشمل البحث جميع الأعمدة. اكتب اسم تطبيق مثل Gmail، أو كلمة من عنوان الإشعار أو نصه، أو تاريخا مثل 2026-08-14. ولتحديد فترة، استخدم حقلي التاريخ.</string>
+    <string name="report_search_hint_days">يشمل البحث جميع الأعمدة. اكتب تاريخا مثل \u20662026-08-14\u2069 ليوم واحد، أو \u20662026-08\u2069 لشهر كامل، أو قيمة مثل 12 لتجد الأيام التي بلغت فيها مرات فتح القفل 12. ولتحديد فترة، استخدم حقلي التاريخ.</string>
+    <string name="report_search_hint_log">يشمل البحث جميع الأعمدة. اكتب اسم تطبيق مثل Gmail، أو كلمة من عنوان الإشعار أو نصه، أو تاريخا مثل \u20662026-08-14\u2069. ولتحديد فترة، استخدم حقلي التاريخ.</string>
     <string name="report_range_week">7 أيام</string>
     <string name="report_range_month">30 يوما</string>
     <string name="report_range_all">الكل</string>
@@ -398,7 +398,7 @@
     <string name="dream_vertical_shift_description">تتحرك شاشة الاستراحة قليلا مرة كل دقيقة حتى لا تنطبع الصورة على الشاشة. عند تفعيل هذا الخيار تتحرك للأعلى وللأسفل فقط وتبقى في المنتصف أفقيا.</string>
     <string name="dream_device_name_title">إظهار اسم الجهاز</string>
     <string name="dream_start_on_charge_title">التشغيل فور بدء الشحن</string>
-    <string name="dream_start_on_charge_description">عند بدء الشحن والشاشة مطفأة، تظهر شاشة الاستراحة حتى لو كان العرض الدائم على الشاشة مفعلا: فورا مع Shizuku أو الروت، وإلا يوقظ Device-Watch الشاشة ثم تظهر شاشة الاستراحة بعد 10–15 ثانية تقريبا. لا يحدث شيء إذا كانت الشاشة مضاءة.</string>
+    <string name="dream_start_on_charge_description">عند بدء الشحن والشاشة مطفأة، تظهر شاشة الاستراحة حتى لو كان العرض الدائم على الشاشة مفعلا: فورا مع Shizuku أو الروت، وإلا يوقظ Device-Watch الشاشة ثم تظهر شاشة الاستراحة بعد 10 إلى 15 ثانية تقريبا. لا يحدث شيء إذا كانت الشاشة مضاءة.</string>
     <string name="dream_device_name_description">يظهر اسم الهاتف فوق الساعة كما هو محدد في «لمحة عن الهاتف» ضمن إعدادات Android.</string>
     <plurals name="dream_unread_notifications">
         <item quantity="zero">لا توجد إشعارات غير مقروءة</item>
@@ -824,7 +824,7 @@
     <string name="cluster_big">الأنوية الكبيرة</string>
     <string name="cluster_only">الأنوية</string>
     <string name="cluster_offline">الأنوية المتوقفة</string>
-    <string name="kernel_cluster_title">%1$s (رقم %2$s)</string>
+    <string name="kernel_cluster_title">%1$s (رقم \u2066%2$s\u2069)</string>
     <string name="kernel_speed_now">السرعة الحالية</string>
     <string name="kernel_speed_limit">الحد</string>
     <string name="kernel_speed_range">النطاق</string>

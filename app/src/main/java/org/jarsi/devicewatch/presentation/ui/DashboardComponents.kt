@@ -399,6 +399,9 @@ internal fun cpuLoadText(loadPercent: Int, freqGhz: Double): String {
     return if (loadPercent >= 0 || freqGhz >= 0.0) Bidi.ltr(text) else text
 }
 
+/** "12×": how many times an app was opened. One left-to-right piece, or the sign leads ("×12"). */
+internal fun launchCountText(count: Int): String = Bidi.ltr("$count×")
+
 /** "4 GB free" under the storage bar. */
 internal fun freeSpaceText(context: Context, freeGb: Double): String =
     context.getString(R.string.widget_free_value, Bidi.ltr("%.0f GB".format(freeGb)))

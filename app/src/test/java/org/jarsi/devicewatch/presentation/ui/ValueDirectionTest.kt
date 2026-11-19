@@ -161,10 +161,35 @@ class ValueDirectionTest {
         showValue("25.0 °C", LayoutDirection.Rtl)
 
         val layout = layoutOf("25.0 °C")
-        assertThat(layout.layoutInput.style.textDirection).isEqualTo(TextDirection.Content)
+        assertThat(layout.layoutInput.style.textDirection).isEqualTo(TextDirection.ContentOrLtr)
         assertThat(layout.getParagraphDirection(0)).isEqualTo(ResolvedTextDirection.Ltr)
         assertThat(layout.getLineRight(0)).isWithin(1f).of(layout.size.width.toFloat())
         assertThat(layout.getLineLeft(0)).isGreaterThan(0f)
+    }
+
+    // A value with no letter in it has nothing to take a direction from. It took the page's,
+    // and the signal's "3 / 4" read "4 / 3", a zoom of "1–10×" read "×10–1".
+    @Test
+    @Config(qualifiers = ARABIC_PHONE)
+    fun `right to left a value without a letter reads from the left and sits at the right`() {
+        showValue("3 / 4", LayoutDirection.Rtl)
+
+        val layout = layoutOf("3 / 4")
+        assertThat(layout.layoutInput.style.textDirection).isEqualTo(TextDirection.ContentOrLtr)
+        assertThat(layout.getParagraphDirection(0)).isEqualTo(ResolvedTextDirection.Ltr)
+        assertThat(layout.getLineRight(0)).isWithin(1f).of(layout.size.width.toFloat())
+    }
+
+    @Test
+    @Config(qualifiers = ARABIC_PHONE)
+    fun `right to left a fact without a letter reads from the left`() {
+        compose.setContent {
+            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+                DeviceFact(label = "Zoom", value = "1–10×")
+            }
+        }
+
+        assertThat(layoutOf("1–10×").getParagraphDirection(0)).isEqualTo(ResolvedTextDirection.Ltr)
     }
 
     @Test
@@ -187,7 +212,7 @@ class ValueDirectionTest {
             }
         }
 
-        assertThat(layoutOf("16 (API 36)").layoutInput.style.textDirection).isEqualTo(TextDirection.Content)
+        assertThat(layoutOf("16 (API 36)").layoutInput.style.textDirection).isEqualTo(TextDirection.ContentOrLtr)
     }
 
     @Test
@@ -199,7 +224,7 @@ class ValueDirectionTest {
             }
         }
 
-        assertThat(layoutOf("schedutil (walt)").layoutInput.style.textDirection).isEqualTo(TextDirection.Content)
+        assertThat(layoutOf("schedutil (walt)").layoutInput.style.textDirection).isEqualTo(TextDirection.ContentOrLtr)
     }
 
     @Test
