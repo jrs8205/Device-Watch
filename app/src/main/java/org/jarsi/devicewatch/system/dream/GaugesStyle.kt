@@ -156,12 +156,21 @@ private fun GaugesHeader(state: DreamUiState, options: DreamOptions) {
     }
 }
 
-/** What stands beside the time: the seconds, or AM/PM alone, or nothing. */
+/** AM or PM when it stands on the time's left (see [amPmLeads]); empty otherwise. */
+private fun gaugesLeadingMarker(state: DreamUiState): String = state.amPmText.takeIf { state.amPmLeads }.orEmpty()
+
+/** What stands on the time's right: the seconds, or AM/PM alone when it follows the time, or nothing. */
 private fun gaugesSideRatio(state: DreamUiState, options: DreamOptions): Float = when {
     options.shows(DreamField.SECONDS) -> GAUGES_SECONDS_RATIO
-    state.amPmText.isNotEmpty() -> GAUGES_AM_PM_RATIO
+    state.amPmText.isNotEmpty() && !state.amPmLeads -> GAUGES_AM_PM_RATIO
     else -> 0f
 }
+
+/** The room between a marker on the time's left and the time. */
+private val GAUGES_LEAD_GAP = 6.dp
+
+/** The smallest AM or PM is drawn. */
+private const val GAUGES_AM_PM_MIN_SP = 10f
 
 @Composable
 private fun rememberGaugesClockSize(state: DreamUiState, options: DreamOptions, availableWidth: Dp): Int {
@@ -175,6 +184,11 @@ private fun rememberGaugesClockSize(state: DreamUiState, options: DreamOptions, 
         gap = 0.dp,
         timeWeight = FontWeight.Medium,
         fontFamily = FontFamily.Monospace,
+        leadingText = gaugesLeadingMarker(state),
+        leadingRatio = GAUGES_AM_PM_RATIO,
+        leadingMinSp = GAUGES_AM_PM_MIN_SP,
+        leadingGap = GAUGES_LEAD_GAP,
+        leadingWeight = FontWeight.Normal,
     )
 }
 
@@ -187,7 +201,21 @@ private fun GaugesClock(state: DreamUiState, options: DreamOptions, clockSize: I
 @Composable
 private fun GaugesClockRow(state: DreamUiState, options: DreamOptions, clockSize: Int) {
     val showSeconds = options.shows(DreamField.SECONDS)
+    val leadingMarker = gaugesLeadingMarker(state)
+    val trailingMarker = state.amPmText.takeIf { !state.amPmLeads }.orEmpty()
     Row {
+        if (leadingMarker.isNotEmpty()) {
+            Text(
+                text = leadingMarker,
+                modifier = Modifier.alignBy(LastBaseline),
+                fontSize = (clockSize * GAUGES_AM_PM_RATIO).coerceAtLeast(GAUGES_AM_PM_MIN_SP).sp,
+                fontFamily = FontFamily.Monospace,
+                color = GAUGES_LABEL,
+                maxLines = 1,
+                softWrap = false
+            )
+            Spacer(modifier = Modifier.width(GAUGES_LEAD_GAP))
+        }
         Text(
             text = state.timeText,
             modifier = Modifier.alignBy(LastBaseline),
@@ -200,12 +228,12 @@ private fun GaugesClockRow(state: DreamUiState, options: DreamOptions, clockSize
             // A monospaced colon takes a whole cell; the mockup pulls the digits together.
             letterSpacing = (-0.04).em
         )
-        if (showSeconds || state.amPmText.isNotEmpty()) {
+        if (showSeconds || trailingMarker.isNotEmpty()) {
             Column(modifier = Modifier.alignBy(LastBaseline)) {
-                if (state.amPmText.isNotEmpty()) {
+                if (trailingMarker.isNotEmpty()) {
                     Text(
-                        text = state.amPmText,
-                        fontSize = (clockSize * GAUGES_AM_PM_RATIO).coerceAtLeast(10f).sp,
+                        text = trailingMarker,
+                        fontSize = (clockSize * GAUGES_AM_PM_RATIO).coerceAtLeast(GAUGES_AM_PM_MIN_SP).sp,
                         fontFamily = FontFamily.Monospace,
                         color = GAUGES_LABEL,
                         maxLines = 1,

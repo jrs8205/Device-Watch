@@ -22,6 +22,8 @@ internal data class DreamUiState(
     val secondsText: String,
     /** "PM"; empty on a 24-hour clock. */
     val amPmText: String,
+    /** Whether the marker stands to the left of the time, as the language reads it (see [amPmLeads]). */
+    val amPmLeads: Boolean,
     /** The long date with a capital first letter: "Friday, November 13". */
     val dateText: String,
     /** "Fri, November 13", as the locale formats it. */
@@ -57,6 +59,7 @@ internal data class DreamClockTexts(
     val time: String,
     val seconds: String,
     val amPm: String,
+    val amPmLeads: Boolean,
     val date: String,
     val shortDate: String,
     val compactDate: String,
@@ -84,11 +87,13 @@ internal class DreamClockFormats(
     private val compactDate = SimpleDateFormat(compactDatePattern, locale)
     private val alarm = SimpleDateFormat(if (is24Hour) "EEE HH:mm" else alarmPattern12, locale)
     private val clock = SimpleDateFormat(if (is24Hour) "HH:mm" else clockPattern12, locale)
+    private val markerLeads = !is24Hour && amPmLeads(clockPattern12, Bidi.isRtl(locale))
 
     fun texts(now: Date): DreamClockTexts = DreamClockTexts(
         time = time.format(now),
         seconds = seconds.format(now),
         amPm = if (is24Hour) "" else amPm.format(now),
+        amPmLeads = markerLeads,
         date = longDate.format(now).replaceFirstChar { it.uppercase(locale) },
         shortDate = shortDate.format(now),
         compactDate = compactDate.format(now),
@@ -117,6 +122,23 @@ internal fun dreamClockFormats(context: Context, locale: Locale, is24Hour: Boole
  */
 internal fun twelveHourClockPattern(locale: Locale): String =
     android.text.format.DateFormat.getBestDateTimePattern(locale, "hmma")
+
+/**
+ * Whether AM or PM stands to the left of the time. The language's own 12-hour pattern says
+ * which of the two is read first, and the language's direction from which side reading
+ * starts. Chinese reads the marker first, from the left; Arabic reads the time first, from
+ * the right: in both the marker is on the time's left. In English it is on the right.
+ */
+internal fun amPmLeads(pattern12: String, rightToLeft: Boolean): Boolean {
+    val letters = pattern12.split(QUOTE).filterIndexed { index, _ -> index % 2 == 0 }.joinToString(" ")
+    val marker = letters.indexOf('a')
+    val hour = letters.indexOfFirst { it in "hHkK" }
+    if (marker < 0 || hour < 0) return false
+    return (marker < hour) != rightToLeft
+}
+
+/** What a date pattern puts around text that is not a field. */
+private const val QUOTE = "'"
 
 /** The same with the weekday, for the next alarm. */
 internal fun twelveHourAlarmPattern(locale: Locale): String =
@@ -161,6 +183,7 @@ internal fun sampleDreamUiState(context: Context, nowMs: Long, locale: Locale, i
         timeText = clock.time,
         secondsText = "26",
         amPmText = clock.amPm,
+        amPmLeads = clock.amPmLeads,
         dateText = clock.date,
         shortDateText = clock.shortDate,
         compactDateText = clock.compactDate,

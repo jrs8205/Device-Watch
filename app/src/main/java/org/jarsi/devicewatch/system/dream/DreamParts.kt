@@ -92,6 +92,7 @@ internal fun ClockBlock(
     secondsSize: Int,
     dateSize: Int,
     amPmText: String = "",
+    amPmLeads: Boolean = false,
     alarmText: String = "",
     deviceName: String? = null,
     notificationGroups: List<NotificationIconGroup> = emptyList(),
@@ -118,6 +119,21 @@ internal fun ClockBlock(
         }
         LeftToRight {
             Row(verticalAlignment = Alignment.Bottom) {
+                // Where the language reads AM or PM before the time, it stands on the time's left.
+                val leadingMarker = amPmText.takeIf { amPmLeads }.orEmpty()
+                val trailingMarker = amPmText.takeIf { !amPmLeads }.orEmpty()
+                if (leadingMarker.isNotEmpty()) {
+                    Text(
+                        text = leadingMarker,
+                        modifier = Modifier.padding(bottom = 16.dp),
+                        fontSize = clockMarkerSp(secondsSize).sp,
+                        maxLines = 1,
+                        softWrap = false,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFF8B929C)
+                    )
+                    Spacer(modifier = Modifier.width(CLOCK_SIDE_GAP))
+                }
                 Text(
                     text = timeText,
                     fontSize = clockSize.sp,
@@ -126,10 +142,10 @@ internal fun ClockBlock(
                     style = TextStyle(fontFeatureSettings = "tnum"),
                     letterSpacing = 0.sp
                 )
-                // The column beside the time holds the seconds and, on a 12-hour clock, AM/PM.
-                // With the seconds switched off on a 24-hour clock there is nothing to hold.
-                if (showSeconds || amPmText.isNotEmpty()) {
-                    Spacer(modifier = Modifier.width(8.dp))
+                // The column beside the time holds the seconds and, on a 12-hour clock whose
+                // marker follows the time, AM/PM. With neither there is nothing to hold.
+                if (showSeconds || trailingMarker.isNotEmpty()) {
+                    Spacer(modifier = Modifier.width(CLOCK_SIDE_GAP))
                     Column(modifier = Modifier.padding(bottom = 16.dp)) {
                         if (showSeconds) {
                             Text(
@@ -142,10 +158,10 @@ internal fun ClockBlock(
                                 style = TextStyle(fontFeatureSettings = "tnum")
                             )
                         }
-                        if (amPmText.isNotEmpty()) {
+                        if (trailingMarker.isNotEmpty()) {
                             Text(
-                                text = amPmText,
-                                autoSize = fitUpTo((secondsSize * 0.6f).sp),
+                                text = trailingMarker,
+                                autoSize = fitUpTo(clockMarkerSp(secondsSize).sp),
                                 maxLines = 1,
                                 softWrap = false,
                                 fontWeight = FontWeight.Medium,
@@ -257,6 +273,48 @@ internal fun fitBlocksInHeight(heights: List<Int>, available: Int, minGap: Int):
     val scale = ((available - gaps).coerceAtLeast(0)).toFloat() / needed
     var top = 0f
     return BlockFit(scale, heights.map { height -> top.roundToInt().also { top += height * scale + minGap } })
+}
+
+/** The room between the time and what stands beside it in [ClockBlock]. */
+private val CLOCK_SIDE_GAP = 8.dp
+
+/** The seconds beside [ClockBlock]'s time: a quarter of the time's size, and never below this. */
+private const val CLOCK_SECONDS_RATIO = 0.25f
+private const val CLOCK_SECONDS_MIN_SP = 22
+
+/** AM or PM in [ClockBlock], by the size of the seconds. */
+private fun clockMarkerSp(secondsSize: Int): Float = secondsSize * 0.6f
+
+/** The size of the seconds beside a time of [clockSize]. */
+internal fun clockSecondsSp(clockSize: Int): Int = (clockSize * CLOCK_SECONDS_RATIO).toInt().coerceAtLeast(CLOCK_SECONDS_MIN_SP)
+
+/**
+ * The largest size for [ClockBlock]'s time in [availableWidth], with what stands beside it:
+ * the seconds or a marker that follows the time on its right, a marker that leads on its left.
+ */
+@Composable
+internal fun rememberClockBlockSize(
+    availableWidth: Dp,
+    maxClockSp: Int,
+    minClockSp: Int,
+    showSeconds: Boolean,
+    amPmText: String,
+    amPmLeads: Boolean,
+): Int {
+    val leads = amPmLeads && amPmText.isNotEmpty()
+    val hasSide = showSeconds || (amPmText.isNotEmpty() && !leads)
+    return rememberFittedClockSize(
+        availableWidth = availableWidth,
+        maxClockSp = maxClockSp,
+        minClockSp = minClockSp,
+        secondsRatio = if (hasSide) CLOCK_SECONDS_RATIO else 0f,
+        secondsMinSp = if (hasSide) CLOCK_SECONDS_MIN_SP else 0,
+        gap = if (hasSide) CLOCK_SIDE_GAP else 0.dp,
+        leadingText = if (leads) amPmText else "",
+        leadingRatio = clockMarkerSp(1) * CLOCK_SECONDS_RATIO,
+        leadingMinSp = clockMarkerSp(CLOCK_SECONDS_MIN_SP),
+        leadingGap = CLOCK_SIDE_GAP,
+    )
 }
 
 /** How long the burn-in shift takes to glide to its new spot. */
@@ -427,6 +485,10 @@ private fun loadNotificationIcon(context: Context, icon: android.graphics.drawab
  * A style whose clock has no seconds beside it passes a [secondsRatio] and [secondsMinSp]
  * of zero and no [gap]; [timeWeight] and [fontFamily] are the weight and the face the
  * style draws the time in.
+ *
+ * [leadingText] is a marker drawn on the time's left (AM or PM where the language reads it
+ * first), [leadingRatio] of the clock's size and never below [leadingMinSp], [leadingGap]
+ * away from the time. The room it takes is taken off the width before the clock is sized.
  */
 @Composable
 internal fun rememberFittedClockSize(
@@ -438,13 +500,18 @@ internal fun rememberFittedClockSize(
     gap: Dp = 8.dp,
     timeWeight: FontWeight = FontWeight.ExtraBold,
     fontFamily: FontFamily? = null,
+    leadingText: String = "",
+    leadingRatio: Float = 0f,
+    leadingMinSp: Float = 0f,
+    leadingGap: Dp = 0.dp,
+    leadingWeight: FontWeight = FontWeight.Medium,
 ): Int {
     val measurer = rememberTextMeasurer()
     val density = LocalDensity.current
     val resolver = LocalFontFamilyResolver.current
     return remember(
         availableWidth, maxClockSp, minClockSp, secondsRatio, secondsMinSp, gap, timeWeight, fontFamily,
-        density, resolver,
+        leadingText, leadingRatio, leadingMinSp, leadingGap, leadingWeight, density, resolver,
     ) {
         if (availableWidth <= 0.dp) return@remember minClockSp
         val referenceSp = 100f
@@ -475,17 +542,58 @@ internal fun rememberFittedClockSize(
             density = density,
             fontFamilyResolver = resolver,
         ).size.width.toFloat()
-        fittedClockSp(
+        val leadWidthPx = if (leadingText.isEmpty()) {
+            0f
+        } else {
+            measurer.measure(
+                text = leadingText,
+                style = TextStyle(fontSize = referenceSp.sp, fontWeight = leadingWeight, fontFamily = fontFamily),
+                softWrap = false,
+                maxLines = 1,
+                density = density,
+                fontFamilyResolver = resolver,
+            ).size.width.toFloat()
+        }
+        fittedClockSpBesideLead(
             availablePx = with(density) { availableWidth.toPx() },
-            gapPx = with(density) { gap.toPx() },
-            timePerSp = timeWidthPx / referenceSp,
-            secPerSp = secWidthPx / referenceSp,
-            secondsRatio = secondsRatio,
-            secondsMinSp = secondsMinSp,
-            minClockSp = minClockSp,
-            maxClockSp = maxClockSp,
-        )
+            leadPerSp = leadWidthPx / referenceSp,
+            leadRatio = leadingRatio,
+            leadMinSp = leadingMinSp,
+            leadGapPx = with(density) { leadingGap.toPx() },
+        ) { roomPx ->
+            fittedClockSp(
+                availablePx = roomPx,
+                gapPx = with(density) { gap.toPx() },
+                timePerSp = timeWidthPx / referenceSp,
+                secPerSp = secWidthPx / referenceSp,
+                secondsRatio = secondsRatio,
+                secondsMinSp = secondsMinSp,
+                minClockSp = minClockSp,
+                maxClockSp = maxClockSp,
+            )
+        }
     }
+}
+
+/**
+ * The clock's size when a marker stands on its left. [fit] sizes the clock for a width; the
+ * marker is as wide as [leadPerSp] times its own size, which is [leadRatio] of the clock's
+ * and never below [leadMinSp]. The clock is sized once without the marker, the marker's
+ * width at that size and [leadGapPx] are taken off, and the clock is sized again: it only
+ * gets smaller, and the marker with it, so the two fit.
+ */
+internal fun fittedClockSpBesideLead(
+    availablePx: Float,
+    leadPerSp: Float,
+    leadRatio: Float,
+    leadMinSp: Float,
+    leadGapPx: Float,
+    fit: (Float) -> Int,
+): Int {
+    val alone = fit(availablePx)
+    if (leadPerSp <= 0f) return alone
+    val leadPx = leadPerSp * maxOf(leadRatio * alone, leadMinSp) + leadGapPx
+    return fit(availablePx - leadPx)
 }
 
 /**
@@ -522,8 +630,9 @@ internal fun fitUpTo(max: TextUnit, floorSp: Float = 12f): TextAutoSize =
     TextAutoSize.StepBased(minFontSize = minOf(floorSp, max.value).sp, maxFontSize = max, stepSize = 1.sp)
 
 /**
- * A clock reads from left to right in every language: the time, then its seconds, then AM
- * or PM. In a language written from the right a plain row would put the seconds first.
+ * A clock's digits read from left to right in every language: the hours, the minutes, then
+ * the seconds. In a language written from the right a plain row would put the seconds first.
+ * AM or PM is another matter: its side is the language's own (see [amPmLeads]).
  */
 @Composable
 internal fun LeftToRight(content: @Composable () -> Unit) {

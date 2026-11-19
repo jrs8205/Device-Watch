@@ -127,7 +127,7 @@ internal fun rememberDreamUiState(
         }
     }
 
-    var clockTexts by remember { mutableStateOf(DreamClockTexts("", "", "", "", "", "")) }
+    var clockTexts by remember { mutableStateOf(DreamClockTexts("", "", "", false, "", "", "")) }
     var alarmText by remember { mutableStateOf("") }
 
     // Unread notifications under the clock, from the listener's snapshot. The user setting
@@ -239,6 +239,7 @@ internal fun rememberDreamUiState(
         timeText = clockTexts.time,
         secondsText = clockTexts.seconds,
         amPmText = clockTexts.amPm,
+        amPmLeads = clockTexts.amPmLeads,
         dateText = clockTexts.date,
         shortDateText = clockTexts.shortDate,
         compactDateText = clockTexts.compactDate,

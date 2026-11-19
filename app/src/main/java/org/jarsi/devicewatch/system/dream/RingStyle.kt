@@ -286,7 +286,7 @@ private fun RingClock(state: DreamUiState, options: DreamOptions, diameter: Dp) 
             if (showSeconds || state.amPmText.isNotEmpty()) {
                 LeftToRight {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        if (showSeconds) {
+                        val seconds: @Composable () -> Unit = {
                             Text(
                                 text = state.secondsText,
                                 fontSize = (clockSize * 0.26f).sp,
@@ -297,8 +297,7 @@ private fun RingClock(state: DreamUiState, options: DreamOptions, diameter: Dp) 
                                 style = TextStyle(fontFeatureSettings = "tnum")
                             )
                         }
-                        if (state.amPmText.isNotEmpty()) {
-                            if (showSeconds) Spacer(modifier = Modifier.width(6.dp))
+                        val marker: @Composable () -> Unit = {
                             Text(
                                 text = state.amPmText,
                                 fontSize = (clockSize * 0.2f).sp,
@@ -307,6 +306,15 @@ private fun RingClock(state: DreamUiState, options: DreamOptions, diameter: Dp) 
                                 maxLines = 1,
                                 softWrap = false
                             )
+                        }
+                        // AM or PM on the side its language reads it (see amPmLeads).
+                        val parts = listOfNotNull(
+                            seconds.takeIf { showSeconds },
+                            marker.takeIf { state.amPmText.isNotEmpty() },
+                        ).let { if (state.amPmLeads) it.reversed() else it }
+                        parts.forEachIndexed { index, part ->
+                            if (index > 0) Spacer(modifier = Modifier.width(6.dp))
+                            part()
                         }
                     }
                 }

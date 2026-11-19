@@ -29,6 +29,7 @@ class DreamUiStateTest {
         timeText = "20:10",
         secondsText = "26",
         amPmText = "",
+        amPmLeads = false,
         dateText = "Perjantaina 13. marraskuuta",
         shortDateText = "pe 13. marraskuuta",
         compactDateText = "pe 13.11.",
