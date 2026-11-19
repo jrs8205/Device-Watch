@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.sp
 import org.jarsi.devicewatch.R
 import kotlin.math.hypot
 import kotlin.math.max
+import org.jarsi.devicewatch.presentation.ui.valueTextStyle
 
 // Ring: the clock inside a ring that fills clockwise with the battery, like a watch face,
 // on a very dark glow of the battery's colour.
@@ -197,6 +198,8 @@ private fun RingHeader(state: DreamUiState, options: DreamOptions, gapBelow: Dp)
     if (deviceName != null) {
         Text(
             text = deviceName,
+            // The user's own text: by its first letter, never by the screen's direction.
+            style = valueTextStyle(),
             autoSize = fitUpTo(13.sp),
             maxLines = 1,
             softWrap = false,

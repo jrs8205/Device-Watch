@@ -54,6 +54,7 @@ import androidx.core.graphics.drawable.toBitmap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jarsi.devicewatch.R
+import org.jarsi.devicewatch.presentation.ui.valueTextStyle
 import org.jarsi.devicewatch.system.NotificationIconGroup
 import org.jarsi.devicewatch.system.NotificationRowFit
 import org.jarsi.devicewatch.system.fitNotificationRow
@@ -109,6 +110,8 @@ internal fun ClockBlock(
         if (deviceName != null) {
             Text(
                 text = deviceName,
+                // The user's own text: by its first letter, never by the screen's direction.
+                style = valueTextStyle(),
                 autoSize = fitUpTo((dateSize * 0.72f).sp),
                 maxLines = 1,
                 softWrap = false,

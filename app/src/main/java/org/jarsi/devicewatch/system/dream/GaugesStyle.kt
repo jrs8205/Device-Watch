@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import org.jarsi.devicewatch.R
+import org.jarsi.devicewatch.presentation.ui.valueTextStyle
 
 // Gauges: the app's own look. Monospaced figures on named rows with hairlines between
 // them, under a header line and a clock with its seconds.
@@ -132,6 +133,7 @@ private fun GaugesHeader(state: DreamUiState, options: DreamOptions) {
             // date with an ellipsis instead of pushing the date off the line.
             Text(
                 text = name,
+                style = valueTextStyle(),
                 modifier = Modifier.weight(1f, fill = false).testTag(DREAM_TRUNCATES_TAG),
                 fontSize = GAUGES_HEADER_SP.sp,
                 fontFamily = FontFamily.Monospace,
@@ -288,6 +290,7 @@ private fun GaugesRows(rows: List<GaugeRow>, state: DreamUiState, rowHeight: Dp)
                         // with an ellipsis, in the plain face.
                         GaugeRowKind.EVENT -> Text(
                             text = row.value,
+                            style = valueTextStyle(),
                             modifier = Modifier.testTag(DREAM_TRUNCATES_TAG),
                             fontSize = (GAUGES_VALUE_SP * 0.85f).sp,
                             color = GAUGES_VALUE,
