@@ -959,7 +959,7 @@
     <string name="system_apps_no_shell">扩展访问未响应</string>
     <string name="system_apps_no_reason">包管理器未提供原因</string>
     <string name="system_apps_blocked_now">目前它是手机不可或缺的一部分</string>
-    <string name="system_apps_not_installed_now">此用户已不再安装该应用</string>
+    <string name="system_apps_not_installed_now">该应用已不在当前用户的已安装列表中</string>
     <string name="system_apps_unchanged">包管理器称已完成，但应用保持原样；可能是对此用户的限制所致</string>
     <string name="system_apps_dismiss_notice">忽略</string>
     <string name="system_app_role_core">Android 核心的一部分；没有它，手机无法启动或工作。</string>

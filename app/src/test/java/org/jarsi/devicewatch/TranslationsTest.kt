@@ -219,6 +219,20 @@ class TranslationsTest {
         assertNoProblems(problems)
     }
 
+    // A removal that never ran because the app was no longer installed for the user by then.
+    // The Chinese said that the user no longer installs the app.
+    @Test
+    fun `Chinese says an app is no longer installed, not that the user no longer installs it`() {
+        val problems = translations.filterKeys { language(it) == "zh" }.flatMap { (qualifier, texts) ->
+            listOfNotNull(
+                "$qualifier: system_apps_not_installed_now makes the user the one who installs".takeIf {
+                    "已不再安装" in texts.strings["system_apps_not_installed_now"]?.textContent.orEmpty()
+                },
+            )
+        }
+        assertNoProblems(problems)
+    }
+
     /**
      * A text as the app shows it: its escapes read, a sample number in place of each number
      * argument and [textArgument] in place of each text argument.
