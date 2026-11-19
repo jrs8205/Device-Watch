@@ -81,6 +81,38 @@ class BidiTest {
         }
     }
 
+    // A name the app did not write, put into one of the app's own sentences. The Arabic
+    // question before a removal showed an app called "123 456" as "456 123".
+    @Test
+    fun `a name put into an Arabic sentence keeps its written order`() {
+        fun question(name: String) = "$arabicHome $name" + Char(0x61F)
+
+        // Left alone: a name of digits is turned round, and one that begins with a number
+        // loses it to the far end of the name.
+        assertThat(VisualOrder.rightToLeft(question("123 456"))).contains("456 123")
+        assertThat(VisualOrder.rightToLeft(question("7 Minute Workout"))).doesNotContain("7 Minute Workout")
+
+        for (name in listOf("123 456", "Code 3 / 4", "7 Minute Workout", "com.example.app2", "18800000.usb")) {
+            val seen = VisualOrder.rightToLeft(question(Bidi.outside(name, arabic)))
+            assertWithMessage(seen).that(seen).contains(name)
+            // The sentence itself still reads from the right: its question mark ends it on the left.
+            assertWithMessage(seen).that(seen.first().code).isEqualTo(0x61F)
+        }
+    }
+
+    @Test
+    fun `a name is marked only where it or the app's language is written from the right`() {
+        assertThat(Bidi.outside("Gmail 2", Locale.US)).isEqualTo("Gmail 2")
+        assertThat(Bidi.outside("123 456", Locale.forLanguageTag("zh-CN"))).isEqualTo("123 456")
+        assertThat(Bidi.outside("", arabic)).isEmpty()
+
+        // An Arabic name in an English sentence: the name and the number after it stay one thing.
+        val named = Bidi.outside("$arabicHome 2", Locale.US)
+        assertThat(named.first().code).isEqualTo(0x2068)
+        assertThat(named.last().code).isEqualTo(0x2069)
+        assertThat(VisualOrder.leftToRight("Remove $named: 3 left")).contains("2 " + arabicHome.reversed() + ": 3 left")
+    }
+
     @Test
     fun `a Latin name and reading in a left-to-right app are left as they are`() {
         assertThat(Bidi.beside("Home", "2.4 GHz", Locale.US)).isEqualTo("Home · 2.4 GHz")

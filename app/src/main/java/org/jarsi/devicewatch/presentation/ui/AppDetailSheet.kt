@@ -32,6 +32,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import org.jarsi.devicewatch.Bidi
 import org.jarsi.devicewatch.R
 import org.jarsi.devicewatch.data.AppPackageFacts
 import org.jarsi.devicewatch.data.AppPackageLogic
@@ -160,16 +161,13 @@ private fun AppFactsSection(packageName: String, facts: AppPackageFacts) {
         overflow = TextOverflow.Ellipsis,
     )
     Spacer(modifier = Modifier.height(4.dp))
-    AppFact(
-        R.string.app_detail_version,
-        facts.versionName?.let { "$it (${facts.versionCode})" } ?: facts.versionCode.toString(),
-    )
+    AppFact(R.string.app_detail_version, appVersionText(facts.versionName, facts.versionCode))
     facts.installedMillis?.let { AppFact(R.string.app_detail_installed, dateText(it)) }
     facts.updatedMillis?.let { AppFact(R.string.app_detail_updated, dateText(it)) }
     AppFact(
         R.string.app_detail_source,
         when (val source = facts.installSource) {
-            is InstallSource.App -> source.label
+            is InstallSource.App -> Bidi.outside(source.label)
             InstallSource.Adb -> stringResource(R.string.app_detail_source_adb)
             InstallSource.ApkFile -> stringResource(R.string.app_detail_source_apk)
             InstallSource.Preinstalled -> stringResource(R.string.app_detail_source_preinstalled)
@@ -209,6 +207,14 @@ private fun AppFact(@StringRes labelRes: Int, value: String) {
         Text(text = value, fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurface)
     }
 }
+
+/**
+ * "1.2.3 (45)": the version's name as its maker wrote it, and the build number. One piece
+ * with a direction of its own: a name of nothing but numbers was drawn "(45) 1.2.3" on an
+ * Arabic page.
+ */
+internal fun appVersionText(versionName: String?, versionCode: Long): String =
+    Bidi.outside(versionName?.let { "$it ($versionCode)" } ?: versionCode.toString())
 
 private fun androidLevelText(level: Int): String =
     AppPackageLogic.androidRelease(level)?.let { "Android $it (API $level)" } ?: "API $level"

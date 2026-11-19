@@ -1,5 +1,6 @@
 package org.jarsi.devicewatch.presentation.ui
 
+import android.content.Context
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -41,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import org.jarsi.devicewatch.Bidi
 import org.jarsi.devicewatch.R
 import org.jarsi.devicewatch.data.AccessEvent
 import org.jarsi.devicewatch.data.AppSensorUse
@@ -204,9 +206,9 @@ private fun AppUseRow(app: AppSensorUse, sensor: PrivacySensor, minuteKept: Bool
             )
         }
         if (showPackage) KernelTechnical(app.packageName)
-        if (profile != 0) KernelTechnical(stringResource(R.string.privacy_profile, profile))
+        if (profile != 0) KernelCaption(stringResource(R.string.privacy_profile, profile))
         if (sensor == PrivacySensor.OTHER) {
-            KernelTechnical(app.ops.sorted().joinToString(", ") { op -> PrivacyPresentation.opNameRes(op)?.let(context::getString) ?: op })
+            KernelCaption(app.ops.sorted().joinToString(", ") { op -> opNameText(context, op) })
         }
         val summary = listOfNotNull(
             pluralStringResource(R.plurals.privacy_times, app.accesses, app.accesses).takeIf { app.accesses > 0 },
@@ -270,10 +272,10 @@ private fun EventRow(event: AccessEvent, sensor: PrivacySensor, minuteKept: Bool
                 color = if (event.rejected > 0 && event.count == 0) statusWarnColor() else MaterialTheme.colorScheme.onSurface,
             )
             val technical = listOfNotNull(
-                event.op.takeIf { showOp }?.let { op -> if (sensor == PrivacySensor.OTHER) PrivacyPresentation.opNameRes(op)?.let(context::getString) ?: op else op },
-                event.tag,
+                event.op.takeIf { showOp }?.let { op -> if (sensor == PrivacySensor.OTHER) opNameText(context, op) else Bidi.outside(op) },
+                event.tag?.let { tag -> Bidi.outside(tag) },
             )
-            if (technical.isNotEmpty()) KernelTechnical(technical.joinToString(" · "))
+            if (technical.isNotEmpty()) KernelCaption(technical.joinToString(" · "))
         }
     }
 }
@@ -323,3 +325,10 @@ internal fun shortDurationText(millis: Long): String {
         else -> stringResource(R.string.privacy_duration_seconds, parts.seconds)
     }
 }
+
+/**
+ * An operation in the app's own words where it has them; otherwise Android's own name for it,
+ * as a piece of its own in the line it goes into.
+ */
+internal fun opNameText(context: Context, op: String): String =
+    PrivacyPresentation.opNameRes(op)?.let(context::getString) ?: Bidi.outside(op)

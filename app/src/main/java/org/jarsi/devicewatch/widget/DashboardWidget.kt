@@ -875,7 +875,7 @@ fun cpuBottomText(cpuTemp: Double, cpuLoadLabel: String): String {
 
 /** "Home · 2.4 GHz": the Wi-Fi network's name and, when it is known, its band. */
 fun wifiTitleText(ssid: String, band: String): String =
-    if (band != UNAVAILABLE_TEXT) Bidi.beside(ssid, band) else ssid
+    if (band != UNAVAILABLE_TEXT) Bidi.beside(ssid, band) else Bidi.outside(ssid)
 
 /** "Elisa · 5G": the operator's name and the kind of network. */
 fun mobileTitleText(operatorName: String, networkType: String): String = Bidi.beside(operatorName, networkType)

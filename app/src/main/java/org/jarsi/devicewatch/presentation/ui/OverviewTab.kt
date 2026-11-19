@@ -423,7 +423,7 @@ internal fun OverviewTab(
             // and gets a usage bar; without one it stays a plain amount.
             StackedMetricRow(
                 label = if (simName != null) {
-                    stringResource(R.string.label_with_sim, mobileLabel, simName)
+                    stringResource(R.string.label_with_sim, mobileLabel, Bidi.outside(simName))
                 } else {
                     mobileLabel
                 },
@@ -649,7 +649,7 @@ internal fun OverviewTab(
                                 R.plurals.cpu_cores_value,
                                 currentStats.cpuCores,
                                 currentStats.cpuCores,
-                                currentStats.cpuAbi
+                                Bidi.outside(currentStats.cpuAbi)
                             ),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,

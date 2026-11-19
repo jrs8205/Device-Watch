@@ -97,6 +97,10 @@ internal fun KernelNote(text: String, color: Color = MaterialTheme.colorScheme.o
  * The kernel's own name for a thing, or an app's package name, small, under the plain one.
  * Not the app's own words: laid out as a value is (see [valueTextStyle]), or a name that
  * begins with an address ("18800000.usb") is turned round on an Arabic page.
+ *
+ * Only for such a name alone. A line of the app's own words, with or without such names in
+ * it, is a [KernelCaption]: laid out here, an Arabic line that begins with a Latin name
+ * would be read from the left as a whole.
  */
 @Composable
 internal fun KernelTechnical(text: String) {
@@ -107,4 +111,14 @@ internal fun KernelTechnical(text: String) {
         style = valueTextStyle(),
         textAlign = valueTextAlign(),
     )
+}
+
+/**
+ * A small line of the app's own words in the same place: "policy0 · governor schedutil ·
+ * driver intel_pstate", "Part of Android · Updated from a store". It reads the way the page
+ * does. A name the app did not write goes into it as a piece of its own ([Bidi.outside]).
+ */
+@Composable
+internal fun KernelCaption(text: String) {
+    Text(text = text, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
 }

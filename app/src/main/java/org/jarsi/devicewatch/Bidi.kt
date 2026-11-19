@@ -71,6 +71,18 @@ object Bidi {
     fun hasRtl(text: String): Boolean = text.codePoints().anyMatch(::isRtlLetter)
 
     /**
+     * A text the app did not write (an app's name, a calendar event's title, the kernel's
+     * name for a thing, the package manager's own words), put into one of the app's sentences
+     * or lists, or handed to something the system draws. It keeps its own direction and its
+     * written order: left alone in an Arabic sentence, an app called "123 456" was asked
+     * about as "456 123" and a name that ends in a number ran into the sentence's punctuation.
+     * Marked where the app's language or the text itself is written from the right; unchanged
+     * otherwise, so a Latin name in a left-to-right language gets no invisible marks.
+     */
+    fun outside(text: String, locale: Locale = Locale.getDefault()): String =
+        if (text.isNotEmpty() && (isRtl(locale) || hasRtl(text))) "$FIRST_STRONG_ISOLATE$text$POP_ISOLATE" else text
+
+    /**
      * A name the app did not write (a Wi-Fi network, an operator) and a reading after it:
      * "Home · 2.4 GHz". The name is the user's, in any script: one in Arabic turns the whole
      * line round whatever the app's language is, and the reading's unit left its number

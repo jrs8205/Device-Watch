@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -192,7 +193,7 @@ internal fun BatteryWakeCard(report: BatteryUsageReport) {
 }
 
 @Composable
-private fun WakeList(@StringRes titleRes: Int, entries: List<WakeEntry>) {
+internal fun WakeList(@StringRes titleRes: Int, entries: List<WakeEntry>) {
     if (entries.isEmpty()) return
     val context = LocalContext.current
     Spacer(modifier = Modifier.height(8.dp))
@@ -207,10 +208,15 @@ private fun WakeList(@StringRes titleRes: Int, entries: List<WakeEntry>) {
     entries.forEach { entry ->
         // An app's name or a part of the phone when known; the kernel's own name otherwise.
         val plainName = entry.owner ?: entry.category?.let { stringResource(wakeCategoryRes(it)) }
+        // A part of the phone is named in the app's own words. An app's name and the kernel's
+        // own name are not: they read by their own first letter, as a value does.
+        val ownWords = entry.owner == null && entry.category != null
         Column(modifier = Modifier.padding(vertical = 5.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = plainName ?: entry.names.first(),
+                    style = if (ownWords) LocalTextStyle.current else valueTextStyle(),
+                    textAlign = if (ownWords) null else valueTextAlign(),
                     fontSize = 14.sp,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -239,13 +245,12 @@ private fun WakeList(@StringRes titleRes: Int, entries: List<WakeEntry>) {
                 )
             }
             // The technical names, for whoever wants to look one up.
-            val technical = if (plainName != null) entry.names.take(TECHNICAL_NAMES_SHOWN).joinToString(", ") else null
             val times = if (entry.count > 0) {
                 pluralStringResource(R.plurals.battery_usage_times, entry.count, entry.count)
             } else {
                 null
             }
-            val detail = listOfNotNull(times, technical).joinToString(" · ")
+            val detail = wakeDetailText(times, if (plainName != null) entry.names else emptyList())
             if (detail.isNotEmpty()) DetailText(detail)
         }
     }
@@ -316,6 +321,16 @@ private fun DetailText(text: String, color: androidx.compose.ui.graphics.Color =
 }
 
 private const val TECHNICAL_NAMES_SHOWN = 2
+
+/**
+ * "3 times · wlan_wake, 18800000.usb": how often, in the app's words, and the first technical
+ * names. Each name is a piece of its own: in an Arabic line a name that begins with a number
+ * was otherwise taken apart at its first full stop.
+ */
+internal fun wakeDetailText(times: String?, names: List<String>): String {
+    val technical = names.take(TECHNICAL_NAMES_SHOWN).joinToString(", ") { Bidi.outside(it) }
+    return listOfNotNull(times, technical.takeIf { it.isNotEmpty() }).joinToString(" · ")
+}
 
 /** Whole mAh from a hundred up, a decimal below, two below one. */
 internal fun mahText(mah: Double, locale: Locale): String = Bidi.ltr(

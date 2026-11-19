@@ -1,5 +1,6 @@
 package org.jarsi.devicewatch.presentation.ui
 
+import android.content.Context
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -33,6 +34,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -377,14 +379,25 @@ private fun ProcessorSection(snapshot: KernelSnapshot, state: KernelPageState) {
                 if (policy.steps.isEmpty()) {
                     KernelNote(stringResource(R.string.kernel_cluster_cannot_limit), color = statusWarnColor())
                 }
-                KernelTechnical(
-                    stringResource(R.string.kernel_cluster_technical, policy.id.name, policy.governor ?: "–", policy.driver ?: "–")
-                )
+                KernelCaption(clusterTechnicalText(LocalContext.current, policy.id.name, policy.governor, policy.driver))
             }
         }
         KernelNote(stringResource(R.string.kernel_processor_note))
     }
 }
+
+/**
+ * "policy0 · governor schedutil · driver intel_pstate": a line of the app's own words with
+ * three of the kernel's names in it. Each name is a piece of its own, so the Arabic line
+ * reads from the right like the page and the names stand in it as written.
+ */
+internal fun clusterTechnicalText(context: Context, policy: String, governor: String?, driver: String?): String =
+    context.getString(
+        R.string.kernel_cluster_technical,
+        Bidi.outside(policy),
+        Bidi.outside(governor ?: "–"),
+        Bidi.outside(driver ?: "–"),
+    )
 
 /** "Big cores (no. 8)", or just the role where the cores cannot be read. */
 @Composable
@@ -412,7 +425,7 @@ private fun ThrottlingSection(snapshot: KernelSnapshot) {
                 }
                 CoolingKind.Gpu -> stringResource(R.string.cooling_gpu)
                 CoolingKind.ChargingCurrent -> stringResource(R.string.cooling_charging)
-                CoolingKind.Other -> device.type
+                CoolingKind.Other -> Bidi.outside(device.type)
             }
             KernelRow(
                 label,
@@ -485,7 +498,7 @@ private fun TemperatureSection(snapshot: KernelSnapshot) {
         for (zone in snapshot.thermalZones) {
             val plain = thermalZoneLabelRes(zone.type)
             KernelRow(
-                if (plain != null) stringResource(plain) else zone.type,
+                if (plain != null) stringResource(plain) else Bidi.outside(zone.type),
                 celsiusText(zone.celsius),
                 numeric = true,
             )

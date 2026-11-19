@@ -321,7 +321,8 @@ class SystemStatsRepositoryImpl @Inject constructor(
                     AudioDeviceKind.LINE -> R.string.audio_kind_line
                 }
             )
-            endpoint.name?.let { context.getString(R.string.camera_lens_line, kind, it) } ?: kind
+            // The device's own name, in any script, after the app's word for its kind.
+            endpoint.name?.let { context.getString(R.string.camera_lens_line, kind, Bidi.outside(it)) } ?: kind
         }
     }
 
@@ -499,8 +500,8 @@ class SystemStatsRepositoryImpl @Inject constructor(
         return when {
             summary.userApps.isEmpty() && systemText == null -> context.getString(R.string.exempt_none)
             summary.userApps.isEmpty() -> systemText!!
-            systemText == null -> summary.userApps.joinToString(", ")
-            else -> context.getString(R.string.exempt_user_and_system, summary.userApps.joinToString(", "), systemText)
+            systemText == null -> ExtraStatsLogic.namesText(summary.userApps)
+            else -> context.getString(R.string.exempt_user_and_system, ExtraStatsLogic.namesText(summary.userApps), systemText)
         }
     }
 
@@ -858,14 +859,16 @@ class SystemStatsRepositoryImpl @Inject constructor(
             return UNAVAILABLE_TEXT
         }
         if (devices.isEmpty()) return context.getString(R.string.usb_devices_none)
-        return devices.joinToString(", ") { device ->
-            val (maker, product) = try {
-                device.manufacturerName to device.productName
-            } catch (_: SecurityException) {
-                null to null
+        return ExtraStatsLogic.namesText(
+            devices.map { device ->
+                val (maker, product) = try {
+                    device.manufacturerName to device.productName
+                } catch (_: SecurityException) {
+                    null to null
+                }
+                ExtraStatsLogic.usbDeviceName(maker, product, device.vendorId, device.productId)
             }
-            ExtraStatsLogic.usbDeviceName(maker, product, device.vendorId, device.productId)
-        }
+        )
     }
 
     override suspend fun monthlyDataUsage(monthsBack: Int): List<MonthlyDataUsage> = withContext(dispatcher) {

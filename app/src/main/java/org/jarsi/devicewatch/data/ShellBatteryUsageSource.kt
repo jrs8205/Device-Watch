@@ -5,6 +5,7 @@ import android.os.PowerManager
 import android.os.Process
 import android.os.SystemClock
 import dagger.hilt.android.qualifiers.ApplicationContext
+import org.jarsi.devicewatch.Bidi
 import org.jarsi.devicewatch.R
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -100,7 +101,7 @@ internal class UidLabels(private val context: Context) {
         return if (daemon.isNullOrBlank()) {
             context.getString(R.string.battery_usage_uid_other, uid)
         } else {
-            context.getString(R.string.battery_usage_uid_daemon, daemon)
+            context.getString(R.string.battery_usage_uid_daemon, Bidi.outside(daemon))
         }
     }
 }

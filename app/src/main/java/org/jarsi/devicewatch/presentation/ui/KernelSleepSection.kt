@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -18,6 +19,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import org.jarsi.devicewatch.Bidi
 import org.jarsi.devicewatch.R
 import org.jarsi.devicewatch.data.SuspendStats
 import org.jarsi.devicewatch.data.WakeCategory
@@ -110,8 +112,16 @@ private fun SourceList(@StringRes titleRes: Int, sources: List<WakeupSource>, va
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = plain, fontSize = 14.sp)
-                if (plain != source.name) KernelTechnical(source.name)
+                // A source we cannot name in our own words is shown by the kernel's name,
+                // which reads by its own first letter.
+                val named = plain != source.name
+                Text(
+                    text = plain,
+                    fontSize = 14.sp,
+                    style = if (named) LocalTextStyle.current else valueTextStyle(),
+                    textAlign = if (named) null else valueTextAlign(),
+                )
+                if (named) KernelTechnical(source.name)
             }
             Spacer(modifier = Modifier.width(12.dp))
             MetricValue(value(source), fontSize = 13.sp)
@@ -123,7 +133,7 @@ private fun SourceList(@StringRes titleRes: Int, sources: List<WakeupSource>, va
 @Composable
 private fun sourcePlainName(name: String): String = when (val kind = WakePresentation.kindOf(name)) {
     is WakeupSourceKind.Process -> WakePresentation.processNameRes(kind.process)?.let { stringResource(it) }
-        ?: stringResource(R.string.wake_process_other, kind.process)
+        ?: stringResource(R.string.wake_process_other, Bidi.outside(kind.process))
     is WakeupSourceKind.Part -> stringResource(wakeCategoryRes(kind.category))
     WakeupSourceKind.Unknown -> name
 }

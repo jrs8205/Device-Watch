@@ -11,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import org.jarsi.devicewatch.Bidi
 import org.jarsi.devicewatch.R
 import org.jarsi.devicewatch.data.UNAVAILABLE_TEXT
 import org.jarsi.devicewatch.presentation.DashboardUiState
@@ -149,7 +150,8 @@ internal fun DeviceTab(
                 if (state.removableVolumes.isEmpty()) {
                     DeviceFact(R.string.external_volumes, stringResource(R.string.external_volumes_none))
                 } else {
-                    state.removableVolumes.forEach { (name, value) -> DeviceFact(name, value) }
+                    // A volume's name is the card's or Android's own, not this app's words.
+                    state.removableVolumes.forEach { (name, value) -> DeviceFact(Bidi.outside(name), value) }
                 }
                 DeviceFact(R.string.usb_devices, state.usbDevices)
             }

@@ -84,6 +84,14 @@ internal fun MetricValue(
 @Composable
 internal fun valueTextStyle(): TextStyle = LocalTextStyle.current.copy(textDirection = TextDirection.ContentOrLtr)
 
+/**
+ * How a field shows what the user types into it: by the first letter typed, and from the
+ * left when there is none. In a field that took an Arabic page's direction, a typed "123 456"
+ * was shown "456 123".
+ */
+@Composable
+internal fun typedTextStyle(): TextStyle = LocalTextStyle.current.copy(textDirection = TextDirection.ContentOrLtr)
+
 /** Whichever way a value reads, it sits at the side where reading starts. */
 @Composable
 internal fun valueTextAlign(): TextAlign =

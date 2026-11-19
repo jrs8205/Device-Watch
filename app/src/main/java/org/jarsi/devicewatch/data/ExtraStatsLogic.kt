@@ -6,6 +6,7 @@ import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId
 import java.util.Locale
+import org.jarsi.devicewatch.Bidi
 
 /** Where the charge comes from, as `BatteryManager.EXTRA_PLUGGED` reports it. */
 enum class ChargeSource { NONE, AC, USB, WIRELESS, DOCK }
@@ -511,6 +512,14 @@ object ExtraStatsLogic {
     /** SD cards and USB storage; the primary (internal) volume has its own row. */
     fun removableVolumes(volumes: List<VolumeInfo>): List<VolumeInfo> =
         volumes.filter { it.removable && !it.primary }
+
+    /**
+     * Names the app did not write (apps, USB devices), listed after each other. Each is a
+     * piece of its own: in a line read from the right "7 Zip" after an Arabic name otherwise
+     * lost its number to that name.
+     */
+    fun namesText(names: List<String>, locale: Locale = Locale.getDefault()): String =
+        names.joinToString(", ") { Bidi.outside(it, locale) }
 
     /**
      * A USB device as "maker product", without doubling a maker the product name

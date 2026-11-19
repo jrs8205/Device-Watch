@@ -1,5 +1,6 @@
 package org.jarsi.devicewatch.presentation.ui
 
+import android.content.Context
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -34,6 +35,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -44,6 +46,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import org.jarsi.devicewatch.Bidi
 import org.jarsi.devicewatch.R
 import org.jarsi.devicewatch.data.SystemApp
 import org.jarsi.devicewatch.data.SystemAppActionResult
@@ -121,6 +124,7 @@ fun SystemAppsPage(
                         .fillMaxWidth()
                         .padding(horizontal = BAND_INSET, vertical = 4.dp),
                     singleLine = true,
+                    textStyle = typedTextStyle(),
                     placeholder = { Text(stringResource(R.string.system_apps_search)) },
                     // Whatever the keyboard's state: the search is cleared with one tap.
                     trailingIcon = if (state.query.isEmpty()) {
@@ -240,7 +244,7 @@ private fun SystemAppRow(
                 if (verdict.aospComponent) add(stringResource(R.string.system_apps_aosp))
                 if (app.updated) add(stringResource(R.string.system_apps_updated))
             }
-            if (captions.isNotEmpty()) KernelTechnical(captions.joinToString(" · "))
+            if (captions.isNotEmpty()) KernelCaption(captions.joinToString(" · "))
             verdict.role?.let { role ->
                 val color = if (blocked || restore) MaterialTheme.colorScheme.onSurfaceVariant else statusWarnColor()
                 val lead = stringResource(
@@ -283,7 +287,7 @@ private fun RemoveQuestion(
     val warned = app.verdict.risk == SystemAppRisk.WARNING
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.system_apps_remove_title, app.label)) },
+        title = { Text(removeQuestionTitle(LocalContext.current, app.label)) },
         text = {
             Column {
                 KernelTechnical(app.packageName)
@@ -320,38 +324,47 @@ private fun RemoveQuestion(
     )
 }
 
+/**
+ * "Remove Gmail?". The name is the app's own, in any script and sometimes nothing but
+ * numbers: inside an Arabic question it keeps its written order ([Bidi.outside]), so that the
+ * question names the very app that is about to be removed.
+ */
+internal fun removeQuestionTitle(context: Context, label: String): String =
+    context.getString(R.string.system_apps_remove_title, Bidi.outside(label))
+
+/**
+ * What became of a removal or a restore. The app's name and the package manager's own words
+ * each keep their written order inside the sentence; the reasons the app words itself need
+ * no such care.
+ */
+internal fun systemAppNoticeText(context: Context, action: SystemAppAction): String {
+    val label = Bidi.outside(action.app.label)
+    val failed = if (action.restore) R.string.system_apps_failed_restored else R.string.system_apps_failed_removed
+    return when (val result = action.result) {
+        SystemAppActionResult.Done ->
+            context.getString(if (action.restore) R.string.system_apps_done_restored else R.string.system_apps_done_removed, label)
+        SystemAppActionResult.NoShell -> context.getString(failed, label, context.getString(R.string.system_apps_no_shell))
+        is SystemAppActionResult.Failed -> context.getString(
+            failed,
+            label,
+            if (result.message.isBlank()) context.getString(R.string.system_apps_no_reason) else Bidi.outside(result.message),
+        )
+        is SystemAppActionResult.Blocked -> context.getString(
+            R.string.system_apps_failed_removed,
+            label,
+            context.getString(result.verdict.role?.let(::roleExplanation) ?: R.string.system_apps_blocked_now),
+        )
+        SystemAppActionResult.NotInstalled ->
+            context.getString(R.string.system_apps_failed_removed, label, context.getString(R.string.system_apps_not_installed_now))
+        SystemAppActionResult.Unchanged -> context.getString(failed, label, context.getString(R.string.system_apps_unchanged))
+    }
+}
+
 /** How the last removal or restore went, in the package manager's words when it refused. */
 @Composable
 private fun ActionNotice(action: SystemAppAction, onDismiss: () -> Unit) {
-    val label = action.app.label
     val ok = action.result == SystemAppActionResult.Done
-    val text = when (val result = action.result) {
-        SystemAppActionResult.Done ->
-            stringResource(if (action.restore) R.string.system_apps_done_restored else R.string.system_apps_done_removed, label)
-        SystemAppActionResult.NoShell ->
-            stringResource(
-                if (action.restore) R.string.system_apps_failed_restored else R.string.system_apps_failed_removed,
-                label, stringResource(R.string.system_apps_no_shell),
-            )
-        is SystemAppActionResult.Failed ->
-            stringResource(
-                if (action.restore) R.string.system_apps_failed_restored else R.string.system_apps_failed_removed,
-                label, result.message.ifBlank { stringResource(R.string.system_apps_no_reason) },
-            )
-        is SystemAppActionResult.Blocked ->
-            stringResource(
-                R.string.system_apps_failed_removed,
-                label,
-                result.verdict.role?.let { stringResource(roleExplanation(it)) } ?: stringResource(R.string.system_apps_blocked_now),
-            )
-        SystemAppActionResult.NotInstalled ->
-            stringResource(R.string.system_apps_failed_removed, label, stringResource(R.string.system_apps_not_installed_now))
-        SystemAppActionResult.Unchanged ->
-            stringResource(
-                if (action.restore) R.string.system_apps_failed_restored else R.string.system_apps_failed_removed,
-                label, stringResource(R.string.system_apps_unchanged),
-            )
-    }
+    val text = systemAppNoticeText(LocalContext.current, action)
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
