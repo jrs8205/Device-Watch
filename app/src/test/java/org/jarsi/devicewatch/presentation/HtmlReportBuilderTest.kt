@@ -575,6 +575,28 @@ class HtmlReportBuilderTest {
         }
     }
 
+    // The search field took the page's direction too: "123 456" typed into an Arabic report's
+    // field was shown "456 123", beside the row that showed the code as written.
+    @Test
+    fun `a search field shows what is typed by its own direction`() {
+        val seven = LocalDateTime.of(2026, 8, 13, 7, 0).toInstant(ZoneOffset.UTC).toEpochMilli()
+        val entry = NotificationLogEntry(seven, "com.example", "Bank", "Code 3 / 4", "123 456")
+
+        for (locale in listOf(Locale.US, Locale.forLanguageTag("ar-EG-u-nu-latn"))) {
+            val html = HtmlReportBuilder.build(
+                data(days = listOf(day(LocalDate.of(2026, 8, 13))), log = listOf(entry), locale = locale),
+                labels,
+            )
+
+            val fields = Regex("<input type=\"search\"[^>]*>").findAll(html).map { it.value }.toList()
+            assertThat(fields).hasSize(2)
+            fields.forEach { assertThat(it).contains(" dir=\"auto\"") }
+            // An empty field has no content to read a direction from: its placeholder, which is
+            // the report's own text, stays at the page's side.
+            assertThat(html).contains(".find:placeholder-shown { direction: inherit; }")
+        }
+    }
+
     // A date copied from the hint, or a time copied from a row, brings the invisible marks that
     // keep it in order; the search found nothing for it.
     @Test

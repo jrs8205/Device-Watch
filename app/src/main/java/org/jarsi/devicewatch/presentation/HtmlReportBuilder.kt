@@ -537,7 +537,9 @@ object HtmlReportBuilder {
         append(" data-count=\"").append(escape(countTemplate(labels))).append("\"")
         append(" data-empty=\"").append(escape(labels.noMatches)).append("\">\n")
         val hintId = "hint-$name"
-        append("<input type=\"search\" class=\"find\" placeholder=\"").append(escape(placeholder))
+        // What is typed is read by its own first letter, and from the left when it has none:
+        // in a field that took an Arabic page's direction a typed "123 456" was shown "456 123".
+        append("<input type=\"search\" class=\"find\" dir=\"auto\" placeholder=\"").append(escape(placeholder))
         append("\" aria-label=\"").append(escape(placeholder))
         // The hint is the field's description, so a screen reader reads it too.
         append("\" aria-describedby=\"").append(hintId).append("\">\n")
@@ -794,6 +796,9 @@ object HtmlReportBuilder {
           border: 1px solid var(--grid); background: var(--bg); color: var(--ink);
           font: inherit; font-size: 0.95rem; -webkit-appearance: none; appearance: none;
         }
+        /* Empty, the field has nothing to take a direction from, and browsers then lay it out
+           from the left: its placeholder is the report's own text and stays at the page's side. */
+        .find:placeholder-shown { direction: inherit; }
         .chips { display: flex; gap: 6px; flex-wrap: wrap; }
         .chips button, .reset {
           padding: 8px 14px; border-radius: 999px; border: 1px solid var(--grid);
