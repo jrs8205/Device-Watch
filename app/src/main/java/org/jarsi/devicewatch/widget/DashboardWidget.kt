@@ -315,7 +315,7 @@ private fun DashboardContent() {
 
         Spacer(modifier = GlanceModifier.height(widgetDp(8f)))
 
-        val wifiTitle = if (wifiBand != UNAVAILABLE_TEXT) "$wifiSsid · $wifiBand" else wifiSsid
+        val wifiTitle = wifiTitleText(wifiSsid, wifiBand)
         val wifiFit = networkRowFit(
             rowDp = rowTextDp,
             title = wifiTitle,
@@ -324,7 +324,7 @@ private fun DashboardContent() {
             label = wifiDataLabel,
             detailGapDp = widgetDp(8f).value,
         )
-        val mobileTitle = "$operatorName · $mobileNetworkType"
+        val mobileTitle = mobileTitleText(operatorName, mobileNetworkType)
         val mobileDetail = context.getString(
             R.string.widget_signal_line,
             signalDbmText(context, mobileSignalDbm),
@@ -872,6 +872,13 @@ fun cpuBottomText(cpuTemp: Double, cpuLoadLabel: String): String {
         else -> "$tempText · $cpuLoadLabel"
     }
 }
+
+/** "Home · 2.4 GHz": the Wi-Fi network's name and, when it is known, its band. */
+fun wifiTitleText(ssid: String, band: String): String =
+    if (band != UNAVAILABLE_TEXT) Bidi.beside(ssid, band) else ssid
+
+/** "Elisa · 5G": the operator's name and the kind of network. */
+fun mobileTitleText(operatorName: String, networkType: String): String = Bidi.beside(operatorName, networkType)
 
 fun signalDbmText(context: Context, value: Int): String {
     return if (value != UNAVAILABLE_INT) {

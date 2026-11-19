@@ -24,6 +24,9 @@ internal object VisualOrder {
      */
     fun byContent(text: String): String = ordered(text, UnicodeBidi.DIRECTION_DEFAULT_RIGHT_TO_LEFT)
 
+    /** A text the system draws on a phone whose own language reads from the left. */
+    fun leftToRight(text: String): String = ordered(text, UnicodeBidi.DIRECTION_LEFT_TO_RIGHT)
+
     private fun ordered(text: String, direction: Int): String {
         val bidi = UnicodeBidi(text, direction)
         val count = bidi.runCount

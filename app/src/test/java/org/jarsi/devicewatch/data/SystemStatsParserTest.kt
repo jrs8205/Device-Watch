@@ -172,7 +172,13 @@ class SystemStatsParserTest {
     fun `wifiBandLabel maps frequency ranges`() {
         assertThat(SystemStatsParser.wifiBandLabel(2_412, Locale.US)).isEqualTo("2.4 GHz")
         assertThat(SystemStatsParser.wifiBandLabel(2_412, Locale.forLanguageTag("fi-FI"))).isEqualTo("2,4 GHz")
-        assertThat(SystemStatsParser.wifiBandLabel(2_412, Locale.forLanguageTag("ar-EG-u-nu-latn"))).isEqualTo("2.4 GHz")
+        // In a language written from the right the band is one left-to-right piece: the widget
+        // puts it after the network's name.
+        val arabic = Locale.forLanguageTag("ar-EG-u-nu-latn")
+        assertThat(SystemStatsParser.wifiBandLabel(2_412, arabic)).isEqualTo(Char(0x2066) + "2.4 GHz" + Char(0x2069))
+        assertThat(SystemStatsParser.wifiBandLabel(5_180, arabic)).isEqualTo(Char(0x2066) + "5 GHz" + Char(0x2069))
+        assertThat(SystemStatsParser.wifiBandLabel(6_000, arabic)).isEqualTo(Char(0x2066) + "6 GHz" + Char(0x2069))
+        assertThat(SystemStatsParser.wifiBandLabel(5_180, Locale.US)).isEqualTo("5 GHz")
         assertThat(SystemStatsParser.wifiBandLabel(5_180)).isEqualTo("5 GHz")
         assertThat(SystemStatsParser.wifiBandLabel(6_000)).isEqualTo("6 GHz")
         assertThat(SystemStatsParser.wifiBandLabel(0)).isEqualTo(UNAVAILABLE_TEXT)

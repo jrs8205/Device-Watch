@@ -1,5 +1,6 @@
 package org.jarsi.devicewatch
 
+import android.icu.util.ULocale
 import java.util.Locale
 
 /**
@@ -12,13 +13,29 @@ import java.util.Locale
  */
 object Bidi {
 
-    /** Whether the language is written from the right, going by the script of its own name. */
-    fun isRtl(locale: Locale): Boolean {
-        val first = locale.getDisplayName(locale).firstOrNull() ?: return false
-        return when (Character.getDirectionality(first)) {
-            Character.DIRECTIONALITY_RIGHT_TO_LEFT, Character.DIRECTIONALITY_RIGHT_TO_LEFT_ARABIC -> true
-            else -> false
-        }
+    /**
+     * Whether the language is written from the right. Android's own answer, the one it lays
+     * the interface out by: it knows a language by its script, also where the language's name
+     * is not written in it (Dhivehi) or begins beyond the basic plane (Fulah in Adlam).
+     */
+    fun isRtl(locale: Locale): Boolean = androidSays(locale) ?: nameReadsFromTheRight(locale)
+
+    /** Null where there is no Android to ask: the unit tests that run on the plain JVM. */
+    private fun androidSays(locale: Locale): Boolean? = try {
+        ULocale.forLocale(locale).isRightToLeft
+    } catch (_: RuntimeException) {
+        null
+    }
+
+    /** Without Android: by the first letter of the language's own name, read as a whole letter. */
+    private fun nameReadsFromTheRight(locale: Locale): Boolean {
+        val name = locale.getDisplayName(locale)
+        return name.isNotEmpty() && isRtlLetter(name.codePointAt(0))
+    }
+
+    private fun isRtlLetter(codePoint: Int): Boolean = when (Character.getDirectionality(codePoint)) {
+        Character.DIRECTIONALITY_RIGHT_TO_LEFT, Character.DIRECTIONALITY_RIGHT_TO_LEFT_ARABIC -> true
+        else -> false
     }
 
     /**
@@ -49,6 +66,24 @@ object Bidi {
         val open = if (own) RIGHT_TO_LEFT_ISOLATE else LEFT_TO_RIGHT_ISOLATE
         return "$open$text$POP_ISOLATE"
     }
+
+    /** Whether [text] holds a letter of a script written from the right. */
+    fun hasRtl(text: String): Boolean = text.codePoints().anyMatch(::isRtlLetter)
+
+    /**
+     * A name the app did not write (a Wi-Fi network, an operator) and a reading after it:
+     * "Home · 2.4 GHz". The name is the user's, in any script: one in Arabic turns the whole
+     * line round whatever the app's language is, and the reading's unit left its number
+     * ("GHz 2.4"). Where the name or the app's language is written from the right, the name
+     * keeps its own direction and the reading is one left-to-right piece; otherwise the line
+     * is left as it is.
+     */
+    fun beside(name: String, reading: String, locale: Locale = Locale.getDefault()): String =
+        if (isRtl(locale) || hasRtl(name)) {
+            "$FIRST_STRONG_ISOLATE$name$POP_ISOLATE · $LEFT_TO_RIGHT_ISOLATE$reading$POP_ISOLATE"
+        } else {
+            "$name · $reading"
+        }
 
     // Written as numbers: the marks themselves cannot be seen in the source.
     private val LEFT_TO_RIGHT_ISOLATE = Char(0x2066)

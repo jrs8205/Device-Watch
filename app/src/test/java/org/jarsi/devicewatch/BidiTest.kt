@@ -3,12 +3,15 @@ package org.jarsi.devicewatch
 import com.google.common.truth.Truth.assertThat
 import com.google.common.truth.Truth.assertWithMessage
 import org.jarsi.devicewatch.data.QuickMetric
+import org.jarsi.devicewatch.data.UNAVAILABLE_TEXT
 import org.jarsi.devicewatch.presentation.capOverMaxText
 import org.jarsi.devicewatch.quick.QuickMetricFormatter
 import org.jarsi.devicewatch.quick.QuickMetricLabels
 import org.jarsi.devicewatch.quick.QuickMetricNames
 import org.jarsi.devicewatch.quick.quickStats
 import org.jarsi.devicewatch.widget.mobileDataText
+import org.jarsi.devicewatch.widget.mobileTitleText
+import org.jarsi.devicewatch.widget.wifiTitleText
 import org.junit.After
 import org.junit.Test
 import java.util.Locale
@@ -44,6 +47,65 @@ class BidiTest {
         for (tag in listOf("en-US", "fi-FI", "zh-CN", "und")) {
             assertWithMessage(tag).that(Bidi.isRtl(Locale.forLanguageTag(tag))).isFalse()
         }
+    }
+
+    // A language's name can begin with a letter that takes two units of a string: Adlam, which
+    // Fulah is written in from the right. Reading one unit of it told nothing.
+    @Test
+    fun `a language whose name begins beyond the basic plane is told too`() {
+        assertThat(Bidi.isRtl(Locale.forLanguageTag("ff-Adlm-GN"))).isTrue()
+        assertThat(Bidi.isRtl(Locale.forLanguageTag("ff-Latn-SN"))).isFalse()
+    }
+
+    @Test
+    fun `a text is told to hold right-to-left letters`() {
+        assertThat(Bidi.hasRtl(arabicHome)).isTrue()
+        assertThat(Bidi.hasRtl("Home 5G")).isFalse()
+        assertThat(Bidi.hasRtl("")).isFalse()
+    }
+
+    private val arabicHome = String(charArrayOf(Char(0x645), Char(0x646), Char(0x632), Char(0x644)))
+
+    // The network's name is the user's, in any script, whatever the app's language is. An Arabic
+    // name turns the whole line round, and "2.4 GHz" after it was drawn "GHz 2.4".
+    @Test
+    fun `a reading after an Arabic name keeps its unit, in an English app as well`() {
+        assertThat(VisualOrder.byContent("$arabicHome · 2.4 GHz")).contains("GHz 2.4")
+
+        for (locale in listOf(Locale.US, arabic)) {
+            val line = Bidi.beside(arabicHome, "2.4 GHz", locale)
+            for (seen in listOf(VisualOrder.rightToLeft(line), VisualOrder.leftToRight(line), VisualOrder.byContent(line))) {
+                assertWithMessage("$locale: $seen").that(seen).contains("2.4 GHz")
+                assertWithMessage("$locale: $seen").that(seen).contains(arabicHome.reversed())
+            }
+        }
+    }
+
+    @Test
+    fun `a Latin name and reading in a left-to-right app are left as they are`() {
+        assertThat(Bidi.beside("Home", "2.4 GHz", Locale.US)).isEqualTo("Home · 2.4 GHz")
+        assertThat(Bidi.beside("Home", "2.4 GHz", Locale.forLanguageTag("zh-CN"))).isEqualTo("Home · 2.4 GHz")
+    }
+
+    @Test
+    fun `in an Arabic app a Latin name and its reading stay whole`() {
+        val line = Bidi.beside("Home", "2.4 GHz", arabic)
+
+        assertThat(VisualOrder.rightToLeft(line)).contains("2.4 GHz")
+        assertThat(VisualOrder.rightToLeft(line)).contains("Home")
+    }
+
+    @Test
+    fun `the widget's network titles keep a band and a network kind whole after an Arabic name`() {
+        Locale.setDefault(Locale.US)
+        val wifi = wifiTitleText(arabicHome, "2.4 GHz")
+        val mobile = mobileTitleText(arabicHome, "5G")
+
+        for (seen in listOf(VisualOrder.rightToLeft(wifi), VisualOrder.leftToRight(wifi))) assertThat(seen).contains("2.4 GHz")
+        for (seen in listOf(VisualOrder.rightToLeft(mobile), VisualOrder.leftToRight(mobile))) assertThat(seen).contains("5G")
+        assertThat(wifiTitleText("Home", "2.4 GHz")).isEqualTo("Home · 2.4 GHz")
+        assertThat(wifiTitleText("Home", UNAVAILABLE_TEXT)).isEqualTo("Home")
+        assertThat(mobileTitleText("Elisa", "5G")).isEqualTo("Elisa · 5G")
     }
 
     @Test

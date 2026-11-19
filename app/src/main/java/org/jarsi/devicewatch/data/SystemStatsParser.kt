@@ -1,5 +1,6 @@
 package org.jarsi.devicewatch.data
 
+import org.jarsi.devicewatch.Bidi
 import android.net.wifi.ScanResult
 import android.telephony.TelephonyManager
 import java.util.Locale
@@ -261,14 +262,18 @@ internal object SystemStatsParser {
         return others().firstOrNull { isWifi(it) && !isVpn(it) }
     }
 
-    /** Human label for a Wi-Fi channel frequency in MHz. */
+    /**
+     * Human label for a Wi-Fi channel frequency in MHz. One left-to-right piece in a language
+     * written from the right: the widget puts it after the network's name.
+     */
     fun wifiBandLabel(frequencyMhz: Int, locale: Locale = Locale.getDefault()): String {
-        return when (frequencyMhz) {
+        val band = when (frequencyMhz) {
             in 2400..2500 -> String.format(locale, "%.1f GHz", 2.4)
             in 4900..5900 -> "5 GHz"
             in 5925..7125 -> "6 GHz"
-            else -> UNAVAILABLE_TEXT
+            else -> return UNAVAILABLE_TEXT
         }
+        return Bidi.ltr(band, locale)
     }
 
     /**
