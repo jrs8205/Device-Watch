@@ -181,6 +181,20 @@ class TranslationsTest {
         assertNoProblems(problems)
     }
 
+    // Android's own Chinese calls a Quick Settings tile 功能块 (its dialog for adding one, the
+    // editor's reset dialog). 抬腕唤醒 is raising a wrist to wake a watch; a phone is lifted.
+    @Test
+    fun `Chinese names a tile as Android does and speaks of lifting a phone, not a wrist`() {
+        val problems = translations.filterKeys { language(it) == "zh" }.flatMap { (qualifier, texts) ->
+            val all = texts.strings.map { it.key to it.value.textContent } +
+                texts.plurals.flatMap { (name, items) -> items.map { "$name (${it.key})" to it.value } }
+            all.flatMap { (name, text) ->
+                listOf("磁贴", "抬腕").filter { it in text }.map { "$qualifier: $name says $it" }
+            }
+        }
+        assertNoProblems(problems)
+    }
+
     /** A text as the app shows it: its escapes read, a sample number in place of each argument. */
     private fun asShown(raw: String): String {
         val isolatedSample = Char(0x2066) + "x" + Char(0x2069)
