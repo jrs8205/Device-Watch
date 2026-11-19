@@ -859,7 +859,7 @@ class SystemStatsRepositoryImpl @Inject constructor(
             return UNAVAILABLE_TEXT
         }
         if (devices.isEmpty()) return context.getString(R.string.usb_devices_none)
-        return ExtraStatsLogic.namesText(
+        return ExtraStatsLogic.usbDevicesText(
             devices.map { device ->
                 val (maker, product) = try {
                     device.manufacturerName to device.productName

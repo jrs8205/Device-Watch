@@ -12,6 +12,7 @@ import org.jarsi.devicewatch.data.SystemAppRisk
 import org.jarsi.devicewatch.data.SystemAppVerdict
 import org.jarsi.devicewatch.data.UNAVAILABLE_TEXT
 import org.jarsi.devicewatch.presentation.SystemAppAction
+import org.jarsi.devicewatch.presentation.reportDeviceName
 import org.jarsi.devicewatch.presentation.ui.appVersionText
 import org.jarsi.devicewatch.presentation.ui.clusterTechnicalText
 import org.jarsi.devicewatch.presentation.ui.opNameText
@@ -167,6 +168,48 @@ class NameInSentenceTest {
         assertWritten(arabic.getString(R.string.exempt_user_and_system, listed, system), "7 Zip", "123 456")
 
         assertThat(ExtraStatsLogic.namesText(listOf("Gmail", "7 Zip"), Locale.US)).isEqualTo("Gmail, 7 Zip")
+    }
+
+    // A USB device gives a maker's and a product's name: two texts, each in any script. Joined
+    // first and kept as one piece, a maker written from the right set the direction for both
+    // and the product "7 Pro" was drawn "Pro 7".
+    @Test
+    fun `a USB device's maker and product are each kept whole`() {
+        val maker = arabic.getString(R.string.camera_lens_main)
+        assertThat(VisualOrder.rightToLeft(Bidi.outside("$maker 7 Pro", arabicLocale))).doesNotContain("7 Pro")
+
+        val onArabic = ExtraStatsLogic.usbDeviceName(maker, "7 Pro", 0x046d, 0xc52b, arabicLocale)
+        assertWritten(onArabic, "7 Pro")
+        assertThat(VisualOrder.byContent(onArabic)).contains("7 Pro")
+        val onEnglish = ExtraStatsLogic.usbDeviceName(maker, "7 Pro", 0x046d, 0xc52b, Locale.US)
+        assertThat(VisualOrder.leftToRight(onEnglish)).contains("7 Pro")
+        // Several devices after each other: every part of every name is whole.
+        val listed = ExtraStatsLogic.usbDevicesText(listOf(onArabic, ExtraStatsLogic.usbDeviceName(null, "3 Button Mouse", 1, 2, arabicLocale)))
+        assertWritten(listed, "7 Pro", "3 Button Mouse")
+
+        // What repeats is told from the names as the device gave them, and nothing is added
+        // where neither the language nor the names read from the right.
+        assertThat(ExtraStatsLogic.usbDeviceName("SanDisk", "SanDisk Ultra", 1, 2, Locale.US)).isEqualTo("SanDisk Ultra")
+        assertThat(ExtraStatsLogic.usbDeviceName("Logitech", "USB Receiver", 1, 2, Locale.US)).isEqualTo("Logitech USB Receiver")
+        val repeated = ExtraStatsLogic.usbDeviceName("SanDisk", "SanDisk Ultra", 1, 2, arabicLocale)
+        assertThat(repeated.filterNot { it.code in 0x2066..0x2069 }).isEqualTo("SanDisk Ultra")
+    }
+
+    // The report's heading names the phone by its maker and its model: two texts as well.
+    @Test
+    fun `the report's phone name keeps its maker and its model each whole`() {
+        val maker = arabic.getString(R.string.camera_lens_main)
+
+        for (locale in listOf(arabicLocale, Locale.US)) {
+            val name = reportDeviceName(maker, "7 Pro", locale)
+            // The report puts the name into an element that reads by its own first letter.
+            assertWithMessage(locale.toString()).that(VisualOrder.byContent(name)).contains("7 Pro")
+        }
+        assertThat(reportDeviceName("Google", "Pixel 8a", Locale.US)).isEqualTo("Google Pixel 8a")
+        assertThat(reportDeviceName("samsung", "Samsung Galaxy", Locale.US)).isEqualTo("Samsung Galaxy")
+        assertThat(reportDeviceName(null, "Pixel 8a", Locale.US)).isEqualTo("Pixel 8a")
+        assertThat(reportDeviceName("Google", null, Locale.US)).isEqualTo("Google")
+        assertThat(reportDeviceName(null, " ", Locale.US)).isEmpty()
     }
 
     // "1.2.3 (45)" has no letter in it: on an Arabic page it was drawn "(45) 1.2.3".

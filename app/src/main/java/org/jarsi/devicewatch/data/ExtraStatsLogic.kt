@@ -525,17 +525,34 @@ object ExtraStatsLogic {
      * A USB device as "maker product", without doubling a maker the product name
      * already starts with, or as "USB vendor:product" in hex when it names neither.
      */
-    fun usbDeviceName(manufacturer: String?, product: String?, vendorId: Int, productId: Int): String {
+    fun usbDeviceName(
+        manufacturer: String?,
+        product: String?,
+        vendorId: Int,
+        productId: Int,
+        locale: Locale = Locale.getDefault(),
+    ): String {
         val maker = manufacturer?.trim()?.takeIf { it.isNotEmpty() }
         val name = product?.trim()?.takeIf { it.isNotEmpty() }
+        // The maker's and the product's name are two texts from the device, each in any
+        // script: each is a piece of its own, so that a maker written from the right does
+        // not take the product's "7 Pro" apart ("Pro 7"). What repeats is told from the
+        // names as the device gave them.
         return when {
             maker != null && name != null ->
-                if (name.startsWith(maker, ignoreCase = true)) name else "$maker $name"
-            name != null -> name
-            maker != null -> maker
-            else -> "USB %04x:%04x".format(vendorId, productId)
+                if (name.startsWith(maker, ignoreCase = true)) {
+                    Bidi.outside(name, locale)
+                } else {
+                    Bidi.outside(maker, locale) + " " + Bidi.outside(name, locale)
+                }
+            name != null -> Bidi.outside(name, locale)
+            maker != null -> Bidi.outside(maker, locale)
+            else -> Bidi.outside("USB %04x:%04x".format(vendorId, productId), locale)
         }
     }
+
+    /** USB devices listed after each other; each name's parts are pieces of their own already ([usbDeviceName]). */
+    fun usbDevicesText(names: List<String>): String = names.joinToString(", ")
 
     /**
      * Time the screen was on per local day between [startMillis] and [endMillis],
