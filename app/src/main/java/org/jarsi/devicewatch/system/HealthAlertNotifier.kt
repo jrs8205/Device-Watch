@@ -17,6 +17,7 @@ import org.jarsi.devicewatch.MainActivity
 import org.jarsi.devicewatch.R
 import org.jarsi.devicewatch.data.HealthAlert
 import java.util.Locale
+import org.jarsi.devicewatch.textForPhone
 
 /** "The battery is hot: 45.3 °C" */
 internal fun hotBatteryTitle(context: Context, temperatureDeciC: Int): String = context.getString(
@@ -59,9 +60,10 @@ object HealthAlertNotifier {
         )
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_dialog_alert)
-            .setContentTitle(title)
-            .setContentText(text)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(text))
+            // The shade draws them in the direction of the phone's language.
+            .setContentTitle(textForPhone(context, title))
+            .setContentText(textForPhone(context, text))
+            .setStyle(NotificationCompat.BigTextStyle().bigText(textForPhone(context, text)))
             .setContentIntent(contentIntent)
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)

@@ -14,6 +14,7 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import org.jarsi.devicewatch.MainActivity
 import org.jarsi.devicewatch.R
+import org.jarsi.devicewatch.textForPhone
 
 /**
  * "You can unplug now" reminder for the user-chosen charge level. Shares the
@@ -46,9 +47,9 @@ object ChargeLimitNotifier {
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentTitle(
-                context.getString(R.string.charge_limit_notification_title, levelPercent)
+                textForPhone(context, context.getString(R.string.charge_limit_notification_title, levelPercent))
             )
-            .setContentText(context.getString(R.string.charge_limit_notification_text))
+            .setContentText(textForPhone(context, context.getString(R.string.charge_limit_notification_text)))
             .setContentIntent(contentIntent)
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)

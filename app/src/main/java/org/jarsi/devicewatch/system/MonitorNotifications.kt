@@ -12,10 +12,9 @@ import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
-import org.jarsi.devicewatch.Bidi
 import org.jarsi.devicewatch.MainActivity
 import org.jarsi.devicewatch.R
-import org.jarsi.devicewatch.phoneLocale
+import org.jarsi.devicewatch.textForPhone
 
 /**
  * The monitor's foreground-service notification in its two forms: silent at the
@@ -55,8 +54,8 @@ class MonitorNotifications(private val context: Context) {
     }
 
     fun quiet(): Notification = NotificationCompat.Builder(context, QUIET_CHANNEL_ID)
-        .setContentTitle(context.getString(R.string.monitor_notification_title))
-        .setContentText(context.getString(R.string.monitor_notification_text))
+        .setContentTitle(textForPhone(context, context.getString(R.string.monitor_notification_title)))
+        .setContentText(textForPhone(context, context.getString(R.string.monitor_notification_text)))
         .setSmallIcon(R.drawable.ic_stat_device_watch)
         .setContentIntent(openOverview())
         .setPriority(NotificationCompat.PRIORITY_MIN)
@@ -80,21 +79,20 @@ class MonitorNotifications(private val context: Context) {
             .setVisibility(NotificationCompat.VISIBILITY_SECRET)
         if (text == null) {
             builder
-                .setContentTitle(context.getString(R.string.monitor_notification_title))
-                .setContentText(context.getString(R.string.monitor_notification_text))
+                .setContentTitle(textForPhone(context, context.getString(R.string.monitor_notification_title)))
+                .setContentText(textForPhone(context, context.getString(R.string.monitor_notification_text)))
         } else {
             // A title is one line in both views and cuts off a long first line, so the
             // expanded view swaps it for a short heading and wraps every figure under
             // it, each once. The shade draws the lines in the direction of the phone's language.
-            val phone = phoneLocale(context)
             builder
-                .setContentTitle(Bidi.forHost(text.title, phone))
-                .setContentText(text.text?.let { Bidi.forHost(it, phone) })
+                .setContentTitle(textForPhone(context, text.title))
+                .setContentText(text.text?.let { textForPhone(context, it) })
                 .setStyle(
                     NotificationCompat.BigTextStyle()
-                        .setBigContentTitle(context.getString(R.string.monitor_live_channel_name))
-                        // Each line by itself: a mark's reach ends where its line does.
-                        .bigText(text.content.lines().joinToString("\n") { Bidi.forHost(it, phone) })
+                        .setBigContentTitle(textForPhone(context, context.getString(R.string.monitor_live_channel_name)))
+                        // Each line is kept by itself: a mark's reach ends where its line does.
+                        .bigText(textForPhone(context, text.content))
                 )
         }
         return builder.build()

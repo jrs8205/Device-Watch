@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The language these texts are written in. Android gives a phone set to a language the app is not
+         written in (Hebrew, say) these English texts, and the phone's own language says nothing about how
+         they read. Each translation's folder has this file with its own tag; read by textLocale(). -->
+    <string name="text_language">en</string>
+</resources>

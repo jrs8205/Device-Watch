@@ -100,6 +100,33 @@ fun phoneLocale(context: Context): Locale {
 }
 
 /**
+ * The language of the texts [context] gives, which is not always the phone's nor the
+ * process's default: a phone set to a language the app is not written in (Hebrew, say) gets
+ * the English texts. Each language's resources say themselves which they are
+ * (`text_language.xml`), so this is whatever Android chose, by Android's own rules.
+ *
+ * It decides everything that depends on how the app's texts read: the direction of the HTML
+ * report, and whether a line handed to the launcher or to the system needs a mark to keep
+ * its own direction there ([Bidi.forHost]). The phone's locale still formats the numbers.
+ */
+fun textLocale(context: Context): Locale = Locale.forLanguageTag(context.getString(R.string.text_language))
+
+/**
+ * [text] as it has to be handed to the launcher or to the system, which draw it in the
+ * direction of the phone's language: a widget's text, a tile's line, a notification's.
+ * Where the app's own texts read the other way (another language chosen for the app, or the
+ * English texts a phone gets that is set to a language the app is not written in), each
+ * line is kept in the texts' direction. Unchanged otherwise, which is nearly always.
+ */
+fun textForPhone(context: Context, text: String): String =
+    textForHost(text, texts = textLocale(context), host = phoneLocale(context))
+
+/** [textForPhone] for a known pair of languages: [texts] the app's texts are in, [host] the phone's. */
+fun textForHost(text: String, texts: Locale, host: Locale): String =
+    // Line by line: a mark's reach ends where its line does.
+    if (text.isEmpty()) text else text.split('\n').joinToString("\n") { Bidi.forHost(it, hostLocale = host, locale = texts) }
+
+/**
  * Resources that print 0 to 9, for a context that outlives a change of language: the
  * application and the services. An activity is made anew when the language changes and
  * takes [LatinDigits.context] once; these are asked every time and follow [base]'s

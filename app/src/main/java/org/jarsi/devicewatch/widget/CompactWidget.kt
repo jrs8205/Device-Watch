@@ -38,7 +38,6 @@ import androidx.glance.layout.width
 import androidx.glance.state.GlanceStateDefinition
 import androidx.glance.state.PreferencesGlanceStateDefinition
 import androidx.glance.text.FontWeight
-import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import dagger.hilt.android.AndroidEntryPoint
@@ -134,7 +133,10 @@ class CompactWidgetReceiver : GlanceAppWidgetReceiver() {
 @Composable
 fun CompactWidgetContent() {
     val spaceScale = widgetSpaceScale(LocalSize.current.height.value, compactNeededHeightDp(widgetFontScale()))
-    CompositionLocalProvider(LocalWidgetSpaceScale provides spaceScale) {
+    CompositionLocalProvider(
+        LocalWidgetSpaceScale provides spaceScale,
+        LocalWidgetHost provides currentWidgetHost(),
+    ) {
         CompactContent()
     }
 }

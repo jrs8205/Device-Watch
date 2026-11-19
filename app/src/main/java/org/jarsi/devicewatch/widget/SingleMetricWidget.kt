@@ -26,7 +26,6 @@ import androidx.glance.layout.padding
 import androidx.glance.state.GlanceStateDefinition
 import androidx.glance.state.PreferencesGlanceStateDefinition
 import androidx.glance.text.FontWeight
-import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
@@ -106,7 +105,10 @@ class SingleMetricWidgetReceiver : GlanceAppWidgetReceiver() {
 @Composable
 fun SingleMetricWidgetContent() {
     val spaceScale = widgetSpaceScale(LocalSize.current.height.value, singleNeededHeightDp(widgetFontScale()))
-    CompositionLocalProvider(LocalWidgetSpaceScale provides spaceScale) {
+    CompositionLocalProvider(
+        LocalWidgetSpaceScale provides spaceScale,
+        LocalWidgetHost provides currentWidgetHost(),
+    ) {
         SingleContent()
     }
 }

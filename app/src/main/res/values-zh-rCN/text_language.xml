@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The language of this folder's texts: see values/text_language.xml. -->
+    <string name="text_language">zh-CN</string>
+</resources>

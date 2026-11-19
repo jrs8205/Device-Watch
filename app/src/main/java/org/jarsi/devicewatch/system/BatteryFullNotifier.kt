@@ -14,6 +14,7 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import org.jarsi.devicewatch.MainActivity
 import org.jarsi.devicewatch.R
+import org.jarsi.devicewatch.textForPhone
 
 object BatteryFullNotifier {
     private const val CHANNEL_ID = "battery_full_channel"
@@ -33,8 +34,8 @@ object BatteryFullNotifier {
 
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
-            .setContentTitle(context.getString(R.string.battery_full_notification_title))
-            .setContentText(context.getString(R.string.battery_full_notification_text))
+            .setContentTitle(textForPhone(context, context.getString(R.string.battery_full_notification_title)))
+            .setContentText(textForPhone(context, context.getString(R.string.battery_full_notification_text)))
             .setContentIntent(contentIntent)
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)

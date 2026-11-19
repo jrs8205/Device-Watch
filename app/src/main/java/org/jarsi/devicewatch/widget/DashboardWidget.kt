@@ -34,7 +34,6 @@ import androidx.glance.layout.width
 import androidx.glance.state.GlanceStateDefinition
 import androidx.glance.state.PreferencesGlanceStateDefinition
 import androidx.glance.text.FontWeight
-import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import androidx.glance.action.actionStartActivity
@@ -158,7 +157,10 @@ class DashboardWidget : GlanceAppWidget() {
 @Composable
 fun WidgetContent() {
     val spaceScale = widgetSpaceScale(LocalSize.current.height.value, dashboardNeededHeightDp(widgetFontScale()))
-    CompositionLocalProvider(LocalWidgetSpaceScale provides spaceScale) {
+    CompositionLocalProvider(
+        LocalWidgetSpaceScale provides spaceScale,
+        LocalWidgetHost provides currentWidgetHost(),
+    ) {
         DashboardContent()
     }
 }
