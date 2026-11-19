@@ -178,47 +178,41 @@ internal fun BoxWithConstraintsScope.GlowContent(state: DreamUiState, options: D
             )
         }
     } else {
-        Column(
+        ClockOverBattery(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = horizontalPadding, vertical = verticalPadding),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Spacer(modifier = Modifier.weight(1f))
-
-            ClockBlock(
-                timeText = state.timeText,
-                secondsText = state.secondsText,
-                dateText = state.dateText,
-                clockSize = clockSize,
-                secondsSize = secondsSize,
-                dateSize = if (clockSize < 100) 22 else 28,
-                amPmText = state.amPmText,
-                alarmText = alarmText,
-                deviceName = deviceName,
-                notificationGroups = notificationGroups,
-                notificationPulseToken = state.notificationPulseToken,
-                showSeconds = showSeconds,
-                showDate = showDate,
-                accent = options.accent.color,
-            )
-
-            Spacer(modifier = Modifier.weight(1f))
-
-            BatteryBlockPortrait(
-                modifier = Modifier.fillMaxWidth().widthIn(max = 360.dp),
-                chargeState = chargeState,
-                batteryLevel = batteryLevel,
-                batteryGradientColors = batteryGradientColors,
-                detailsStr = detailsStr,
-                fullTimeStr = fullTimeStr,
-                boltAlpha = boltAlpha,
-                showDetails = showDetails
-            )
-
-            Spacer(modifier = Modifier.weight(1f))
-        }
+            clock = {
+                ClockBlock(
+                    timeText = state.timeText,
+                    secondsText = state.secondsText,
+                    dateText = state.dateText,
+                    clockSize = clockSize,
+                    secondsSize = secondsSize,
+                    dateSize = if (clockSize < 100) 22 else 28,
+                    amPmText = state.amPmText,
+                    alarmText = alarmText,
+                    deviceName = deviceName,
+                    notificationGroups = notificationGroups,
+                    notificationPulseToken = state.notificationPulseToken,
+                    showSeconds = showSeconds,
+                    showDate = showDate,
+                    accent = options.accent.color,
+                )
+            },
+            battery = {
+                BatteryBlockPortrait(
+                    modifier = Modifier.fillMaxWidth().widthIn(max = 360.dp),
+                    chargeState = chargeState,
+                    batteryLevel = batteryLevel,
+                    batteryGradientColors = batteryGradientColors,
+                    detailsStr = detailsStr,
+                    fullTimeStr = fullTimeStr,
+                    boltAlpha = boltAlpha,
+                    showDetails = showDetails
+                )
+            },
+        )
     }
 }
 

@@ -776,7 +776,7 @@
     <string name="dream_plugged_not_charging">لا يتم الشحن</string>
     <string name="dream_full_time_estimate">يتوقع اكتمال الشحن نحو الساعة %1$s</string>
     <string name="dream_full_time_tomorrow">يتوقع اكتمال الشحن غدا نحو الساعة %1$s</string>
-    <string name="dream_full_time_date">يتوقع اكتمال الشحن في %1$s نحو الساعة %2$s</string>
+    <string name="dream_full_time_date">يكتمل الشحن في %1$s نحو %2$s</string>
     <string name="dream_full_time_unknown">يتوقع اكتمال الشحن نحو الساعة --:--</string>
     <!-- Kernel page (root) -->
     <string name="kernel_open">فتح</string>

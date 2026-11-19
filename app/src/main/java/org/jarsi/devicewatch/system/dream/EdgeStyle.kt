@@ -304,41 +304,39 @@ internal fun BoxWithConstraintsScope.EdgeContent(state: DreamUiState, options: D
             )
         }
     } else {
-        Column(
+        ClockOverBattery(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = horizontalPadding, vertical = verticalPadding),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Spacer(modifier = Modifier.weight(1f))
-            ClockBlock(
-                timeText = state.timeText,
-                secondsText = state.secondsText,
-                dateText = state.dateText,
-                clockSize = clockSize,
-                secondsSize = secondsSize,
-                dateSize = if (clockSize < 100) 22 else 28,
-                amPmText = state.amPmText,
-                alarmText = alarmText,
-                deviceName = deviceName,
-                notificationGroups = notificationGroups,
-                notificationPulseToken = state.notificationPulseToken,
-                showSeconds = showSeconds,
-                showDate = showDate,
-                accent = options.accent.color,
-            )
-            Spacer(modifier = Modifier.weight(1f))
-            EdgeBattery(
-                state = state,
-                options = options,
-                modifier = Modifier.fillMaxWidth().widthIn(max = 360.dp),
-                alignment = Alignment.CenterHorizontally,
-                percentSize = 64,
-                wordSize = 26,
-            )
-            Spacer(modifier = Modifier.weight(1f))
-        }
+            clock = {
+                ClockBlock(
+                    timeText = state.timeText,
+                    secondsText = state.secondsText,
+                    dateText = state.dateText,
+                    clockSize = clockSize,
+                    secondsSize = secondsSize,
+                    dateSize = if (clockSize < 100) 22 else 28,
+                    amPmText = state.amPmText,
+                    alarmText = alarmText,
+                    deviceName = deviceName,
+                    notificationGroups = notificationGroups,
+                    notificationPulseToken = state.notificationPulseToken,
+                    showSeconds = showSeconds,
+                    showDate = showDate,
+                    accent = options.accent.color,
+                )
+            },
+            battery = {
+                EdgeBattery(
+                    state = state,
+                    options = options,
+                    modifier = Modifier.fillMaxWidth().widthIn(max = 360.dp),
+                    alignment = Alignment.CenterHorizontally,
+                    percentSize = 64,
+                    wordSize = 26,
+                )
+            },
+        )
     }
 }
 

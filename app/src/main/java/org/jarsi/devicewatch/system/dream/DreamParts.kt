@@ -5,6 +5,7 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -28,8 +29,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFontFamilyResolver
@@ -41,6 +44,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.TextUnit
@@ -53,6 +57,7 @@ import org.jarsi.devicewatch.R
 import org.jarsi.devicewatch.system.NotificationIconGroup
 import org.jarsi.devicewatch.system.NotificationRowFit
 import org.jarsi.devicewatch.system.fitNotificationRow
+import kotlin.math.roundToInt
 
 // The pieces the screensaver's styles share: the clock block, the notification row, the
 // text fitting and the battery's colours.
@@ -183,6 +188,75 @@ internal fun ClockBlock(
             )
         }
     }
+}
+
+/** The least room between the clock and the battery once the two have had to shrink. */
+private val SHRUNK_BLOCK_GAP = 8.dp
+
+/**
+ * The upright layout Glow and Edge share: the clock block over the battery block, the room
+ * left over split evenly above, between and below them.
+ *
+ * On a screen too low for both at their own size (320 x 480 dp with every extra switched on
+ * and a large font) a plain column gave the last line, the charge estimate, the few pixels
+ * that were left. Here both blocks are measured at the height they ask for, and when the two
+ * do not fit they are drawn smaller by the same measure: the clock and the gaps give way and
+ * every line keeps its whole height.
+ */
+@Composable
+internal fun ClockOverBattery(
+    modifier: Modifier = Modifier,
+    clock: @Composable () -> Unit,
+    battery: @Composable () -> Unit,
+) {
+    Layout(
+        modifier = modifier,
+        content = {
+            Box { clock() }
+            Box { battery() }
+        },
+    ) { measurables, constraints ->
+        val asked = constraints.copy(minWidth = 0, minHeight = 0, maxHeight = Constraints.Infinity)
+        val blocks = measurables.map { it.measure(asked) }
+        val width = constraints.maxWidth
+        val height = constraints.maxHeight
+        val fit = fitBlocksInHeight(blocks.map { it.height }, height, SHRUNK_BLOCK_GAP.roundToPx())
+        layout(width, height) {
+            blocks.forEachIndexed { index, block ->
+                val x = (width - block.width) / 2
+                if (fit.scale == 1f) {
+                    block.place(x, fit.tops[index])
+                } else {
+                    block.placeWithLayer(x, fit.tops[index]) {
+                        scaleX = fit.scale
+                        scaleY = fit.scale
+                        transformOrigin = TransformOrigin(0.5f, 0f)
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** Where each block of [ClockOverBattery] starts, and how much smaller they are all drawn. */
+internal class BlockFit(val scale: Float, val tops: List<Int>)
+
+/**
+ * Blocks of [heights] stacked in [available] pixels. When they fit, the room left over is
+ * split evenly above, between and below them. When they do not, they are all scaled down by
+ * the same measure until they do, with [minGap] kept between them and none at the ends.
+ */
+internal fun fitBlocksInHeight(heights: List<Int>, available: Int, minGap: Int): BlockFit {
+    val needed = heights.sum()
+    if (needed <= available) {
+        val gap = (available - needed) / (heights.size + 1f)
+        var top = gap
+        return BlockFit(1f, heights.map { height -> top.roundToInt().also { top += height + gap } })
+    }
+    val gaps = minGap * (heights.size - 1)
+    val scale = ((available - gaps).coerceAtLeast(0)).toFloat() / needed
+    var top = 0f
+    return BlockFit(scale, heights.map { height -> top.roundToInt().also { top += height * scale + minGap } })
 }
 
 /** How long the burn-in shift takes to glide to its new spot. */

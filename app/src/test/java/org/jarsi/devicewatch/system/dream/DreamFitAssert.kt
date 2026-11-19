@@ -1,5 +1,6 @@
 package org.jarsi.devicewatch.system.dream
 
+import androidx.compose.ui.layout.findRootCoordinates
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
@@ -50,15 +51,38 @@ internal fun ComposeContentTestRule.assertNoTextCutOff(case: String) {
         assertWithMessage("$case: \"$text\" is taller than its box (${layout.size.height} px)")
             .that(layout.didOverflowHeight)
             .isFalse()
-        val left = semantics.positionInRoot.x
-        val top = semantics.positionInRoot.y
-        val right = left + semantics.size.width
-        val bottom = top + semantics.size.height
+        // Where the text is drawn, not where it was laid out: a block drawn smaller to fit
+        // a low screen (see ClockOverBattery) keeps its laid-out size.
+        val coordinates = semantics.layoutInfo.coordinates
+        val drawn = coordinates.findRootCoordinates().localBoundingBoxOf(coordinates, clipBounds = false)
+        val left = drawn.left
+        val top = drawn.top
+        val right = drawn.right
+        val bottom = drawn.bottom
         assertWithMessage(
             "$case: \"$text\" lies outside the ${root.size.width} x ${root.size.height} screen " +
                 "(left $left, top $top, right $right, bottom $bottom)"
         )
             .that(left >= -0.5f && top >= -0.5f && right <= root.size.width + 0.5f && bottom <= root.size.height + 0.5f)
             .isTrue()
+    }
+}
+
+/**
+ * Fails if a text on the screen carries a digit other than 0 to 9: the fit is measured with
+ * the digits the app prints, and a test set up without them would measure other widths.
+ */
+internal fun ComposeContentTestRule.assertOnlyDigitsZeroToNine(case: String) {
+    val texts = onAllNodes(
+        SemanticsMatcher.keyIsDefined(SemanticsActions.GetTextLayoutResult),
+        useUnmergedTree = true,
+    )
+    for (index in 0 until texts.fetchSemanticsNodes().size) {
+        val layouts = mutableListOf<TextLayoutResult>()
+        texts[index].performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(layouts) }
+        val text = layouts.single().layoutInput.text.text
+        assertWithMessage("$case: \"$text\" has digits other than 0 to 9")
+            .that(text.any { it.isDigit() && it !in '0'..'9' })
+            .isFalse()
     }
 }
