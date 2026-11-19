@@ -92,6 +92,7 @@ class ReportPaletteTest {
                 batterySamples = emptyList(),
                 logEntries = emptyList(),
                 zone = java.time.ZoneOffset.UTC,
+                textLocale = java.util.Locale.ENGLISH,
             ),
             TEST_REPORT_LABELS,
         )

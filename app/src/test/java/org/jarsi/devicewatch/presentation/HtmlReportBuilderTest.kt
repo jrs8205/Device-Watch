@@ -29,8 +29,10 @@ class HtmlReportBuilderTest {
         log: List<NotificationLogEntry> = emptyList(),
         deviceName: String = "Pixel 8a",
         locale: Locale = Locale.US,
+        textLocale: Locale = locale,
     ) = HtmlReportData(
         locale = locale,
+        textLocale = textLocale,
         deviceName = deviceName,
         generatedAt = LocalDateTime.of(2026, 8, 14, 18, 30),
         days = days,
@@ -573,6 +575,46 @@ class HtmlReportBuilderTest {
             assertThat(html).doesNotContain("<p class=\"sub\" dir=")
             assertThat(html).doesNotContain("match-parent")
         }
+    }
+
+    // A phone set to Hebrew gets the app's English texts. The report took its direction from
+    // the phone's language: an English page laid out from the right, where "12 h 30 min" read
+    // "h 30 min 12".
+    @Test
+    fun `the report reads the way its own texts do, whatever the phone's language`() {
+        val seven = LocalDateTime.of(2026, 8, 13, 7, 0).toInstant(ZoneOffset.UTC).toEpochMilli()
+        val html = HtmlReportBuilder.build(
+            data(
+                days = listOf(day(LocalDate.of(2026, 8, 13), screenTimeMillis = 45_000_000L)),
+                monthly = listOf(MonthlyDataUsage(YearMonth.of(2026, 8), mobileGb = 1.25, wifiGb = 0.5)),
+                log = listOf(NotificationLogEntry(seven, "com.example", "Bank", "Code 3 / 4", "123 456")),
+                locale = Locale.forLanguageTag("he-IL"),
+                textLocale = Locale.ENGLISH,
+            ),
+            labels,
+        )
+
+        assertThat(html).contains("<html lang=\"en\">")
+        assertThat(html).doesNotContain("dir=\"rtl\"")
+        assertThat(html).contains("12 h 30 min")
+        // An English page needs none of the marks that keep a figure whole on an Arabic one.
+        assertThat(html.filter { it.code in 0x2066..0x2069 }).isEmpty()
+    }
+
+    // The other way round: Arabic chosen for the app on an English phone.
+    @Test
+    fun `an Arabic report on a phone in another language is still laid out from the right`() {
+        val html = HtmlReportBuilder.build(
+            data(
+                monthly = listOf(MonthlyDataUsage(YearMonth.of(2026, 8), mobileGb = 1.25, wifiGb = 0.5)),
+                locale = Locale.US,
+                textLocale = Locale.forLanguageTag("ar"),
+            ),
+            labels,
+        )
+
+        assertThat(html).contains("<html lang=\"ar\" dir=\"rtl\">")
+        assertThat(html).contains(Char(0x2066) + "1.25 GB" + Char(0x2069))
     }
 
     // The search field took the page's direction too: "123 456" typed into an Arabic report's

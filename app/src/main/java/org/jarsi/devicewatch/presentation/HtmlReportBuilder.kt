@@ -23,6 +23,12 @@ data class HtmlReportData(
     val zone: ZoneId,
     /** Number formatting follows the phone's locale; tests pin it. */
     val locale: Locale = Locale.US,
+    /**
+     * The language the report's own texts are written in, which is not always [locale]'s: a
+     * phone set to Hebrew gets the app's English texts. The page's language and direction, and
+     * whether a figure needs a mark to stay whole, follow the texts.
+     */
+    val textLocale: Locale,
 )
 
 /** Localized headings. Kept out of the builder so it stays a plain-JVM unit. */
@@ -169,9 +175,11 @@ object HtmlReportBuilder {
 
     fun build(data: HtmlReportData, labels: HtmlReportLabels): String = buildString {
         append("<!DOCTYPE html>\n")
-        append("<html lang=\"").append(escape(data.locale.language.ifEmpty { "en" })).append('"')
-        // A language written from the right lays the whole page out from the right.
-        if (Bidi.isRtl(data.locale)) append(" dir=\"rtl\"")
+        append("<html lang=\"").append(escape(data.textLocale.language.ifEmpty { "en" })).append('"')
+        // A language written from the right lays the whole page out from the right. It is the
+        // language of the page's own texts that says so, not the phone's: English texts on a
+        // Hebrew phone make an English page.
+        if (Bidi.isRtl(data.textLocale)) append(" dir=\"rtl\"")
         append(">\n")
         append("<head>\n")
         append("<meta charset=\"utf-8\">\n")
@@ -199,7 +207,7 @@ object HtmlReportBuilder {
         append("<h1>").append(escape(labels.title)).append("</h1>\n")
         // The phone's name is the user's own text, in any script.
         append("<p class=\"sub\">").append(outside(data.deviceName)).append("</p>\n")
-        val stamp = String.format(data.locale, labels.generatedAt, stampText(data.generatedAt, data.locale))
+        val stamp = String.format(data.locale, labels.generatedAt, stampText(data.generatedAt, data.textLocale))
         append("<p class=\"sub\">").append(escape(stamp)).append("</p>\n")
         append("</header>\n")
     }
@@ -257,7 +265,7 @@ object HtmlReportBuilder {
     private fun currentMonthDataText(data: HtmlReportData): String {
         val newest = data.monthly.maxByOrNull { it.month } ?: return DASH
         if (newest.mobileGb < 0.0 || newest.wifiGb < 0.0) return DASH
-        return gbText(newest.mobileGb + newest.wifiGb, data.locale)
+        return gbText(newest.mobileGb + newest.wifiGb, data)
     }
 
     private fun StringBuilder.appendCard(label: String, value: String) {
@@ -431,7 +439,7 @@ object HtmlReportBuilder {
             append("</td>")
             append("<td>")
             append(
-                if (day.storageUsedBytes > 0L) escape(gbText(day.storageUsedBytes / BYTES_PER_GIB, data.locale)) else DASH
+                if (day.storageUsedBytes > 0L) escape(gbText(day.storageUsedBytes / BYTES_PER_GIB, data)) else DASH
             )
             append("</td>")
             append("</tr>\n")
@@ -451,8 +459,8 @@ object HtmlReportBuilder {
         data.monthly.sortedByDescending { it.month }.forEach { month ->
             append("<tr>")
             append("<td class=\"day\">").append(escape(month.month.toString())).append("</td>")
-            append("<td>").append(escape(gbOrDash(month.mobileGb, data.locale))).append("</td>")
-            append("<td>").append(escape(gbOrDash(month.wifiGb, data.locale))).append("</td>")
+            append("<td>").append(escape(gbOrDash(month.mobileGb, data))).append("</td>")
+            append("<td>").append(escape(gbOrDash(month.wifiGb, data))).append("</td>")
             append("</tr>\n")
         }
         appendTableEnd()
@@ -488,7 +496,7 @@ object HtmlReportBuilder {
         data.logEntries.forEach { entry ->
             val time = LocalDateTime.ofInstant(Instant.ofEpochMilli(entry.timeMillis), data.zone)
             append("<tr data-date=\"").append(escape(time.toLocalDate().toString())).append("\">")
-            append("<td class=\"day\">").append(escape(stampText(time, data.locale))).append("</td>")
+            append("<td class=\"day\">").append(escape(stampText(time, data.textLocale))).append("</td>")
             append("<td>").append(outside(entry.appLabel)).append("</td>")
             append("<td>").append(outside(entry.title)).append("</td>")
             append("<td>").append(outside(entry.text)).append("</td>")
@@ -607,19 +615,20 @@ object HtmlReportBuilder {
         }
     }
 
-    private fun gbOrDash(value: Double, locale: Locale): String =
-        if (value < 0.0) DASH else gbText(value, locale)
+    private fun gbOrDash(value: Double, data: HtmlReportData): String =
+        if (value < 0.0) DASH else gbText(value, data)
 
     /**
      * "2026-08-14 18:30" as one left-to-right piece: on a page laid out from the right the
      * time came before the date, and after an Arabic word the date itself turned round
      * ("18:30 14-08-2026"), which is not what the search takes.
      */
-    private fun stampText(time: LocalDateTime, locale: Locale): String = Bidi.ltr(time.format(TIMESTAMP), locale)
+    private fun stampText(time: LocalDateTime, textLocale: Locale): String = Bidi.ltr(time.format(TIMESTAMP), textLocale)
 
     // One left-to-right piece: on a page laid out from the right the unit would lead.
-    private fun gbText(value: Double, locale: Locale): String =
-        Bidi.ltr(String.format(locale, "%.2f GB", value), locale)
+    // The number is written the phone's way; the mark depends on how the page reads.
+    private fun gbText(value: Double, data: HtmlReportData): String =
+        Bidi.ltr(String.format(data.locale, "%.2f GB", value), data.textLocale)
 
     /** Two decimals keep the SVG readable; more only inflates the file. */
     private fun coord(value: Double): String = String.format(Locale.US, "%.2f", value)

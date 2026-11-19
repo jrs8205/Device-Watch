@@ -5,6 +5,7 @@ import android.content.Intent
 import androidx.core.content.FileProvider
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import org.jarsi.devicewatch.Bidi
 import org.jarsi.devicewatch.R
 import org.jarsi.devicewatch.data.BatteryHistory
 import org.jarsi.devicewatch.data.BatteryHistoryCodec
@@ -38,6 +39,7 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import javax.inject.Inject
+import org.jarsi.devicewatch.textLocale
 
 data class HistoryDay(
     val day: LocalDate,
@@ -216,9 +218,10 @@ class HistoryViewModel @Inject constructor(
             mimeType = "text/html",
         ) {
             val state = _uiState.value
+            val texts = textLocale(context)
             HtmlReportBuilder.build(
                 HtmlReportData(
-                    deviceName = deviceName(statsRepository.getDeviceInfo()),
+                    deviceName = deviceName(statsRepository.getDeviceInfo(), texts),
                     generatedAt = LocalDateTime.now(),
                     days = state.days,
                     monthly = state.monthlyUsage,
@@ -226,6 +229,7 @@ class HistoryViewModel @Inject constructor(
                     logEntries = state.logEntries,
                     zone = ZoneId.systemDefault(),
                     locale = Locale.getDefault(),
+                    textLocale = texts,
                 ),
                 labels,
             )
@@ -277,16 +281,11 @@ class HistoryViewModel @Inject constructor(
         }
     }
 
-    /** "Google Pixel 8a", but without repeating a manufacturer the model already names. */
-    private fun deviceName(info: DeviceInfo): String {
-        val model = info.model.takeIf { it != UNAVAILABLE_TEXT && it.isNotBlank() }
-        val maker = info.manufacturer.takeIf { it != UNAVAILABLE_TEXT && it.isNotBlank() }
-        return when {
-            model == null -> maker ?: ""
-            maker == null || model.startsWith(maker, ignoreCase = true) -> model
-            else -> "$maker $model"
-        }
-    }
+    private fun deviceName(info: DeviceInfo, texts: Locale): String = reportDeviceName(
+        manufacturer = info.manufacturer.takeIf { it != UNAVAILABLE_TEXT },
+        model = info.model.takeIf { it != UNAVAILABLE_TEXT },
+        locale = texts,
+    )
 
     private fun htmlReportLabels(context: Context) = HtmlReportLabels(
         title = context.getString(R.string.report_title),
@@ -380,5 +379,21 @@ internal fun createExportFile(
         val file = File(dir, name)
         if (file.createNewFile()) return file
         attempt++
+    }
+}
+
+/**
+ * "Google Pixel 8a" for the report's heading, without repeating a manufacturer the model
+ * already names. The two are separate texts from the phone: each is a piece of its own, so
+ * that a name written from the right does not take the other apart. What repeats is told
+ * from the names as the phone gave them.
+ */
+internal fun reportDeviceName(manufacturer: String?, model: String?, locale: Locale): String {
+    val maker = manufacturer?.takeIf { it.isNotBlank() }
+    val name = model?.takeIf { it.isNotBlank() }
+    return when {
+        name == null -> maker?.let { Bidi.outside(it, locale) } ?: ""
+        maker == null || name.startsWith(maker, ignoreCase = true) -> Bidi.outside(name, locale)
+        else -> Bidi.outside(maker, locale) + " " + Bidi.outside(name, locale)
     }
 }
