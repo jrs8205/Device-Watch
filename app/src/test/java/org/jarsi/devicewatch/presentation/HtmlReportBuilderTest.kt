@@ -552,10 +552,26 @@ class HtmlReportBuilderTest {
         for (locale in listOf(Locale.US, Locale.forLanguageTag("ar-EG-u-nu-latn"))) {
             val html = HtmlReportBuilder.build(data(log = listOf(entry), deviceName = "Pixel 8a", locale = locale), labels)
 
-            assertThat(html).contains("<td dir=\"auto\">Bank</td><td dir=\"auto\">Code 3 / 4</td><td dir=\"auto\">123 456</td>")
-            assertThat(html).contains("<p class=\"sub\" dir=\"auto\">Pixel 8a</p>")
-            // A cell that takes its own direction still stands at its column's side.
-            assertThat(html).contains("table.text td[dir=\"auto\"], .sub[dir=\"auto\"] { text-align: match-parent; }")
+            assertThat(html).contains("<td><bdi>Bank</bdi></td><td><bdi>Code 3 / 4</bdi></td><td><bdi>123 456</bdi></td>")
+            assertThat(html).contains("<p class=\"sub\"><bdi>Pixel 8a</bdi></p>")
+        }
+    }
+
+    // The direction was first given to the cell itself, with `text-align: match-parent` to keep
+    // it at its column's side. Chrome does not know that value and dropped the rule: in an Arabic
+    // report every English cell, and the phone's name, went to the far side of its column.
+    @Test
+    fun `what another app wrote stays at its column's side`() {
+        val seven = LocalDateTime.of(2026, 8, 13, 7, 0).toInstant(ZoneOffset.UTC).toEpochMilli()
+        val entry = NotificationLogEntry(seven, "com.example", "Bank", "Code 3 / 4", "123 456")
+
+        for (locale in listOf(Locale.US, Locale.forLanguageTag("ar-EG-u-nu-latn"))) {
+            val html = HtmlReportBuilder.build(data(log = listOf(entry), deviceName = "Pixel 8a", locale = locale), labels)
+
+            // The cell and the line keep the page's direction, and with it their side.
+            assertThat(html).doesNotContain("<td dir=")
+            assertThat(html).doesNotContain("<p class=\"sub\" dir=")
+            assertThat(html).doesNotContain("match-parent")
         }
     }
 

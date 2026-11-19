@@ -198,7 +198,7 @@ object HtmlReportBuilder {
         append("<header>\n")
         append("<h1>").append(escape(labels.title)).append("</h1>\n")
         // The phone's name is the user's own text, in any script.
-        append("<p class=\"sub\" dir=\"auto\">").append(escape(data.deviceName)).append("</p>\n")
+        append("<p class=\"sub\">").append(outside(data.deviceName)).append("</p>\n")
         val stamp = String.format(data.locale, labels.generatedAt, stampText(data.generatedAt, data.locale))
         append("<p class=\"sub\">").append(escape(stamp)).append("</p>\n")
         append("</header>\n")
@@ -489,17 +489,24 @@ object HtmlReportBuilder {
             val time = LocalDateTime.ofInstant(Instant.ofEpochMilli(entry.timeMillis), data.zone)
             append("<tr data-date=\"").append(escape(time.toLocalDate().toString())).append("\">")
             append("<td class=\"day\">").append(escape(stampText(time, data.locale))).append("</td>")
-            // Another app's words, in any script: each cell reads by its own first letter, and
-            // from the left when it has none. Left to an Arabic page's direction a code
-            // "123 456" read "456 123".
-            append("<td dir=\"auto\">").append(escape(entry.appLabel)).append("</td>")
-            append("<td dir=\"auto\">").append(escape(entry.title)).append("</td>")
-            append("<td dir=\"auto\">").append(escape(entry.text)).append("</td>")
+            append("<td>").append(outside(entry.appLabel)).append("</td>")
+            append("<td>").append(outside(entry.title)).append("</td>")
+            append("<td>").append(outside(entry.text)).append("</td>")
             append("</tr>\n")
         }
         appendTableEnd()
         append("</section>\n")
     }
+
+    /**
+     * Words the app did not write (another app's, or the user's own), in any script: they read
+     * by their own first letter, and from the left when they have none. Left to an Arabic
+     * page's direction a code "123 456" read "456 123". The direction goes on an element
+     * inside the cell and not on the cell: a cell with its own direction also takes that
+     * direction's side, and the value that would hold it in place (`text-align: match-parent`)
+     * is not known to every browser.
+     */
+    private fun outside(text: String): String = "<bdi>" + escape(text) + "</bdi>"
 
     private fun StringBuilder.appendSectionStart(title: String) {
         append("<section>\n<h2>").append(escape(title)).append("</h2>\n")
@@ -822,8 +829,6 @@ object HtmlReportBuilder {
         table.days th:nth-child(2), table.days td:nth-child(2) { text-align: start; }
         table.text th, table.text td { text-align: start; }
         table.text td:last-child { white-space: normal; max-width: 40ch; }
-        /* A cell or a line that takes its own direction still stands at its column's side. */
-        table.text td[dir="auto"], .sub[dir="auto"] { text-align: match-parent; }
         thead th {
           font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em;
           color: var(--muted); font-weight: 700; border-bottom: 2px solid var(--grid);
