@@ -190,6 +190,8 @@ private fun AppUseRow(app: AppSensorUse, sensor: PrivacySensor, minuteKept: Bool
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = app.label,
+                style = valueTextStyle(),
+                textAlign = valueTextAlign(),
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Medium,
                 modifier = Modifier.weight(1f),

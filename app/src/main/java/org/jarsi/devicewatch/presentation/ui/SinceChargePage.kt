@@ -278,6 +278,8 @@ private fun SinceChargeScreenTimeCard(uiState: SinceChargeUiState) {
                 Spacer(modifier = Modifier.width(10.dp))
                 Text(
                     text = segment.label ?: stringResource(R.string.screen_time_others),
+                    style = valueTextStyle(),
+                    textAlign = valueTextAlign(),
                     fontSize = 14.sp,
                     maxLines = 1,
                     modifier = Modifier.weight(1f)

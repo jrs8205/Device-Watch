@@ -155,6 +155,8 @@ internal fun BatteryAppsCard(report: BatteryUsageReport) {
             ) {
                 Text(
                     text = app.label,
+                    style = valueTextStyle(),
+                    textAlign = valueTextAlign(),
                     fontSize = 14.sp,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,

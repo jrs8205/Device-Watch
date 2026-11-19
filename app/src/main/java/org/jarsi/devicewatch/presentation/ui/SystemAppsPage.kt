@@ -228,6 +228,8 @@ private fun SystemAppRow(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = app.label,
+                style = valueTextStyle(),
+                textAlign = valueTextAlign(),
                 fontSize = 15.sp,
                 fontWeight = FontWeight.SemiBold,
                 maxLines = 1,

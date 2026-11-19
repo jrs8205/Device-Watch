@@ -194,6 +194,8 @@ internal fun AppsTab(
                         Spacer(modifier = Modifier.width(10.dp))
                         Text(
                             text = segment.label ?: stringResource(R.string.screen_time_others),
+                            style = valueTextStyle(),
+                            textAlign = valueTextAlign(),
                             fontSize = 14.sp,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
@@ -234,6 +236,8 @@ internal fun AppsTab(
                             Spacer(modifier = Modifier.width(12.dp))
                             Text(
                                 text = entry.label,
+                                style = valueTextStyle(),
+                                textAlign = valueTextAlign(),
                                 fontSize = 14.sp,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
@@ -282,6 +286,8 @@ internal fun AppsTab(
                         Spacer(modifier = Modifier.width(12.dp))
                         Text(
                             text = consumer.label,
+                            style = valueTextStyle(),
+                            textAlign = valueTextAlign(),
                             fontSize = 14.sp,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
@@ -317,6 +323,8 @@ internal fun AppsTab(
                             Spacer(modifier = Modifier.width(12.dp))
                             Text(
                                 text = app.label,
+                                style = valueTextStyle(),
+                                textAlign = valueTextAlign(),
                                 fontSize = 14.sp,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
@@ -393,6 +401,8 @@ private fun AppListRow(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = app.label,
+                style = valueTextStyle(),
+                textAlign = valueTextAlign(),
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Medium,
                 maxLines = 1,

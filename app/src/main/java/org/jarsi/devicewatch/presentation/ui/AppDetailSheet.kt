@@ -71,6 +71,8 @@ internal fun AppDetailSheet(
                 Column {
                     Text(
                         text = detail.label,
+                        style = valueTextStyle(),
+                        textAlign = valueTextAlign(),
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
@@ -78,6 +80,8 @@ internal fun AppDetailSheet(
                     )
                     Text(
                         text = detail.packageName,
+                        style = valueTextStyle(),
+                        textAlign = valueTextAlign(),
                         fontSize = 11.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,

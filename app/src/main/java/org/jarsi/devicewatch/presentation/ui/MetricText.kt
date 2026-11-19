@@ -76,6 +76,10 @@ internal fun MetricValue(
  *
  * A value with no letter at all ("3 / 4", "1–10×", "5 %") reads from the left as well: left
  * to the page's direction, an Arabic page turned its numbers round ("4 / 3", "×10–1").
+ *
+ * The same goes for a text the app did not write: an app's name, a package name, a
+ * notification's title and text. It comes in any script and may begin with a number or be
+ * nothing but a code ("7 Minute Workout", "123 456").
  */
 @Composable
 internal fun valueTextStyle(): TextStyle = LocalTextStyle.current.copy(textDirection = TextDirection.ContentOrLtr)

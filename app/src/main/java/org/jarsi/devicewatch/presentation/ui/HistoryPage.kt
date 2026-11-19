@@ -636,7 +636,7 @@ internal fun storageChangeText(changeBytes: Long): String = when {
 }
 
 @Composable
-private fun NotificationLogRow(entry: NotificationLogEntry, modifier: Modifier = Modifier) {
+internal fun NotificationLogRow(entry: NotificationLogEntry, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     // The exact message can't be reopened later — a notification's content
     // PendingIntent is app-private and dies with the notification — so tapping
@@ -664,6 +664,8 @@ private fun NotificationLogRow(entry: NotificationLogEntry, modifier: Modifier =
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = entry.appLabel,
+                    style = valueTextStyle(),
+                    textAlign = valueTextAlign(),
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
@@ -683,6 +685,8 @@ private fun NotificationLogRow(entry: NotificationLogEntry, modifier: Modifier =
             Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = entry.title,
+                style = valueTextStyle(),
+                textAlign = valueTextAlign(),
                 fontSize = 13.sp,
                 fontWeight = FontWeight.SemiBold,
                 maxLines = 1,
@@ -690,6 +694,8 @@ private fun NotificationLogRow(entry: NotificationLogEntry, modifier: Modifier =
             )
             Text(
                 text = entry.text,
+                style = valueTextStyle(),
+                textAlign = valueTextAlign(),
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,

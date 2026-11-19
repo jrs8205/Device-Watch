@@ -93,8 +93,18 @@ internal fun KernelNote(text: String, color: Color = MaterialTheme.colorScheme.o
     Text(text = text, fontSize = 12.sp, color = color, modifier = Modifier.padding(vertical = 4.dp))
 }
 
-/** The kernel's own name for a thing, small, under the plain one. */
+/**
+ * The kernel's own name for a thing, or an app's package name, small, under the plain one.
+ * Not the app's own words: laid out as a value is (see [valueTextStyle]), or a name that
+ * begins with an address ("18800000.usb") is turned round on an Arabic page.
+ */
 @Composable
 internal fun KernelTechnical(text: String) {
-    Text(text = text, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    Text(
+        text = text,
+        fontSize = 11.sp,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        style = valueTextStyle(),
+        textAlign = valueTextAlign(),
+    )
 }
