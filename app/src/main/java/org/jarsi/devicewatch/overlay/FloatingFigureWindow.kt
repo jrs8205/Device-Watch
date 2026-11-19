@@ -25,6 +25,7 @@ import androidx.annotation.MainThread
 import org.jarsi.devicewatch.R
 import org.jarsi.devicewatch.presentation.ui.clampedFontScale
 import org.jarsi.devicewatch.quick.QuickMetricReading
+import org.jarsi.devicewatch.ui.theme.textsViewLayoutDirection
 
 /**
  * The floating card itself: a small dark window over other apps with one to three
@@ -155,6 +156,8 @@ class FloatingFigureWindow(
         val card = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER_HORIZONTAL
+            // Laid out the way the app's own texts read, not the way the phone's language does.
+            layoutDirection = textsViewLayoutDirection(context)
             background = GradientDrawable().apply {
                 cornerRadius = dp(12f)
                 setColor(if (black) Color.BLACK else CARD_COLOUR)

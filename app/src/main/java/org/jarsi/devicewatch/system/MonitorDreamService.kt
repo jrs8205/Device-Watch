@@ -28,6 +28,7 @@ import org.jarsi.devicewatch.system.dream.setDreamBrightness
 import org.jarsi.devicewatch.system.dream.shouldDimNow
 import org.jarsi.devicewatch.system.dream.useWideColorGamut
 import org.jarsi.devicewatch.ui.theme.ProvideBoundedDensity
+import org.jarsi.devicewatch.ui.theme.ProvideTextsDirection
 
 /**
  * The screensaver. This class is only the service: its lifecycle and its window (orientation,
@@ -102,9 +103,11 @@ class MonitorDreamService : DreamService(), LifecycleOwner, ViewModelStoreOwner,
             setViewTreeSavedStateRegistryOwner(this@MonitorDreamService)
 
             setContent {
-                ProvideBoundedDensity {
-                    CompositionLocalProvider(LocalDreamWideGamut provides wideGamut) {
-                        DreamHost(service = this@MonitorDreamService, prefs = dreamPrefs, options = options)
+                ProvideTextsDirection {
+                    ProvideBoundedDensity {
+                        CompositionLocalProvider(LocalDreamWideGamut provides wideGamut) {
+                            DreamHost(service = this@MonitorDreamService, prefs = dreamPrefs, options = options)
+                        }
                     }
                 }
             }

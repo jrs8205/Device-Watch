@@ -68,6 +68,26 @@ class FloatingFigureWindowTest {
     }
 
     /** The windows the card has put up through the window manager. */
+    // The card is drawn over other apps by this app's own views. Android would lay it out by
+    // the phone's language; like the app's screens it follows the language of its texts.
+    @Test
+    @Config(application = Application::class, qualifiers = "iw-rIL-ldrtl")
+    fun `on a Hebrew phone the card is laid out from the left, as its English texts read`() {
+        window.show(listOf(storage("99 / 128 GB")), position = null, landscape = false, black = false)
+        layOut()
+
+        assertThat(windowViews().single().layoutDirection).isEqualTo(View.LAYOUT_DIRECTION_LTR)
+    }
+
+    @Test
+    @Config(application = Application::class, qualifiers = "ar-rEG-ldrtl")
+    fun `in Arabic the card is laid out from the right`() {
+        window.show(listOf(storage("99 / 128 GB")), position = null, landscape = false, black = false)
+        layOut()
+
+        assertThat(windowViews().single().layoutDirection).isEqualTo(View.LAYOUT_DIRECTION_RTL)
+    }
+
     private fun windowViews(): List<View> = Shadow.extract<ShadowWindowManagerImpl>(windowManager).views
 
     private fun layOut() = shadowOf(Looper.getMainLooper()).idle()

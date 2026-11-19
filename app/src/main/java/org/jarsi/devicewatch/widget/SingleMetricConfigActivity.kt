@@ -48,6 +48,7 @@ import org.jarsi.devicewatch.data.singleMetricOf
 import org.jarsi.devicewatch.quick.QuickEntryPoint
 import org.jarsi.devicewatch.quick.quickMetricTitleRes
 import org.jarsi.devicewatch.ui.theme.ModernWidgetTheme
+import org.jarsi.devicewatch.ui.theme.ProvideTextsDirection
 
 /**
  * Where the single-figure widget gets its figure: opened by the launcher when the
@@ -87,9 +88,11 @@ class SingleMetricConfigActivity : ComponentActivity() {
             }
         }
         setContent {
-            ModernWidgetTheme(classicLook = entry.appSettings().classicLook()) {
-                Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-                    MetricPicker(selected = current, onPick = { choose(appWidgetId, it) })
+            ProvideTextsDirection {
+                ModernWidgetTheme(classicLook = entry.appSettings().classicLook()) {
+                    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+                        MetricPicker(selected = current, onPick = { choose(appWidgetId, it) })
+                    }
                 }
             }
         }

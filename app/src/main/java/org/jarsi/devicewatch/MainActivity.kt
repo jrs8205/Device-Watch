@@ -24,6 +24,7 @@ import org.jarsi.devicewatch.presentation.ui.SystemDashboardScreen
 import org.jarsi.devicewatch.ui.theme.ModernWidgetTheme
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import org.jarsi.devicewatch.ui.theme.ProvideTextsDirection
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -73,23 +74,25 @@ class MainActivity : ComponentActivity() {
                 settingsSectionNamed(savedInstanceState.getString(STATE_SETTINGS_SECTION))
         }
         setContent {
-            // The same activity-scoped ViewModel the dashboard uses, so flipping the
-            // look switch in Settings re-themes the whole tree at once.
-            val viewModel: DashboardViewModel = hiltViewModel()
-            val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-            val overviewRequest by openOverviewRequest
-            val settingsSection by settingsSectionRequest
-            ModernWidgetTheme(classicLook = uiState.classicLook) {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    SystemDashboardScreen(
-                        viewModel = viewModel,
-                        openOverviewRequest = overviewRequest,
-                        settingsSectionRequest = settingsSection,
-                        onSettingsSectionShown = ::settingsSectionShown,
-                    )
+            ProvideTextsDirection {
+                // The same activity-scoped ViewModel the dashboard uses, so flipping the
+                // look switch in Settings re-themes the whole tree at once.
+                val viewModel: DashboardViewModel = hiltViewModel()
+                val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+                val overviewRequest by openOverviewRequest
+                val settingsSection by settingsSectionRequest
+                ModernWidgetTheme(classicLook = uiState.classicLook) {
+                    Surface(
+                        modifier = Modifier.fillMaxSize(),
+                        color = MaterialTheme.colorScheme.background
+                    ) {
+                        SystemDashboardScreen(
+                            viewModel = viewModel,
+                            openOverviewRequest = overviewRequest,
+                            settingsSectionRequest = settingsSection,
+                            onSettingsSectionShown = ::settingsSectionShown,
+                        )
+                    }
                 }
             }
         }
