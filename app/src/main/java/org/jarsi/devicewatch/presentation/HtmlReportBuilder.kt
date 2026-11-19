@@ -198,7 +198,7 @@ object HtmlReportBuilder {
         append("<header>\n")
         append("<h1>").append(escape(labels.title)).append("</h1>\n")
         append("<p class=\"sub\">").append(escape(data.deviceName)).append("</p>\n")
-        val stamp = String.format(data.locale, labels.generatedAt, data.generatedAt.format(TIMESTAMP))
+        val stamp = String.format(data.locale, labels.generatedAt, stampText(data.generatedAt, data.locale))
         append("<p class=\"sub\">").append(escape(stamp)).append("</p>\n")
         append("</header>\n")
     }
@@ -487,7 +487,7 @@ object HtmlReportBuilder {
         data.logEntries.forEach { entry ->
             val time = LocalDateTime.ofInstant(Instant.ofEpochMilli(entry.timeMillis), data.zone)
             append("<tr data-date=\"").append(escape(time.toLocalDate().toString())).append("\">")
-            append("<td class=\"day\">").append(escape(time.format(TIMESTAMP))).append("</td>")
+            append("<td class=\"day\">").append(escape(stampText(time, data.locale))).append("</td>")
             append("<td>").append(escape(entry.appLabel)).append("</td>")
             append("<td>").append(escape(entry.title)).append("</td>")
             append("<td>").append(escape(entry.text)).append("</td>")
@@ -596,6 +596,13 @@ object HtmlReportBuilder {
 
     private fun gbOrDash(value: Double, locale: Locale): String =
         if (value < 0.0) DASH else gbText(value, locale)
+
+    /**
+     * "2026-08-14 18:30" as one left-to-right piece: on a page laid out from the right the
+     * time came before the date, and after an Arabic word the date itself turned round
+     * ("18:30 14-08-2026"), which is not what the search takes.
+     */
+    private fun stampText(time: LocalDateTime, locale: Locale): String = Bidi.ltr(time.format(TIMESTAMP), locale)
 
     // One left-to-right piece: on a page laid out from the right the unit would lead.
     private fun gbText(value: Double, locale: Locale): String =

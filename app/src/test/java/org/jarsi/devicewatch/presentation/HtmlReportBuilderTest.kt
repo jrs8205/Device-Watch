@@ -518,6 +518,23 @@ class HtmlReportBuilderTest {
         assertThat(html).contains(Char(0x2066) + "0.50 GB" + Char(0x2069))
     }
 
+    // After an Arabic word "2026-08-14 18:30" was drawn "18:30 14-08-2026": the date turned
+    // round and the time in front of it. In a log row's cell the two changed places.
+    @Test
+    fun `in an Arabic report a date and time stay as written`() {
+        val arabic = Locale.forLanguageTag("ar-EG-u-nu-latn")
+        val seven = LocalDateTime.of(2026, 8, 13, 7, 0).toInstant(ZoneOffset.UTC).toEpochMilli()
+        val entry = NotificationLogEntry(seven, "com.example", "Gmail", "Title", "Text")
+        fun isolated(text: String) = Char(0x2066) + text + Char(0x2069)
+
+        val html = HtmlReportBuilder.build(data(log = listOf(entry), locale = arabic), labels)
+        assertThat(html).contains(isolated("2026-08-14 18:30"))
+        assertThat(html).contains("<td class=\"day\">" + isolated("2026-08-13 07:00") + "</td>")
+
+        val english = HtmlReportBuilder.build(data(log = listOf(entry)), labels)
+        assertThat(english).contains("<td class=\"day\">2026-08-13 07:00</td>")
+    }
+
     @Test
     fun `table columns are aligned by reading direction, not by side`() {
         val html = HtmlReportBuilder.build(data(), labels)
