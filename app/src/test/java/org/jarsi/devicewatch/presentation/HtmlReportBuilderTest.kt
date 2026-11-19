@@ -15,6 +15,13 @@ class HtmlReportBuilderTest {
 
     private val labels = TEST_REPORT_LABELS
 
+    private val BACKSLASH = Char(92).toString()
+
+    /** The script's own way of naming the marks: escapes, so that they can be read in the page's source. */
+    private val DIRECTION_MARKS_PATTERN =
+        "/[" + listOf("200e", "200f").joinToString("") { BACKSLASH + "u" + it } +
+            BACKSLASH + "u202a-" + BACKSLASH + "u202e" + BACKSLASH + "u2066-" + BACKSLASH + "u2069]/g"
+
     private fun data(
         days: List<HistoryDay> = emptyList(),
         monthly: List<MonthlyDataUsage> = emptyList(),
@@ -533,6 +540,35 @@ class HtmlReportBuilderTest {
 
         val english = HtmlReportBuilder.build(data(log = listOf(entry)), labels)
         assertThat(english).contains("<td class=\"day\">2026-08-13 07:00</td>")
+    }
+
+    // A notification's words are another app's, in any script. Left to the page's direction, a
+    // code "123 456" in an Arabic report read "456 123" and "3 / 4" read "4 / 3".
+    @Test
+    fun `what another app wrote is laid out by its own direction`() {
+        val seven = LocalDateTime.of(2026, 8, 13, 7, 0).toInstant(ZoneOffset.UTC).toEpochMilli()
+        val entry = NotificationLogEntry(seven, "com.example", "Bank", "Code 3 / 4", "123 456")
+
+        for (locale in listOf(Locale.US, Locale.forLanguageTag("ar-EG-u-nu-latn"))) {
+            val html = HtmlReportBuilder.build(data(log = listOf(entry), deviceName = "Pixel 8a", locale = locale), labels)
+
+            assertThat(html).contains("<td dir=\"auto\">Bank</td><td dir=\"auto\">Code 3 / 4</td><td dir=\"auto\">123 456</td>")
+            assertThat(html).contains("<p class=\"sub\" dir=\"auto\">Pixel 8a</p>")
+            // A cell that takes its own direction still stands at its column's side.
+            assertThat(html).contains("table.text td[dir=\"auto\"], .sub[dir=\"auto\"] { text-align: match-parent; }")
+        }
+    }
+
+    // A date copied from the hint, or a time copied from a row, brings the invisible marks that
+    // keep it in order; the search found nothing for it.
+    @Test
+    fun `the search leaves the invisible direction marks out of what it compares`() {
+        val html = HtmlReportBuilder.build(data(), labels)
+
+        assertThat(html).contains("function plain(text)")
+        assertThat(html).contains("var needle = input ? plain(input.value).trim() : '';")
+        assertThat(html).contains("plain(row.textContent).indexOf(needle) !== -1")
+        assertThat(html).contains(DIRECTION_MARKS_PATTERN)
     }
 
     @Test

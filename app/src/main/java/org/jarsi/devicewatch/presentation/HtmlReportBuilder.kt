@@ -197,7 +197,8 @@ object HtmlReportBuilder {
     private fun StringBuilder.appendHeader(data: HtmlReportData, labels: HtmlReportLabels) {
         append("<header>\n")
         append("<h1>").append(escape(labels.title)).append("</h1>\n")
-        append("<p class=\"sub\">").append(escape(data.deviceName)).append("</p>\n")
+        // The phone's name is the user's own text, in any script.
+        append("<p class=\"sub\" dir=\"auto\">").append(escape(data.deviceName)).append("</p>\n")
         val stamp = String.format(data.locale, labels.generatedAt, stampText(data.generatedAt, data.locale))
         append("<p class=\"sub\">").append(escape(stamp)).append("</p>\n")
         append("</header>\n")
@@ -488,9 +489,12 @@ object HtmlReportBuilder {
             val time = LocalDateTime.ofInstant(Instant.ofEpochMilli(entry.timeMillis), data.zone)
             append("<tr data-date=\"").append(escape(time.toLocalDate().toString())).append("\">")
             append("<td class=\"day\">").append(escape(stampText(time, data.locale))).append("</td>")
-            append("<td>").append(escape(entry.appLabel)).append("</td>")
-            append("<td>").append(escape(entry.title)).append("</td>")
-            append("<td>").append(escape(entry.text)).append("</td>")
+            // Another app's words, in any script: each cell reads by its own first letter, and
+            // from the left when it has none. Left to an Arabic page's direction a code
+            // "123 456" read "456 123".
+            append("<td dir=\"auto\">").append(escape(entry.appLabel)).append("</td>")
+            append("<td dir=\"auto\">").append(escape(entry.title)).append("</td>")
+            append("<td dir=\"auto\">").append(escape(entry.text)).append("</td>")
             append("</tr>\n")
         }
         appendTableEnd()
@@ -634,6 +638,11 @@ object HtmlReportBuilder {
             var initial = parseInt(tools.getAttribute('data-initial'), 10) || 0;
             var limit = initial;
 
+            // A date copied from the hint, or a time copied from a row, brings the invisible
+            // marks that keep it in order on the page. Neither side of the comparison keeps them.
+            var marks = /[\u200e\u200f\u202a-\u202e\u2066-\u2069]/g;
+            function plain(text) { return text.replace(marks, '').toLowerCase(); }
+
             // ISO dates compare correctly as plain strings, so no parsing is needed.
             function inRange(row) {
               var day = row.getAttribute('data-date');
@@ -644,11 +653,11 @@ object HtmlReportBuilder {
             }
 
             function apply() {
-              var needle = input ? input.value.trim().toLowerCase() : '';
+              var needle = input ? plain(input.value).trim() : '';
               var shown = 0;
               rows.forEach(function (row) {
                 var hit = inRange(row) &&
-                  (!needle || row.textContent.toLowerCase().indexOf(needle) !== -1);
+                  (!needle || plain(row.textContent).indexOf(needle) !== -1);
                 var visible = hit && (limit === 0 || shown < limit);
                 if (visible) shown++;
                 row.hidden = !visible;
@@ -673,7 +682,7 @@ object HtmlReportBuilder {
             // A search or a chosen period should look at every row, not only the
             // ones the row limit happened to keep.
             if (input) input.addEventListener('input', function () {
-              if (input.value.trim()) limit = 0;
+              if (plain(input.value).trim()) limit = 0;
               apply();
             });
             [from, to].forEach(function (field) {
@@ -813,6 +822,8 @@ object HtmlReportBuilder {
         table.days th:nth-child(2), table.days td:nth-child(2) { text-align: start; }
         table.text th, table.text td { text-align: start; }
         table.text td:last-child { white-space: normal; max-width: 40ch; }
+        /* A cell or a line that takes its own direction still stands at its column's side. */
+        table.text td[dir="auto"], .sub[dir="auto"] { text-align: match-parent; }
         thead th {
           font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em;
           color: var(--muted); font-weight: 700; border-bottom: 2px solid var(--grid);
