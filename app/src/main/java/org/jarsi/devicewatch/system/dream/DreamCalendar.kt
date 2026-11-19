@@ -71,22 +71,35 @@ internal fun calendarWhenText(
     nowMs: Long,
     zone: ZoneId,
     locale: Locale,
-    is24Hour: Boolean,
+    patterns: CalendarTimePatterns,
     nowWord: String,
 ): String {
     val today = Instant.ofEpochMilli(nowMs).atZone(zone).toLocalDate()
     val begin = Instant.ofEpochMilli(event.beginMs).atZone(zone)
     val beginDay = begin.toLocalDate()
     if (beginDay.isBefore(today)) return nowWord
-    val weekday = DateTimeFormatter.ofPattern("EEE", locale).format(begin)
-    val time = DateTimeFormatter.ofPattern(if (is24Hour) "HH:mm" else "h:mm a", locale).format(begin)
-    val text = when {
-        event.allDay -> weekday
-        beginDay == today -> time
-        else -> "$weekday $time"
+    val pattern = when {
+        event.allDay -> "EEE"
+        beginDay == today -> patterns.time
+        else -> patterns.weekdayTime
     }
-    return text.uppercase(locale)
+    return DateTimeFormatter.ofPattern(pattern, locale).format(begin).uppercase(locale)
 }
+
+/** How a calendar row writes a time of day, and a weekday with a time. */
+internal data class CalendarTimePatterns(val time: String, val weekdayTime: String)
+
+/**
+ * The patterns for a language and clock setting. On a 12-hour clock they are the language's
+ * own, the ones the screensaver's alarm and estimate use: AM or PM after the time in English,
+ * before it in Chinese. A 24-hour time is written the same everywhere.
+ */
+internal fun calendarTimePatterns(locale: Locale, is24Hour: Boolean): CalendarTimePatterns =
+    if (is24Hour) {
+        CalendarTimePatterns(time = "HH:mm", weekdayTime = "EEE HH:mm")
+    } else {
+        CalendarTimePatterns(time = twelveHourClockPattern(locale), weekdayTime = twelveHourAlarmPattern(locale))
+    }
 
 /**
  * The calendar rows for the screen. With [showTitles] off, and for an event without a
@@ -98,14 +111,14 @@ internal fun calendarRows(
     nowMs: Long,
     zone: ZoneId,
     locale: Locale,
-    is24Hour: Boolean,
+    patterns: CalendarTimePatterns,
     showTitles: Boolean,
     nowWord: String,
     placeholder: String,
 ): List<DreamCalendarRow> = upcomingEvents(events, nowMs).map { event ->
     val title = event.title.trim().replace(WHITESPACE, " ")
     DreamCalendarRow(
-        whenText = calendarWhenText(event, nowMs, zone, locale, is24Hour, nowWord),
+        whenText = calendarWhenText(event, nowMs, zone, locale, patterns, nowWord),
         title = if (showTitles && title.isNotEmpty()) title else placeholder,
     )
 }

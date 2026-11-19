@@ -44,14 +44,27 @@ class DreamCalendarTest {
         zone: ZoneId = helsinki,
         locale: Locale = finnish,
         is24Hour: Boolean = true,
-    ) = calendarWhenText(event, nowMs, zone, locale, is24Hour, nowWord = "NYT")
+        patterns: CalendarTimePatterns = if (is24Hour) TWENTY_FOUR else ENGLISH_TWELVE,
+    ) = calendarWhenText(event, nowMs, zone, locale, patterns, nowWord = "NYT")
+
+    // The row used to write every 12-hour time the English way, "2:05 下午", beside a clock and an
+    // alarm that put the half of the day first.
+    @Test
+    fun `on a 12-hour clock a row writes the time by the pattern it is given`() {
+        val chinese = Locale.forLanguageTag("zh-CN")
+        val tonight = event("Sauna", at(13, 21, 30))
+        val dentist = event("Dentist", at(14, 10))
+
+        assertThat(whenText(tonight, locale = chinese, patterns = CHINESE_TWELVE)).isEqualTo("下午9:30")
+        assertThat(whenText(dentist, locale = chinese, patterns = CHINESE_TWELVE)).isEqualTo("周六上午10:00")
+    }
 
     private fun rows(events: List<DreamCalendarEvent>, showTitles: Boolean = true) = calendarRows(
         events = events,
         nowMs = now,
         zone = helsinki,
         locale = finnish,
-        is24Hour = true,
+        patterns = TWENTY_FOUR,
         showTitles = showTitles,
         nowWord = "NYT",
         placeholder = "Tapahtuma",
@@ -145,7 +158,7 @@ class DreamCalendarTest {
             val local = stored.copy(beginMs = begin, endMs = end)
             val nowThere = at(13, 20, 10, zone)
 
-            assertThat(calendarWhenText(local, nowThere, zone, Locale.US, true, "NOW")).isEqualTo("SUN")
+            assertThat(calendarWhenText(local, nowThere, zone, Locale.US, TWENTY_FOUR, "NOW")).isEqualTo("SUN")
             // It lasts the whole local day, midnight to midnight.
             assertThat(end - begin).isEqualTo(DAY)
             assertThat(begin).isEqualTo(at(15, 0, 0, zone))
@@ -214,6 +227,12 @@ class DreamCalendarTest {
     }
 
     private companion object {
+        val TWENTY_FOUR = CalendarTimePatterns(time = "HH:mm", weekdayTime = "EEE HH:mm")
+        val ENGLISH_TWELVE = CalendarTimePatterns(time = "h:mm a", weekdayTime = "EEE h:mm a")
+
+        /** Chinese as Android writes a 12-hour time: the half of the day first. */
+        val CHINESE_TWELVE = CalendarTimePatterns(time = "ah:mm", weekdayTime = "EEEah:mm")
+
         const val HOUR = 3_600_000L
         const val DAY = 24 * HOUR
     }

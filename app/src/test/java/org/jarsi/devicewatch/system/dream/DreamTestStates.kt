@@ -5,6 +5,7 @@ import android.graphics.drawable.Icon
 import org.jarsi.devicewatch.R
 import org.jarsi.devicewatch.system.NotificationIconGroup
 import org.jarsi.devicewatch.system.chargeCompletionText
+import java.time.ZoneId
 import java.util.Calendar
 import java.util.Date
 import java.util.GregorianCalendar
@@ -61,9 +62,20 @@ internal fun worstCaseDreamUiState(context: Context, chargeState: DreamChargeSta
         clockMillis = now.time,
         // Three events, each with the longest time a row can carry and a title far too
         // long for any row: the title is the one text that may be cut, with an ellipsis.
+        // The time is worded by the rows' own function, as on the running screensaver.
         calendarRows = List(3) { index ->
             DreamCalendarRow(
-                whenText = days.take(7).map(formats::alarm).maxBy { it.length }.uppercase(locale),
+                whenText = (1..7).map { day ->
+                    val begin = now.time + day * 24 * 3_600_000L
+                    calendarWhenText(
+                        event = DreamCalendarEvent("", beginMs = begin, endMs = begin + 3_600_000L, allDay = false),
+                        nowMs = now.time,
+                        zone = ZoneId.systemDefault(),
+                        locale = locale,
+                        patterns = calendarTimePatterns(locale, is24Hour = false),
+                        nowWord = context.getString(R.string.dream_calendar_now),
+                    )
+                }.maxBy { it.length },
                 title = "Event ${index + 1} with a title that goes on and on, well past the row's end",
             )
         },

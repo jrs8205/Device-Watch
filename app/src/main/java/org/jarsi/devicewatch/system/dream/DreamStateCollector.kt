@@ -226,7 +226,7 @@ internal fun rememberDreamUiState(
                 nowMs = calendarMinute * 60_000L,
                 zone = ZoneId.systemDefault(),
                 locale = currentLocale,
-                is24Hour = is24Hour,
+                patterns = calendarTimePatterns(currentLocale, is24Hour),
                 showTitles = options.showCalendarTitles,
                 nowWord = context.getString(R.string.dream_calendar_now),
                 placeholder = context.getString(R.string.dream_calendar_event),

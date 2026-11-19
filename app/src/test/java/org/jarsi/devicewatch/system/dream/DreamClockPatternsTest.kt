@@ -6,6 +6,7 @@ import com.google.common.truth.Truth.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import java.time.ZoneId
 import java.util.Calendar
 import java.util.Date
 import java.util.GregorianCalendar
@@ -41,6 +42,26 @@ class DreamClockPatternsTest {
         assertThat(formats.clock(fridayEvening)).isEqualTo("下午8:10")
         assertThat(formats.alarm(fridayEvening)).startsWith("周五")
         assertThat(formats.alarm(fridayEvening)).endsWith("下午8:10")
+    }
+
+    // A Gauges calendar row, through the patterns the screensaver itself asks for.
+    @Test
+    fun `a calendar row writes a 12-hour time the way the clock and the alarm do`() {
+        val zone = ZoneId.systemDefault()
+        val now = fridayEvening.time
+        val tonight = DreamCalendarEvent("Sauna", beginMs = now + 30 * 60_000L, endMs = now + 90 * 60_000L, allDay = false)
+        val tomorrow = tonight.copy(beginMs = now + 24 * 3_600_000L, endMs = now + 25 * 3_600_000L)
+        fun row(event: DreamCalendarEvent, locale: Locale) =
+            calendarWhenText(event, now, zone, locale, calendarTimePatterns(locale, is24Hour = false), nowWord = "NOW")
+
+        val chinese = Locale.forLanguageTag("zh-CN")
+        assertThat(row(tonight, chinese)).isEqualTo("下午8:40")
+        assertThat(row(tomorrow, chinese)).startsWith("周六")
+        assertThat(row(tomorrow, chinese)).endsWith("下午8:10")
+        assertThat(row(tonight, Locale.US).plainSpaces()).isEqualTo("8:40 PM")
+        assertThat(row(tomorrow, Locale.US).plainSpaces()).isEqualTo("SAT 8:10 PM")
+        assertThat(calendarTimePatterns(chinese, is24Hour = true))
+            .isEqualTo(CalendarTimePatterns(time = "HH:mm", weekdayTime = "EEE HH:mm"))
     }
 
     @Test
