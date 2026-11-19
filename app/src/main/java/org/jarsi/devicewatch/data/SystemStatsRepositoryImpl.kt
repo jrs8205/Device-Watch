@@ -959,7 +959,7 @@ class SystemStatsRepositoryImpl @Inject constructor(
         val camera = readCameraSummary()
         val (sensorCount, sensors) = readSensorSummary()
 
-        val locale = deviceLanguageTag()
+        val locale = deviceLanguageTag(context)
         val timezone = TimeZone.getDefault().id
         val webViewVersion = readWebViewVersion()
         val playServicesVersion = readPackageVersion("com.google.android.gms")

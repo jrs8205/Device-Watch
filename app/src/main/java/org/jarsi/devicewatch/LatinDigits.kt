@@ -76,23 +76,27 @@ object LatinDigits {
 }
 
 /**
- * The language to show as the device's own. Android's own resources are never given the
- * numbering system the app adds to the process default, so the tag is the one the user
- * knows ("ar-EG"), not "ar-EG-u-nu-latn".
+ * The language to show as the device's own: the phone's, written as the user knows it
+ * ("ar-EG", never the app's "ar-EG-u-nu-latn").
  */
-fun deviceLanguageTag(): String = Resources.getSystem().configuration.locales[0].toLanguageTag()
+fun deviceLanguageTag(context: Context): String = phoneLocale(context).toLanguageTag()
 
 /**
  * The phone's own language, which is not the app's when the user has chosen another for the
  * app on Android's per-app language page (Android 13 and later). The system draws the
- * app's tiles and notifications in the direction of this one (see [Bidi.forHost]).
+ * app's tiles and notifications in the direction of this one (see [Bidi.forHost]), and the
+ * Device tab names it.
+ *
+ * Android's own resources are no source for it from Android 13 on: they follow the language
+ * chosen for the app. Before that they are the phone's language, without the numbering
+ * system the app adds to the process default.
  */
 fun phoneLocale(context: Context): Locale {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
         val system = context.getSystemService(LocaleManager::class.java)?.systemLocales
         if (system != null && !system.isEmpty) return system[0]
     }
-    return Locale.getDefault()
+    return Resources.getSystem().configuration.locales[0]
 }
 
 /**

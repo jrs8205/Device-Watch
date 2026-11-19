@@ -1,9 +1,12 @@
 package org.jarsi.devicewatch
 
 import android.app.Application
+import android.app.LocaleManager
 import android.content.Context
 import android.content.ContextWrapper
 import android.content.res.Configuration
+import android.content.res.Resources
+import android.os.LocaleList
 import androidx.test.core.app.ApplicationProvider
 import com.google.common.truth.Truth.assertThat
 import com.google.common.truth.Truth.assertWithMessage
@@ -22,6 +25,8 @@ import org.junit.runner.RunWith
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import org.robolectric.annotation.Implementation
+import org.robolectric.annotation.Implements
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -212,7 +217,43 @@ class LatinDigitsTest {
     fun `the language shown for the device is the one Android gave, without the app's addition`() {
         assertThat(Locale.getDefault().toLanguageTag()).isEqualTo("ar-EG-u-nu-latn")
 
-        assertThat(deviceLanguageTag()).isEqualTo("ar-EG")
+        assertThat(deviceLanguageTag(app)).isEqualTo("ar-EG")
+    }
+
+    // With the phone in English and only the app set to Arabic on Android's per-app language
+    // page, the row read "ar-EG": Android's own resources follow the app's language as well.
+    @Test
+    @Config(qualifiers = "ar-rEG", shadows = [EnglishPhone::class])
+    fun `the language shown for the device is the phone's, not the one chosen for the app`() {
+        assertThat(Resources.getSystem().configuration.locales[0].language).isEqualTo("ar")
+
+        assertThat(deviceLanguageTag(app)).isEqualTo("en-US")
+    }
+
+    // The row and the tiles ask the same thing of the phone, so they ask it in one place.
+    @Test
+    @Config(qualifiers = "ar-rEG", shadows = [EnglishPhone::class])
+    fun `the tiles and the language row take the phone's language from the same place`() {
+        assertThat(phoneLocale(app)).isEqualTo(Locale.US)
+        assertThat(deviceLanguageTag(app)).isEqualTo(phoneLocale(app).toLanguageTag())
+    }
+
+    // Before Android 13 an app has no language of its own and the phone's is the only one.
+    @Test
+    @Config(qualifiers = "ar-rEG", sdk = [31])
+    fun `before Android 13 the phone's language is the one Android's own texts are in`() {
+        assertThat(Locale.getDefault().toLanguageTag()).isEqualTo("ar-EG-u-nu-latn")
+
+        assertThat(phoneLocale(app).toLanguageTag()).isEqualTo("ar-EG")
+        assertThat(deviceLanguageTag(app)).isEqualTo("ar-EG")
+    }
+
+    /** A phone set to English, whatever language the app under test runs in. */
+    @Implements(LocaleManager::class)
+    class EnglishPhone {
+        @Suppress("unused")
+        @Implementation
+        fun getSystemLocales(): LocaleList = LocaleList.forLanguageTags("en-US")
     }
 
     @Test
