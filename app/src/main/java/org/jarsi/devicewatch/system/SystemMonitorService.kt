@@ -12,6 +12,7 @@ import android.net.ConnectivityManager
 import android.os.Build
 import android.os.Handler
 import android.os.IBinder
+import android.os.LocaleList
 import android.os.Looper
 import android.os.PowerManager
 import android.os.SystemClock
@@ -101,8 +102,11 @@ class SystemMonitorService : Service() {
     /** Written by the update loop, and set back to zero on the main thread when the languages change. */
     @Volatile private var lastUsageRefreshMs = 0L
 
-    /** The languages the notification now up was written for; main thread only. */
-    private var notificationLanguages: NotificationLanguages? = null
+    /**
+     * The languages the notification now up was written in: those of the app's texts and
+     * figures. Main thread only.
+     */
+    private var notificationLocales: LocaleList? = null
 
     /** Latest level from BATTERY_CHANGED; POWER_DISCONNECTED carries no battery extras. */
     @Volatile private var lastBatteryLevel = -1
@@ -144,18 +148,20 @@ class SystemMonitorService : Service() {
 
     /**
      * The monitor lives through a change of the app's language (Android's per-app language
-     * page) and of the phone's, and what it has put up stays as it was written: the silent
-     * notification is posted once, and with no figures chosen it stayed in English after the
-     * app was switched to Arabic. Android calls this for every change of configuration; only
-     * a change of the languages writes the notification again, has the floating card, which
-     * is laid out the way the texts read, built again by the reading that follows, and has
-     * the widget's screen time written again.
+     * page, or the phone's own language where the app follows it), and what it has put up
+     * stays as it was written: the silent notification is posted once, and with no figures
+     * chosen it stayed in English after the app was switched to Arabic. Android calls this
+     * for every change of configuration; only a change of the languages the app's texts and
+     * figures are in writes the notification again, has the floating card, which is laid out
+     * the way the texts read, built again by the reading that follows, and has the widget's
+     * screen time written again. The phone's language alone changes nothing the monitor has
+     * written: every line it hands the system carries its own direction.
      */
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
-        val languages = NotificationLanguages.of(this)
-        if (languages == notificationLanguages) return
-        notificationLanguages = languages
+        val locales = resources.configuration.locales
+        if (locales == notificationLocales) return
+        notificationLocales = locales
         overlay.onConfigurationChanged()
         // The widget's screen time is a text written once a minute, in the language of that
         // minute: the loop's next pass writes it again instead of waiting the minute out.
@@ -401,7 +407,7 @@ class SystemMonitorService : Service() {
 
     private fun startNotification() {
         notifications.ensureChannels()
-        notificationLanguages = NotificationLanguages.of(this)
+        notificationLocales = resources.configuration.locales
         val notification = if (appSettings.notificationMetrics().isEmpty()) {
             notifications.quiet()
         } else {

@@ -54,19 +54,11 @@ object Bidi {
         if (isRtl(locale)) "$FIRST_STRONG_ISOLATE$text$POP_ISOLATE" else text
 
     /**
-     * [text] kept in the direction of the app's language where the system draws it. A tile's
-     * lines and a notification's are laid out in the direction of the phone's language
-     * ([hostLocale]); with the app in Arabic on an English phone, or the other way round, a
-     * line of numbers and units came out with its parts swapped. Unchanged when both
-     * languages read the same way, which is nearly always.
-     */
-    fun forHost(text: String, hostLocale: Locale, locale: Locale = Locale.getDefault()): String =
-        if (isRtl(locale) == isRtl(hostLocale)) text else inOwnDirection(text, locale)
-
-    /**
      * [text] as one piece in the direction [locale] is written in, wherever it is drawn and
-     * whatever language reads there. For a line handed to a host whose language cannot be
-     * known (a widget's launcher); [forHost] is for one whose language is the phone's.
+     * whatever language reads there. For a line another process draws for the app: a widget's
+     * in the launcher, a tile's and a notification's in the system's own interface. Neither
+     * the language of that process nor the rule its text view picks a direction by is the
+     * app's to know, so the line brings its direction with it.
      */
     fun inOwnDirection(text: String, locale: Locale): String {
         val open = if (isRtl(locale)) RIGHT_TO_LEFT_ISOLATE else LEFT_TO_RIGHT_ISOLATE

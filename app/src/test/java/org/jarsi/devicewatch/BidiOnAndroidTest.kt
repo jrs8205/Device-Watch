@@ -28,13 +28,15 @@ class BidiOnAndroidTest {
         }
     }
 
-    // With the app in English on a phone set to Fulah in Adlam, a tile's line was left
-    // unprotected: the phone's direction was taken for left to right.
+    // The direction a line is handed over in is the one Android gives its language, also for
+    // a language whose script the name-based fallback got wrong (Fulah in Adlam).
     @Test
-    fun `a line the system draws is kept on a phone whose language is written in Adlam`() {
-        val line = Bidi.forHost("1.5 / 2.4 GB", hostLocale = Locale.forLanguageTag("ff-Adlm-GN"), locale = Locale.US)
+    fun `a line another process draws takes its direction from Android's answer for its language`() {
+        val english = Bidi.inOwnDirection("1.5 / 2.4 GB", Locale.US)
+        assertThat(english.first().code).isEqualTo(0x2066)
+        assertThat(english.last().code).isEqualTo(0x2069)
 
-        assertThat(line.first().code).isEqualTo(0x2066)
-        assertThat(line.last().code).isEqualTo(0x2069)
+        assertThat(Bidi.inOwnDirection("x", Locale.forLanguageTag("ff-Adlm-GN")).first().code).isEqualTo(0x2067)
+        assertThat(Bidi.inOwnDirection("x", Locale.forLanguageTag("ff-Latn-SN")).first().code).isEqualTo(0x2066)
     }
 }

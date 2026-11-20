@@ -83,9 +83,7 @@ fun deviceLanguageTag(context: Context): String = phoneLocale(context).toLanguag
 
 /**
  * The phone's own language, which is not the app's when the user has chosen another for the
- * app on Android's per-app language page (Android 13 and later). The system draws the
- * app's tiles and notifications in the direction of this one (see [Bidi.forHost]), and the
- * Device tab names it.
+ * app on Android's per-app language page (Android 13 and later). The Device tab names it.
  *
  * Android's own resources are no source for it from Android 13 on: they follow the language
  * chosen for the app. Before that they are the phone's language, without the numbering
@@ -106,37 +104,36 @@ fun phoneLocale(context: Context): Locale {
  * (`text_language.xml`), so this is whatever Android chose, by Android's own rules.
  *
  * It decides everything that depends on how the app's texts read: the direction of the HTML
- * report, the direction a widget's lines are handed to the launcher in, and whether a line
- * handed to the system needs a mark to keep its own direction there ([Bidi.forHost]). The
+ * report, and the direction a line is handed over in to whatever else draws it, the launcher
+ * for a widget and the system for a tile or a notification ([textInOwnDirection]). The
  * phone's locale still formats the numbers.
  */
 fun textLocale(context: Context): Locale = Locale.forLanguageTag(context.getString(R.string.text_language))
 
 /**
- * [text] as it has to be handed to the system, which draws it in the direction of the
- * phone's language: a tile's line, a notification's. Where the app's own texts read the
- * other way (another language chosen for the app, or the English texts a phone gets that is
- * set to a language the app is not written in), each line is kept in the texts' direction.
- * Unchanged otherwise, which is nearly always. A widget's texts go to a launcher, whose
- * language need not be the phone's: [textInOwnDirection].
+ * [text] as it has to be handed to the system's own interface, which draws the app's tiles
+ * and notifications: every line one piece in the direction of the language the app's texts
+ * are in, always ([textInOwnDirection]).
+ *
+ * The lines were first marked only where the phone's language read the other way from the
+ * texts'. But the shade does not lay a line out by the phone's language alone: an unmarked
+ * line takes its direction there from its first letter, and the Arabic line of figures begins
+ * with "RAM". On an Arabic phone with the app in Arabic it was laid out from the left, its
+ * first figure at the left end.
  */
-fun textForPhone(context: Context, text: String): String =
-    textForHost(text, texts = textLocale(context), host = phoneLocale(context))
-
-/** [textForPhone] for a known pair of languages: [texts] the app's texts are in, [host] the phone's. */
-fun textForHost(text: String, texts: Locale, host: Locale): String =
-    // Line by line: a mark's reach ends where its line does.
-    if (text.isEmpty()) text else text.split('\n').joinToString("\n") { Bidi.forHost(it, hostLocale = host, locale = texts) }
+fun textForPhone(context: Context, text: String): String = textInOwnDirection(text, textLocale(context))
 
 /**
- * [text] as a widget has to hand it to its launcher: every line one piece in the direction of
- * the language the app's texts are in ([texts]), always.
+ * [text] as another process has to be handed it to draw (a widget's launcher, the system's
+ * shade and tiles): every line one piece in the direction of the language the app's texts
+ * are in ([texts]), always.
  *
- * The launcher's own language cannot be asked for. It is usually the phone's, but a launcher
+ * That process's own language cannot be asked for. It is usually the phone's, but a launcher
  * can be given a language of its own on Android's per-app language page (Android 13 and
  * later), and on a phone with several languages it takes the first one it is itself written
- * in. Its text view lays every text out in the direction of that language, whatever the text
- * holds; a line that carries its own direction reads the same under any of them.
+ * in. A widget's text view lays every text out in the direction of that language, whatever
+ * the text holds, and a notification's by the text's first letter; a line that carries its
+ * own direction reads the same under any of them.
  */
 fun textInOwnDirection(text: String, texts: Locale): String =
     // Line by line: a mark's reach ends where its line does.

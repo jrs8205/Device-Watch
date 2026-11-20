@@ -95,6 +95,25 @@ class TextLanguageTest {
         assertThat(packaged.filter { it.startsWith("zh") }).containsExactly("zh-CN")
     }
 
+    // External review round 7: a tile's line and a notification's went to the system unmarked
+    // where the phone read the same way as the texts, and the shade laid an Arabic line that
+    // begins with "RAM" out from the left. They carry the texts' direction on every phone now.
+    @Test
+    fun `what the system draws is handed over in the direction of the texts on every phone`() {
+        val line = "RAM 5.1 / 7.6 GB"
+        val expected = mapOf(
+            "en-US" to 0x2066, "fi-FI" to 0x2066, "zh-CN" to 0x2066, "ar-EG" to 0x2067, "ar-SA" to 0x2067,
+            // English texts on a phone that reads from the right.
+            "he-IL" to 0x2066, "fa-IR" to 0x2066,
+        )
+        for ((phone, opening) in expected) {
+            val handed = textForPhone(on(phone), line)
+            assertWithMessage(phone).that(handed.first().code).isEqualTo(opening)
+            assertWithMessage(phone).that(handed.last().code).isEqualTo(0x2069)
+            assertWithMessage(phone).that(handed.substring(1, handed.length - 1)).isEqualTo(line)
+        }
+    }
+
     @Test
     fun `every language of the app's language list has its own mark`() {
         val offered = SourceXml.parse("res/xml/locales_config.xml").children("locale").map { it.android("name") }

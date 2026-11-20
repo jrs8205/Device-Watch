@@ -177,27 +177,22 @@ class BidiTest {
         assertThat(Bidi.isolate(minutes, Locale.US)).isEqualTo(minutes)
     }
 
-    // A tile's lines and a notification's are drawn by the system, in the direction of the
-    // phone's language. With the app in Arabic on an English phone, "1 h 43 min" in Arabic
-    // came out with its two parts swapped.
+    // A tile's lines, a notification's and a widget's are drawn by another process. With the
+    // app in Arabic on an English phone, "1 h 43 min" in Arabic came out with its two parts
+    // swapped; and with both in Arabic a line that begins with a Latin name was laid out from
+    // the left. The line carries the direction of the language it is written in, always.
     @Test
-    fun `a line the system draws keeps the app's direction on a phone of the other direction`() {
+    fun `a line another process draws carries the direction of the language it is written in`() {
         val uptime = "1 " + Char(0x0633) + " 43 " + Char(0x062F)
 
-        val onEnglishPhone = Bidi.forHost(uptime, hostLocale = Locale.US, locale = arabic)
-        assertThat(onEnglishPhone.first().code).isEqualTo(0x2067)
-        assertThat(onEnglishPhone.last().code).isEqualTo(0x2069)
-        assertThat(visible(onEnglishPhone)).isEqualTo(uptime)
+        val arabicLine = Bidi.inOwnDirection(uptime, arabic)
+        assertThat(arabicLine.first().code).isEqualTo(0x2067)
+        assertThat(arabicLine.last().code).isEqualTo(0x2069)
+        assertThat(visible(arabicLine)).isEqualTo(uptime)
 
-        val englishOnArabicPhone = Bidi.forHost("1.5 / 2.4 GB", hostLocale = arabic, locale = Locale.US)
-        assertThat(englishOnArabicPhone).isEqualTo(isolated("1.5 / 2.4 GB"))
-    }
-
-    @Test
-    fun `a line the system draws is left alone when the phone reads the same way`() {
-        assertThat(Bidi.forHost("1.5 / 2.4 GB", hostLocale = Locale.US, locale = Locale.forLanguageTag("fi-FI")))
-            .isEqualTo("1.5 / 2.4 GB")
-        assertThat(Bidi.forHost("x", hostLocale = Locale.forLanguageTag("he"), locale = arabic)).isEqualTo("x")
+        for (locale in listOf(Locale.US, Locale.forLanguageTag("fi-FI"), Locale.forLanguageTag("zh-CN"))) {
+            assertThat(Bidi.inOwnDirection("1.5 / 2.4 GB", locale)).isEqualTo(isolated("1.5 / 2.4 GB"))
+        }
     }
 
     @Test

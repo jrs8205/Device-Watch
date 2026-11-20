@@ -25,6 +25,12 @@ class MonitorNotificationsTest {
     private val first = "Akku 83% · Akku 28,0 °C · CPU 35,0 °C"
     private val second = "Data 185 MB · RAM 5,2 / 7,4 GB"
 
+    /**
+     * A line as it is handed to the system: one piece in the direction of the language the
+     * app's texts are in, which is English in these tests.
+     */
+    private fun kept(line: String): String = Char(0x2066) + line + Char(0x2069)
+
     @Test
     fun `expanded, every figure shows once under a short heading`() {
         // Device test 25.10.: expanded, Android shows the title above the big text, and
@@ -33,18 +39,20 @@ class MonitorNotificationsTest {
         // expanded text, under a heading that replaces the title.
         val n = notifications.live(LiveNotificationText(first, second))
 
-        assertThat(n.extras.getCharSequence(Notification.EXTRA_TITLE).toString()).isEqualTo(first)
+        assertThat(n.extras.getCharSequence(Notification.EXTRA_TITLE).toString()).isEqualTo(kept(first))
         assertThat(n.extras.getCharSequence(Notification.EXTRA_TITLE_BIG).toString())
-            .isEqualTo(context.getString(R.string.monitor_live_channel_name))
-        assertThat(n.extras.getCharSequence(Notification.EXTRA_BIG_TEXT).toString()).isEqualTo("$first\n$second")
+            .isEqualTo(kept(context.getString(R.string.monitor_live_channel_name)))
+        // Each line a piece of its own: a mark's reach ends where its line does.
+        assertThat(n.extras.getCharSequence(Notification.EXTRA_BIG_TEXT).toString().lines())
+            .containsExactly(kept(first), kept(second)).inOrder()
     }
 
     @Test
     fun `one line of figures can still be expanded to show it whole`() {
         val n = notifications.live(LiveNotificationText(first, null))
 
-        assertThat(n.extras.getCharSequence(Notification.EXTRA_TITLE).toString()).isEqualTo(first)
-        assertThat(n.extras.getCharSequence(Notification.EXTRA_BIG_TEXT).toString()).isEqualTo(first)
+        assertThat(n.extras.getCharSequence(Notification.EXTRA_TITLE).toString()).isEqualTo(kept(first))
+        assertThat(n.extras.getCharSequence(Notification.EXTRA_BIG_TEXT).toString()).isEqualTo(kept(first))
     }
 
     @Test
@@ -52,9 +60,9 @@ class MonitorNotificationsTest {
         val n = notifications.live(null)
 
         assertThat(n.extras.getCharSequence(Notification.EXTRA_TITLE).toString())
-            .isEqualTo(context.getString(R.string.monitor_notification_title))
+            .isEqualTo(kept(context.getString(R.string.monitor_notification_title)))
         assertThat(n.extras.getCharSequence(Notification.EXTRA_TEXT).toString())
-            .isEqualTo(context.getString(R.string.monitor_notification_text))
+            .isEqualTo(kept(context.getString(R.string.monitor_notification_text)))
     }
 
     @Test

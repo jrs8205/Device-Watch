@@ -9,28 +9,12 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
-import android.os.LocaleList
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import org.jarsi.devicewatch.MainActivity
 import org.jarsi.devicewatch.R
-import org.jarsi.devicewatch.phoneLocale
 import org.jarsi.devicewatch.textForPhone
-import java.util.Locale
-
-/**
- * The languages a notification's lines are written for: the ones the app's texts and figures
- * are in, and the phone's own, in whose direction the shade draws them ([textForPhone]). The
- * monitor outlives a change of either, and what it has posted stays as it was written; it
- * compares these to know when to write its notification again.
- */
-internal data class NotificationLanguages(val texts: LocaleList, val phone: Locale) {
-    companion object {
-        fun of(context: Context): NotificationLanguages =
-            NotificationLanguages(texts = context.resources.configuration.locales, phone = phoneLocale(context))
-    }
-}
 
 /**
  * The monitor's foreground-service notification in its two forms: silent at the
