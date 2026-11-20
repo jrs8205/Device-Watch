@@ -4,6 +4,7 @@ import android.content.Context
 import android.icu.util.ULocale
 import androidx.test.core.app.ApplicationProvider
 import com.google.common.truth.Truth.assertThat
+import org.jarsi.devicewatch.system.chargeCompletionText
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -92,6 +93,51 @@ class DreamClockPatternsTest {
 
         assertThat(languages.size).isAtLeast(500)
         assertThat(without.map { it.toLanguageTag() }).isEmpty()
+    }
+
+    // External review round 7: Android's 12-hour pattern for toki pona is "#h:mm a", its numbers
+    // behind the sign the language writes them with. The calendar row gave that pattern to a
+    // formatter that keeps "#" for itself, and the screensaver went down with the exception.
+    @Test
+    fun `toki pona's calendar row is written, its number behind its sign`() {
+        val tokiPona = Locale.forLanguageTag("tok")
+        val now = fridayEvening.time
+        val tonight = DreamCalendarEvent("Sauna", beginMs = now + 30 * 60_000L, endMs = now + 90 * 60_000L, allDay = false)
+
+        assertThat(twelveHourClockPattern(tokiPona)).startsWith("#h:mm")
+        val row = calendarWhenText(tonight, now, ZoneId.systemDefault(), tokiPona, calendarTimePatterns(tokiPona, is24Hour = false), nowWord = "NOW")
+        assertThat(row).startsWith("#8:40")
+    }
+
+    // Not the patterns looked at for a letter, as round 6's test did, but everything the
+    // screensaver writes with them, written: a row for an event today, one for tomorrow and an
+    // all-day one, the alarm, a time alone, the clock's lines and the charge estimate.
+    @Test
+    fun `in every language Android knows the screensaver writes its times without failing`() {
+        val zone = ZoneId.systemDefault()
+        val now = fridayEvening.time
+        val tonight = DreamCalendarEvent("Sauna", beginMs = now + 30 * 60_000L, endMs = now + 90 * 60_000L, allDay = false)
+        val tomorrow = tonight.copy(beginMs = now + 24 * 3_600_000L, endMs = now + 25 * 3_600_000L)
+        val allDay = tonight.copy(beginMs = now + 48 * 3_600_000L, endMs = now + 72 * 3_600_000L, allDay = true)
+        val languages = ULocale.getAvailableLocales().map { it.toLocale() }
+        val failed = mutableListOf<String>()
+
+        for (locale in languages) {
+            for (is24Hour in listOf(false, true)) {
+                try {
+                    val patterns = calendarTimePatterns(locale, is24Hour)
+                    val written = listOf(tonight, tomorrow, allDay).map { calendarWhenText(it, now, zone, locale, patterns, nowWord = "NOW") } +
+                        dreamClockFormats(context, locale, is24Hour).let { listOf(it.alarm(fridayEvening), it.clock(fridayEvening), it.texts(fridayEvening).date) } +
+                        chargeCompletionText(context, now + 42 * 60_000L, now, locale, is24Hour)
+                    if (written.any { it.isBlank() }) failed += "${locale.toLanguageTag()} (${if (is24Hour) 24 else 12}): an empty text in $written"
+                } catch (e: RuntimeException) {
+                    failed += "${locale.toLanguageTag()} (${if (is24Hour) 24 else 12}): $e"
+                }
+            }
+        }
+
+        assertThat(languages.size).isAtLeast(500)
+        assertThat(failed).isEmpty()
     }
 
     @Test

@@ -32,12 +32,11 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.style.TextOverflow
+import org.jarsi.devicewatch.AndroidPatternFormat
 import org.jarsi.devicewatch.R
+import org.jarsi.devicewatch.androidFormat
 import org.jarsi.devicewatch.data.BatterySample
 import org.jarsi.devicewatch.ui.theme.LocalMetricFontFamily
-import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 
 /** Tall enough for the drain shape to be readable without crowding the page. */
 private val ChartHeight = 160.dp
@@ -208,11 +207,10 @@ internal fun BatteryChart(
 private fun TimeAxisLabels(range: BatteryChartRange, nowMillis: Long) {
     val locale = LocalLocale.current.platformLocale
     val formatter = remember(locale, range) {
-        val pattern = when (range) {
-            BatteryChartRange.Day -> android.text.format.DateFormat.getBestDateTimePattern(locale, "Hm")
-            BatteryChartRange.Week -> "EEE"
+        when (range) {
+            BatteryChartRange.Day -> androidFormat("Hm", locale)
+            BatteryChartRange.Week -> AndroidPatternFormat("EEE", locale)
         }
-        DateTimeFormatter.ofPattern(pattern, locale).withZone(ZoneId.systemDefault())
     }
     val windowMillis = range.windowMillis()
     Row(
@@ -223,7 +221,7 @@ private fun TimeAxisLabels(range: BatteryChartRange, nowMillis: Long) {
             Text(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                text = formatter.format(Instant.ofEpochMilli(millis)),
+                text = formatter.format(millis),
                 fontSize = 11.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

@@ -48,12 +48,12 @@ import org.jarsi.devicewatch.data.ChargeAnchorType
 import org.jarsi.devicewatch.data.UNAVAILABLE_TEXT
 import org.jarsi.devicewatch.presentation.SinceChargeUiState
 import org.jarsi.devicewatch.presentation.SinceChargeViewModel
+import org.jarsi.devicewatch.androidFormat
 import org.jarsi.devicewatch.timeOfDayFormat
 import kotlinx.coroutines.delay
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import java.util.Date
 
 /** How often the open page silently re-reads the battery snapshot and usage. */
@@ -329,8 +329,7 @@ private fun anchorTimeText(timeMillis: Long): String {
         if (day == LocalDate.now()) {
             timeText
         } else {
-            val pattern = android.text.format.DateFormat.getBestDateTimePattern(locale, "EEEdMMM")
-            "${day.format(DateTimeFormatter.ofPattern(pattern, locale))} $timeText"
+            "${androidFormat("EEEdMMM", locale).format(day)} $timeText"
         }
     }
 }

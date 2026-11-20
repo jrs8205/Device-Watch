@@ -64,6 +64,8 @@ import org.jarsi.devicewatch.data.NotificationLogEntry
 import org.jarsi.devicewatch.data.UNAVAILABLE_TEXT
 import org.jarsi.devicewatch.presentation.HistoryDay
 import org.jarsi.devicewatch.presentation.HistoryViewModel
+import org.jarsi.devicewatch.AndroidPatternFormat
+import org.jarsi.devicewatch.androidFormat
 import org.jarsi.devicewatch.timeOfDayFormat
 import kotlinx.coroutines.delay
 import java.time.Instant
@@ -316,26 +318,16 @@ private fun mediumDateFormatter(): DateTimeFormatter {
 
 /** Localized "weekday + day + month" formatter (e.g. "la 5. heinäk." / "Sat, Jul 5"). */
 @Composable
-private fun weekdayDateFormatter(): DateTimeFormatter {
+private fun weekdayDateFormatter(): AndroidPatternFormat {
     val locale = LocalLocale.current.platformLocale
-    return remember(locale) {
-        DateTimeFormatter.ofPattern(
-            android.text.format.DateFormat.getBestDateTimePattern(locale, "EEEdMMM"),
-            locale
-        )
-    }
+    return remember(locale) { androidFormat("EEEdMMM", locale) }
 }
 
 /** Localized standalone "month + year" formatter (e.g. "elokuu 2026" / "August 2026"). */
 @Composable
-private fun monthYearFormatter(): DateTimeFormatter {
+private fun monthYearFormatter(): AndroidPatternFormat {
     val locale = LocalLocale.current.platformLocale
-    return remember(locale) {
-        DateTimeFormatter.ofPattern(
-            android.text.format.DateFormat.getBestDateTimePattern(locale, "LLLLyyyy"),
-            locale
-        )
-    }
+    return remember(locale) { androidFormat("LLLLyyyy", locale) }
 }
 
 /**
@@ -395,7 +387,7 @@ private fun MonthlyDataSection(
                     Text(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        text = month.month.format(monthFormatter)
+                        text = monthFormatter.format(month.month)
                             .replaceFirstChar { it.uppercaseChar() },
                         fontSize = 13.sp,
                         fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal,
@@ -503,7 +495,7 @@ private fun HistoryDayList(days: List<HistoryDay>, metric: HistoryMetric) {
                     text = when (day.day) {
                         today -> stringResource(R.string.history_today)
                         today.minusDays(1) -> stringResource(R.string.history_yesterday)
-                        else -> day.day.format(weekdayFormatter)
+                        else -> weekdayFormatter.format(day.day)
                     },
                     fontSize = 13.sp,
                     fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal,
@@ -581,7 +573,7 @@ private fun ChargeSessionRow(charge: ChargeSession) {
     val dayText = when (startDay) {
         today -> stringResource(R.string.history_today)
         today.minusDays(1) -> stringResource(R.string.history_yesterday)
-        else -> startDay.format(weekdayDateFormatter())
+        else -> weekdayDateFormatter().format(startDay)
     }
     val timeFormat = remember(context) { timeOfDayFormat(context) }
     val start = timeFormat.format(Date(charge.startMillis))

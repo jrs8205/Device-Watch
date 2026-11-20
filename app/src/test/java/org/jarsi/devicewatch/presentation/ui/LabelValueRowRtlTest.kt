@@ -7,6 +7,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
@@ -23,6 +24,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+import java.util.Locale
 
 /**
  * Rows in a language written from the right. A name-and-value row put its two parts at
@@ -110,6 +112,25 @@ class LabelValueRowRtlTest {
         compose.onNodeWithText(sentence).performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(layouts) }
 
         assertThat(layouts.single().layoutInput.layoutDirection).isEqualTo(LayoutDirection.Rtl)
+    }
+
+    // External review round 7 found the screensaver's calendar row going down on a phone in
+    // toki pona, whose times Android writes "#HH:mm". The chart's time axis gave the same
+    // pattern to the same formatter: the History page went down there as soon as it had samples.
+    @Test
+    @Config(qualifiers = "b+tok-w360dp-h780dp-port-mdpi")
+    fun `the battery chart draws its time axis on a phone in toki pona`() {
+        val now = System.currentTimeMillis()
+        compose.setContent {
+            BatteryChart(
+                samples = listOf(BatterySample(now - 3_600_000L, 74, false), BatterySample(now - 60_000L, 70, false)),
+                range = BatteryChartRange.Day,
+            )
+        }
+
+        assertThat(Locale.getDefault().language).isEqualTo("tok")
+        compose.onNodeWithText("50 %").assertExists()
+        assertThat(compose.onAllNodes(hasText("#", substring = true)).fetchSemanticsNodes()).hasSize(3)
     }
 
     @Test

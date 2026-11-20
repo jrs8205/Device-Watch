@@ -2,6 +2,8 @@ package org.jarsi.devicewatch.system.dream
 
 import com.google.common.truth.Truth.assertThat
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
@@ -10,7 +12,11 @@ import java.util.Locale
 /**
  * Which calendar events the Gauges style lists and how it words when they are. "Now" is
  * Friday 13 November 2026 at 20:10 in Helsinki unless a test says otherwise.
+ *
+ * The times are written by Android's own formatter (external review round 7), so the tests
+ * run with Android's runtime.
  */
+@RunWith(RobolectricTestRunner::class)
 class DreamCalendarTest {
 
     private val helsinki = ZoneId.of("Europe/Helsinki")

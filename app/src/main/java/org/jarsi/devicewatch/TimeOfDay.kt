@@ -3,6 +3,12 @@ package org.jarsi.devicewatch
 import android.content.Context
 import java.text.DateFormat
 import java.text.SimpleDateFormat
+import java.time.LocalDate
+import java.time.YearMonth
+import java.time.ZoneId
+import java.util.Date
+import java.util.IllformedLocaleException
+import java.util.Locale
 
 /**
  * Android's own format for a time of day in the phone's language, 12- or 24-hour as the
@@ -19,6 +25,46 @@ fun timeOfDayFormat(context: Context): DateFormat {
     }
     return format
 }
+
+/**
+ * A date or a time written with a pattern Android made
+ * ([android.text.format.DateFormat.getBestDateTimePattern]), by Android's own formatter.
+ *
+ * Such a pattern is that formatter's and nobody else's. Toki pona writes its numbers behind
+ * a sign, and Android's patterns for it are "#h:mm a" and "#HH:mm"; `java.time`'s formatter
+ * keeps "#" for itself and threw, which took the screensaver down with a calendar row to
+ * write, and the History page with a chart to draw. Android's formatter takes every sign and
+ * letter its own patterns can hold.
+ *
+ * Two things stay as they were with the other formatter: the days are the ones the app
+ * counts by, in the Gregorian calendar whatever the language's own is, and the digits are
+ * the app's ([LatinDigits]).
+ */
+internal class AndroidPatternFormat(pattern: String, locale: Locale, private val zone: ZoneId = ZoneId.systemDefault()) {
+
+    private val format = android.icu.text.SimpleDateFormat(pattern, gregorian(LatinDigits.locale(locale))).apply {
+        timeZone = android.icu.util.TimeZone.getTimeZone(zone.id)
+    }
+
+    fun format(millis: Long): String = format.format(Date(millis))
+
+    fun format(day: LocalDate): String = format(day.atStartOfDay(zone).toInstant().toEpochMilli())
+
+    fun format(month: YearMonth): String = format(month.atDay(1))
+
+    private companion object {
+        /** [locale] with its calendar named, so that the names of the months come from that calendar too. */
+        fun gregorian(locale: Locale): Locale = try {
+            Locale.Builder().setLocale(locale).setUnicodeLocaleKeyword("ca", "gregory").build()
+        } catch (_: IllformedLocaleException) {
+            locale // a locale the builder cannot take is used as it is
+        }
+    }
+}
+
+/** The formatter for what [skeleton] asks for ("EEEdMMM"), in the pattern Android makes of it for [locale]. */
+internal fun androidFormat(skeleton: String, locale: Locale, zone: ZoneId = ZoneId.systemDefault()): AndroidPatternFormat =
+    AndroidPatternFormat(android.text.format.DateFormat.getBestDateTimePattern(locale, skeleton), locale, zone)
 
 /**
  * [pattern12] with a field for the half of the day, if it has none. Android answers a request

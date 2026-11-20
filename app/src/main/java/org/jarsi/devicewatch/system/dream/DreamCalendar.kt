@@ -3,7 +3,7 @@ package org.jarsi.devicewatch.system.dream
 import java.time.Instant
 import java.time.ZoneId
 import java.time.ZoneOffset
-import java.time.format.DateTimeFormatter
+import org.jarsi.devicewatch.AndroidPatternFormat
 import java.util.Locale
 
 // Which calendar events the Gauges style lists and how it words when they are. Plain
@@ -83,7 +83,8 @@ internal fun calendarWhenText(
         beginDay == today -> patterns.time
         else -> patterns.weekdayTime
     }
-    return DateTimeFormatter.ofPattern(pattern, locale).format(begin).uppercase(locale)
+    // The patterns are Android's own on a 12-hour clock, so Android's formatter writes them.
+    return AndroidPatternFormat(pattern, locale, zone).format(event.beginMs).uppercase(locale)
 }
 
 /** How a calendar row writes a time of day, and a weekday with a time. */
