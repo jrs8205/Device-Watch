@@ -16,6 +16,7 @@ import org.jarsi.devicewatch.quick.QuickEntryPoint
 import org.jarsi.devicewatch.quick.QuickMetricFormatter
 import org.jarsi.devicewatch.quick.QuickMetricReading
 import org.jarsi.devicewatch.quick.quickMetricLabels
+import org.jarsi.devicewatch.timeOfDayFormat
 import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.CancellationException
 import java.util.Date
@@ -25,7 +26,7 @@ import java.util.Date
  * separator and its 12- or 24-hour clock.
  */
 internal fun widgetClockText(context: Context, now: Date): String =
-    android.text.format.DateFormat.getTimeFormat(context).format(now)
+    timeOfDayFormat(context).format(now)
 
 /**
  * Single write path for the Glance widget state. Callers obtain fresh [SystemStats]

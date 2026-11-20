@@ -48,6 +48,7 @@ import org.jarsi.devicewatch.data.ChargeAnchorType
 import org.jarsi.devicewatch.data.UNAVAILABLE_TEXT
 import org.jarsi.devicewatch.presentation.SinceChargeUiState
 import org.jarsi.devicewatch.presentation.SinceChargeViewModel
+import org.jarsi.devicewatch.timeOfDayFormat
 import kotlinx.coroutines.delay
 import java.time.Instant
 import java.time.LocalDate
@@ -323,7 +324,7 @@ private fun anchorTimeText(timeMillis: Long): String {
     val context = LocalContext.current
     val locale = LocalLocale.current.platformLocale
     return remember(timeMillis, locale) {
-        val timeText = android.text.format.DateFormat.getTimeFormat(context).format(Date(timeMillis))
+        val timeText = timeOfDayFormat(context).format(Date(timeMillis))
         val day = Instant.ofEpochMilli(timeMillis).atZone(ZoneId.systemDefault()).toLocalDate()
         if (day == LocalDate.now()) {
             timeText

@@ -1,6 +1,7 @@
 package org.jarsi.devicewatch.system.dream
 
 import android.content.Context
+import android.icu.util.ULocale
 import androidx.test.core.app.ApplicationProvider
 import com.google.common.truth.Truth.assertThat
 import org.junit.Test
@@ -62,6 +63,35 @@ class DreamClockPatternsTest {
         assertThat(row(tomorrow, Locale.US).plainSpaces()).isEqualTo("SAT 8:10 PM")
         assertThat(calendarTimePatterns(chinese, is24Hour = true))
             .isEqualTo(CalendarTimePatterns(time = "HH:mm", weekdayTime = "EEE HH:mm"))
+    }
+
+    // External review round 6: Android's own 12-hour pattern for French in Cameroon has no
+    // field for the half of the day, so an alarm at 8:10 in the morning and one at 8:10 in
+    // the evening were shown exactly alike, and so was the hour the charge is full by.
+    @Test
+    fun `French in Cameroon tells the morning's 8-10 from the evening's`() {
+        val cameroon = Locale.forLanguageTag("fr-CM")
+        val fridayMorning: Date = GregorianCalendar(2026, Calendar.NOVEMBER, 13, 8, 10, 26).time
+        val formats = dreamClockFormats(context, cameroon, is24Hour = false)
+
+        assertThat(formats.alarm(fridayMorning)).isNotEqualTo(formats.alarm(fridayEvening))
+        assertThat(formats.clock(fridayMorning)).isNotEqualTo(formats.clock(fridayEvening))
+        // The language's own pattern stays as it is; the half of the day follows the time.
+        assertThat(twelveHourClockPattern(cameroon).plainSpaces()).isEqualTo("h:mm a")
+        assertThat(twelveHourAlarmPattern(cameroon).plainSpaces()).isEqualTo("EEE h:mm a")
+        val patterns = calendarTimePatterns(cameroon, is24Hour = false)
+        assertThat(patterns.time.plainSpaces()).isEqualTo("h:mm a")
+        assertThat(patterns.weekdayTime.plainSpaces()).isEqualTo("EEE h:mm a")
+    }
+
+    @Test
+    fun `in every language Android knows a 12-hour time says which half of the day it is in`() {
+        fun fields(pattern: String) = pattern.split("'").filterIndexed { index, _ -> index % 2 == 0 }.joinToString(" ")
+        val languages = ULocale.getAvailableLocales().map { it.toLocale() }
+        val without = languages.filter { 'a' !in fields(twelveHourClockPattern(it)) || 'a' !in fields(twelveHourAlarmPattern(it)) }
+
+        assertThat(languages.size).isAtLeast(500)
+        assertThat(without.map { it.toLanguageTag() }).isEmpty()
     }
 
     @Test

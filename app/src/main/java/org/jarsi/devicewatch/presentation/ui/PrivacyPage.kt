@@ -51,6 +51,7 @@ import org.jarsi.devicewatch.data.SensorUse
 import org.jarsi.devicewatch.presentation.PrivacyPresentation
 import org.jarsi.devicewatch.presentation.PrivacyViewModel
 import org.jarsi.devicewatch.presentation.RelativeDay
+import org.jarsi.devicewatch.timeOfDayFormat
 import java.time.LocalDate
 import java.time.ZoneId
 import java.util.Date
@@ -255,7 +256,7 @@ private fun EventList(app: AppSensorUse, sensor: PrivacySensor, minuteKept: Bool
 @Composable
 private fun EventRow(event: AccessEvent, sensor: PrivacySensor, minuteKept: Boolean, showOp: Boolean) {
     val context = LocalContext.current
-    val clock = remember(event.timeMillis) { android.text.format.DateFormat.getTimeFormat(context).format(Date(event.timeMillis)) }
+    val clock = remember(event.timeMillis) { timeOfDayFormat(context).format(Date(event.timeMillis)) }
     Row(modifier = Modifier.padding(vertical = 3.dp), verticalAlignment = Alignment.Top) {
         MetricValue(clock, fontSize = 13.sp)
         Spacer(modifier = Modifier.width(12.dp))
@@ -296,7 +297,7 @@ private fun dayTitle(day: LocalDate, sampleMillis: Long): String {
 @Composable
 internal fun privacyMomentText(timeMillis: Long): String {
     val context = LocalContext.current
-    val clock = remember(timeMillis) { android.text.format.DateFormat.getTimeFormat(context).format(Date(timeMillis)) }
+    val clock = remember(timeMillis) { timeOfDayFormat(context).format(Date(timeMillis)) }
     return when (PrivacyPresentation.relativeDay(timeMillis, System.currentTimeMillis(), ZoneId.systemDefault())) {
         RelativeDay.TODAY -> stringResource(R.string.privacy_today, clock)
         RelativeDay.YESTERDAY -> stringResource(R.string.privacy_yesterday, clock)

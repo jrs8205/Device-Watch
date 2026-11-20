@@ -64,6 +64,7 @@ import org.jarsi.devicewatch.data.NotificationLogEntry
 import org.jarsi.devicewatch.data.UNAVAILABLE_TEXT
 import org.jarsi.devicewatch.presentation.HistoryDay
 import org.jarsi.devicewatch.presentation.HistoryViewModel
+import org.jarsi.devicewatch.timeOfDayFormat
 import kotlinx.coroutines.delay
 import java.time.Instant
 import java.time.LocalDate
@@ -582,7 +583,7 @@ private fun ChargeSessionRow(charge: ChargeSession) {
         today.minusDays(1) -> stringResource(R.string.history_yesterday)
         else -> startDay.format(weekdayDateFormatter())
     }
-    val timeFormat = remember(context) { android.text.format.DateFormat.getTimeFormat(context) }
+    val timeFormat = remember(context) { timeOfDayFormat(context) }
     val start = timeFormat.format(Date(charge.startMillis))
     val range = if (charge.ongoing) "$start–" else "$start–${timeFormat.format(Date(charge.endMillis))}"
     val details = buildList {
@@ -676,7 +677,7 @@ internal fun NotificationLogRow(entry: NotificationLogEntry, modifier: Modifier 
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     text = remember(entry.timeMillis) {
-                        android.text.format.DateFormat.getTimeFormat(context).format(Date(entry.timeMillis))
+                        timeOfDayFormat(context).format(Date(entry.timeMillis))
                     },
                     fontSize = 11.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant

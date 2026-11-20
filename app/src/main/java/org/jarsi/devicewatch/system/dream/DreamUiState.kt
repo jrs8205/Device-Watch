@@ -3,9 +3,11 @@ package org.jarsi.devicewatch.system.dream
 import android.content.Context
 import android.graphics.drawable.Icon
 import org.jarsi.devicewatch.Bidi
+import org.jarsi.devicewatch.PATTERN_QUOTE
 import org.jarsi.devicewatch.R
 import org.jarsi.devicewatch.system.NotificationIconGroup
 import org.jarsi.devicewatch.system.chargeCompletionText
+import org.jarsi.devicewatch.withHalfOfDay
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -121,7 +123,7 @@ internal fun dreamClockFormats(context: Context, locale: Locale, is24Hour: Boole
  * English ("8:10 PM"), before it in Chinese.
  */
 internal fun twelveHourClockPattern(locale: Locale): String =
-    android.text.format.DateFormat.getBestDateTimePattern(locale, "hmma")
+    withHalfOfDay(android.text.format.DateFormat.getBestDateTimePattern(locale, "hmma"))
 
 /**
  * Whether AM or PM stands to the left of the time. The language's own 12-hour pattern says
@@ -130,19 +132,16 @@ internal fun twelveHourClockPattern(locale: Locale): String =
  * the right: in both the marker is on the time's left. In English it is on the right.
  */
 internal fun amPmLeads(pattern12: String, rightToLeft: Boolean): Boolean {
-    val letters = pattern12.split(QUOTE).filterIndexed { index, _ -> index % 2 == 0 }.joinToString(" ")
+    val letters = pattern12.split(PATTERN_QUOTE).filterIndexed { index, _ -> index % 2 == 0 }.joinToString(" ")
     val marker = letters.indexOf('a')
     val hour = letters.indexOfFirst { it in "hHkK" }
     if (marker < 0 || hour < 0) return false
     return (marker < hour) != rightToLeft
 }
 
-/** What a date pattern puts around text that is not a field. */
-private const val QUOTE = "'"
-
 /** The same with the weekday, for the next alarm. */
 internal fun twelveHourAlarmPattern(locale: Locale): String =
-    android.text.format.DateFormat.getBestDateTimePattern(locale, "EEEhmma")
+    withHalfOfDay(android.text.format.DateFormat.getBestDateTimePattern(locale, "EEEhmma"))
 
 internal fun batteryVoltsText(volts: Double, locale: Locale): String =
     Bidi.ltr(String.format(locale, "%.2f V", volts), locale)

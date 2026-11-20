@@ -60,6 +60,7 @@ import org.jarsi.devicewatch.data.LastUsedTier
 import org.jarsi.devicewatch.data.UNAVAILABLE_INT
 import org.jarsi.devicewatch.data.UNAVAILABLE_TEXT
 import org.jarsi.devicewatch.data.UsageEventAggregator
+import org.jarsi.devicewatch.timeOfDayFormat
 import org.jarsi.devicewatch.ui.theme.DarkAccentGraphic
 import org.jarsi.devicewatch.ui.theme.LightAccent
 import org.jarsi.devicewatch.ui.theme.DarkStatusOk
@@ -452,7 +453,7 @@ internal fun lastUsedText(lastUsedEpochMillis: Long?): String {
         days == 0 -> stringResource(
             R.string.last_used_today_at,
             remember(lastUsedEpochMillis) {
-                android.text.format.DateFormat.getTimeFormat(context)
+                timeOfDayFormat(context)
                     .format(Date(lastUsedEpochMillis!!))
             }
         )

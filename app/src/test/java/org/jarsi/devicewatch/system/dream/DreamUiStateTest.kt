@@ -1,6 +1,7 @@
 package org.jarsi.devicewatch.system.dream
 
 import com.google.common.truth.Truth.assertThat
+import org.jarsi.devicewatch.withHalfOfDay
 import org.junit.Test
 import java.util.Calendar
 import java.util.Date
@@ -99,6 +100,46 @@ class DreamUiStateTest {
         assertThat(texts.date.lowercase(finnish)).isEqualTo("perjantaina 13. marraskuuta")
         assertThat(texts.shortDate).isEqualTo("pe 13. marraskuuta")
         assertThat(texts.compactDate).isEqualTo("pe 13.11.")
+    }
+
+    // External review round 6: a language's own 12-hour pattern can come without the field.
+    @Test
+    fun `a 12-hour pattern without the half of the day gets it after the time`() {
+        val space = Char(0xA0)
+
+        assertThat(withHalfOfDay("h:mm")).isEqualTo("h:mm${space}a")
+        assertThat(withHalfOfDay("EEE h:mm")).isEqualTo("EEE h:mm${space}a")
+        assertThat(withHalfOfDay("h:mm:ss, EEE")).isEqualTo("h:mm:ss${space}a, EEE")
+        assertThat(withHalfOfDay("K:mm")).isEqualTo("K:mm${space}a")
+        // A quoted letter is text, not a field.
+        assertThat(withHalfOfDay("h 'a' mm")).isEqualTo("h 'a' mm${space}a")
+    }
+
+    @Test
+    fun `a pattern that has the half of the day, or whose hours need none, stays as it is`() {
+        for (pattern in listOf("h:mm a", "ah:mm", "a h:mm", "EEE h:mm a", "HH:mm", "EEE HH:mm", "H:mm", "k:mm", "EEE")) {
+            assertThat(withHalfOfDay(pattern)).isEqualTo(pattern)
+        }
+    }
+
+    @Test
+    fun `with the half of the day added, morning and evening read differently`() {
+        val fridayMorning: Date = GregorianCalendar(2026, Calendar.NOVEMBER, 13, 8, 10, 26).time
+        val formats = DreamClockFormats(
+            locale = Locale.US,
+            is24Hour = false,
+            longDatePattern = "EEEE, MMMM d",
+            shortDatePattern = "EEE, MMMM d",
+            compactDatePattern = "EEE MMM d",
+            clockPattern12 = withHalfOfDay("h:mm"),
+            alarmPattern12 = withHalfOfDay("EEE h:mm"),
+        )
+        val space = Char(0xA0)
+
+        assertThat(formats.clock(fridayMorning)).isEqualTo("8:10${space}AM")
+        assertThat(formats.clock(fridayEvening)).isEqualTo("8:10${space}PM")
+        assertThat(formats.alarm(fridayMorning)).isEqualTo("Fri 8:10${space}AM")
+        assertThat(formats.alarm(fridayEvening)).isEqualTo("Fri 8:10${space}PM")
     }
 
     @Test
