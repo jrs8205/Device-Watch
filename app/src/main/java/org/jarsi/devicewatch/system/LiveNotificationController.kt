@@ -47,13 +47,14 @@ class LiveNotificationController(
      * The language of the notification's lines changed under it while it stayed up (the
      * app's, or the phone's, in whose direction the shade draws them): what is posted was
      * written for the old one. With nothing chosen the silent notification goes up again,
-     * which no reading would ever do; with figures chosen, what was posted no longer counts
-     * and the caller follows with a fresh reading, which this returns true for. A swipe
-     * still holds the figures back.
+     * which no reading would ever do, but only if it is still up: from Android 14 the user
+     * can swipe it away, and a change of language is no reason to put it back. With figures
+     * chosen, what was posted no longer counts and the caller follows with a fresh reading,
+     * which this returns true for. A swipe still holds the figures back.
      */
     suspend fun onLanguageChanged(): Boolean = mutex.withLock {
         if (chosen().isEmpty()) {
-            postQuiet()
+            if (isShowing()) postQuiet()
             false
         } else {
             gate.notPosted()

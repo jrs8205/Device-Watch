@@ -115,6 +115,19 @@ class LiveNotificationControllerTest {
         assertThat(posts).containsExactly("quiet")
     }
 
+    // External review round 7: from Android 14 the monitor's notification can be swiped away.
+    // A change of language is there to turn the notification that is up into the new
+    // language, not to put back one the user took down.
+    @Test
+    fun `a change of language does not bring back a silent notification that was swiped away`() = runTest {
+        chosen = emptySet()
+        showing = false
+
+        assertThat(controller.onLanguageChanged()).isFalse()
+
+        assertThat(posts).isEmpty()
+    }
+
     // The figures' own text can be the same in both languages while the line around it is
     // not (the shade's direction changed with the phone's language): it goes up again.
     @Test
