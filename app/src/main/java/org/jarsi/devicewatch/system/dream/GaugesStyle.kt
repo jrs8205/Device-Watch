@@ -191,6 +191,10 @@ private fun rememberGaugesClockSize(state: DreamUiState, options: DreamOptions, 
         leadingMinSp = GAUGES_AM_PM_MIN_SP,
         leadingGap = GAUGES_LEAD_GAP,
         leadingWeight = FontWeight.Normal,
+        // A marker after the time stands over the seconds; a long one sets the column's width.
+        trailingText = state.amPmText.takeIf { !state.amPmLeads }.orEmpty(),
+        trailingSp = { clockSize -> (clockSize * GAUGES_AM_PM_RATIO).coerceAtLeast(GAUGES_AM_PM_MIN_SP) },
+        trailingWeight = FontWeight.Normal,
     )
 }
 

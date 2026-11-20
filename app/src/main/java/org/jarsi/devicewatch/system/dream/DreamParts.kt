@@ -317,6 +317,8 @@ internal fun rememberClockBlockSize(
         leadingRatio = clockMarkerSp(1) * CLOCK_SECONDS_RATIO,
         leadingMinSp = clockMarkerSp(CLOCK_SECONDS_MIN_SP),
         leadingGap = CLOCK_SIDE_GAP,
+        trailingText = if (leads) "" else amPmText,
+        trailingSp = { clockSize -> clockMarkerSp(clockSecondsSp(clockSize)) },
     )
 }
 
@@ -492,6 +494,10 @@ private fun loadNotificationIcon(context: Context, icon: android.graphics.drawab
  * [leadingText] is a marker drawn on the time's left (AM or PM where the language reads it
  * first), [leadingRatio] of the clock's size and never below [leadingMinSp], [leadingGap]
  * away from the time. The room it takes is taken off the width before the clock is sized.
+ *
+ * [trailingText] is a marker drawn on the time's right, in the seconds' column (AM or PM
+ * where it follows the time), at the size [trailingSp] gives for a clock size and in
+ * [trailingWeight]. Where it is wider than the seconds, the clock gives way to it.
  */
 @Composable
 internal fun rememberFittedClockSize(
@@ -508,13 +514,16 @@ internal fun rememberFittedClockSize(
     leadingMinSp: Float = 0f,
     leadingGap: Dp = 0.dp,
     leadingWeight: FontWeight = FontWeight.Medium,
+    trailingText: String = "",
+    trailingSp: (clockSize: Int) -> Float = { 0f },
+    trailingWeight: FontWeight = FontWeight.Medium,
 ): Int {
     val measurer = rememberTextMeasurer()
     val density = LocalDensity.current
     val resolver = LocalFontFamilyResolver.current
     return remember(
         availableWidth, maxClockSp, minClockSp, secondsRatio, secondsMinSp, gap, timeWeight, fontFamily,
-        leadingText, leadingRatio, leadingMinSp, leadingGap, leadingWeight, density, resolver,
+        leadingText, leadingRatio, leadingMinSp, leadingGap, leadingWeight, trailingText, trailingWeight, density, resolver,
     ) {
         if (availableWidth <= 0.dp) return@remember minClockSp
         val referenceSp = 100f
@@ -557,6 +566,25 @@ internal fun rememberFittedClockSize(
                 fontFamilyResolver = resolver,
             ).size.width.toFloat()
         }
+        // A text's width as it is drawn at a size, not worked out from the reference size: at
+        // small sizes every letter's width is rounded to whole pixels, and over a long marker
+        // that adds up to more than the line has to spare.
+        fun drawnWidthPx(text: String, sizeSp: Float, weight: FontWeight, tabular: Boolean): Float = measurer.measure(
+            text = text,
+            style = TextStyle(
+                fontSize = sizeSp.sp,
+                fontWeight = weight,
+                fontFamily = fontFamily,
+                fontFeatureSettings = if (tabular) "tnum" else null,
+            ),
+            softWrap = false,
+            maxLines = 1,
+            density = density,
+            fontFamilyResolver = resolver,
+        ).size.width.toFloat()
+        val gapPx = with(density) { gap.toPx() }
+        val timePerSp = timeWidthPx / referenceSp
+        val secPerSp = secWidthPx / referenceSp
         fittedClockSpBesideLead(
             availablePx = with(density) { availableWidth.toPx() },
             leadPerSp = leadWidthPx / referenceSp,
@@ -564,18 +592,47 @@ internal fun rememberFittedClockSize(
             leadMinSp = leadingMinSp,
             leadGapPx = with(density) { leadingGap.toPx() },
         ) { roomPx ->
-            fittedClockSp(
+            val besideSeconds = fittedClockSp(
                 availablePx = roomPx,
-                gapPx = with(density) { gap.toPx() },
-                timePerSp = timeWidthPx / referenceSp,
-                secPerSp = secWidthPx / referenceSp,
+                gapPx = gapPx,
+                timePerSp = timePerSp,
+                secPerSp = secPerSp,
                 secondsRatio = secondsRatio,
                 secondsMinSp = secondsMinSp,
                 minClockSp = minClockSp,
                 maxClockSp = maxClockSp,
             )
+            if (trailingText.isEmpty()) {
+                besideSeconds
+            } else {
+                fittedClockSpBesideTrail(roomPx, besideSeconds, minClockSp) { clockSize ->
+                    val secondsSp = maxOf(secondsRatio * clockSize, secondsMinSp.toFloat())
+                    val secondsPx = if (secondsSp > 0f) drawnWidthPx(":00", secondsSp, FontWeight.Bold, tabular = true) else 0f
+                    val markerPx = drawnWidthPx(trailingText, trailingSp(clockSize), trailingWeight, tabular = false)
+                    if (markerPx <= secondsPx) {
+                        // The marker stands inside the seconds' width: the line sized already.
+                        timePerSp * clockSize + gapPx + secPerSp * secondsSp
+                    } else {
+                        drawnWidthPx("00:00", clockSize.toFloat(), timeWeight, tabular = true) + gapPx + markerPx
+                    }
+                }
+            }
         }
     }
+}
+
+/**
+ * The clock's size when a marker stands on its right, in the seconds' column. [fitted] is
+ * the size found for the time and its seconds alone; [lineWidthPx] is the width of the whole
+ * line at a clock size, the column counted as wide as the wider of the seconds and the
+ * marker. A marker no wider than the seconds changes nothing. A wider one (toki pona's word
+ * for the afternoon is "pi pini suno", where English has "PM") ran off the screen's edge;
+ * the clock steps down until the line fits, and never below [minClockSp].
+ */
+internal fun fittedClockSpBesideTrail(availablePx: Float, fitted: Int, minClockSp: Int, lineWidthPx: (Int) -> Float): Int {
+    var size = fitted
+    while (size > minClockSp && lineWidthPx(size) > availablePx) size--
+    return size
 }
 
 /**

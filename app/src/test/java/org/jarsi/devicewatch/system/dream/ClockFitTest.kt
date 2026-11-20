@@ -96,4 +96,45 @@ class ClockFitTest {
             width += 10f
         }
     }
+
+    // A marker on the time's right shares the seconds' column: the column is as wide as the
+    // wider of the two. The marker is 0.15 of the clock's size and never below 13.2 sp.
+    private fun lineWidthWithTrail(sp: Int, trailPerSp: Float): Float =
+        3.0f * sp + 24f + maxOf(1.5f * maxOf(0.25f * sp, 22f), trailPerSp * maxOf(0.15f * sp, 13.2f))
+
+    private fun fitBesideTrail(availablePx: Float, trailPerSp: Float) = fittedClockSpBesideTrail(
+        availablePx = availablePx,
+        fitted = fit(availablePx),
+        minClockSp = 56,
+    ) { size -> lineWidthWithTrail(size, trailPerSp) }
+
+    @Test
+    fun `a marker no wider than the seconds leaves the clock as it was`() {
+        // "PM": 1.2 px/sp at 0.15 of the clock is narrower than the seconds at a quarter of it.
+        for (width in listOf(100f, 300f, 400f, 5000f)) {
+            assertThat(fitBesideTrail(width, trailPerSp = 1.2f)).isEqualTo(fit(width))
+        }
+    }
+
+    // External review round 7's toki pona phone: "pi open suno" beside the clock.
+    @Test
+    fun `a marker wider than the seconds takes the difference off the clock`() {
+        // Alone the clock would be 111 sp, its seconds 41.6 px wide. A marker of 6.0 px/sp is
+        // 99.9 px there. At 97 sp the line is 291 + 24 + 87.3 = 402.3 px, at 96 sp 398.4.
+        assertThat(fitBesideTrail(400f, trailPerSp = 6.0f)).isEqualTo(96)
+        assertThat(lineWidthWithTrail(96, 6.0f)).isAtMost(400f)
+        assertThat(lineWidthWithTrail(97, 6.0f)).isGreaterThan(400f)
+    }
+
+    @Test
+    fun `the line with a wide marker fits wherever the clock is above its smallest size`() {
+        var width = 260f
+        while (width <= 2000f) {
+            val size = fitBesideTrail(width, trailPerSp = 6.0f)
+            assertThat(size).isAtLeast(56)
+            assertThat(size).isAtMost(fit(width))
+            if (size > 56) assertThat(lineWidthWithTrail(size, 6.0f)).isAtMost(width)
+            width += 10f
+        }
+    }
 }

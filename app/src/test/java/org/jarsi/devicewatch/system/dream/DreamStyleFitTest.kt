@@ -100,6 +100,30 @@ class DreamStyleFitTest {
     @Config(qualifiers = "zh-rCN-w320dp-h480dp-port-mdpi")
     fun `low portrait in Chinese`() = assertEveryStyleFits(landscape = false)
 
+    // A phone can be set to a language the app is not written in, and its word for the half
+    // of the day can be a long one: toki pona's is "pi pini suno", where English has "PM".
+    // It stands beside the clock in every style, and the clock was sized as if nothing
+    // wider than the seconds stood there: on Gauges the word ran off the screen's edge.
+    @Test
+    @Config(qualifiers = "w320dp-h640dp-port-mdpi")
+    fun `narrow portrait with a long word for the half of the day`() =
+        assertEveryStyleFits(landscape = false, halfOfDay = LONG_HALF_OF_DAY)
+
+    @Test
+    @Config(qualifiers = "w480dp-h320dp-land-mdpi")
+    fun `narrow landscape with a long word for the half of the day`() =
+        assertEveryStyleFits(landscape = true, halfOfDay = LONG_HALF_OF_DAY)
+
+    @Test
+    @Config(qualifiers = "w320dp-h480dp-port-mdpi")
+    fun `low portrait with a long word for the half of the day`() =
+        assertEveryStyleFits(landscape = false, halfOfDay = LONG_HALF_OF_DAY)
+
+    @Test
+    @Config(qualifiers = "w320dp-h640dp-port-mdpi")
+    fun `narrow portrait with a long word for the half of the day and no seconds`() =
+        assertEveryStyleFits(landscape = false, halfOfDay = LONG_HALF_OF_DAY, showSeconds = false)
+
     private val defaultsBefore = Triple(
         Locale.getDefault(),
         Locale.getDefault(Locale.Category.DISPLAY),
@@ -120,12 +144,25 @@ class DreamStyleFitTest {
         return context.resources.getQuantityString(R.plurals.dream_unread_notifications, total, total)
     }
 
-    private fun assertEveryStyleFits(landscape: Boolean, fontScale: Float = MAX_FONT_SCALE) {
+    /**
+     * [halfOfDay], when given, stands in for the language's own AM or PM, after the time as
+     * in English.
+     */
+    private fun assertEveryStyleFits(
+        landscape: Boolean,
+        fontScale: Float = MAX_FONT_SCALE,
+        halfOfDay: String? = null,
+        showSeconds: Boolean = true,
+    ) {
+        fun worstCase(context: android.content.Context, chargeState: DreamChargeState): DreamUiState =
+            worstCaseDreamUiState(context, chargeState).let { state ->
+                if (halfOfDay == null) state else state.copy(amPmText = halfOfDay, amPmLeads = false)
+            }
         // The digits of the running app: the test's plain application does not set them up.
         LatinDigits.applyToDefault()
         val context = LatinDigits.context(ApplicationProvider.getApplicationContext<Application>())
         var options by mutableStateOf(DreamOptions())
-        var state by mutableStateOf(worstCaseDreamUiState(context, DreamChargeState.CHARGING))
+        var state by mutableStateOf(worstCase(context, DreamChargeState.CHARGING))
         compose.setContent {
             CompositionLocalProvider(
                 LocalDensity provides Density(1f, fontScale),
@@ -138,8 +175,8 @@ class DreamStyleFitTest {
         val problems = mutableListOf<String>()
         for (style in DreamStyle.entries) {
             for (chargeState in DreamChargeState.entries) {
-                options = DreamOptions(style = style, showCalendar = true)
-                state = worstCaseDreamUiState(context, chargeState)
+                options = DreamOptions(style = style, showCalendar = true, showSeconds = showSeconds)
+                state = worstCase(context, chargeState)
                 compose.waitForIdle()
                 // The icons are decoded off the main thread; the row has its height, and
                 // its counts, only once they are in. A style may leave the row out when it
@@ -162,5 +199,10 @@ class DreamStyleFitTest {
             }
         }
         assertWithMessage(problems.joinToString("\n", prefix = "\n")).that(problems).isEmpty()
+    }
+
+    private companion object {
+        /** Toki pona's word for the afternoon, the longest Android has for a half of the day in Latin letters. */
+        const val LONG_HALF_OF_DAY = "pi pini suno"
     }
 }
