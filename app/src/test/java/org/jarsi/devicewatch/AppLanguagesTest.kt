@@ -31,4 +31,20 @@ class AppLanguagesTest {
         assertThat(translated).isNotEmpty()
         assertThat(offered).containsExactlyElementsIn(translated + "en")
     }
+
+    // External review round 6: the libraries' texts in other languages were packaged too, and
+    // Android then took a phone's first language for one the app is written in.
+    @Test
+    fun `the build packages texts in exactly the languages the app is written in`() {
+        val build = File(SourceXml.source("res"), "../../../build.gradle.kts").readText()
+        val filters = Regex("""localeFilters\s*\+=\s*listOf\(([^)]*)\)""").find(build)?.groupValues?.get(1)
+        assertThat(filters).isNotNull()
+        val packaged = Regex("\"([^\"]+)\"").findAll(filters!!).map { it.groupValues[1] }.toList()
+
+        // The build names a language as its resource folder does ("zh-rCN").
+        val folders = SourceXml.source("res").listFiles().orEmpty()
+            .filter { it.isDirectory && it.name.startsWith("values-") && File(it, "strings.xml").exists() }
+            .map { it.name.removePrefix("values-") }
+        assertThat(packaged).containsExactlyElementsIn(folders + "en")
+    }
 }

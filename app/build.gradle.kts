@@ -71,6 +71,14 @@ android {
         includeInApk = false
         includeInBundle = false
     }
+    androidResources {
+        // Only the languages the app is written in (res/xml/locales_config.xml). The
+        // libraries bring their own texts in some eighty more, and Android chooses a
+        // language from all that is packaged: with French first on a phone's list it took
+        // the libraries' French, and the app's own texts were then the English ones although
+        // Arabic or Chinese stood next on the list.
+        localeFilters += listOf("en", "fi", "zh-rCN", "ar")
+    }
     buildFeatures {
         compose = true
         buildConfig = true
