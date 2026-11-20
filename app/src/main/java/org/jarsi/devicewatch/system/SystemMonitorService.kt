@@ -6,6 +6,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.res.Configuration
 import android.content.res.Resources
 import android.net.ConnectivityManager
 import android.os.Build
@@ -97,7 +98,11 @@ class SystemMonitorService : Service() {
         )
     }
 
-    private var lastUsageRefreshMs = 0L
+    /** Written by the update loop, and set back to zero on the main thread when the languages change. */
+    @Volatile private var lastUsageRefreshMs = 0L
+
+    /** The languages the notification now up was written for; main thread only. */
+    private var notificationLanguages: NotificationLanguages? = null
 
     /** Latest level from BATTERY_CHANGED; POWER_DISCONNECTED carries no battery extras. */
     @Volatile private var lastBatteryLevel = -1
@@ -135,6 +140,37 @@ class SystemMonitorService : Service() {
         // keep the 5 s loop polling until the next real screen event.
         isScreenOn = (getSystemService(Context.POWER_SERVICE) as? PowerManager)?.isInteractive ?: true
         if (isScreenOn) startUpdateLoop()
+    }
+
+    /**
+     * The monitor lives through a change of the app's language (Android's per-app language
+     * page) and of the phone's, and what it has put up stays as it was written: the silent
+     * notification is posted once, and with no figures chosen it stayed in English after the
+     * app was switched to Arabic. Android calls this for every change of configuration; only
+     * a change of the languages writes the notification again, has the floating card, which
+     * is laid out the way the texts read, built again by the reading that follows, and has
+     * the widget's screen time written again.
+     */
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        val languages = NotificationLanguages.of(this)
+        if (languages == notificationLanguages) return
+        notificationLanguages = languages
+        overlay.onConfigurationChanged()
+        // The widget's screen time is a text written once a minute, in the language of that
+        // minute: the loop's next pass writes it again instead of waiting the minute out.
+        lastUsageRefreshMs = 0L
+        serviceScope.launch {
+            try {
+                live.onLanguageChanged()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+            // The figures, the widgets and the card in the new language at once.
+            updateWidgetStats(applicationContext)
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -365,6 +401,7 @@ class SystemMonitorService : Service() {
 
     private fun startNotification() {
         notifications.ensureChannels()
+        notificationLanguages = NotificationLanguages.of(this)
         val notification = if (appSettings.notificationMetrics().isEmpty()) {
             notifications.quiet()
         } else {

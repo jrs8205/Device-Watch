@@ -103,6 +103,52 @@ class LiveNotificationControllerTest {
         assertThat(posts).containsExactly("live:Akku 78%", "live:Akku 78%")
     }
 
+    // External review round 6: with no figures chosen, the silent notification stayed in
+    // English after the app was switched to Arabic under the running monitor. A reading
+    // posts nothing when nothing is chosen, so nothing ever wrote it again.
+    @Test
+    fun `a change of language puts the silent notification up again`() = runTest {
+        chosen = emptySet()
+
+        assertThat(controller.onLanguageChanged()).isFalse()
+
+        assertThat(posts).containsExactly("quiet")
+    }
+
+    // The figures' own text can be the same in both languages while the line around it is
+    // not (the shade's direction changed with the phone's language): it goes up again.
+    @Test
+    fun `a change of language posts the same figures again with the next reading`() = runTest {
+        controller.refresh(quickStats())
+
+        assertThat(controller.onLanguageChanged()).isTrue()
+        assertThat(posts).containsExactly("live:Akku 78%")
+        controller.refresh(quickStats())
+
+        assertThat(posts).containsExactly("live:Akku 78%", "live:Akku 78%")
+    }
+
+    @Test
+    fun `a change of language does not bring back figures that were swiped away`() = runTest {
+        controller.refresh(quickStats())
+        controller.onDismissed()
+
+        controller.onLanguageChanged()
+        controller.refresh(quickStats())
+
+        assertThat(posts).containsExactly("live:Akku 78%")
+    }
+
+    @Test
+    fun `a silent notification that cannot be posted in the new language takes nothing down`() = runTest {
+        chosen = emptySet()
+        quietSucceeds = false
+
+        controller.onLanguageChanged()
+
+        assertThat(posts).containsExactly("quiet")
+    }
+
     @Test
     fun `nothing chosen posts nothing on a reading`() = runTest {
         chosen = emptySet()

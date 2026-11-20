@@ -44,6 +44,24 @@ class LiveNotificationController(
     }
 
     /**
+     * The language of the notification's lines changed under it while it stayed up (the
+     * app's, or the phone's, in whose direction the shade draws them): what is posted was
+     * written for the old one. With nothing chosen the silent notification goes up again,
+     * which no reading would ever do; with figures chosen, what was posted no longer counts
+     * and the caller follows with a fresh reading, which this returns true for. A swipe
+     * still holds the figures back.
+     */
+    suspend fun onLanguageChanged(): Boolean = mutex.withLock {
+        if (chosen().isEmpty()) {
+            postQuiet()
+            false
+        } else {
+            gate.notPosted()
+            true
+        }
+    }
+
+    /**
      * The choice changed: with nothing chosen the silent notification goes back up
      * at once, or, its channel blocked, the live one comes down; with figures chosen
      * the caller follows with a fresh reading, which this returns true for.
