@@ -42,11 +42,14 @@ fun timeOfDayFormat(context: Context): DateFormat {
  */
 internal class AndroidPatternFormat(pattern: String, locale: Locale, private val zone: ZoneId = ZoneId.systemDefault()) {
 
-    private val format = android.icu.text.SimpleDateFormat(pattern, gregorian(LatinDigits.locale(locale))).apply {
+    private val digits = LatinDigits.locale(locale)
+
+    private val format = android.icu.text.SimpleDateFormat(pattern, gregorian(digits)).apply {
         timeZone = android.icu.util.TimeZone.getTimeZone(zone.id)
     }
 
-    fun format(millis: Long): String = format.format(Date(millis))
+    /** With the digits of a month's own name as 0 to 9 too ([LatinDigits.text]). */
+    fun format(millis: Long): String = LatinDigits.text(format.format(Date(millis)), digits)
 
     fun format(day: LocalDate): String = format(day.atStartOfDay(zone).toInstant().toEpochMilli())
 

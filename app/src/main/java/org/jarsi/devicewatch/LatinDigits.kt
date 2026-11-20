@@ -5,6 +5,8 @@ import android.app.LocaleManager
 import android.content.Context
 import android.content.res.Configuration
 import android.content.res.Resources
+import android.icu.text.NumberingSystem
+import android.icu.util.ULocale
 import android.os.Build
 import android.os.LocaleList
 import java.text.DecimalFormatSymbols
@@ -28,12 +30,59 @@ object LatinDigits {
      */
     fun locale(locale: Locale): Locale {
         if (locale.getUnicodeLocaleType(NUMBERING_KEY) != null) return locale
-        if (DecimalFormatSymbols.getInstance(locale).zeroDigit == '0') return locale
+        if (writesLatinDigits(locale)) return locale
         return try {
             Locale.Builder().setLocale(locale).setUnicodeLocaleKeyword(NUMBERING_KEY, LATIN).build()
         } catch (_: IllformedLocaleException) {
             locale // a locale the builder cannot take is used as it is
         }
+    }
+
+    /**
+     * Whether [locale]'s numbers come out as 0 to 9 without being told to. Two things are
+     * asked, because a number is written by two kinds of formatter: the numbering system
+     * Android formats the language's numbers with, and the zero of the language's number
+     * symbols, which the older formatters go by.
+     *
+     * Only the zero was asked before. It is one UTF-16 unit, and the digits of Chakma and
+     * Adlam take two: for them the answer was a plain "0" standing in for a zero that does
+     * not fit, the language was taken for one that writes 0 to 9, and its dates and times
+     * came out in its own digits.
+     */
+    private fun writesLatinDigits(locale: Locale): Boolean =
+        DecimalFormatSymbols.getInstance(locale).zeroDigit == '0' && numberingSystemIsLatin(locale)
+
+    /** True where there is no Android to ask: the unit tests that run on the plain JVM. */
+    private fun numberingSystemIsLatin(locale: Locale): Boolean = try {
+        NumberingSystem.getInstance(ULocale.forLocale(locale)).name == LATIN
+    } catch (_: RuntimeException) {
+        true
+    }
+
+    /**
+     * [text], a date or a time written for [locale], with every digit in it as 0 to 9.
+     *
+     * The numbering system sees to the numbers a format writes, but a language's own names can
+     * hold digits too. Tibetan and Dzongkha name their months by number, in their own digits,
+     * and the tenth month stood beside a day written "10". A numbering system the user chose
+     * stands here as everywhere.
+     */
+    fun text(text: String, locale: Locale): String {
+        val chosen = locale.getUnicodeLocaleType(NUMBERING_KEY)
+        if (chosen != null && chosen != LATIN) return text
+        if (text.none { it.code > LAST_ASCII }) return text
+        val plain = StringBuilder(text.length)
+        var index = 0
+        while (index < text.length) {
+            val point = text.codePointAt(index)
+            if (point > LAST_ASCII && Character.isDigit(point)) {
+                plain.append('0' + Character.digit(point, 10))
+            } else {
+                plain.appendCodePoint(point)
+            }
+            index += Character.charCount(point)
+        }
+        return plain.toString()
     }
 
     /** [base] itself when its texts print 0 to 9 already, otherwise a context over it that does. */
@@ -73,6 +122,7 @@ object LatinDigits {
 
     private const val NUMBERING_KEY = "nu"
     private const val LATIN = "latn"
+    private const val LAST_ASCII = 0x7F
 }
 
 /**

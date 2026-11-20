@@ -3,6 +3,7 @@ package org.jarsi.devicewatch.system.dream
 import android.content.Context
 import android.graphics.drawable.Icon
 import org.jarsi.devicewatch.Bidi
+import org.jarsi.devicewatch.LatinDigits
 import org.jarsi.devicewatch.PATTERN_QUOTE
 import org.jarsi.devicewatch.R
 import org.jarsi.devicewatch.system.NotificationIconGroup
@@ -96,16 +97,19 @@ internal class DreamClockFormats(
         seconds = seconds.format(now),
         amPm = if (is24Hour) "" else amPm.format(now),
         amPmLeads = markerLeads,
-        date = longDate.format(now).replaceFirstChar { it.uppercase(locale) },
-        shortDate = shortDate.format(now),
-        compactDate = compactDate.format(now),
+        date = longDate.format(now).plainDigits().replaceFirstChar { it.uppercase(locale) },
+        shortDate = shortDate.format(now).plainDigits(),
+        compactDate = compactDate.format(now).plainDigits(),
     )
 
     /** The next alarm: weekday and time. */
-    fun alarm(at: Date): String = alarm.format(at)
+    fun alarm(at: Date): String = alarm.format(at).plainDigits()
 
     /** A time of day on its own, with AM or PM on a 12-hour clock. */
-    fun clock(at: Date): String = clock.format(at)
+    fun clock(at: Date): String = clock.format(at).plainDigits()
+
+    /** A month's or a day's own name can hold digits the numbering system does not reach. */
+    private fun String.plainDigits(): String = LatinDigits.text(this, locale)
 }
 
 internal fun dreamClockFormats(context: Context, locale: Locale, is24Hour: Boolean) = DreamClockFormats(
