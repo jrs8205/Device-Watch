@@ -195,7 +195,7 @@
     <string name="alert_storage_title">存储空间不足：剩余 %1$d %%</string>
     <string name="alert_storage_text">剩余 %1$s。“应用”选项卡中列出了占用空间最大的应用。</string>
     <string name="alert_drain_title">电池耗电过快：%1$d %%/小时</string>
-    <string name="alert_drain_text">“应用”选项卡显示了哪些应用一直在使用。</string>
+    <string name="alert_drain_text">可在“应用”选项卡中查看最近使用过哪些应用。</string>
     <string name="alerts_section">警报</string>
     <string name="alerts_description">默认关闭，需由您手动开启。每种警报只发出一次，情况恢复正常后才会再次发出。</string>
     <string name="alert_hot_setting">电池过热</string>
