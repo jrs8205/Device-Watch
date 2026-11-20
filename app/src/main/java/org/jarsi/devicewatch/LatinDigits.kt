@@ -106,17 +106,19 @@ fun phoneLocale(context: Context): Locale {
  * (`text_language.xml`), so this is whatever Android chose, by Android's own rules.
  *
  * It decides everything that depends on how the app's texts read: the direction of the HTML
- * report, and whether a line handed to the launcher or to the system needs a mark to keep
- * its own direction there ([Bidi.forHost]). The phone's locale still formats the numbers.
+ * report, the direction a widget's lines are handed to the launcher in, and whether a line
+ * handed to the system needs a mark to keep its own direction there ([Bidi.forHost]). The
+ * phone's locale still formats the numbers.
  */
 fun textLocale(context: Context): Locale = Locale.forLanguageTag(context.getString(R.string.text_language))
 
 /**
- * [text] as it has to be handed to the launcher or to the system, which draw it in the
- * direction of the phone's language: a widget's text, a tile's line, a notification's.
- * Where the app's own texts read the other way (another language chosen for the app, or the
- * English texts a phone gets that is set to a language the app is not written in), each
- * line is kept in the texts' direction. Unchanged otherwise, which is nearly always.
+ * [text] as it has to be handed to the system, which draws it in the direction of the
+ * phone's language: a tile's line, a notification's. Where the app's own texts read the
+ * other way (another language chosen for the app, or the English texts a phone gets that is
+ * set to a language the app is not written in), each line is kept in the texts' direction.
+ * Unchanged otherwise, which is nearly always. A widget's texts go to a launcher, whose
+ * language need not be the phone's: [textInOwnDirection].
  */
 fun textForPhone(context: Context, text: String): String =
     textForHost(text, texts = textLocale(context), host = phoneLocale(context))
@@ -125,6 +127,20 @@ fun textForPhone(context: Context, text: String): String =
 fun textForHost(text: String, texts: Locale, host: Locale): String =
     // Line by line: a mark's reach ends where its line does.
     if (text.isEmpty()) text else text.split('\n').joinToString("\n") { Bidi.forHost(it, hostLocale = host, locale = texts) }
+
+/**
+ * [text] as a widget has to hand it to its launcher: every line one piece in the direction of
+ * the language the app's texts are in ([texts]), always.
+ *
+ * The launcher's own language cannot be asked for. It is usually the phone's, but a launcher
+ * can be given a language of its own on Android's per-app language page (Android 13 and
+ * later), and on a phone with several languages it takes the first one it is itself written
+ * in. Its text view lays every text out in the direction of that language, whatever the text
+ * holds; a line that carries its own direction reads the same under any of them.
+ */
+fun textInOwnDirection(text: String, texts: Locale): String =
+    // Line by line: a mark's reach ends where its line does.
+    text.split('\n').joinToString("\n") { if (it.isEmpty()) it else Bidi.inOwnDirection(it, texts) }
 
 /**
  * Resources that print 0 to 9, for a context that outlives a change of language: the

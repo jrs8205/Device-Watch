@@ -60,10 +60,16 @@ object Bidi {
      * line of numbers and units came out with its parts swapped. Unchanged when both
      * languages read the same way, which is nearly always.
      */
-    fun forHost(text: String, hostLocale: Locale, locale: Locale = Locale.getDefault()): String {
-        val own = isRtl(locale)
-        if (own == isRtl(hostLocale)) return text
-        val open = if (own) RIGHT_TO_LEFT_ISOLATE else LEFT_TO_RIGHT_ISOLATE
+    fun forHost(text: String, hostLocale: Locale, locale: Locale = Locale.getDefault()): String =
+        if (isRtl(locale) == isRtl(hostLocale)) text else inOwnDirection(text, locale)
+
+    /**
+     * [text] as one piece in the direction [locale] is written in, wherever it is drawn and
+     * whatever language reads there. For a line handed to a host whose language cannot be
+     * known (a widget's launcher); [forHost] is for one whose language is the phone's.
+     */
+    fun inOwnDirection(text: String, locale: Locale): String {
+        val open = if (isRtl(locale)) RIGHT_TO_LEFT_ISOLATE else LEFT_TO_RIGHT_ISOLATE
         return "$open$text$POP_ISOLATE"
     }
 

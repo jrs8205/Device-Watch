@@ -9,8 +9,7 @@ import androidx.glance.LocalContext
 import androidx.glance.currentState
 import androidx.glance.text.TextDefaults
 import androidx.glance.text.TextStyle
-import org.jarsi.devicewatch.textForHost
-import org.jarsi.devicewatch.phoneLocale
+import org.jarsi.devicewatch.textInOwnDirection
 import org.jarsi.devicewatch.textLocale
 import java.util.Locale
 
@@ -24,32 +23,35 @@ import java.util.Locale
  * each line was laid out against its own direction: "1.0 GB / 2.0 GB" was drawn
  * "GB / 2.0 GB 1.0", a network called "123 456" as "456 123".
  *
- * [texts] is the language the app's texts are written in, [host] the phone's own. Each
- * widget's root provides one ([LocalWidgetHost]) for all its texts.
+ * The launcher's language is not the app's to know. It is usually the phone's, and the texts
+ * were first marked only where the phone's language read the other way; but a launcher can be
+ * given a language of its own (Android 13 and later), and with the phone and the app in
+ * English and the launcher in Arabic the lines came apart again. So every line carries its own
+ * direction, that of [texts], the language the app's texts are written in, on every phone.
+ * Each widget's root provides one ([LocalWidgetHost]) for all its texts.
  */
-internal data class WidgetHost(private val texts: Locale, private val host: Locale) {
+internal data class WidgetHost(private val texts: Locale) {
 
     /**
-     * [text] as it has to be handed to the launcher: kept in the direction of the app's own
-     * texts when the launcher's differs, line by line because a mark's reach ends with its
-     * line. Unchanged when both read the same way, which is nearly always.
+     * [text] as it has to be handed to the launcher: each line one piece in the direction of
+     * the app's own texts, line by line because a mark's reach ends with its line.
      */
-    fun shown(text: String): String = textForHost(text, texts = texts, host = host)
+    fun shown(text: String): String = textInOwnDirection(text, texts)
 
     companion object {
-        fun of(context: Context): WidgetHost = WidgetHost(texts = textLocale(context), host = phoneLocale(context))
+        fun of(context: Context): WidgetHost = WidgetHost(texts = textLocale(context))
     }
 }
 
-/** One reading of the two languages for a widget's whole content; a text outside any scope asks for itself. */
+/** One reading of the texts' language for a widget's whole content; a text outside any scope asks for itself. */
 internal val LocalWidgetHost = staticCompositionLocalOf<WidgetHost?> { null }
 
 /**
- * The two languages as they are now, for a widget's root to provide. A widget's composition
+ * The texts' language as it is now, for a widget's root to provide. A widget's composition
  * lives on between updates, and the language chosen for the app can change under it: read
- * once at the root, the pair stayed what it had been, and a widget switched to Arabic on an
- * English phone went on without its marks. The widget's state is read here so that this is
- * asked again at every update; when the pair changes, everything below is drawn again.
+ * once at the root, it stayed what it had been, and a widget switched to Arabic went on in
+ * the direction of English. The widget's state is read here so that this is asked again at
+ * every update; when the language changes, everything below is drawn again.
  */
 @Composable
 internal fun currentWidgetHost(): WidgetHost {
