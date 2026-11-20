@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -44,10 +43,11 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
-import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.graphics.drawable.toBitmap
@@ -108,13 +108,17 @@ internal fun ClockBlock(
         verticalArrangement = Arrangement.Center
     ) {
         if (deviceName != null) {
+            val wrapAlign1 = rememberWrapAlign(TextAlign.Center)
             Text(
                 text = deviceName,
                 // The user's own text: by its first letter, never by the screen's direction.
                 style = valueTextStyle(),
                 autoSize = fitUpTo((dateSize * 0.72f).sp),
-                maxLines = 1,
-                softWrap = false,
+                maxLines = DREAM_LINE_MAX_LINES,
+                softWrap = true,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = wrapAlign1.textAlign,
+                onTextLayout = wrapAlign1.onTextLayout,
                 fontWeight = FontWeight.Medium,
                 color = Color(0xFF8B929C),
                 letterSpacing = 1.5.sp,
@@ -165,8 +169,10 @@ internal fun ClockBlock(
                             Text(
                                 text = trailingMarker,
                                 autoSize = fitUpTo(clockMarkerSp(secondsSize).sp),
-                                maxLines = 1,
-                                softWrap = false,
+                                maxLines = DREAM_LINE_MAX_LINES,
+                                softWrap = true,
+                                overflow = TextOverflow.Ellipsis,
+                                textAlign = TextAlign.Start,
                                 fontWeight = FontWeight.Medium,
                                 color = Color(0xFF8B929C)
                             )
@@ -177,22 +183,30 @@ internal fun ClockBlock(
         }
         if (showDate) {
             Spacer(modifier = Modifier.height(8.dp))
+            val wrapAlign2 = rememberWrapAlign(TextAlign.Center)
             Text(
                 text = dateText,
                 autoSize = fitUpTo(dateSize.sp),
-                maxLines = 1,
-                softWrap = false,
+                maxLines = DREAM_LINE_MAX_LINES,
+                softWrap = true,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = wrapAlign2.textAlign,
+                onTextLayout = wrapAlign2.onTextLayout,
                 fontWeight = FontWeight.Medium,
                 color = Color(0xFF8B929C)
             )
         }
         if (alarmText.isNotEmpty()) {
             Spacer(modifier = Modifier.height(6.dp))
+            val wrapAlign3 = rememberWrapAlign(TextAlign.Center)
             Text(
                 text = alarmText,
                 autoSize = fitUpTo((dateSize * 0.72f).sp),
-                maxLines = 1,
-                softWrap = false,
+                maxLines = DREAM_LINE_MAX_LINES,
+                softWrap = true,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = wrapAlign3.textAlign,
+                onTextLayout = wrapAlign3.onTextLayout,
                 fontWeight = FontWeight.Medium,
                 color = Color(0xFF6E7681),
                 style = TextStyle(fontFeatureSettings = "tnum")
@@ -585,12 +599,14 @@ internal fun rememberFittedClockSize(
         val gapPx = with(density) { gap.toPx() }
         val timePerSp = timeWidthPx / referenceSp
         val secPerSp = secWidthPx / referenceSp
-        fittedClockSpBesideLead(
-            availablePx = with(density) { availableWidth.toPx() },
+        val availablePx = with(density) { availableWidth.toPx() }
+        val leadGapPx = with(density) { leadingGap.toPx() }
+        val reckoned = fittedClockSpBesideLead(
+            availablePx = availablePx,
             leadPerSp = leadWidthPx / referenceSp,
             leadRatio = leadingRatio,
             leadMinSp = leadingMinSp,
-            leadGapPx = with(density) { leadingGap.toPx() },
+            leadGapPx = leadGapPx,
         ) { roomPx ->
             val besideSeconds = fittedClockSp(
                 availablePx = roomPx,
@@ -618,6 +634,17 @@ internal fun rememberFittedClockSize(
                 }
             }
         }
+        if (leadingText.isEmpty()) return@remember reckoned
+        // A marker on the time's left was reckoned from its width at the reference size. Drawn
+        // at ten or thirteen sp its letters are each a whole number of pixels wide, a little
+        // more than reckoned, and on a narrow column the seconds at the line's other end lost
+        // their last pixels. The whole line is measured as it is drawn.
+        clockSpDrawnToFit(availablePx, reckoned, minClockSp) { clockSize ->
+            val leadPx = drawnWidthPx(leadingText, maxOf(leadingRatio * clockSize, leadingMinSp), leadingWeight, tabular = false)
+            val secondsSp = maxOf(secondsRatio * clockSize, secondsMinSp.toFloat())
+            val secondsPx = if (secondsSp > 0f) drawnWidthPx(":00", secondsSp, FontWeight.Bold, tabular = true) else 0f
+            leadPx + leadGapPx + drawnWidthPx("00:00", clockSize.toFloat(), timeWeight, tabular = true) + gapPx + secondsPx
+        }
     }
 }
 
@@ -629,7 +656,14 @@ internal fun rememberFittedClockSize(
  * for the afternoon is "pi pini suno", where English has "PM") ran off the screen's edge;
  * the clock steps down until the line fits, and never below [minClockSp].
  */
-internal fun fittedClockSpBesideTrail(availablePx: Float, fitted: Int, minClockSp: Int, lineWidthPx: (Int) -> Float): Int {
+internal fun fittedClockSpBesideTrail(availablePx: Float, fitted: Int, minClockSp: Int, lineWidthPx: (Int) -> Float): Int =
+    clockSpDrawnToFit(availablePx, fitted, minClockSp, lineWidthPx)
+
+/**
+ * [fitted] or the largest size under it at which the clock's line, as wide as [lineWidthPx]
+ * says it is drawn, fits [availablePx]; never below [minClockSp].
+ */
+internal fun clockSpDrawnToFit(availablePx: Float, fitted: Int, minClockSp: Int, lineWidthPx: (Int) -> Float): Int {
     var size = fitted
     while (size > minClockSp && lineWidthPx(size) > availablePx) size--
     return size
@@ -680,14 +714,6 @@ internal fun fittedClockSp(
     }
     return fitted.toInt().coerceIn(minClockSp, maxClockSp)
 }
-
-/**
- * Screensaver lines stay on one line: they shrink from [max] toward a floor
- * when a long localized date or a wide details line would otherwise wrap. A line that is
- * still too wide at the usual floor on the narrowest screens gets a lower [floorSp].
- */
-internal fun fitUpTo(max: TextUnit, floorSp: Float = 12f): TextAutoSize =
-    TextAutoSize.StepBased(minFontSize = minOf(floorSp, max.value).sp, maxFontSize = max, stepSize = 1.sp)
 
 /**
  * A clock's digits read from left to right in every language: the hours, the minutes, then

@@ -48,6 +48,8 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -255,7 +257,7 @@ internal fun BoxWithConstraintsScope.EdgeContent(state: DreamUiState, options: D
     val clockSize = rememberClockBlockSize(
         availableWidth = clockAvailableWidth,
         maxClockSp = if (landscape) 82 else 120,
-        minClockSp = if (landscape) 40 else 48,
+        minClockSp = if (landscape) 12 else 48,
         showSeconds = showSeconds,
         amPmText = state.amPmText,
         amPmLeads = state.amPmLeads,
@@ -352,6 +354,8 @@ private fun EdgeBattery(
     wordSize: Int,
 ) {
     val accent = edgeTextColor(state.batteryLevel)
+    // A line that has to go on a second one keeps the column's side.
+    val textAlign = if (alignment == Alignment.Start) TextAlign.Start else TextAlign.Center
     Column(modifier = modifier, horizontalAlignment = alignment, verticalArrangement = Arrangement.Center) {
         Text(
             text = stringResource(state.chargeState.label),
@@ -385,13 +389,17 @@ private fun EdgeBattery(
         }
         if (options.shows(DreamField.ESTIMATE) && state.fullTimeText.isNotEmpty()) {
             EdgeGap(6.dp)
+            val wrapAlign1 = rememberWrapAlign(textAlign)
             Text(
                 text = state.fullTimeText,
                 // The sentence with a date in it is the longest text there is; in the narrow
                 // column of a small phone on its side it has to get very small to stay whole.
                 autoSize = fitUpTo(24.sp, floorSp = 6f),
-                maxLines = 1,
-                softWrap = false,
+                maxLines = DREAM_LINE_MAX_LINES,
+                softWrap = true,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = wrapAlign1.textAlign,
+                onTextLayout = wrapAlign1.onTextLayout,
                 fontWeight = FontWeight.Bold,
                 color = accent,
                 style = TextStyle(fontFeatureSettings = "tnum")

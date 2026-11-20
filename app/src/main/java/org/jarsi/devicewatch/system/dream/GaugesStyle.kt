@@ -3,6 +3,7 @@ package org.jarsi.devicewatch.system.dream
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.BoxWithConstraintsScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,16 +15,21 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.LastBaseline
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFontFamilyResolver
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -44,6 +50,23 @@ private val GAUGES_HAIRLINE = Color(0xFF26282B)
 private const val GAUGES_HEADER_SP = 13f
 private const val GAUGES_VALUE_SP = 22f
 private const val GAUGES_LABEL_RATIO = 0.6f
+
+/** The room between a row's label and its value. */
+private val GAUGES_LABEL_GAP = 10.dp
+
+/** How small a line in the phone's language gets before it takes a second line. */
+private const val GAUGES_SMALL_FLOOR_SP = 10f
+
+/** A row's label, and how many whole steps a calendar row's time may shrink before it wraps. */
+private const val GAUGES_LABEL_SP = GAUGES_VALUE_SP * GAUGES_LABEL_RATIO
+private const val GAUGES_LABEL_STEPS = 3f
+
+/**
+ * What a text that may be cut short keeps of its line, however long the text beside it is:
+ * an event's title beside its time, and the phone's name beside the date.
+ */
+private const val GAUGES_TITLE_SHARE = 0.4f
+private const val GAUGES_NAME_SHARE = 0.4f
 
 /**
  * Space above and below a row's text: a little less on a phone on its side, so the six
@@ -81,9 +104,14 @@ internal fun BoxWithConstraintsScope.GaugesContent(state: DreamUiState, options:
         percent = stringResource(R.string.dream_percent_spaced, state.batteryLevel),
     )
 
+    val locale = LocalConfiguration.current.locales[0]
+    val name = state.deviceName?.takeIf { options.shows(DreamField.DEVICE_NAME) }?.uppercase(locale)
+    val date = state.compactDateText.takeIf { options.shows(DreamField.DATE) }?.uppercase(locale)
+
     if (landscape) {
         val columnWidth = (innerWidth - insets.centerGap) / 2
         val clockSize = rememberGaugesClockSize(state, options, columnWidth)
+        val headerStacked = rememberGaugesHeaderStacked(name, date, columnWidth)
         Row(
             modifier = Modifier
                 .fillMaxSize()
@@ -91,7 +119,7 @@ internal fun BoxWithConstraintsScope.GaugesContent(state: DreamUiState, options:
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.Center) {
-                GaugesHeader(state, options)
+                GaugesHeader(name, date, headerStacked)
                 GaugesClock(state, options, clockSize)
             }
             Spacer(modifier = Modifier.width(insets.centerGap))
@@ -101,60 +129,117 @@ internal fun BoxWithConstraintsScope.GaugesContent(state: DreamUiState, options:
         }
     } else {
         val clockSize = rememberGaugesClockSize(state, options, innerWidth)
+        val headerStacked = rememberGaugesHeaderStacked(name, date, innerWidth)
         // What the header and the clock take, estimated a little high so the rows that
         // are kept always fit under them.
         val headHeight = with(density) {
-            (GAUGES_HEADER_SP * 1.5f).sp.toDp() + (clockSize * 1.35f).sp.toDp()
+            (GAUGES_HEADER_SP * 1.5f).sp.toDp() * (if (headerStacked) 2 else 1) + (clockSize * 1.35f).sp.toDp()
         } + GAUGES_CLOCK_GAP
+        val rowsByEstimate = ((innerHeight - headHeight - 1.dp) / rowHeight).toInt()
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = insets.horizontal, vertical = insets.vertical),
             verticalArrangement = Arrangement.Center
         ) {
-            GaugesHeader(state, options)
+            GaugesHeader(name, date, headerStacked)
             GaugesClock(state, options, clockSize)
             Spacer(modifier = Modifier.height(GAUGES_CLOCK_GAP))
-            GaugesRows(fitGaugeRows(rows, ((innerHeight - headHeight - 1.dp) / rowHeight).toInt()), state, rowHeight)
+            // The estimate holds for a header of the lines counted above. A date too long
+            // for its line takes more of them, and then the height that is really left says
+            // how many rows there is room for.
+            BoxWithConstraints(modifier = Modifier.weight(1f, fill = false)) {
+                val rowsByHeight = ((this.maxHeight - 1.dp) / rowHeight).toInt()
+                GaugesRows(fitGaugeRows(rows, minOf(rowsByEstimate, rowsByHeight)), state, rowHeight)
+            }
         }
     }
 }
 
-/** The device's name and the date on one line: `PIXEL 8A · FRI NOV 13`. */
+/**
+ * Whether the header's name and date take a line each. Side by side the date is whole and the
+ * name gives way with an ellipsis; when that would leave the name less than its share of a
+ * line [width] wide ([GAUGES_NAME_SHARE]), and less than it needs, the date goes under it.
+ */
 @Composable
-private fun GaugesHeader(state: DreamUiState, options: DreamOptions) {
-    val locale = LocalConfiguration.current.locales[0]
-    val name = state.deviceName?.takeIf { options.shows(DreamField.DEVICE_NAME) }?.uppercase(locale)
-    val date = state.compactDateText.takeIf { options.shows(DreamField.DATE) }?.uppercase(locale)
+private fun rememberGaugesHeaderStacked(name: String?, date: String?, width: Dp): Boolean {
+    val measurer = rememberTextMeasurer()
+    val density = LocalDensity.current
+    val resolver = LocalFontFamilyResolver.current
+    return remember(name, date, width, density, resolver) {
+        if (name == null || date == null) return@remember false
+        val style = TextStyle(fontSize = GAUGES_HEADER_SP.sp, fontFamily = FontFamily.Monospace, letterSpacing = 0.2.em)
+        fun widthPx(text: String): Int = measurer.measure(
+            text = text,
+            style = style,
+            softWrap = false,
+            maxLines = 1,
+            density = density,
+            fontFamilyResolver = resolver,
+        ).size.width
+        val linePx = with(density) { width.roundToPx() }
+        gaugesHeaderStacks(linePx, nameWidth = widthPx(name), dateWidth = widthPx(gaugesHeaderDate(date)))
+    }
+}
+
+/** The date as it follows the name on the header's one line. */
+private fun gaugesHeaderDate(date: String): String = " · $date"
+
+/**
+ * The choice apart from the measuring: on a line [lineWidth] wide the name has what the date
+ * leaves. It stays beside the date when that is all it needs, or at least its share of the line.
+ */
+internal fun gaugesHeaderStacks(lineWidth: Int, nameWidth: Int, dateWidth: Int): Boolean {
+    val left = lineWidth - dateWidth
+    return left < nameWidth && left < lineWidth * GAUGES_NAME_SHARE
+}
+
+/**
+ * The device's name and the date: on one line, `PIXEL 8A · FRI NOV 13`, or with [stacked] the
+ * date under the name (see [rememberGaugesHeaderStacked]).
+ */
+@Composable
+private fun GaugesHeader(name: String?, date: String?, stacked: Boolean) {
     if (name == null && date == null) return
+    // The name is the user's own text and can be any length: it ends in an ellipsis.
+    val nameText: @Composable (Modifier) -> Unit = { modifier ->
+        Text(
+            text = name.orEmpty(),
+            style = valueTextStyle(),
+            modifier = modifier.testTag(DREAM_TRUNCATES_TAG),
+            fontSize = GAUGES_HEADER_SP.sp,
+            fontFamily = FontFamily.Monospace,
+            color = GAUGES_LABEL,
+            letterSpacing = 0.2.em,
+            maxLines = 1,
+            softWrap = false,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
+    // The date is written in the phone's language and can be as long as that language's
+    // words are: it gets smaller and then takes a second line rather than lose its end.
+    val dateText: @Composable (String) -> Unit = { text ->
+        Text(
+            text = text,
+            autoSize = fitUpTo(GAUGES_HEADER_SP.sp, floorSp = GAUGES_SMALL_FLOOR_SP),
+            fontFamily = FontFamily.Monospace,
+            color = GAUGES_LABEL,
+            letterSpacing = 0.2.em,
+            maxLines = DREAM_LINE_MAX_LINES,
+            softWrap = true,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
+    if (stacked && name != null && date != null) {
+        Column {
+            nameText(Modifier)
+            dateText(date)
+        }
+        return
+    }
     Row(verticalAlignment = Alignment.CenterVertically) {
-        if (name != null) {
-            // The name is the user's own text and can be any length: it gives way to the
-            // date with an ellipsis instead of pushing the date off the line.
-            Text(
-                text = name,
-                style = valueTextStyle(),
-                modifier = Modifier.weight(1f, fill = false).testTag(DREAM_TRUNCATES_TAG),
-                fontSize = GAUGES_HEADER_SP.sp,
-                fontFamily = FontFamily.Monospace,
-                color = GAUGES_LABEL,
-                letterSpacing = 0.2.em,
-                maxLines = 1,
-                softWrap = false,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-        if (date != null) {
-            Text(
-                text = if (name != null) " · $date" else date,
-                fontSize = GAUGES_HEADER_SP.sp,
-                fontFamily = FontFamily.Monospace,
-                color = GAUGES_LABEL,
-                letterSpacing = 0.2.em,
-                maxLines = 1,
-                softWrap = false
-            )
-        }
+        if (name != null) nameText(Modifier.weight(1f, fill = false))
+        if (date != null) dateText(if (name != null) gaugesHeaderDate(date) else date)
     }
 }
 
@@ -180,7 +265,7 @@ private fun rememberGaugesClockSize(state: DreamUiState, options: DreamOptions, 
     return rememberFittedClockSize(
         availableWidth = availableWidth,
         maxClockSp = 96,
-        minClockSp = 28,
+        minClockSp = 14,
         secondsRatio = sideRatio,
         secondsMinSp = if (sideRatio > 0f) 12 else 0,
         gap = 0.dp,
@@ -237,13 +322,17 @@ private fun GaugesClockRow(state: DreamUiState, options: DreamOptions, clockSize
         if (showSeconds || trailingMarker.isNotEmpty()) {
             Column(modifier = Modifier.alignBy(LastBaseline)) {
                 if (trailingMarker.isNotEmpty()) {
+                    // The clock has given way to a long marker as far as it can (see
+                    // rememberGaugesClockSize); one still too wide goes on a second line.
+                    val markerSp = (clockSize * GAUGES_AM_PM_RATIO).coerceAtLeast(GAUGES_AM_PM_MIN_SP)
                     Text(
                         text = trailingMarker,
-                        fontSize = (clockSize * GAUGES_AM_PM_RATIO).coerceAtLeast(GAUGES_AM_PM_MIN_SP).sp,
+                        autoSize = fitUpTo(markerSp.sp, floorSp = markerSp),
                         fontFamily = FontFamily.Monospace,
                         color = GAUGES_LABEL,
-                        maxLines = 1,
-                        softWrap = false
+                        maxLines = DREAM_LINE_MAX_LINES,
+                        softWrap = true,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
                 if (showSeconds) {
@@ -268,6 +357,10 @@ private fun GaugesRows(rows: List<GaugeRow>, state: DreamUiState, rowHeight: Dp)
     Column(modifier = Modifier.fillMaxWidth()) {
         for (row in rows) {
             GaugesHairline()
+            if (row.kind == GaugeRowKind.EVENT) {
+                GaugesEventRow(row, modifier = Modifier.fillMaxWidth().height(rowHeight - 1.dp))
+                continue
+            }
             Row(
                 modifier = Modifier.fillMaxWidth().height(rowHeight - 1.dp),
                 verticalAlignment = Alignment.CenterVertically
@@ -281,7 +374,7 @@ private fun GaugesRows(rows: List<GaugeRow>, state: DreamUiState, rowHeight: Dp)
                     maxLines = 1,
                     softWrap = false
                 )
-                Spacer(modifier = Modifier.width(10.dp))
+                Spacer(modifier = Modifier.width(GAUGES_LABEL_GAP))
                 Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.CenterEnd) {
                     when (row.kind) {
                         GaugeRowKind.NOTIFICATIONS -> NotificationIconRow(
@@ -290,32 +383,74 @@ private fun GaugesRows(rows: List<GaugeRow>, state: DreamUiState, rowHeight: Dp)
                             iconSize = 20.dp,
                             alignment = Alignment.CenterEnd,
                         )
-                        // A calendar event's title is the user's own text: one line, cut
-                        // with an ellipsis, in the plain face.
-                        GaugeRowKind.EVENT -> Text(
-                            text = row.value,
-                            style = valueTextStyle(),
-                            modifier = Modifier.testTag(DREAM_TRUNCATES_TAG),
-                            fontSize = (GAUGES_VALUE_SP * 0.85f).sp,
-                            color = GAUGES_VALUE,
-                            maxLines = 1,
-                            softWrap = false,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        else -> Text(
-                            text = row.value,
-                            autoSize = fitUpTo(GAUGES_VALUE_SP.sp, floorSp = 10f),
-                            fontFamily = FontFamily.Monospace,
-                            color = if (row.kind == GaugeRowKind.BATTERY) batteryColor else GAUGES_VALUE,
-                            maxLines = 1,
-                            softWrap = false
-                        )
+                        else -> {
+                            // The alarm and the estimate are written in the phone's language:
+                            // a long one gets smaller, then takes the lines the row has room
+                            // for. A figure stays on one line with its unit.
+                            val phoneLanguage = row.kind == GaugeRowKind.ALARM || row.kind == GaugeRowKind.FULL
+                            Text(
+                                text = row.value,
+                                autoSize = fitUpTo(GAUGES_VALUE_SP.sp, floorSp = GAUGES_SMALL_FLOOR_SP),
+                                fontFamily = FontFamily.Monospace,
+                                color = if (row.kind == GaugeRowKind.BATTERY) batteryColor else GAUGES_VALUE,
+                                maxLines = if (phoneLanguage) DREAM_LINE_MAX_LINES else 1,
+                                softWrap = phoneLanguage,
+                                overflow = TextOverflow.Ellipsis,
+                                textAlign = TextAlign.End
+                            )
+                        }
                     }
                 }
             }
         }
         GaugesHairline()
     }
+}
+
+/**
+ * A calendar event: when it is where the other rows have their label, its title where they
+ * have their value.
+ *
+ * The time is written in the phone's language and must be read whole; in Bulgarian or Latvian
+ * it is twice as long as in English ("CETURTD., 12:59 PĒCPUSDIENĀ"). As a plain row's first
+ * text it took all the width it wanted: on a narrow column its own end was cut off and the
+ * title was left no room at all. Here the title keeps its share of the row
+ * ([wholePartMaxWidth]) and the time fits into the rest, smaller first and then on the lines
+ * the row's height has room for.
+ */
+@Composable
+private fun GaugesEventRow(row: GaugeRow, modifier: Modifier) {
+    WholeBesideCut(
+        gap = GAUGES_LABEL_GAP,
+        cutShare = GAUGES_TITLE_SHARE,
+        modifier = modifier,
+        whole = {
+            Text(
+                text = row.label,
+                // Whole steps down from the label's own size, 13.2 sp, so that a time with room is drawn at it.
+                autoSize = fitUpTo(GAUGES_LABEL_SP.sp, floorSp = GAUGES_LABEL_SP - GAUGES_LABEL_STEPS),
+                fontWeight = FontWeight.Medium,
+                color = GAUGES_LABEL,
+                letterSpacing = 0.18.em,
+                maxLines = DREAM_LINE_MAX_LINES,
+                softWrap = true,
+                overflow = TextOverflow.Ellipsis
+            )
+        },
+        cut = {
+            // The title is the user's own text: one line, cut with an ellipsis, in the plain face.
+            Text(
+                text = row.value,
+                style = valueTextStyle(),
+                modifier = Modifier.testTag(DREAM_TRUNCATES_TAG),
+                fontSize = (GAUGES_VALUE_SP * 0.85f).sp,
+                color = GAUGES_VALUE,
+                maxLines = 1,
+                softWrap = false,
+                overflow = TextOverflow.Ellipsis
+            )
+        },
+    )
 }
 
 @Composable

@@ -1,6 +1,8 @@
 package org.jarsi.devicewatch.system.dream
 
 import android.app.Application
+import android.graphics.Paint
+import android.icu.util.ULocale
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -34,6 +36,11 @@ import java.util.Locale
  *
  * The digits are the ones the app prints (0 to 9 in Arabic too): the screensaver's own
  * context and the process default are set up as the running app sets them.
+ *
+ * The dates and the times of day are written in the phone's language, which need not be one
+ * the app has: the last cases draw every style on a phone in the languages whose lines are the
+ * widest, and on a 400 dp wide screen on its side as well. With the environment variable
+ * [ALL_LANGUAGES_SWITCH] set they draw every language Android knows.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(application = Application::class)
@@ -124,6 +131,31 @@ class DreamStyleFitTest {
     fun `narrow portrait with a long word for the half of the day and no seconds`() =
         assertEveryStyleFits(landscape = false, halfOfDay = LONG_HALF_OF_DAY, showSeconds = false)
 
+    // A phone can be set to any language Android knows. The app's texts are then the English
+    // ones, but the dates and the times of day are written the phone's way, and some languages
+    // need three times the room English does: Latvian's Thursday afternoon on a calendar row is
+    // "CETURTD., 12:59 PĒCPUSDIENĀ". Every style is drawn in the languages whose lines are the
+    // widest of all, found among every language Android has ([widestPhoneLanguages]).
+    @Test
+    @Config(qualifiers = "w480dp-h320dp-land-mdpi")
+    fun `narrow landscape on a phone in the languages with the widest times`() =
+        assertEveryStyleFits(landscape = true, phoneLanguages = widestPhoneLanguages())
+
+    @Test
+    @Config(qualifiers = "w400dp-h320dp-land-mdpi")
+    fun `narrowest landscape on a phone in the languages with the widest times`() =
+        assertEveryStyleFits(landscape = true, phoneLanguages = widestPhoneLanguages())
+
+    @Test
+    @Config(qualifiers = "w320dp-h640dp-port-mdpi")
+    fun `narrow portrait on a phone in the languages with the widest times`() =
+        assertEveryStyleFits(landscape = false, phoneLanguages = widestPhoneLanguages())
+
+    @Test
+    @Config(qualifiers = "w320dp-h480dp-port-mdpi")
+    fun `low portrait on a phone in the languages with the widest times`() =
+        assertEveryStyleFits(landscape = false, phoneLanguages = widestPhoneLanguages())
+
     private val defaultsBefore = Triple(
         Locale.getDefault(),
         Locale.getDefault(Locale.Category.DISPLAY),
@@ -145,24 +177,56 @@ class DreamStyleFitTest {
     }
 
     /**
+     * The languages whose times and dates take the most room, a few for each line the
+     * screensaver writes in the phone's language, measured in the test's own font among every
+     * language Android knows; and the ones the external review drew.
+     */
+    private fun widestPhoneLanguages(): List<Locale> {
+        val context = LatinDigits.context(ApplicationProvider.getApplicationContext<Application>())
+        val paint = Paint().apply { textSize = 100f }
+        val languages = ULocale.getAvailableLocales().map { LatinDigits.locale(it.toLocale()) }
+        val states = languages.associateWith { worstCaseDreamUiState(context, DreamChargeState.CHARGING, it) }
+        val lines: List<(DreamUiState) -> String> = listOf(
+            { it.amPmText }, { it.dateText }, { it.shortDateText }, { it.compactDateText }, { it.alarmText },
+            { it.fullTimeText }, { it.fullClockText }, { it.calendarRows.first().whenText },
+        )
+        assertWithMessage("languages").that(languages.size).isAtLeast(500)
+        // The whole sweep, for a change to how the lines fit: every language whose lines differ
+        // from another's, about ten minutes for the four screens.
+        if (System.getenv(ALL_LANGUAGES_SWITCH) != null) {
+            return languages.distinctBy { language -> lines.map { it(states.getValue(language)) } }
+        }
+        val widest = lines.flatMap { line ->
+            languages.sortedByDescending { paint.measureText(line(states.getValue(it))) }.take(WIDEST_PER_LINE)
+        }
+        return (widest +REVIEWED_PHONE_LANGUAGES.map { LatinDigits.locale(Locale.forLanguageTag(it)) }).distinct()
+    }
+
+    /**
      * [halfOfDay], when given, stands in for the language's own AM or PM, after the time as
-     * in English.
+     * in English. [phoneLanguages] are the languages the dates and times are written in, one
+     * after another; null is the language of the texts.
      */
     private fun assertEveryStyleFits(
         landscape: Boolean,
         fontScale: Float = MAX_FONT_SCALE,
         halfOfDay: String? = null,
         showSeconds: Boolean = true,
+        phoneLanguages: List<Locale?> = listOf(null),
     ) {
-        fun worstCase(context: android.content.Context, chargeState: DreamChargeState): DreamUiState =
-            worstCaseDreamUiState(context, chargeState).let { state ->
-                if (halfOfDay == null) state else state.copy(amPmText = halfOfDay, amPmLeads = false)
+        fun worstCase(context: android.content.Context, chargeState: DreamChargeState, language: Locale?): DreamUiState {
+            val state = if (language == null) {
+                worstCaseDreamUiState(context, chargeState)
+            } else {
+                worstCaseDreamUiState(context, chargeState, language)
             }
+            return if (halfOfDay == null) state else state.copy(amPmText = halfOfDay, amPmLeads = false)
+        }
         // The digits of the running app: the test's plain application does not set them up.
         LatinDigits.applyToDefault()
         val context = LatinDigits.context(ApplicationProvider.getApplicationContext<Application>())
         var options by mutableStateOf(DreamOptions())
-        var state by mutableStateOf(worstCase(context, DreamChargeState.CHARGING))
+        var state by mutableStateOf(worstCase(context, DreamChargeState.CHARGING, phoneLanguages.first()))
         compose.setContent {
             CompositionLocalProvider(
                 LocalDensity provides Density(1f, fontScale),
@@ -173,10 +237,11 @@ class DreamStyleFitTest {
         }
         // Every style and state is drawn before the test fails, so one run names them all.
         val problems = mutableListOf<String>()
-        for (style in DreamStyle.entries) {
+        for (language in phoneLanguages) for (style in DreamStyle.entries) {
             for (chargeState in DreamChargeState.entries) {
+                val case = listOfNotNull(language?.toLanguageTag(), style, chargeState).joinToString()
                 options = DreamOptions(style = style, showCalendar = true, showSeconds = showSeconds)
-                state = worstCase(context, chargeState)
+                state = worstCase(context, chargeState, language)
                 compose.waitForIdle()
                 // The icons are decoded off the main thread; the row has its height, and
                 // its counts, only once they are in. A style may leave the row out when it
@@ -191,8 +256,9 @@ class DreamStyleFitTest {
                     }
                 }
                 try {
-                    compose.assertNoTextCutOff(case = "$style, $chargeState")
-                    compose.assertOnlyDigitsZeroToNine(case = "$style, $chargeState")
+                    // Only a phone's own language can make a line too long for its floor.
+                    compose.assertNoTextCutOff(case, linesMayWrap = language != null)
+                    compose.assertOnlyDigitsZeroToNine(case)
                 } catch (problem: AssertionError) {
                     problems += problem.message.orEmpty().lineSequence().first()
                 }
@@ -204,5 +270,14 @@ class DreamStyleFitTest {
     private companion object {
         /** Toki pona's word for the afternoon, the longest Android has for a half of the day in Latin letters. */
         const val LONG_HALF_OF_DAY = "pi pini suno"
+
+        /** An environment variable that, when set, has every language drawn instead of the widest ones. */
+        const val ALL_LANGUAGES_SWITCH = "DREAM_FIT_ALL_LANGUAGES"
+
+        /** How many of the widest languages are drawn for each line. */
+        const val WIDEST_PER_LINE = 2
+
+        /** Bulgarian, whose calendar row the external review found cut off; Latvian, a phone language with a long afternoon. */
+        val REVIEWED_PHONE_LANGUAGES = listOf("bg", "lv")
     }
 }

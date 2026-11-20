@@ -9,6 +9,7 @@ import java.time.ZoneId
 import java.util.Calendar
 import java.util.Date
 import java.util.GregorianCalendar
+import java.util.Locale
 
 /** The count on the first notification icon of [worstCaseDreamUiState], to wait for it by. */
 internal const val WORST_CASE_FIRST_COUNT = 88
@@ -17,9 +18,15 @@ internal const val WORST_CASE_FIRST_COUNT = 88
  * The widest state a style can be asked to draw in the context's language: a 12-hour clock
  * with its AM/PM marker, the longest weekday and month the language has, a long device name,
  * three-digit figures, an estimate that needs a date, and eight apps with two-digit counts.
+ *
+ * [locale] is the phone's language, which writes the dates and the times of day; the texts are
+ * the context's. The two differ on a phone set to a language the app is not written in.
  */
-internal fun worstCaseDreamUiState(context: Context, chargeState: DreamChargeState): DreamUiState {
-    val locale = context.resources.configuration.locales[0]
+internal fun worstCaseDreamUiState(
+    context: Context,
+    chargeState: DreamChargeState,
+    locale: Locale = context.resources.configuration.locales[0],
+): DreamUiState {
     val formats = dreamClockFormats(context, locale, is24Hour = false)
     // Every day of a leap year at 12:59 PM, to find the longest of each line.
     val days: List<Date> = (0 until 366).map { day ->

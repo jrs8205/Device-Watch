@@ -35,6 +35,8 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -123,7 +125,9 @@ internal fun BoxWithConstraintsScope.GlowContent(state: DreamUiState, options: D
     val clockSize = rememberClockBlockSize(
         availableWidth = clockAvailableWidth,
         maxClockSp = if (landscape) 82 else 120,
-        minClockSp = if (landscape) 48 else 56,
+        // On its side the clock may get this small: beside a half of the day that stands on
+        // its left (Persian, Hebrew) a 400 dp wide phone has no room for a larger one.
+        minClockSp = if (landscape) 12 else 56,
         showSeconds = showSeconds,
         amPmText = state.amPmText,
         amPmLeads = state.amPmLeads,
@@ -267,7 +271,10 @@ internal fun BatteryBlockLandscape(
 
         Text(
             text = "$batteryLevel%",
-            fontSize = 58.sp,
+            // The figure of a full battery is wider than the column of a phone 400 dp wide on its side.
+            autoSize = fitUpTo(58.sp),
+            maxLines = 1,
+            softWrap = false,
             fontWeight = FontWeight.ExtraBold,
             color = Color(0xFFEDEDED),
             style = TextStyle(fontFeatureSettings = "tnum")
@@ -320,8 +327,10 @@ internal fun BatteryBlockLandscape(
             Text(
                 text = fullTimeStr,
                 autoSize = fitUpTo(24.sp, floorSp = NARROW_ESTIMATE_FLOOR_SP),
-                maxLines = 1,
-                softWrap = false,
+                maxLines = DREAM_LINE_MAX_LINES,
+                softWrap = true,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Start,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF34D399),
                 style = TextStyle(fontFeatureSettings = "tnum")
@@ -367,7 +376,9 @@ internal fun BatteryBlockPortrait(
 
         Text(
             text = "$batteryLevel%",
-            fontSize = 64.sp,
+            autoSize = fitUpTo(64.sp),
+            maxLines = 1,
+            softWrap = false,
             fontWeight = FontWeight.ExtraBold,
             color = Color(0xFFEDEDED),
             style = TextStyle(fontFeatureSettings = "tnum")
@@ -417,11 +428,15 @@ internal fun BatteryBlockPortrait(
 
         if (fullTimeStr.isNotEmpty()) {
             Spacer(modifier = Modifier.height(6.dp))
+            val wrapAlign1 = rememberWrapAlign(TextAlign.Center)
             Text(
                 text = fullTimeStr,
                 autoSize = fitUpTo(24.sp),
-                maxLines = 1,
-                softWrap = false,
+                maxLines = DREAM_LINE_MAX_LINES,
+                softWrap = true,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = wrapAlign1.textAlign,
+                onTextLayout = wrapAlign1.onTextLayout,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF34D399),
                 style = TextStyle(fontFeatureSettings = "tnum")

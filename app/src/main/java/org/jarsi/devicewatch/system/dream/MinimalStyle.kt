@@ -28,6 +28,8 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
@@ -125,11 +127,15 @@ private fun MinimalClock(state: DreamUiState, options: DreamOptions, clockSize: 
         )
         if (options.shows(DreamField.DATE)) {
             Spacer(modifier = Modifier.height(8.dp))
+            val wrapAlign1 = rememberWrapAlign(TextAlign.Center)
             Text(
                 text = state.shortDateText.uppercase(locale),
                 autoSize = fitUpTo(16.sp),
-                maxLines = 1,
-                softWrap = false,
+                maxLines = DREAM_LINE_MAX_LINES,
+                softWrap = true,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = wrapAlign1.textAlign,
+                onTextLayout = wrapAlign1.onTextLayout,
                 color = MINIMAL_DIM,
                 letterSpacing = 0.26.em
             )
