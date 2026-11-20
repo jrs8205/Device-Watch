@@ -235,7 +235,7 @@ Release builds are minified with R8 and resource shrinking. The release APK is u
 
 ## Testing
 
-1642 JVM unit tests (JUnit 4 + Truth; Robolectric only for the Glance render, notification, backup-rule,
+1668 JVM unit tests (JUnit 4 + Truth; Robolectric only for the Glance render, notification, backup-rule,
 settings-store, floating-card window and screensaver screen, settings, calendar, settings-link, language and
 right-to-left tests) cover the logic
 behind every screen, service and widget:
