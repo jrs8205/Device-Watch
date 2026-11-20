@@ -60,19 +60,6 @@ internal fun BatteryChart(
     range: BatteryChartRange,
     modifier: Modifier = Modifier,
 ) {
-    // Time runs from left to right on a chart in every language, and the scale stays beside
-    // the newest reading.
-    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
-        BatteryChartContent(samples, range, modifier)
-    }
-}
-
-@Composable
-private fun BatteryChartContent(
-    samples: List<BatterySample>,
-    range: BatteryChartRange,
-    modifier: Modifier,
-) {
     // "Now" is sampled per data set, not per recomposition: the x axis then stays
     // pinned to the poll that produced these samples instead of creeping.
     val nowMillis = remember(samples, range) { System.currentTimeMillis() }
@@ -106,104 +93,111 @@ private fun BatteryChartContent(
                 )
             }
         } else {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(ChartHeight)
-            ) {
-                Canvas(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(end = LevelAxisWidth)
-                ) {
-                    val strokeWidth = 2.dp.toPx()
-                    // Inset by half a stroke on both axes so the 0 % and 100 % lines,
-                    // the round caps and the lone-reading dots stay whole at the edges.
-                    val inset = strokeWidth / 2f
-                    val plotWidth = size.width - strokeWidth
-                    val plotHeight = size.height - strokeWidth
-                    fun xFor(fraction: Float) = inset + fraction * plotWidth
-                    fun yFor(fraction: Float) = inset + (1f - fraction) * plotHeight
+            // Time runs from left to right on a chart in every language, and the scale stays
+            // beside the newest reading. Only the chart is held so: the sentence shown in its
+            // place when there is nothing to draw reads the way the page does.
+            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(ChartHeight)
+                    ) {
+                        Canvas(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(end = LevelAxisWidth)
+                        ) {
+                            val strokeWidth = 2.dp.toPx()
+                            // Inset by half a stroke on both axes so the 0 % and 100 % lines,
+                            // the round caps and the lone-reading dots stay whole at the edges.
+                            val inset = strokeWidth / 2f
+                            val plotWidth = size.width - strokeWidth
+                            val plotHeight = size.height - strokeWidth
+                            fun xFor(fraction: Float) = inset + fraction * plotWidth
+                            fun yFor(fraction: Float) = inset + (1f - fraction) * plotHeight
 
-                    chargingSpans.forEach { span ->
-                        val left = xFor(span.start)
-                        val right = xFor(span.endInclusive)
-                        // A momentary charge would otherwise be zero pixels wide. Widen
-                        // it around its own middle, so one at either edge stays on screen.
-                        val width = (right - left).coerceAtLeast(strokeWidth)
-                        val start = ((left + right - width) / 2f)
-                            .coerceIn(0f, (size.width - width).coerceAtLeast(0f))
-                        drawRect(
-                            color = chargingColor,
-                            topLeft = Offset(start, 0f),
-                            size = Size(width, size.height),
-                        )
-                    }
-
-                    GridFractions.forEach { fraction ->
-                        val y = yFor(fraction)
-                        drawLine(
-                            color = gridColor,
-                            start = Offset(0f, y),
-                            end = Offset(size.width, y),
-                            strokeWidth = 1.dp.toPx(),
-                        )
-                    }
-
-                    segmentStarts.forEachIndexed { index, start ->
-                        val end = segmentStarts.getOrNull(index + 1) ?: points.size
-                        val segment = points.subList(start, end)
-                        if (segment.size == 1) {
-                            // A lone reading has no line to draw — mark it as a dot.
-                            val point = segment.single()
-                            drawCircle(
-                                color = lineColor,
-                                radius = strokeWidth,
-                                center = Offset(xFor(point.xFraction), yFor(point.yFraction)),
-                            )
-                        } else {
-                            val path = Path()
-                            segment.forEachIndexed { pointIndex, point ->
-                                val x = xFor(point.xFraction)
-                                val y = yFor(point.yFraction)
-                                if (pointIndex == 0) path.moveTo(x, y) else path.lineTo(x, y)
+                            chargingSpans.forEach { span ->
+                                val left = xFor(span.start)
+                                val right = xFor(span.endInclusive)
+                                // A momentary charge would otherwise be zero pixels wide. Widen
+                                // it around its own middle, so one at either edge stays on screen.
+                                val width = (right - left).coerceAtLeast(strokeWidth)
+                                val start = ((left + right - width) / 2f)
+                                    .coerceIn(0f, (size.width - width).coerceAtLeast(0f))
+                                drawRect(
+                                    color = chargingColor,
+                                    topLeft = Offset(start, 0f),
+                                    size = Size(width, size.height),
+                                )
                             }
-                            drawPath(
-                                path = path,
-                                color = lineColor,
-                                style = Stroke(
-                                    width = strokeWidth,
-                                    cap = StrokeCap.Round,
-                                    join = StrokeJoin.Round,
-                                ),
-                            )
+
+                            GridFractions.forEach { fraction ->
+                                val y = yFor(fraction)
+                                drawLine(
+                                    color = gridColor,
+                                    start = Offset(0f, y),
+                                    end = Offset(size.width, y),
+                                    strokeWidth = 1.dp.toPx(),
+                                )
+                            }
+
+                            segmentStarts.forEachIndexed { index, start ->
+                                val end = segmentStarts.getOrNull(index + 1) ?: points.size
+                                val segment = points.subList(start, end)
+                                if (segment.size == 1) {
+                                    // A lone reading has no line to draw — mark it as a dot.
+                                    val point = segment.single()
+                                    drawCircle(
+                                        color = lineColor,
+                                        radius = strokeWidth,
+                                        center = Offset(xFor(point.xFraction), yFor(point.yFraction)),
+                                    )
+                                } else {
+                                    val path = Path()
+                                    segment.forEachIndexed { pointIndex, point ->
+                                        val x = xFor(point.xFraction)
+                                        val y = yFor(point.yFraction)
+                                        if (pointIndex == 0) path.moveTo(x, y) else path.lineTo(x, y)
+                                    }
+                                    drawPath(
+                                        path = path,
+                                        color = lineColor,
+                                        style = Stroke(
+                                            width = strokeWidth,
+                                            cap = StrokeCap.Round,
+                                            join = StrokeJoin.Round,
+                                        ),
+                                    )
+                                }
+                            }
+                        }
+                        // The scale the grid lines stand for. Without it the chart showed
+                        // a shape and three clock times and said nothing about the battery.
+                        Column(
+                            modifier = Modifier
+                                .fillMaxHeight()
+                                .align(Alignment.CenterEnd),
+                            verticalArrangement = Arrangement.SpaceBetween,
+                            horizontalAlignment = Alignment.End
+                        ) {
+                            GridFractions.sortedDescending().forEach { fraction ->
+                                Text(
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    text = "${(fraction * 100).toInt()} %",
+                                    fontSize = 11.sp,
+                                    fontFamily = LocalMetricFontFamily.current,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                         }
                     }
-                }
-                // The scale the grid lines stand for. Without it the chart showed
-                // a shape and three clock times and said nothing about the battery.
-                Column(
-                    modifier = Modifier
-                        .fillMaxHeight()
-                        .align(Alignment.CenterEnd),
-                    verticalArrangement = Arrangement.SpaceBetween,
-                    horizontalAlignment = Alignment.End
-                ) {
-                    GridFractions.sortedDescending().forEach { fraction ->
-                        Text(
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            text = "${(fraction * 100).toInt()} %",
-                            fontSize = 11.sp,
-                            fontFamily = LocalMetricFontFamily.current,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Box(modifier = Modifier.padding(end = LevelAxisWidth)) {
+                        TimeAxisLabels(range = range, nowMillis = nowMillis)
                     }
                 }
-            }
-            Spacer(modifier = Modifier.height(6.dp))
-            Box(modifier = Modifier.padding(end = LevelAxisWidth)) {
-                TimeAxisLabels(range = range, nowMillis = nowMillis)
             }
         }
     }

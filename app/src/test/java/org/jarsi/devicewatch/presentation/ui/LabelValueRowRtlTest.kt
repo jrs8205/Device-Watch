@@ -1,15 +1,21 @@
 package org.jarsi.devicewatch.presentation.ui
 
 import android.app.Application
+import android.content.Context
 import androidx.compose.material3.Text
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.LayoutDirection
+import androidx.test.core.app.ApplicationProvider
 import com.google.common.truth.Truth.assertThat
+import org.jarsi.devicewatch.R
 import org.jarsi.devicewatch.data.BatterySample
 import org.junit.Rule
 import org.junit.Test
@@ -87,5 +93,39 @@ class LabelValueRowRtlTest {
         }
 
         assertThat(bounds("100 %").right).isEqualTo(rootWidth)
+    }
+
+    // External review round 6: with no samples the chart's place holds a sentence, and it took
+    // the chart's left-to-right direction: in Arabic its full stop stood at the sentence's
+    // right end, where the sentence begins.
+    @Test
+    fun `with nothing to draw, the chart's sentence reads the way the page does`() {
+        val sentence = ApplicationProvider.getApplicationContext<Context>().getString(R.string.history_battery_empty)
+        compose.setContent {
+            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+                BatteryChart(samples = emptyList(), range = BatteryChartRange.Day)
+            }
+        }
+        val layouts = mutableListOf<TextLayoutResult>()
+        compose.onNodeWithText(sentence).performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(layouts) }
+
+        assertThat(layouts.single().layoutInput.layoutDirection).isEqualTo(LayoutDirection.Rtl)
+    }
+
+    @Test
+    fun `the chart's own figures stay left to right in a right-to-left language`() {
+        val now = System.currentTimeMillis()
+        compose.setContent {
+            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+                BatteryChart(
+                    samples = listOf(BatterySample(now - 3_600_000L, 74, false), BatterySample(now - 60_000L, 70, false)),
+                    range = BatteryChartRange.Day,
+                )
+            }
+        }
+        val layouts = mutableListOf<TextLayoutResult>()
+        compose.onNodeWithText("50 %").performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(layouts) }
+
+        assertThat(layouts.single().layoutInput.layoutDirection).isEqualTo(LayoutDirection.Ltr)
     }
 }
