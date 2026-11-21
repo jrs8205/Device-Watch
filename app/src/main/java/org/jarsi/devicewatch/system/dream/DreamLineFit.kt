@@ -5,6 +5,7 @@ import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.foundation.text.modifiers.TextAutoSizeLayoutScope
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -38,6 +39,23 @@ import kotlin.math.roundToInt
  */
 internal fun fitUpTo(max: TextUnit, floorSp: Float = 12f): TextAutoSize =
     FitThenWrap(maxSp = max.value, floorSp = minOf(floorSp, max.value))
+
+/**
+ * A text sized by [fit], made anew whenever [fit] is another: for a text whose largest size
+ * is worked out from the clock's or the screen's, and so can change while the text is shown.
+ *
+ * The library compares a text's parameters without its auto-size (foundation 1.12,
+ * `TextAnnotatedStringElement.equals`): a text drawn again with a new one and nothing else
+ * changed is never handed it, and goes on fitting itself up to the old size. A screen that
+ * turns under a running screensaver is drawn first in its new layout at the old width, where
+ * the clock is small, and then at the real one. The lines that follow the clock's size kept
+ * the first: Gauges on its side drew "AM" at 10 sp beside a 96 sp clock. A text that fits up
+ * to a size that never changes needs none of this.
+ */
+@Composable
+internal inline fun FitAnew(fit: TextAutoSize, content: @Composable (TextAutoSize) -> Unit) {
+    key(fit) { content(fit) }
+}
 
 /**
  * The side the lines of a centred text stand on once it has had to take a second line. Until

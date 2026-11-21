@@ -121,16 +121,18 @@ private fun NightIconLine(
             colorFilter = ColorFilter.tint(NIGHT_TEXT),
         )
         Spacer(modifier = Modifier.width(6.dp))
-        Text(
-            text = text,
-            autoSize = fitUpTo(textSize),
-            maxLines = DREAM_LINE_MAX_LINES,
-            softWrap = true,
-            overflow = TextOverflow.Ellipsis,
-            textAlign = TextAlign.Start,
-            color = NIGHT_TEXT,
-            letterSpacing = letterSpacingEm.em,
-            style = TextStyle(fontFeatureSettings = "tnum")
-        )
+        FitAnew(fitUpTo(textSize)) { fit ->
+            Text(
+                text = text,
+                autoSize = fit,
+                maxLines = DREAM_LINE_MAX_LINES,
+                softWrap = true,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Start,
+                color = NIGHT_TEXT,
+                letterSpacing = letterSpacingEm.em,
+                style = TextStyle(fontFeatureSettings = "tnum")
+            )
+        }
     }
 }

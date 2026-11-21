@@ -357,24 +357,28 @@ private fun EdgeBattery(
     // A line that has to go on a second one keeps the column's side.
     val textAlign = if (alignment == Alignment.Start) TextAlign.Start else TextAlign.Center
     Column(modifier = modifier, horizontalAlignment = alignment, verticalArrangement = Arrangement.Center) {
-        Text(
-            text = stringResource(state.chargeState.label),
-            autoSize = fitUpTo(wordSize.sp),
-            maxLines = 1,
-            softWrap = false,
-            fontWeight = FontWeight.Bold,
-            color = accent
-        )
+        FitAnew(fitUpTo(wordSize.sp)) { fit ->
+            Text(
+                text = stringResource(state.chargeState.label),
+                autoSize = fit,
+                maxLines = 1,
+                softWrap = false,
+                fontWeight = FontWeight.Bold,
+                color = accent
+            )
+        }
         EdgeGap(6.dp)
-        Text(
-            text = "${state.batteryLevel}%",
-            autoSize = fitUpTo(percentSize.sp),
-            maxLines = 1,
-            softWrap = false,
-            fontWeight = FontWeight.ExtraBold,
-            color = Color(0xFFEDEDED),
-            style = TextStyle(fontFeatureSettings = "tnum")
-        )
+        FitAnew(fitUpTo(percentSize.sp)) { fit ->
+            Text(
+                text = "${state.batteryLevel}%",
+                autoSize = fit,
+                maxLines = 1,
+                softWrap = false,
+                fontWeight = FontWeight.ExtraBold,
+                color = Color(0xFFEDEDED),
+                style = TextStyle(fontFeatureSettings = "tnum")
+            )
+        }
         if (options.shows(DreamField.BATTERY_DETAILS)) {
             EdgeGap(10.dp)
             Text(

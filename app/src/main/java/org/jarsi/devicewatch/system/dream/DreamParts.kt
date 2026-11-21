@@ -109,20 +109,22 @@ internal fun ClockBlock(
     ) {
         if (deviceName != null) {
             val nameAlign = rememberWrapAlign(TextAlign.Center)
-            Text(
-                text = deviceName,
-                // The user's own text: by its first letter, never by the screen's direction.
-                style = valueTextStyle(),
-                autoSize = fitUpTo((dateSize * 0.72f).sp),
-                maxLines = DREAM_LINE_MAX_LINES,
-                softWrap = true,
-                overflow = TextOverflow.Ellipsis,
-                textAlign = nameAlign.textAlign,
-                onTextLayout = nameAlign.onTextLayout,
-                fontWeight = FontWeight.Medium,
-                color = Color(0xFF8B929C),
-                letterSpacing = 1.5.sp,
-            )
+            FitAnew(fitUpTo((dateSize * 0.72f).sp)) { fit ->
+                Text(
+                    text = deviceName,
+                    // The user's own text: by its first letter, never by the screen's direction.
+                    style = valueTextStyle(),
+                    autoSize = fit,
+                    maxLines = DREAM_LINE_MAX_LINES,
+                    softWrap = true,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = nameAlign.textAlign,
+                    onTextLayout = nameAlign.onTextLayout,
+                    fontWeight = FontWeight.Medium,
+                    color = Color(0xFF8B929C),
+                    letterSpacing = 1.5.sp,
+                )
+            }
         }
         LeftToRight {
             Row(verticalAlignment = Alignment.Bottom) {
@@ -155,27 +157,31 @@ internal fun ClockBlock(
                     Spacer(modifier = Modifier.width(CLOCK_SIDE_GAP))
                     Column(modifier = Modifier.padding(bottom = 16.dp)) {
                         if (showSeconds) {
-                            Text(
-                                text = ":$secondsText",
-                                autoSize = fitUpTo(secondsSize.sp),
-                                maxLines = 1,
-                                softWrap = false,
-                                fontWeight = FontWeight.Bold,
-                                color = accent,
-                                style = TextStyle(fontFeatureSettings = "tnum")
-                            )
+                            FitAnew(fitUpTo(secondsSize.sp)) { fit ->
+                                Text(
+                                    text = ":$secondsText",
+                                    autoSize = fit,
+                                    maxLines = 1,
+                                    softWrap = false,
+                                    fontWeight = FontWeight.Bold,
+                                    color = accent,
+                                    style = TextStyle(fontFeatureSettings = "tnum")
+                                )
+                            }
                         }
                         if (trailingMarker.isNotEmpty()) {
-                            Text(
-                                text = trailingMarker,
-                                autoSize = fitUpTo(clockMarkerSp(secondsSize).sp),
-                                maxLines = DREAM_LINE_MAX_LINES,
-                                softWrap = true,
-                                overflow = TextOverflow.Ellipsis,
-                                textAlign = TextAlign.Start,
-                                fontWeight = FontWeight.Medium,
-                                color = Color(0xFF8B929C)
-                            )
+                            FitAnew(fitUpTo(clockMarkerSp(secondsSize).sp)) { fit ->
+                                Text(
+                                    text = trailingMarker,
+                                    autoSize = fit,
+                                    maxLines = DREAM_LINE_MAX_LINES,
+                                    softWrap = true,
+                                    overflow = TextOverflow.Ellipsis,
+                                    textAlign = TextAlign.Start,
+                                    fontWeight = FontWeight.Medium,
+                                    color = Color(0xFF8B929C)
+                                )
+                            }
                         }
                     }
                 }
@@ -184,33 +190,37 @@ internal fun ClockBlock(
         if (showDate) {
             Spacer(modifier = Modifier.height(8.dp))
             val dateAlign = rememberWrapAlign(TextAlign.Center)
-            Text(
-                text = dateText,
-                autoSize = fitUpTo(dateSize.sp),
-                maxLines = DREAM_LINE_MAX_LINES,
-                softWrap = true,
-                overflow = TextOverflow.Ellipsis,
-                textAlign = dateAlign.textAlign,
-                onTextLayout = dateAlign.onTextLayout,
-                fontWeight = FontWeight.Medium,
-                color = Color(0xFF8B929C)
-            )
+            FitAnew(fitUpTo(dateSize.sp)) { fit ->
+                Text(
+                    text = dateText,
+                    autoSize = fit,
+                    maxLines = DREAM_LINE_MAX_LINES,
+                    softWrap = true,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = dateAlign.textAlign,
+                    onTextLayout = dateAlign.onTextLayout,
+                    fontWeight = FontWeight.Medium,
+                    color = Color(0xFF8B929C)
+                )
+            }
         }
         if (alarmText.isNotEmpty()) {
             Spacer(modifier = Modifier.height(6.dp))
             val alarmAlign = rememberWrapAlign(TextAlign.Center)
-            Text(
-                text = alarmText,
-                autoSize = fitUpTo((dateSize * 0.72f).sp),
-                maxLines = DREAM_LINE_MAX_LINES,
-                softWrap = true,
-                overflow = TextOverflow.Ellipsis,
-                textAlign = alarmAlign.textAlign,
-                onTextLayout = alarmAlign.onTextLayout,
-                fontWeight = FontWeight.Medium,
-                color = Color(0xFF6E7681),
-                style = TextStyle(fontFeatureSettings = "tnum")
-            )
+            FitAnew(fitUpTo((dateSize * 0.72f).sp)) { fit ->
+                Text(
+                    text = alarmText,
+                    autoSize = fit,
+                    maxLines = DREAM_LINE_MAX_LINES,
+                    softWrap = true,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = alarmAlign.textAlign,
+                    onTextLayout = alarmAlign.onTextLayout,
+                    fontWeight = FontWeight.Medium,
+                    color = Color(0xFF6E7681),
+                    style = TextStyle(fontFeatureSettings = "tnum")
+                )
+            }
         }
         if (notificationGroups.isNotEmpty()) {
             Spacer(modifier = Modifier.height(12.dp))

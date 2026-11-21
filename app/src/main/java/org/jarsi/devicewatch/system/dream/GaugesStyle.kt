@@ -325,15 +325,17 @@ private fun GaugesClockRow(state: DreamUiState, options: DreamOptions, clockSize
                     // The clock has given way to a long marker as far as it can (see
                     // rememberGaugesClockSize); one still too wide goes on a second line.
                     val markerSp = (clockSize * GAUGES_AM_PM_RATIO).coerceAtLeast(GAUGES_AM_PM_MIN_SP)
-                    Text(
-                        text = trailingMarker,
-                        autoSize = fitUpTo(markerSp.sp, floorSp = markerSp),
-                        fontFamily = FontFamily.Monospace,
-                        color = GAUGES_LABEL,
-                        maxLines = DREAM_LINE_MAX_LINES,
-                        softWrap = true,
-                        overflow = TextOverflow.Ellipsis
-                    )
+                    FitAnew(fitUpTo(markerSp.sp, floorSp = markerSp)) { fit ->
+                        Text(
+                            text = trailingMarker,
+                            autoSize = fit,
+                            fontFamily = FontFamily.Monospace,
+                            color = GAUGES_LABEL,
+                            maxLines = DREAM_LINE_MAX_LINES,
+                            softWrap = true,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                 }
                 if (showSeconds) {
                     Text(
