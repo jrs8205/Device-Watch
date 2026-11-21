@@ -428,15 +428,15 @@ internal fun BatteryBlockPortrait(
 
         if (fullTimeStr.isNotEmpty()) {
             Spacer(modifier = Modifier.height(6.dp))
-            val wrapAlign1 = rememberWrapAlign(TextAlign.Center)
+            val estimateAlign = rememberWrapAlign(TextAlign.Center)
             Text(
                 text = fullTimeStr,
                 autoSize = fitUpTo(24.sp),
                 maxLines = DREAM_LINE_MAX_LINES,
                 softWrap = true,
                 overflow = TextOverflow.Ellipsis,
-                textAlign = wrapAlign1.textAlign,
-                onTextLayout = wrapAlign1.onTextLayout,
+                textAlign = estimateAlign.textAlign,
+                onTextLayout = estimateAlign.onTextLayout,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF34D399),
                 style = TextStyle(fontFeatureSettings = "tnum")

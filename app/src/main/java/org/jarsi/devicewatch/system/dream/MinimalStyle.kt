@@ -127,15 +127,15 @@ private fun MinimalClock(state: DreamUiState, options: DreamOptions, clockSize: 
         )
         if (options.shows(DreamField.DATE)) {
             Spacer(modifier = Modifier.height(8.dp))
-            val wrapAlign1 = rememberWrapAlign(TextAlign.Center)
+            val dateAlign = rememberWrapAlign(TextAlign.Center)
             Text(
                 text = state.shortDateText.uppercase(locale),
                 autoSize = fitUpTo(16.sp),
                 maxLines = DREAM_LINE_MAX_LINES,
                 softWrap = true,
                 overflow = TextOverflow.Ellipsis,
-                textAlign = wrapAlign1.textAlign,
-                onTextLayout = wrapAlign1.onTextLayout,
+                textAlign = dateAlign.textAlign,
+                onTextLayout = dateAlign.onTextLayout,
                 color = MINIMAL_DIM,
                 letterSpacing = 0.26.em
             )

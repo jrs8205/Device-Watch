@@ -389,7 +389,7 @@ private fun EdgeBattery(
         }
         if (options.shows(DreamField.ESTIMATE) && state.fullTimeText.isNotEmpty()) {
             EdgeGap(6.dp)
-            val wrapAlign1 = rememberWrapAlign(textAlign)
+            val estimateAlign = rememberWrapAlign(textAlign)
             Text(
                 text = state.fullTimeText,
                 // The sentence with a date in it is the longest text there is; in the narrow
@@ -398,8 +398,8 @@ private fun EdgeBattery(
                 maxLines = DREAM_LINE_MAX_LINES,
                 softWrap = true,
                 overflow = TextOverflow.Ellipsis,
-                textAlign = wrapAlign1.textAlign,
-                onTextLayout = wrapAlign1.onTextLayout,
+                textAlign = estimateAlign.textAlign,
+                onTextLayout = estimateAlign.onTextLayout,
                 fontWeight = FontWeight.Bold,
                 color = accent,
                 style = TextStyle(fontFeatureSettings = "tnum")

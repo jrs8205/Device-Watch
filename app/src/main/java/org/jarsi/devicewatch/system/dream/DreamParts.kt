@@ -108,7 +108,7 @@ internal fun ClockBlock(
         verticalArrangement = Arrangement.Center
     ) {
         if (deviceName != null) {
-            val wrapAlign1 = rememberWrapAlign(TextAlign.Center)
+            val nameAlign = rememberWrapAlign(TextAlign.Center)
             Text(
                 text = deviceName,
                 // The user's own text: by its first letter, never by the screen's direction.
@@ -117,8 +117,8 @@ internal fun ClockBlock(
                 maxLines = DREAM_LINE_MAX_LINES,
                 softWrap = true,
                 overflow = TextOverflow.Ellipsis,
-                textAlign = wrapAlign1.textAlign,
-                onTextLayout = wrapAlign1.onTextLayout,
+                textAlign = nameAlign.textAlign,
+                onTextLayout = nameAlign.onTextLayout,
                 fontWeight = FontWeight.Medium,
                 color = Color(0xFF8B929C),
                 letterSpacing = 1.5.sp,
@@ -183,30 +183,30 @@ internal fun ClockBlock(
         }
         if (showDate) {
             Spacer(modifier = Modifier.height(8.dp))
-            val wrapAlign2 = rememberWrapAlign(TextAlign.Center)
+            val dateAlign = rememberWrapAlign(TextAlign.Center)
             Text(
                 text = dateText,
                 autoSize = fitUpTo(dateSize.sp),
                 maxLines = DREAM_LINE_MAX_LINES,
                 softWrap = true,
                 overflow = TextOverflow.Ellipsis,
-                textAlign = wrapAlign2.textAlign,
-                onTextLayout = wrapAlign2.onTextLayout,
+                textAlign = dateAlign.textAlign,
+                onTextLayout = dateAlign.onTextLayout,
                 fontWeight = FontWeight.Medium,
                 color = Color(0xFF8B929C)
             )
         }
         if (alarmText.isNotEmpty()) {
             Spacer(modifier = Modifier.height(6.dp))
-            val wrapAlign3 = rememberWrapAlign(TextAlign.Center)
+            val alarmAlign = rememberWrapAlign(TextAlign.Center)
             Text(
                 text = alarmText,
                 autoSize = fitUpTo((dateSize * 0.72f).sp),
                 maxLines = DREAM_LINE_MAX_LINES,
                 softWrap = true,
                 overflow = TextOverflow.Ellipsis,
-                textAlign = wrapAlign3.textAlign,
-                onTextLayout = wrapAlign3.onTextLayout,
+                textAlign = alarmAlign.textAlign,
+                onTextLayout = alarmAlign.onTextLayout,
                 fontWeight = FontWeight.Medium,
                 color = Color(0xFF6E7681),
                 style = TextStyle(fontFeatureSettings = "tnum")

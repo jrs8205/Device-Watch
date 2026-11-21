@@ -198,7 +198,7 @@ private fun RingHeader(state: DreamUiState, options: DreamOptions, gapBelow: Dp)
     if (deviceName == null && !showDate && alarmText == null) return
     val locale = LocalConfiguration.current.locales[0]
     if (deviceName != null) {
-        val wrapAlign1 = rememberWrapAlign(TextAlign.Center)
+        val nameAlign = rememberWrapAlign(TextAlign.Center)
         Text(
             text = deviceName,
             // The user's own text: by its first letter, never by the screen's direction.
@@ -207,8 +207,8 @@ private fun RingHeader(state: DreamUiState, options: DreamOptions, gapBelow: Dp)
             maxLines = DREAM_LINE_MAX_LINES,
             softWrap = true,
             overflow = TextOverflow.Ellipsis,
-            textAlign = wrapAlign1.textAlign,
-            onTextLayout = wrapAlign1.onTextLayout,
+            textAlign = nameAlign.textAlign,
+            onTextLayout = nameAlign.onTextLayout,
             fontWeight = FontWeight.Medium,
             color = RING_DIM,
             letterSpacing = 1.5.sp
@@ -216,30 +216,30 @@ private fun RingHeader(state: DreamUiState, options: DreamOptions, gapBelow: Dp)
         if (showDate || alarmText != null) Spacer(modifier = Modifier.height(6.dp))
     }
     if (showDate) {
-        val wrapAlign2 = rememberWrapAlign(TextAlign.Center)
+        val dateAlign = rememberWrapAlign(TextAlign.Center)
         Text(
             text = state.shortDateText.uppercase(locale),
             autoSize = fitUpTo(16.sp),
             maxLines = DREAM_LINE_MAX_LINES,
             softWrap = true,
             overflow = TextOverflow.Ellipsis,
-            textAlign = wrapAlign2.textAlign,
-            onTextLayout = wrapAlign2.onTextLayout,
+            textAlign = dateAlign.textAlign,
+            onTextLayout = dateAlign.onTextLayout,
             color = RING_DATE,
             letterSpacing = 0.22.em
         )
         if (alarmText != null) Spacer(modifier = Modifier.height(6.dp))
     }
     if (alarmText != null) {
-        val wrapAlign3 = rememberWrapAlign(TextAlign.Center)
+        val alarmAlign = rememberWrapAlign(TextAlign.Center)
         Text(
             text = "⏰ $alarmText",
             autoSize = fitUpTo(13.sp),
             maxLines = DREAM_LINE_MAX_LINES,
             softWrap = true,
             overflow = TextOverflow.Ellipsis,
-            textAlign = wrapAlign3.textAlign,
-            onTextLayout = wrapAlign3.onTextLayout,
+            textAlign = alarmAlign.textAlign,
+            onTextLayout = alarmAlign.onTextLayout,
             fontWeight = FontWeight.Medium,
             color = RING_DATE,
             style = TextStyle(fontFeatureSettings = "tnum")
@@ -379,7 +379,7 @@ private fun RingBattery(state: DreamUiState, options: DreamOptions) {
     val estimate = state.fullTimeText.takeIf { options.shows(DreamField.ESTIMATE) && it.isNotEmpty() }
     if (estimate != null) {
         Spacer(modifier = Modifier.height(6.dp))
-        val wrapAlign4 = rememberWrapAlign(TextAlign.Center)
+        val estimateAlign = rememberWrapAlign(TextAlign.Center)
         Text(
             text = estimate,
             // With a date in it the sentence is the longest text there is; beside the ring
@@ -388,8 +388,8 @@ private fun RingBattery(state: DreamUiState, options: DreamOptions) {
             maxLines = DREAM_LINE_MAX_LINES,
             softWrap = true,
             overflow = TextOverflow.Ellipsis,
-            textAlign = wrapAlign4.textAlign,
-            onTextLayout = wrapAlign4.onTextLayout,
+            textAlign = estimateAlign.textAlign,
+            onTextLayout = estimateAlign.onTextLayout,
             color = RING_DIM,
             style = TextStyle(fontFeatureSettings = "tnum")
         )
