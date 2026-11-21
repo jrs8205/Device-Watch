@@ -141,14 +141,14 @@ class TimeOfDayTest {
     }
 
     // A pattern of Android's given to java.time's formatter is how the screensaver went down.
-    // These four files write patterns of their own (ISO stamps and the like); a new use
-    // anywhere else has to be looked at.
+    // These three files write patterns of their own (ISO stamps and the like, figures only:
+    // DateRouteGuardTest); a new use anywhere else has to be looked at.
     @Test
     fun `no pattern of Android's is given to another formatter`() {
         val users = SourceXml.source("java/org/jarsi/devicewatch").walkTopDown()
             .filter { it.extension == "kt" && "DateTimeFormatter.ofPattern(" in it.readText() }
             .map { it.name }.toList()
-        assertThat(users).containsExactly("AppOpsHistoryParser.kt", "SystemStatsRepositoryImpl.kt", "HistoryViewModel.kt", "HtmlReportBuilder.kt")
+        assertThat(users).containsExactly("AppOpsHistoryParser.kt", "HistoryViewModel.kt", "HtmlReportBuilder.kt")
 
         val askers = SourceXml.source("java/org/jarsi/devicewatch").walkTopDown()
             .filter { it.extension == "kt" && "getBestDateTimePattern(" in it.readText() }

@@ -33,6 +33,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.jarsi.devicewatch.Bidi
+import org.jarsi.devicewatch.LocalizedDateFormat
 import org.jarsi.devicewatch.R
 import org.jarsi.devicewatch.data.AppPackageFacts
 import org.jarsi.devicewatch.data.AppPackageLogic
@@ -43,7 +44,6 @@ import org.jarsi.devicewatch.data.UNAVAILABLE_INT
 import org.jarsi.devicewatch.data.UNAVAILABLE_TEXT
 import java.time.Instant
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 
 /** Bottom sheet with the per-app usage details assembled by AppsViewModel. */
@@ -146,9 +146,9 @@ internal fun AppDetailSheet(
 private fun AppFactsSection(packageName: String, facts: AppPackageFacts) {
     val context = LocalContext.current
     val locale = LocalLocale.current.platformLocale
-    val dateFormatter = remember(locale) { DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale) }
+    val dateFormatter = remember(locale) { LocalizedDateFormat(FormatStyle.MEDIUM, locale) }
     fun dateText(millis: Long): String =
-        Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalDate().format(dateFormatter)
+        dateFormatter.format(Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalDate())
 
     Spacer(modifier = Modifier.height(20.dp))
     Text(

@@ -63,8 +63,10 @@ import android.telephony.TelephonyManager
 import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
 import org.jarsi.devicewatch.Bidi
+import org.jarsi.devicewatch.LocalizedDateFormat
 import org.jarsi.devicewatch.R
 import org.jarsi.devicewatch.deviceLanguageTag
+import org.jarsi.devicewatch.moduleUpdateText
 import org.jarsi.devicewatch.di.DefaultDispatcher
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineDispatcher
@@ -77,7 +79,6 @@ import java.io.File
 import java.net.Inet4Address
 import java.time.LocalDate
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.Locale
 import java.util.TimeZone
@@ -634,14 +635,13 @@ class SystemStatsRepositoryImpl @Inject constructor(
         val manufactured = samsung?.manufactured
             ?: PrivilegedReadings.epochSecondsDate(readFileTextOnce("/sys/class/power_supply/battery/manufacturing_date"))
             ?: readAndroidBatteryHealth()?.manufactured
-        val dateFormat = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
-            .withLocale(context.resources.configuration.locales[0])
+        val dateFormat = LocalizedDateFormat(FormatStyle.MEDIUM, context.resources.configuration.locales[0])
         BatteryWear(
             health = readBatteryHealthPercent()?.let { Bidi.ltr("$it %") } ?: UNAVAILABLE_TEXT,
             // Zero is what a phone says when it does not count them.
             cycles = readBatteryCycleCount(batteryIntent)?.takeIf { it > 0 }?.toString() ?: UNAVAILABLE_TEXT,
-            firstUse = firstUse?.format(dateFormat) ?: UNAVAILABLE_TEXT,
-            manufactured = manufactured?.format(dateFormat) ?: UNAVAILABLE_TEXT,
+            firstUse = firstUse?.let(dateFormat::format) ?: UNAVAILABLE_TEXT,
+            manufactured = manufactured?.let(dateFormat::format) ?: UNAVAILABLE_TEXT,
         )
     }
 
@@ -1318,14 +1318,7 @@ class SystemStatsRepositoryImpl @Inject constructor(
             .firstOrNull { it != UNAVAILABLE_TEXT }
             ?: return UNAVAILABLE_TEXT
         val update = ExtraStatsLogic.moduleUpdate(version) ?: return version
-        val locale = context.resources.configuration.locales[0]
-        return if (update.day != null) {
-            update.month.atDay(update.day).format(
-                java.time.format.DateTimeFormatter.ofLocalizedDate(java.time.format.FormatStyle.LONG).withLocale(locale)
-            )
-        } else {
-            update.month.format(java.time.format.DateTimeFormatter.ofPattern("LLLL yyyy", locale))
-        }
+        return moduleUpdateText(update, context.resources.configuration.locales[0])
     }
 
     /** The Wi-Fi chip's support for 6 GHz (API 30), WPA3-SAE (API 29) and Wi-Fi 7 (API 30). */

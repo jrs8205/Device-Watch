@@ -1,11 +1,14 @@
 package org.jarsi.devicewatch
 
 import android.content.Context
+import org.jarsi.devicewatch.data.ModuleUpdate
 import java.text.DateFormat
 import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 import java.util.Date
 import java.util.IllformedLocaleException
 import java.util.Locale
@@ -25,6 +28,55 @@ fun timeOfDayFormat(context: Context): DateFormat {
     }
     return format
 }
+
+/**
+ * A day as the language itself writes a date of [style]'s length ("Nov 20, 2026"), with the
+ * app's digits ([LatinDigits]).
+ *
+ * `java.time`'s formatter writes the day and the year as 0 to 9 by itself, but a month's name
+ * is the language's own text. Tibetan and Dzongkha name their months by number, in their own
+ * digits: "Collected since" on the History page read year 2026, month ༡༡, day 20 (external
+ * review round 9), and so did the day headings of the notification log, an app's install date
+ * and the battery's dates. Every date a page writes at one of these lengths is made here, and
+ * the text goes through [LatinDigits.text] like every other date's.
+ */
+internal class LocalizedDateFormat(style: FormatStyle, locale: Locale) {
+
+    private val digits = LatinDigits.locale(locale)
+
+    private val format = DateTimeFormatter.ofLocalizedDate(style).withLocale(locale)
+
+    fun format(day: LocalDate): String = LatinDigits.text(day.format(format), digits)
+}
+
+/**
+ * Android's own medium-length date for the phone's language ("Nov 20, 2026"), with the digits
+ * of a month's own name as 0 to 9 too ([LatinDigits.text]). [context] is one of the app's own:
+ * its language carries the app's digits.
+ */
+internal fun mediumDateText(context: Context, millis: Long): String = LatinDigits.text(
+    android.text.format.DateFormat.getMediumDateFormat(context).format(Date(millis)),
+    context.resources.configuration.locales[0],
+)
+
+/** Android's own short date for the phone's language ("11/20/26"), by the same rule. */
+internal fun shortDateText(context: Context, millis: Long): String = LatinDigits.text(
+    android.text.format.DateFormat.getDateFormat(context).format(Date(millis)),
+    context.resources.configuration.locales[0],
+)
+
+/**
+ * The Google Play system update's date: to the day where the version carries one, otherwise
+ * its month and year as the language writes the two together, by the format the History
+ * page's months have. A pattern of the app's own wrote the month first in every language: in
+ * Chinese, the eleventh month before 2026.
+ */
+internal fun moduleUpdateText(update: ModuleUpdate, locale: Locale): String =
+    if (update.day != null) {
+        LocalizedDateFormat(FormatStyle.LONG, locale).format(update.month.atDay(update.day))
+    } else {
+        androidFormat("LLLLyyyy", locale).format(update.month)
+    }
 
 /**
  * A date or a time written with a pattern Android made

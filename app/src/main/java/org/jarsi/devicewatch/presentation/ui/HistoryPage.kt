@@ -65,6 +65,7 @@ import org.jarsi.devicewatch.data.UNAVAILABLE_TEXT
 import org.jarsi.devicewatch.presentation.HistoryDay
 import org.jarsi.devicewatch.presentation.HistoryViewModel
 import org.jarsi.devicewatch.AndroidPatternFormat
+import org.jarsi.devicewatch.LocalizedDateFormat
 import org.jarsi.devicewatch.androidFormat
 import org.jarsi.devicewatch.timeOfDayFormat
 import kotlinx.coroutines.delay
@@ -72,7 +73,6 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.Date
 
@@ -300,20 +300,20 @@ fun HistoryPage(
 
 /** "Today" / "Yesterday" / a localized medium date for a notification log day header. */
 @Composable
-private fun dayHeaderText(day: LocalDate): String {
+internal fun dayHeaderText(day: LocalDate): String {
     val today = LocalDate.now()
     return when (day) {
         today -> stringResource(R.string.history_today)
         today.minusDays(1) -> stringResource(R.string.history_yesterday)
-        else -> day.format(mediumDateFormatter())
+        else -> mediumDateFormatter().format(day)
     }
 }
 
 /** Localized medium-length date formatter, tracking Compose's observable locale. */
 @Composable
-private fun mediumDateFormatter(): DateTimeFormatter {
+private fun mediumDateFormatter(): LocalizedDateFormat {
     val locale = LocalLocale.current.platformLocale
-    return remember(locale) { DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale) }
+    return remember(locale) { LocalizedDateFormat(FormatStyle.MEDIUM, locale) }
 }
 
 /** Localized "weekday + day + month" formatter (e.g. "la 5. heinäk." / "Sat, Jul 5"). */
@@ -466,11 +466,11 @@ private fun MetricChipRow(selected: HistoryMetric, onSelect: (HistoryMetric) -> 
  * missing data.
  */
 @Composable
-private fun HistoryDayList(days: List<HistoryDay>, metric: HistoryMetric) {
+internal fun HistoryDayList(days: List<HistoryDay>, metric: HistoryMetric) {
     val context = LocalContext.current
     val today = LocalDate.now()
     val weekdayFormatter = weekdayDateFormatter()
-    val collectedSince = days.last().day.format(mediumDateFormatter())
+    val collectedSince = mediumDateFormatter().format(days.last().day)
 
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
