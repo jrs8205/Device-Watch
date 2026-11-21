@@ -26,6 +26,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import java.util.Locale
+import kotlin.coroutines.EmptyCoroutineContext
 
 /**
  * Every style at its narrowest: a 480 x 320 dp phone on its side, a 320 dp wide phone upright
@@ -231,6 +232,8 @@ class DreamStyleFitTest {
             CompositionLocalProvider(
                 LocalDensity provides Density(1f, fontScale),
                 LocalContext provides LatinDigits.context(LocalContext.current),
+                // On the test's own thread: see LocalNotificationIconDecoding.
+                LocalNotificationIconDecoding provides EmptyCoroutineContext,
             ) {
                 DreamScreen(state = state, options = options, landscape = landscape, onTap = null, moving = false)
             }
@@ -243,10 +246,11 @@ class DreamStyleFitTest {
                 options = DreamOptions(style = style, showCalendar = true, showSeconds = showSeconds)
                 state = worstCase(context, chargeState, language)
                 compose.waitForIdle()
-                // The icons are decoded off the main thread; the row has its height, and
-                // its counts, only once they are in. A style may leave the row out when it
-                // runs out of room (Gauges on its side), so the wait is for a row that is
-                // on the screen: it names itself to screen readers as soon as it is.
+                // The row has its height, and its counts, only once its icons are in; here
+                // they are decoded in place, and the wait is for the frame that draws them. A
+                // style may leave the row out when it runs out of room (Gauges on its side),
+                // so the wait is for a row that is on the screen: it names itself to screen
+                // readers as soon as it is.
                 val rowIsShown = compose.onAllNodes(hasContentDescription(unreadDescription(state)))
                     .fetchSemanticsNodes().isNotEmpty()
                 if (rowIsShown) {

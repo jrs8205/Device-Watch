@@ -23,6 +23,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -58,6 +59,7 @@ import org.jarsi.devicewatch.presentation.ui.valueTextStyle
 import org.jarsi.devicewatch.system.NotificationIconGroup
 import org.jarsi.devicewatch.system.NotificationRowFit
 import org.jarsi.devicewatch.system.fitNotificationRow
+import kotlin.coroutines.CoroutineContext
 import kotlin.math.roundToInt
 
 // The pieces the screensaver's styles share: the clock block, the notification row, the
@@ -425,6 +427,18 @@ internal fun NotificationIconRow(
     }
 }
 
+/**
+ * Where a notification's icon is decoded: off the main thread, always, in the app.
+ *
+ * A test that draws the screen provides its own thread instead. The test library runs a frame
+ * on whichever thread resumes the composition, and after the decode that was this
+ * dispatcher's: the frame recomposed and measured the screen there while the test's own
+ * thread was measuring it, and now and then one of the two stopped with
+ * "performMeasureAndLayout called during measure layout". In the app the composition is
+ * always resumed on the main thread.
+ */
+internal val LocalNotificationIconDecoding = staticCompositionLocalOf<CoroutineContext> { Dispatchers.IO }
+
 /** Gap between the groups on the notification row, and between an icon and its count. */
 private val NOTIFICATION_ROW_SPACING = 10.dp
 private val NOTIFICATION_COUNT_GAP = 3.dp
@@ -438,6 +452,7 @@ private fun NotificationIconRowContent(
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
+    val decoding = LocalNotificationIconDecoding.current
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
@@ -447,8 +462,8 @@ private fun NotificationIconRowContent(
             key(group.packageName) {
                 // Review round 10: a URI-backed icon reads a content provider, so the decode
                 // runs off the main thread and the icon appears when it is ready.
-                val bitmap by produceState<ImageBitmap?>(null, group.newestPostTime, iconSizePx) {
-                    value = withContext(Dispatchers.IO) {
+                val bitmap by produceState<ImageBitmap?>(null, group.newestPostTime, iconSizePx, decoding) {
+                    value = withContext(decoding) {
                         loadNotificationIcon(context, group.smallIcon, iconSizePx)
                     }
                 }

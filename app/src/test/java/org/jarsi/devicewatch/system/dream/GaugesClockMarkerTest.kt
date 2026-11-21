@@ -38,6 +38,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import java.util.Locale
+import kotlin.coroutines.EmptyCoroutineContext
 
 /**
  * AM or PM above the seconds of the Gauges clock is drawn at its own size, a set share of the
@@ -82,7 +83,11 @@ class GaugesClockMarkerTest {
         var widthDp by mutableStateOf(widthsDp.firstOrNull())
         compose.setContent {
             density = LocalDensity.current
-            CompositionLocalProvider(LocalContext provides LatinDigits.context(LocalContext.current)) {
+            CompositionLocalProvider(
+                LocalContext provides LatinDigits.context(LocalContext.current),
+                // On the test's own thread: see LocalNotificationIconDecoding.
+                LocalNotificationIconDecoding provides EmptyCoroutineContext,
+            ) {
                 val width = widthDp
                 Box(modifier = if (width == null) Modifier.fillMaxSize() else Modifier.fillMaxHeight().width(width.dp)) {
                     DreamScreen(
