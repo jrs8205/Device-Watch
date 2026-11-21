@@ -40,9 +40,9 @@ class LatinDigitsEveryLanguageTest {
 
     private val everyLanguage: List<Locale> get() = ULocale.getAvailableLocales().map { it.toLocale() }
 
-    private fun String.otherDigits(): Boolean = codePoints().anyMatch { Character.isDigit(it) && it !in '0'.code..'9'.code }
+    private fun String.otherDigits(): Boolean = hasOtherDigits()
 
-    private fun point(code: Int): String = String(Character.toChars(code))
+    private fun point(code: Int): String = codePoint(code)
 
     @Test
     fun `Chakma, Adlam and N'Ko are given the digits 0 to 9`() {
