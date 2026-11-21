@@ -96,6 +96,17 @@ android {
     }
 }
 
+// DreamStyleFitTest draws the screensaver in every language Android knows when this
+// environment variable is set, and in a sample of them when it is not. Whether it is set is
+// therefore part of what a test run is: without this, a run asked for with the variable right
+// after one without it was answered "up to date", and no further language was drawn.
+tasks.withType<Test>().configureEach {
+    inputs.property(
+        "DREAM_FIT_ALL_LANGUAGES",
+        providers.environmentVariable("DREAM_FIT_ALL_LANGUAGES").map { "set" }.orElse("not set"),
+    )
+}
+
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

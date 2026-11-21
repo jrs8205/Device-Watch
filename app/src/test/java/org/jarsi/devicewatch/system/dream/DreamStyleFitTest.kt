@@ -193,14 +193,21 @@ class DreamStyleFitTest {
         )
         assertWithMessage("languages").that(languages.size).isAtLeast(500)
         // The whole sweep, for a change to how the lines fit: every language whose lines differ
-        // from another's, about ten minutes for the four screens.
-        if (System.getenv(ALL_LANGUAGES_SWITCH) != null) {
-            return languages.distinctBy { language -> lines.map { it(states.getValue(language)) } }
+        // from another's, about four minutes for the four screens. The switch is an input of
+        // Gradle's test task (app/build.gradle.kts), so a run with it is never answered with the
+        // result of one without.
+        val all = System.getenv(ALL_LANGUAGES_SWITCH) != null
+        val drawn = if (all) {
+            languages.distinctBy { language -> lines.map { it(states.getValue(language)) } }
+        } else {
+            val widest = lines.flatMap { line ->
+                languages.sortedByDescending { paint.measureText(line(states.getValue(it))) }.take(WIDEST_PER_LINE)
+            }
+            (widest + REVIEWED_PHONE_LANGUAGES.map { LatinDigits.locale(Locale.forLanguageTag(it)) }).distinct()
         }
-        val widest = lines.flatMap { line ->
-            languages.sortedByDescending { paint.measureText(line(states.getValue(it))) }.take(WIDEST_PER_LINE)
-        }
-        return (widest +REVIEWED_PHONE_LANGUAGES.map { LatinDigits.locale(Locale.forLanguageTag(it)) }).distinct()
+        // In the test report's output, so that a reader of the result sees which run it was.
+        println("DreamStyleFitTest: ${drawn.size} phone languages drawn of ${languages.size} ($ALL_LANGUAGES_SWITCH ${if (all) "set" else "not set"})")
+        return drawn
     }
 
     /**
