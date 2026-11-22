@@ -35,7 +35,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -52,6 +51,7 @@ import org.jarsi.devicewatch.presentation.PrivacyPresentation
 import org.jarsi.devicewatch.presentation.PrivacyViewModel
 import org.jarsi.devicewatch.presentation.RelativeDay
 import org.jarsi.devicewatch.mediumDateText
+import org.jarsi.devicewatch.quantityTextResource
 import org.jarsi.devicewatch.shortDateText
 import org.jarsi.devicewatch.timeOfDayFormat
 import java.time.LocalDate
@@ -214,7 +214,7 @@ private fun AppUseRow(app: AppSensorUse, sensor: PrivacySensor, minuteKept: Bool
             KernelCaption(app.ops.sorted().joinToString(", ") { op -> opNameText(context, op) })
         }
         val summary = listOfNotNull(
-            pluralStringResource(R.plurals.privacy_times, app.accesses, app.accesses).takeIf { app.accesses > 0 },
+            quantityTextResource(R.plurals.privacy_times, app.accesses, app.accesses).takeIf { app.accesses > 0 },
             privacyDurationText(app.durationMillis, minuteKept).takeIf { showDuration && app.durationMillis > 0 },
             app.lastMillis?.let { stringResource(R.string.privacy_last, privacyMomentText(it)) },
             // An app only ever refused has no use to date, so its latest refusal stands in.
@@ -224,8 +224,8 @@ private fun AppUseRow(app: AppSensorUse, sensor: PrivacySensor, minuteKept: Bool
             Text(text = summary.joinToString(" · "), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         val extras = listOfNotNull(
-            pluralStringResource(R.plurals.privacy_background, app.backgroundAccesses, app.backgroundAccesses).takeIf { app.backgroundAccesses > 0 },
-            pluralStringResource(R.plurals.privacy_refused, app.rejected, app.rejected).takeIf { app.rejected > 0 },
+            quantityTextResource(R.plurals.privacy_background, app.backgroundAccesses, app.backgroundAccesses).takeIf { app.backgroundAccesses > 0 },
+            quantityTextResource(R.plurals.privacy_refused, app.rejected, app.rejected).takeIf { app.rejected > 0 },
         )
         if (extras.isNotEmpty()) {
             Text(
@@ -252,7 +252,7 @@ private fun EventList(app: AppSensorUse, sensor: PrivacySensor, minuteKept: Bool
         )
         events.forEach { event -> EventRow(event, sensor, minuteKept, showOp = sensor == PrivacySensor.OTHER || app.ops.size > 1) }
     }
-    if (earlier > 0) KernelNote(pluralStringResource(R.plurals.privacy_earlier, earlier, earlier))
+    if (earlier > 0) KernelNote(quantityTextResource(R.plurals.privacy_earlier, earlier, earlier))
 }
 
 @Composable
@@ -264,10 +264,10 @@ private fun EventRow(event: AccessEvent, sensor: PrivacySensor, minuteKept: Bool
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             val parts = listOfNotNull(
-                pluralStringResource(R.plurals.privacy_times, event.count, event.count).takeIf { event.count > 0 },
+                quantityTextResource(R.plurals.privacy_times, event.count, event.count).takeIf { event.count > 0 },
                 privacyDurationText(event.durationMillis, minuteKept).takeIf { sensor.hasMeaningfulDuration && event.durationMillis > 0 },
                 stringResource(R.string.privacy_event_background).takeIf { event.background },
-                pluralStringResource(R.plurals.privacy_refused, event.rejected, event.rejected).takeIf { event.rejected > 0 },
+                quantityTextResource(R.plurals.privacy_refused, event.rejected, event.rejected).takeIf { event.rejected > 0 },
             )
             Text(
                 text = parts.joinToString(" · "),

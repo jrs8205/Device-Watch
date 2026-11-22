@@ -37,7 +37,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFontFamilyResolver
 import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
@@ -56,6 +55,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jarsi.devicewatch.R
 import org.jarsi.devicewatch.presentation.ui.valueTextStyle
+import org.jarsi.devicewatch.quantityTextResource
 import org.jarsi.devicewatch.system.NotificationIconGroup
 import org.jarsi.devicewatch.system.NotificationRowFit
 import org.jarsi.devicewatch.system.fitNotificationRow
@@ -383,7 +383,7 @@ internal fun NotificationIconRow(
         rowAlpha.animateTo(NOTIFICATION_ROW_RESTING_ALPHA, tween(durationMillis = 400))
     }
     val total = groups.sumOf { it.count }
-    val description = pluralStringResource(R.plurals.dream_unread_notifications, total, total)
+    val description = quantityTextResource(R.plurals.dream_unread_notifications, total, total)
     val countSize = (iconSize.value * 0.6f).sp
     val countTextStyle = TextStyle(
         fontSize = countSize,

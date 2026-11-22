@@ -36,7 +36,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLocale
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
@@ -69,6 +68,7 @@ import org.jarsi.devicewatch.presentation.freqText
 import org.jarsi.devicewatch.presentation.profileLabelRes
 import org.jarsi.devicewatch.presentation.thermalZoneLabelRes
 import kotlin.math.roundToInt
+import org.jarsi.devicewatch.quantityTextResource
 
 /**
  * The Kernel page, on rooted phones only: the processor profile, and what the
@@ -191,7 +191,7 @@ private fun ProfileSection(
         outcomeText(state.lastOutcome, state.outcomeAwaitsMonitor, snapshot)?.let { KernelNote(it, color = statusWarnColor()) }
         noticeRes(state.status.notice)?.let { KernelNote(stringResource(it), color = statusWarnColor()) }
         if (state.status.active != CpuProfile.STOCK && state.status.overrideCount > 0) {
-            KernelNote(pluralStringResource(R.plurals.cpu_profile_overrides, state.status.overrideCount, state.status.overrideCount))
+            KernelNote(quantityTextResource(R.plurals.cpu_profile_overrides, state.status.overrideCount, state.status.overrideCount))
         }
 
         Spacer(modifier = Modifier.height(10.dp))

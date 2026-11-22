@@ -240,6 +240,6 @@ class OutsideTextTest {
         val OUTSIDE_TEXT = Regex("""text = (?:\w+\.)(?:label|appLabel|packageName)\b|text = entry\.(?:title|text)\b""")
 
         /** A text taken from the app's resources, or several things joined into a line. */
-        val OWN_WORDS = Regex("""stringResource\(|getString\(|pluralStringResource\(|joinToString\(""")
+        val OWN_WORDS = Regex("""stringResource\(|getString\(|quantityTextResource\(|quantityText\(|joinToString\(""")
     }
 }

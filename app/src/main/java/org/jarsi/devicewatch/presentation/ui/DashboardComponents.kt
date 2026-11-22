@@ -41,7 +41,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -60,6 +59,7 @@ import org.jarsi.devicewatch.data.LastUsedTier
 import org.jarsi.devicewatch.data.UNAVAILABLE_INT
 import org.jarsi.devicewatch.data.UNAVAILABLE_TEXT
 import org.jarsi.devicewatch.data.UsageEventAggregator
+import org.jarsi.devicewatch.quantityTextResource
 import org.jarsi.devicewatch.timeOfDayFormat
 import org.jarsi.devicewatch.ui.theme.DarkAccentGraphic
 import org.jarsi.devicewatch.ui.theme.LightAccent
@@ -457,7 +457,7 @@ internal fun lastUsedText(lastUsedEpochMillis: Long?): String {
                     .format(Date(lastUsedEpochMillis!!))
             }
         )
-        else -> pluralStringResource(R.plurals.last_used_days, days, days)
+        else -> quantityTextResource(R.plurals.last_used_days, days, days)
     }
 }
 

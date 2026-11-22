@@ -40,7 +40,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -57,6 +56,8 @@ import org.jarsi.devicewatch.data.TrafficSplit
 import org.jarsi.devicewatch.data.UNAVAILABLE_TEXT
 import org.jarsi.devicewatch.presentation.DashboardUiState
 import org.jarsi.devicewatch.presentation.PeriodComparison
+import org.jarsi.devicewatch.quantityText
+import org.jarsi.devicewatch.quantityTextResource
 import org.jarsi.devicewatch.ui.theme.STATUS_TINT_ALPHA
 import org.jarsi.devicewatch.widget.mobileDataText
 
@@ -396,7 +397,7 @@ internal fun OverviewTab(
                         text = if (uiState.dataCounterMode == DataCounterMode.DAY) {
                             stringResource(R.string.comparison_yesterday)
                         } else {
-                            pluralStringResource(
+                            quantityTextResource(
                                 R.plurals.comparison_days,
                                 comparison.daysCompared,
                                 comparison.daysCompared
@@ -645,7 +646,8 @@ internal fun OverviewTab(
                             overflow = TextOverflow.Ellipsis,
                         )
                         Text(
-                            context.resources.getQuantityString(
+                            quantityText(
+                                context,
                                 R.plurals.cpu_cores_value,
                                 currentStats.cpuCores,
                                 currentStats.cpuCores,

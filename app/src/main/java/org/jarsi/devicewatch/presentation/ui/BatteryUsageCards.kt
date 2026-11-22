@@ -17,7 +17,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLocale
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -33,6 +32,7 @@ import org.jarsi.devicewatch.data.WakeCategory
 import org.jarsi.devicewatch.data.WakeEntry
 import org.jarsi.devicewatch.data.WakeGlossary
 import java.util.Locale
+import org.jarsi.devicewatch.quantityTextResource
 
 /**
  * The since-charge page's view of Android's own battery statistics, which only a
@@ -246,7 +246,7 @@ internal fun WakeList(@StringRes titleRes: Int, entries: List<WakeEntry>) {
             }
             // The technical names, for whoever wants to look one up.
             val times = if (entry.count > 0) {
-                pluralStringResource(R.plurals.battery_usage_times, entry.count, entry.count)
+                quantityTextResource(R.plurals.battery_usage_times, entry.count, entry.count)
             } else {
                 null
             }

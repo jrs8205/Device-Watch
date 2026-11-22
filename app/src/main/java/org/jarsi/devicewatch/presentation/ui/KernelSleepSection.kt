@@ -14,7 +14,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -27,6 +26,7 @@ import org.jarsi.devicewatch.data.WakeSnapshot
 import org.jarsi.devicewatch.data.WakeupSource
 import org.jarsi.devicewatch.presentation.WakePresentation
 import org.jarsi.devicewatch.presentation.WakeupSourceKind
+import org.jarsi.devicewatch.quantityTextResource
 
 /**
  * The Kernel page's sleep section: how often the phone slept and failed to, where
@@ -46,7 +46,7 @@ internal fun SleepSection(wake: WakeSnapshot?, readFailed: Boolean) {
                 wake.suspend?.let { SuspendRows(it) }
                 SourceList(R.string.kernel_sleep_top_wakers, WakePresentation.topWakers(wake)) { source ->
                     val count = source.wakeupCount.coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
-                    pluralStringResource(R.plurals.kernel_wakeups, count, count)
+                    quantityTextResource(R.plurals.kernel_wakeups, count, count)
                 }
                 val longest = WakePresentation.longestHolders(wake)
                 SourceList(R.string.kernel_sleep_longest, longest) { source ->
@@ -77,7 +77,7 @@ private fun SuspendRows(stats: SuspendStats) {
     val failed = stats.fail.coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
     KernelRow(
         R.string.kernel_sleep_attempts,
-        pluralStringResource(R.plurals.kernel_sleep_slept, slept, slept) + " · " + pluralStringResource(R.plurals.kernel_sleep_failed, failed, failed),
+        quantityTextResource(R.plurals.kernel_sleep_slept, slept, slept) + " · " + quantityTextResource(R.plurals.kernel_sleep_failed, failed, failed),
         numeric = true,
         color = if (stats.fail > stats.success) statusWarnColor() else MaterialTheme.colorScheme.onSurface,
     )

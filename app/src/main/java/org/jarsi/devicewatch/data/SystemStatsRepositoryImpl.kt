@@ -85,6 +85,7 @@ import java.util.TimeZone
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.roundToInt
+import org.jarsi.devicewatch.quantityText
 
 @Singleton
 class SystemStatsRepositoryImpl @Inject constructor(
@@ -496,7 +497,7 @@ class SystemStatsRepositoryImpl @Inject constructor(
         }
         val summary = ExtraStatsLogic.exemptAppsSummary(exempt, context.resources.configuration.locales[0])
         val systemText = summary.systemCount.takeIf { it > 0 }?.let {
-            context.resources.getQuantityString(R.plurals.exempt_system_apps, it, it)
+            quantityText(context, R.plurals.exempt_system_apps, it, it)
         }
         return when {
             summary.userApps.isEmpty() && systemText == null -> context.getString(R.string.exempt_none)

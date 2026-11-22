@@ -8,13 +8,13 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.jarsi.devicewatch.R
 import org.jarsi.devicewatch.presentation.PrivacyPresentation
 import org.jarsi.devicewatch.presentation.PrivacyState
+import org.jarsi.devicewatch.quantityTextResource
 
 /**
  * The Apps tab's first band. With extended access on it says, sensor by sensor,
@@ -66,7 +66,7 @@ internal fun PrivacyBand(
                     val value = if (line.apps == 0 || line.lastMillis == null) {
                         stringResource(R.string.privacy_band_none)
                     } else {
-                        pluralStringResource(R.plurals.privacy_band_apps, line.apps, line.apps) + " · " +
+                        quantityTextResource(R.plurals.privacy_band_apps, line.apps, line.apps) + " · " +
                             stringResource(R.string.privacy_last, privacyMomentText(line.lastMillis))
                     }
                     KernelRow(stringResource(PrivacyPresentation.sensorNameRes(line.sensor)), value)

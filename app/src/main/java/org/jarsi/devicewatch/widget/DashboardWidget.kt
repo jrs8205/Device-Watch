@@ -45,6 +45,7 @@ import org.jarsi.devicewatch.data.UNAVAILABLE_DOUBLE
 import org.jarsi.devicewatch.data.UNAVAILABLE_INT
 import org.jarsi.devicewatch.data.UNAVAILABLE_TEXT
 import java.util.Locale
+import org.jarsi.devicewatch.quantityText
 
 class WidgetColors(
     val cardBackground: ColorProvider,
@@ -848,7 +849,7 @@ fun speedText(value: Int): String {
 
 fun coreText(context: Context, value: Int): String {
     return if (value >= 0) {
-        context.resources.getQuantityString(R.plurals.cpu_cores_short, value, value)
+        quantityText(context, R.plurals.cpu_cores_short, value, value)
     } else {
         UNAVAILABLE_TEXT
     }
@@ -856,7 +857,7 @@ fun coreText(context: Context, value: Int): String {
 
 fun cycleText(context: Context, value: Int): String {
     return if (value >= 0) {
-        context.resources.getQuantityString(R.plurals.battery_cycles, value, value)
+        quantityText(context, R.plurals.battery_cycles, value, value)
     } else {
         context.getString(R.string.cycles_unavailable)
     }
