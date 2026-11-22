@@ -794,7 +794,7 @@
     <string name="kernel_cluster_cannot_limit">无法在此手机上限制：其内核未列出速度。</string>
     <string name="kernel_cluster_technical">%1$s · 调速器 %2$s · 驱动 %3$s</string>
     <string name="kernel_processor_note">限制是核心当前可以运行的最高速度；发热和 Android 可能会使其保持更低。</string>
-    <string name="kernel_throttling_section">温度降频</string>
+    <string name="kernel_throttling_section">温控限制</string>
     <string name="kernel_throttling_none_long">当前没有因为发热而降低速度。</string>
     <string name="cooling_cpu">%1$s已降速</string>
     <string name="cooling_gpu">图形处理器已降速</string>
@@ -821,7 +821,7 @@
     <string name="zone_gpu">图形处理器</string>
     <string name="zone_tpu">AI 处理器 (TPU)</string>
     <string name="zone_battery">电池</string>
-    <string name="zone_charger">充电器</string>
+    <string name="zone_charger">充电电路</string>
     <string name="zone_display">显示屏</string>
     <string name="zone_usb">USB 接口</string>
     <string name="zone_modem">调制解调器</string>

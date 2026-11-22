@@ -269,6 +269,26 @@ class TranslationsTest {
         assertNoProblems(problems)
     }
 
+    // Two Chinese names on the Kernel page. Its section of what heat is holding back lists a
+    // lowered charging current too, where no core's speed is touched: 降频, a lowered clock
+    // speed, named one of the two. And the temperature of the sensor called charger_therm is
+    // the phone's own charging circuit's: 充电器 is the charger at the other end of the cable,
+    // as everywhere else in these texts ("拔下充电器").
+    @Test
+    fun `Chinese names the heat section for all it lists and the charging sensor as the phone's own`() {
+        val problems = translations.filterKeys { language(it) == "zh" }.flatMap { (qualifier, texts) ->
+            listOfNotNull(
+                "$qualifier: kernel_throttling_section speaks of the clock speed alone".takeIf {
+                    "降频" in texts.strings["kernel_throttling_section"]?.textContent.orEmpty()
+                },
+                "$qualifier: zone_charger names the charger outside the phone".takeIf {
+                    "充电器" in texts.strings["zone_charger"]?.textContent.orEmpty()
+                },
+            )
+        }
+        assertNoProblems(problems)
+    }
+
     /**
      * A text as the app shows it: its escapes read, a sample number in place of each number
      * argument and [textArgument] in place of each text argument.
