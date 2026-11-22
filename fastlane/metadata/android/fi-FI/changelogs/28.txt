@@ -1,0 +1,4 @@
+• Uudet kielet: yksinkertaistettu kiina (kääntäjä WOchovy233) ja arabia
+• Luvut ovat joka kielellä 0–9; Androidin asetuksista valittua numerojärjestelmää noudattavat Androidin muotoilemat luvut, joten numeroita voi näkyä kahdenlaisia
+• Laajennettu käyttö myös ADB-luvilla, ilman Shizukua ja rootia (GitHub #10)
+• Rengas näyttää myös valmistumisarvion, herätyksen ja laitteen nimen: heti päällä, jos käytät Rengasta. Asetus: värilliset pikapainikkeet (GitHub #11)

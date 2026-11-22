@@ -1,0 +1,4 @@
+• New languages: Simplified Chinese (by WOchovy233) and Arabic, laid out right to left
+• Numbers are 0–9 in every language; a numbering system chosen in Android's settings is followed by the numbers Android formats, so two kinds of digits can then show
+• Extended access also with ADB permissions, without Shizuku or root (GitHub #10)
+• Ring also shows time to full, next alarm and device name: on at once if you use Ring. Setting: coloured Quick Settings tiles (GitHub #11)
