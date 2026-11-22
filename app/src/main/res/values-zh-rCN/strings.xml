@@ -744,7 +744,7 @@
     <string name="kernel_open">打开</string>
     <string name="kernel_open_description">打开 Kernel 页面</string>
     <string name="kernel_band_profile">处理器模式</string>
-    <string name="kernel_band_big_limit">大核限制</string>
+    <string name="kernel_band_big_limit">最快核心的限制</string>
     <string name="kernel_band_throttling">温度降频</string>
     <string name="kernel_throttling_active">正在降低处理器速度</string>
     <string name="kernel_throttling_none">当前无</string>

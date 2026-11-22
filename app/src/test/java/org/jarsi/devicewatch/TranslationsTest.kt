@@ -233,6 +233,21 @@ class TranslationsTest {
         assertNoProblems(problems)
     }
 
+    // The band's limit row shows the fastest group of cores that is on (KernelSummary.from),
+    // which on a phone with prime cores is not the group the Kernel page calls big. The
+    // Chinese said the big cores' limit.
+    @Test
+    fun `the band's limit row names the fastest cores, not the group called big`() {
+        val problems = (translations + ("en" to english)).mapNotNull { (qualifier, texts) ->
+            val big = texts.strings["cluster_big"]?.textContent.orEmpty()
+            val row = texts.strings["kernel_band_big_limit"]?.textContent.orEmpty()
+            "$qualifier: kernel_band_big_limit \"$row\" says \"$big\"".takeIf {
+                big.isNotEmpty() && row.contains(big, ignoreCase = true)
+            }
+        }
+        assertNoProblems(problems)
+    }
+
     /**
      * A text as the app shows it: its escapes read, a sample number in place of each number
      * argument and [textArgument] in place of each text argument.
