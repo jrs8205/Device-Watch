@@ -407,7 +407,7 @@
     <string name="device_info_abis">支持的 ABI</string>
     <string name="device_info_kernel">内核</string>
     <string name="device_info_resolution">屏幕分辨率</string>
-    <string name="device_info_density">屏幕像素密度</string>
+    <string name="device_info_density">逻辑显示密度</string>
     <string name="device_info_refresh">刷新率</string>
     <string name="device_info_ram">总内存 (RAM)</string>
     <string name="device_info_storage">总存储</string>
@@ -506,9 +506,9 @@
     <string name="device_info_ram_advertised">出厂标称内存</string>
     <!-- The phone does not state its memory size; this is the nearest size memory is sold in. -->
     <string name="device_info_ram_estimate">约 %1$d GB</string>
-    <string name="screen_on_label">屏幕开启</string>
-    <string name="report_summary_screen_on">每天屏幕开启时间</string>
-    <string name="report_column_screen_on">屏幕开启</string>
+    <string name="screen_on_label">亮屏时长</string>
+    <string name="report_summary_screen_on">每天亮屏时长</string>
+    <string name="report_column_screen_on">亮屏时长</string>
     <string name="report_column_storage">已用存储</string>
     <string name="power_section">电源</string>
     <string name="external_section">存储卡与 USB</string>

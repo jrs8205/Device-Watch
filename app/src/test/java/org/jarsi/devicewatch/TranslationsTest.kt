@@ -248,6 +248,27 @@ class TranslationsTest {
         assertNoProblems(problems)
     }
 
+    // Two Chinese labels that named another thing than the figure under them. "Screen on" is
+    // a length of time on the Home tab, among the History page's daily values and in the
+    // report; 屏幕开启 is the screen's state, and the name of what woke the phone. The Device
+    // tab's density is Android's logical one, which the display size setting changes; 像素密度
+    // is the panel's own pixels per inch.
+    @Test
+    fun `Chinese names the screen-on figure as a length of time and the density as Android's own`() {
+        val problems = translations.filterKeys { language(it) == "zh" }.flatMap { (qualifier, texts) ->
+            val state = texts.strings["wake_screen"]?.textContent.orEmpty()
+            listOf("screen_on_label", "report_column_screen_on", "report_summary_screen_on").mapNotNull { name ->
+                val text = texts.strings[name]?.textContent.orEmpty()
+                "$qualifier: $name \"$text\" names the screen's state".takeIf { state.isNotEmpty() && state in text }
+            } + listOfNotNull(
+                "$qualifier: device_info_density speaks of pixels".takeIf {
+                    "像素" in texts.strings["device_info_density"]?.textContent.orEmpty()
+                },
+            )
+        }
+        assertNoProblems(problems)
+    }
+
     /**
      * A text as the app shows it: its escapes read, a sample number in place of each number
      * argument and [textArgument] in place of each text argument.
