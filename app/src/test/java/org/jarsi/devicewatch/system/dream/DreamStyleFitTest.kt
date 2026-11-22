@@ -1,6 +1,7 @@
 package org.jarsi.devicewatch.system.dream
 
 import android.app.Application
+import android.content.Context
 import android.graphics.Paint
 import android.icu.util.ULocale
 import androidx.compose.runtime.CompositionLocalProvider
@@ -18,6 +19,7 @@ import com.google.common.truth.Truth.assertWithMessage
 import org.jarsi.devicewatch.LatinDigits
 import org.jarsi.devicewatch.R
 import org.jarsi.devicewatch.presentation.ui.MAX_FONT_SCALE
+import org.jarsi.devicewatch.quantityText
 import org.junit.After
 import org.junit.Rule
 import org.junit.Test
@@ -170,11 +172,16 @@ class DreamStyleFitTest {
         Locale.setDefault(Locale.Category.FORMAT, defaultsBefore.third)
     }
 
-    /** What the notification row calls itself: "N unread notifications". */
-    private fun unreadDescription(state: DreamUiState): String {
-        val context = ApplicationProvider.getApplicationContext<Application>()
+    /**
+     * What the notification row calls itself, "N unread notifications", as the screen under
+     * test writes it: by the screen's own function, from [context], the one the screen is
+     * drawn with. Asked of the test's plain application it came out with the number in
+     * Arabic-Indic digits in the Arabic cases, where the screen writes 676: the row was not
+     * found by that name, and the wait for its counts was skipped (external review round 10).
+     */
+    private fun unreadDescription(context: Context, state: DreamUiState): String {
         val total = state.notificationGroups.sumOf { it.count }
-        return context.resources.getQuantityString(R.plurals.dream_unread_notifications, total, total)
+        return quantityText(context, R.plurals.dream_unread_notifications, total, total)
     }
 
     /**
@@ -222,7 +229,7 @@ class DreamStyleFitTest {
         showSeconds: Boolean = true,
         phoneLanguages: List<Locale?> = listOf(null),
     ) {
-        fun worstCase(context: android.content.Context, chargeState: DreamChargeState, language: Locale?): DreamUiState {
+        fun worstCase(context: Context, chargeState: DreamChargeState, language: Locale?): DreamUiState {
             val state = if (language == null) {
                 worstCaseDreamUiState(context, chargeState)
             } else {
@@ -247,6 +254,7 @@ class DreamStyleFitTest {
         }
         // Every style and state is drawn before the test fails, so one run names them all.
         val problems = mutableListOf<String>()
+        var rowsFound = 0
         for (language in phoneLanguages) for (style in DreamStyle.entries) {
             for (chargeState in DreamChargeState.entries) {
                 val case = listOfNotNull(language?.toLanguageTag(), style, chargeState).joinToString()
@@ -258,13 +266,18 @@ class DreamStyleFitTest {
                 // style may leave the row out when it runs out of room (Gauges on its side),
                 // so the wait is for a row that is on the screen: it names itself to screen
                 // readers as soon as it is.
-                val rowIsShown = compose.onAllNodes(hasContentDescription(unreadDescription(state)))
+                val rowIsShown = compose.onAllNodes(hasContentDescription(unreadDescription(context, state)))
                     .fetchSemanticsNodes().isNotEmpty()
                 if (rowIsShown) {
+                    rowsFound++
                     compose.waitUntil(timeoutMillis = 5_000) {
                         compose.onAllNodesWithText(WORST_CASE_FIRST_COUNT.toString())
                             .fetchSemanticsNodes().isNotEmpty()
                     }
+                } else if (compose.onAllNodesWithText(WORST_CASE_FIRST_COUNT.toString()).fetchSemanticsNodes().isNotEmpty()) {
+                    // A count is on the screen, so the row is; the test looked for it by another
+                    // name than the screen gives it, and went on without the wait above.
+                    problems += "$case: the notification row is drawn, and no node calls itself \"${unreadDescription(context, state)}\""
                 }
                 try {
                     // Only a phone's own language can make a line too long for its floor.
@@ -276,6 +289,10 @@ class DreamStyleFitTest {
             }
         }
         assertWithMessage(problems.joinToString("\n", prefix = "\n")).that(problems).isEmpty()
+        // Every screen here has room for the row in some style: were it found in none, the
+        // wait for its counts would have been skipped everywhere.
+        assertWithMessage("cases in which the notification row was found by its name").that(rowsFound).isGreaterThan(0)
+        println("DreamStyleFitTest: the notification row found in $rowsFound cases")
     }
 
     private companion object {
